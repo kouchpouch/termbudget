@@ -1,11 +1,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 
 #define MAX_UPPER_ASCII 90
 #define MIN_UPPER_ASCII 65
 #define MAX_LOWER_ASCII 122
 #define MIN_LOWER_ASCII 97
+#define MONTH_FIELD 0
+#define DAY_FIELD 1
+#define YEAR_FIELD 2
+#define CATEGORY_FIELD 3
+#define TRANSTYPE_FIELD 4
+#define VALUE_FIELD 5
 
 int upper(char* letter) {
 	int asciiVal = *letter;
@@ -28,11 +35,18 @@ int viewBudget() {
 		return -1;
 	}
 
+	char buff[1024];
+	int userMonth = 12;
+	int userYear = 2025;
 	int fields = 0;
-	int tokenFields = 0;
+	int tokenField = 0;
+	int lineNum = 0;
+	int foundLineNum = 0;
+	bool foundMonth = false;
 	char linebuff[1024];
-	char* line;
-	char* token;
+	char *line;
+	char *token;
+
 	// First line to get field data
 	line = fgets(linebuff, sizeof(linebuff), fptr);
 	token = strtok(line, ",");
@@ -41,19 +55,29 @@ int viewBudget() {
 		token = strtok(NULL, ","); // NULL for subsequent calls
 		fields++;
 	}
+
 	// Loop through each line
 	while (line) {
 		line = fgets(linebuff, sizeof(linebuff), fptr);
 		token = strtok(line, ",");
-		tokenFields = 0;
-			while (token != NULL) {
-				printf("%s \n", token);
-				token = strtok(NULL, ","); // NULL for subsequent calls
-				tokenFields++;
+		tokenField = 0;
+		foundMonth = false;
+		while (token != NULL) {
+			if (tokenField == MONTH_FIELD && atoi(token) == userMonth) {
+				break;
 			}
-		if (tokenFields != fields && tokenFields != 0) {
+			if (tokenField == YEAR_FIELD && atoi(token) == userYear &&
+				lineNum == foundLineNum) {
+				printf("LINE NUMBER: %d\n", lineNum);
+				printf("YEAR: %d MONTH: %d\n", atoi(token), foundMonth);
+			}
+			token = strtok(NULL, ","); // NULL for subsequent calls
+			tokenField++;
+		}
+		if (tokenField != fields && tokenField != 0) {
 			printf("Missing data\n");
 		}
+		lineNum++;
 	}
 	fclose(fptr);
 	return 0;
@@ -91,7 +115,7 @@ void getSelection() {
 				break;
 			default:
 				printf("\"%c\" is not a valid option\n", userInput);
-				while (getchar() != '\n'); // Clear stdin buffer
+				while (getchar() != '\n'); // Clear STDIN buffer
 				getSelection();
 		}
 	} 
