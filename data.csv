@@ -1,0 +1,4 @@
+month,day,year,category,transtype,value
+12,16,2025,income,debit,1284.18
+12,15,2025,expense,credit,34.32
+12,14,2025,expense,credit,23.12

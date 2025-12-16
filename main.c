@@ -16,28 +16,81 @@ int upper(char* letter) {
 		return asciiVal;
 		// This is here just in case we need to convert to lowercase later
 	} else {
-		return 0;
+		return asciiVal;
 	}
 	return 0;
 }
 
+int viewBudget() {
+	FILE* fptr = fopen("data.csv", "r");
+	if (fptr == NULL) {
+		printf("Unable to open file\n");
+		return -1;
+	}
+
+	int fields = 0;
+	int tokenFields = 0;
+	char linebuff[1024];
+	char* line;
+	char* token;
+	// First line to get field data
+	line = fgets(linebuff, sizeof(linebuff), fptr);
+	token = strtok(line, ",");
+	while (token != NULL) {
+		printf("%s \n", token);
+		token = strtok(NULL, ","); // NULL for subsequent calls
+		fields++;
+	}
+	// Loop through each line
+	while (line) {
+		line = fgets(linebuff, sizeof(linebuff), fptr);
+		token = strtok(line, ",");
+		tokenFields = 0;
+			while (token != NULL) {
+				printf("%s \n", token);
+				token = strtok(NULL, ","); // NULL for subsequent calls
+				tokenFields++;
+			}
+		if (tokenFields != fields) {
+			printf("Missing data\n");
+		}
+	}
+	fclose(fptr);
+	return 0;
+}
+
 void getSelection() {
+	printf("Make a selection:\n");
+	printf("m - Select Month\n");
+	printf("c - Add budget category\n");
+	printf("e - Add transaction\n");
+	printf("v - View Budget Overview\n");
+	printf("q - Quit\n");
 	int ascii;
 	char userInput;
 	userInput = getchar();
 	char* ptr = &userInput;
 	int choice = upper(ptr);
-	printf("SELECTION: %c\n", choice);
 	if (choice != -1) {
 		switch (choice) {
+			case 'M':
+				printf("Select Month\n");
+				break;
 			case 'C':
 				printf("Adding Category\n");
+				break;
+			case 'E':
+				printf("Add Expense\n");
+				break;
+			case 'V':
+				printf("Budget overview:\n");
+				viewBudget();
 				break;
 			case 'Q':
 				printf("Quiting\n");
 				break;
 			default:
-				printf("NOT AN OPTION\n");
+				printf("\"%c\" is not a valid option\n", userInput);
 				while (getchar() != '\n'); // Clear stdin buffer
 				getSelection();
 		}
@@ -49,5 +102,11 @@ void addCategory() {
 }
 
 int main() {
+	FILE* fptr = fopen("data.csv", "a");
+	if (fopen("data.csv", "r") == NULL) {
+		printf("File not found\n");
+		return -1;
+	}
+	fclose(fptr);
 	getSelection();
 }
