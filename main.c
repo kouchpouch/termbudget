@@ -51,7 +51,7 @@ int viewBudget() {
 				token = strtok(NULL, ","); // NULL for subsequent calls
 				tokenFields++;
 			}
-		if (tokenFields != fields) {
+		if (tokenFields != fields && tokenFields != 0) {
 			printf("Missing data\n");
 		}
 	}
