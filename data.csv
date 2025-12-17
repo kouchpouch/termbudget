@@ -1,15 +1,39 @@
-month,day,year,category,transtype,value
-12,31,2025,expense,credit,147.75
-11,31,2025,expense,credit,385.62
-11,31,2025,expense,credit,351.04
-10,31,2025,expense,credit,322.65
-10,31,2025,expense,credit,237.55
-10,31,2025,expense,credit,22.02
-10,31,2025,income,debit,1173.24
-9,31,2025,expense,credit,101.81
-9,26,2025,expense,credit,354.02
-9,25,2025,expense,credit,64.07
-7,24,2025,expense,credit,168.98
-7,23,2025,expense,credit,252.49
-4,23,2025,income,debit,1477.19
-2,12,2025,expense,credit,358.16
+month,day,year,category,description,transtype,value
+1,1,2025,salary,monthly paycheck,1,2850.00
+1,2,2025,rent,apartment rent,0,1250.00
+1,3,2025,utilities,electric bill,0,142.37
+1,5,2025,groceries,weekly groceries,0,186.42
+1,7,2025,gas,vehicle fuel,0,54.18
+1,10,2025,eating out,restaurant dinner,0,68.90
+1,12,2025,subscriptions,streaming services,0,32.97
+1,15,2025,insurance,car insurance,0,118.45
+1,18,2025,entertainment,movie night,0,27.50
+1,20,2025,healthcare,pharmacy visit,0,44.63
+2,1,2025,salary,monthly paycheck,1,2850.00
+2,2,2025,rent,apartment rent,0,1250.00
+2,4,2025,utilities,water bill,0,61.88
+2,6,2025,groceries,weekly groceries,0,172.11
+2,8,2025,gas,vehicle fuel,0,49.93
+2,11,2025,eating out,lunch with friends,0,34.75
+2,14,2025,entertainment,concert ticket,0,95.00
+2,16,2025,subscriptions,software subscription,0,14.99
+2,20,2025,healthcare,doctor copay,0,60.00
+3,1,2025,salary,monthly paycheck,1,2850.00
+3,2,2025,rent,apartment rent,0,1250.00
+3,4,2025,utilities,internet bill,0,79.99
+3,6,2025,groceries,weekly groceries,0,193.27
+3,9,2025,gas,vehicle fuel,0,52.64
+3,12,2025,eating out,coffee shop,0,18.45
+3,15,2025,insurance,health insurance,0,210.00
+3,18,2025,entertainment,video game purchase,0,59.99
+3,21,2025,miscellaneous,household supplies,0,41.28
+4,1,2025,salary,monthly paycheck,1,2850.00
+4,2,2025,rent,apartment rent,0,1250.00
+4,5,2025,utilities,gas bill,0,97.36
+4,7,2025,groceries,weekly groceries,0,181.90
+4,10,2025,gas,vehicle fuel,0,56.21
+4,12,2025,eating out,restaurant lunch,0,29.84
+4,15,2025,subscriptions,music streaming,0,10.99
+4,18,2025,healthcare,dental cleaning,0,85.00
+4,22,2025,entertainment,local event,0,40.00
+

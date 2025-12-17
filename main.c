@@ -29,14 +29,29 @@ int viewBudget() {
 		return -1;
 	}
 
+	struct {
+		int month;
+		int day;
+		int year;
+		char *category;
+		char *desc;
+		int transtype;
+		float value;
+	} rd;
+
+	int userMonth = 4;
+	int userYear = 2025;
+
+
 	int buffsize = 128;
 	char tmp[256];
 	char *fields = (char *)calloc(buffsize, sizeof(char));
 	if (fields == NULL) {
 		exit(-1);
 	}
+
 	fgets(fields, buffsize, fptr);
-	printf("%s\n", fields);
+	printf("%s", fields);
 
 	/* Count number of fields
 	* Init to 1 to count first field where no comma is present */
@@ -48,19 +63,60 @@ int viewBudget() {
 		}
 	}
 
+	printf("Num of Fields %d\n", numFields);
 	free(fields);
 	fields = NULL;
 
-	char *charbuff = (char *)calloc(buffsize, sizeof(char));
-	if (charbuff == NULL) {
-		exit(-1);
+	/* Read the rest of lines in the CSV after the header */
+
+	while (1 == 1) {
+		char *charbuff = (char *)calloc(buffsize, sizeof(char));
+		if (charbuff == NULL) {
+			exit(1);
+		}
+		/* For each line, tokenize the fields to retrieve each cell's data */
+
+		if (fgets(charbuff, buffsize, fptr) == NULL) {
+			free(charbuff);
+			charbuff = NULL;
+			break;
+		}
+		
+		char *token = strtok(charbuff, ",");
+		if (token != NULL) {
+			rd.month = atoi(token);
+			printf("Month %d\n", rd.month);
+		}
+
+		for (int i = 1; i < numFields; i++) {
+			token = strtok(NULL, ",");
+			if (token != NULL) {
+				switch (i) {
+					case 1:
+						printf("Day: %s\n", token);
+						break;
+					case 2:
+						printf("Year: %s\n", token);
+						break;
+					case 3:
+						printf("Category: %s\n", token);
+						break;
+					case 4:
+						printf("Description: %s\n", token);
+						break;
+					case 5:
+						printf("Transaction Type: %s\n", token);
+						break;
+					case 6:
+						printf("Value: %s\n", token);
+						break;
+				}
+			}
+		}
+
+		free(charbuff);
+		charbuff = NULL;
 	}
-	fgets(charbuff, buffsize, fptr);
-
-	printf("%s\n", charbuff);
-
-	free(charbuff);
-	charbuff = NULL;
 	fclose(fptr);
 	return 0;
 }
