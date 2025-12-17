@@ -1,0 +1,1 @@
+Create an array of strings in a temp buffer for each line of the csv, then check for matches. Not the other way around

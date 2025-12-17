@@ -7,12 +7,6 @@
 #define MIN_UPPER_ASCII 65
 #define MAX_LOWER_ASCII 122
 #define MIN_LOWER_ASCII 97
-#define MONTH_FIELD 0
-#define DAY_FIELD 1
-#define YEAR_FIELD 2
-#define CATEGORY_FIELD 3
-#define TRANSTYPE_FIELD 4
-#define VALUE_FIELD 5
 
 int upper(char* letter) {
 	int asciiVal = *letter;
@@ -35,50 +29,38 @@ int viewBudget() {
 		return -1;
 	}
 
-	char buff[1024];
-	int userMonth = 12;
-	int userYear = 2025;
-	int fields = 0;
-	int tokenField = 0;
-	int lineNum = 0;
-	int foundLineNum = 0;
-	bool foundMonth = false;
-	char linebuff[1024];
-	char *line;
-	char *token;
+	int buffsize = 128;
+	char tmp[256];
+	char *fields = (char *)calloc(buffsize, sizeof(char));
+	if (fields == NULL) {
+		exit(-1);
+	}
+	fgets(fields, buffsize, fptr);
+	printf("%s\n", fields);
 
-	// First line to get field data
-	line = fgets(linebuff, sizeof(linebuff), fptr);
-	token = strtok(line, ",");
-	while (token != NULL) {
-		printf("%s \n", token);
-		token = strtok(NULL, ","); // NULL for subsequent calls
-		fields++;
+	/* Count number of fields
+	* Init to 1 to count first field where no comma is present */
+	int numFields = 1; 
+
+	for (int i = 0; i < strlen(fields); i++) {
+		if (fields[i] == ',') {
+			numFields++;	
+		}
 	}
 
-	// Loop through each line
-	while (line) {
-		line = fgets(linebuff, sizeof(linebuff), fptr);
-		token = strtok(line, ",");
-		tokenField = 0;
-		foundMonth = false;
-		while (token != NULL) {
-			if (tokenField == MONTH_FIELD && atoi(token) == userMonth) {
-				break;
-			}
-			if (tokenField == YEAR_FIELD && atoi(token) == userYear &&
-				lineNum == foundLineNum) {
-				printf("LINE NUMBER: %d\n", lineNum);
-				printf("YEAR: %d MONTH: %d\n", atoi(token), foundMonth);
-			}
-			token = strtok(NULL, ","); // NULL for subsequent calls
-			tokenField++;
-		}
-		if (tokenField != fields && tokenField != 0) {
-			printf("Missing data\n");
-		}
-		lineNum++;
+	free(fields);
+	fields = NULL;
+
+	char *charbuff = (char *)calloc(buffsize, sizeof(char));
+	if (charbuff == NULL) {
+		exit(-1);
 	}
+	fgets(charbuff, buffsize, fptr);
+
+	printf("%s\n", charbuff);
+
+	free(charbuff);
+	charbuff = NULL;
 	fclose(fptr);
 	return 0;
 }
@@ -95,6 +77,7 @@ void getSelection() {
 	userInput = getchar();
 	char* ptr = &userInput;
 	int choice = upper(ptr);
+	
 	if (choice != -1) {
 		switch (choice) {
 			case 'M':
