@@ -22,11 +22,25 @@ int upper(char* letter) {
 	return 0;
 }
 
+int getMonth() {
+	char b1[1024];
+	printf("Enter Month:\n");
+
+	// atoi(b1) check if b1 is an interger
+	while (fgets(b1, 1024, stdin) == NULL || atoi(b1) == 0) {
+		printf("Invalid Input\n");
+//		exit(0);
+	}
+
+	int month = atoi(b1);
+	return month;
+}
+
 int viewBudget() {
 	FILE* fptr = fopen("data.csv", "r");
 	if (fptr == NULL) {
 		printf("Unable to open file\n");
-		return -1;
+		exit(0);
 	}
 
 	struct {
@@ -39,19 +53,18 @@ int viewBudget() {
 		float value;
 	} rd;
 
-	int userMonth = 4;
 	int userYear = 2025;
 
+	int userMonth = getMonth();
 
 	int buffsize = 128;
 	char tmp[256];
 	char *fields = (char *)calloc(buffsize, sizeof(char));
 	if (fields == NULL) {
-		exit(-1);
+		exit(0);
 	}
 
 	fgets(fields, buffsize, fptr);
-	printf("%s", fields);
 
 	/* Count number of fields
 	* Init to 1 to count first field where no comma is present */
@@ -63,7 +76,7 @@ int viewBudget() {
 		}
 	}
 
-	printf("Num of Fields %d\n", numFields);
+//	printf("Num of Fields %d\n", numFields);
 	free(fields);
 	fields = NULL;
 
@@ -72,7 +85,7 @@ int viewBudget() {
 	while (1 == 1) {
 		char *charbuff = (char *)calloc(buffsize, sizeof(char));
 		if (charbuff == NULL) {
-			exit(1);
+			exit(0);
 		}
 		/* For each line, tokenize the fields to retrieve each cell's data */
 
@@ -85,7 +98,6 @@ int viewBudget() {
 		char *token = strtok(charbuff, ",");
 		if (token != NULL) {
 			rd.month = atoi(token);
-			printf("Month %d\n", rd.month);
 		}
 
 		for (int i = 1; i < numFields; i++) {
@@ -93,25 +105,31 @@ int viewBudget() {
 			if (token != NULL) {
 				switch (i) {
 					case 1:
-						printf("Day: %s\n", token);
+						rd.day = atoi(token);
 						break;
 					case 2:
-						printf("Year: %s\n", token);
+						rd.year = atoi(token);
 						break;
 					case 3:
-						printf("Category: %s\n", token);
+						rd.category = token;
 						break;
 					case 4:
-						printf("Description: %s\n", token);
+						rd.desc = token;
 						break;
 					case 5:
-						printf("Transaction Type: %s\n", token);
+						rd.transtype = atoi(token);
 						break;
 					case 6:
-						printf("Value: %s\n", token);
+						rd.value = atof(token);
 						break;
 				}
 			}
+		}
+
+		if (rd.month == userMonth && rd.year == userYear) {
+		printf("%d/%d/%d Category: %s, Description: %s, %d, $%.2f\n",
+		 		rd.month, rd.day, rd.year, rd.category, rd.desc, rd.transtype,
+		 		rd.value);
 		}
 
 		free(charbuff);
@@ -131,14 +149,11 @@ void getSelection() {
 	int ascii;
 	char userInput;
 	userInput = getchar();
-	char* ptr = &userInput;
+	char *ptr = &userInput;
 	int choice = upper(ptr);
 	
 	if (choice != -1) {
 		switch (choice) {
-			case 'M':
-				printf("Select Month\n");
-				break;
 			case 'C':
 				printf("Adding Category\n");
 				break;
@@ -147,6 +162,7 @@ void getSelection() {
 				break;
 			case 'V':
 				printf("Budget overview:\n");
+				while (getchar() != '\n'); // Clear STDIN buffer
 				viewBudget();
 				break;
 			case 'Q':
