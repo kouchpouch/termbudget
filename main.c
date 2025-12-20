@@ -15,7 +15,7 @@ int upper(char* letter) {
 		return asciiVal - 32;
 	} else if (asciiVal >= MIN_UPPER_ASCII && asciiVal <= MAX_UPPER_ASCII) {
 		return asciiVal;
-		// This is here just in case we need to convert to lowercase later
+	// This is here just in case we need to convert to lowercase later
 	} else {
 		return asciiVal;
 	}
@@ -76,7 +76,6 @@ int viewBudget() {
 		}
 	}
 
-//	printf("Num of Fields %d\n", numFields);
 	free(fields);
 	fields = NULL;
 
@@ -147,10 +146,12 @@ void getSelection() {
 	printf("v - View Budget Overview\n");
 	printf("q - Quit\n");
 	int ascii;
-	char userInput;
-	userInput = getchar();
-	char *ptr = &userInput;
-	int choice = upper(ptr);
+	char buff[64];
+	char *ptr;
+	while (fgets(buff, sizeof(buff) - 1, stdin) == NULL) {
+		printf("Invalid input\n");
+	}
+	int choice = upper(buff);
 	
 	if (choice != -1) {
 		switch (choice) {
@@ -162,15 +163,14 @@ void getSelection() {
 				break;
 			case 'V':
 				printf("Budget overview:\n");
-				while (getchar() != '\n'); // Clear STDIN buffer
 				viewBudget();
 				break;
 			case 'Q':
 				printf("Quiting\n");
 				break;
 			default:
-				printf("\"%c\" is not a valid option\n", userInput);
-				while (getchar() != '\n'); // Clear STDIN buffer
+				printf("\"%c\" is not a valid option\n", *buff);
+				printf("\n");
 				getSelection();
 		}
 	} 
