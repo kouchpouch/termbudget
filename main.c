@@ -175,8 +175,9 @@ void addCategory() {
 
 int main() {
 	FILE* fptr = fopen("data.csv", "a");
-	if (fopen("data.csv", "r") == NULL) {
+	if (fptr == NULL) {
 		printf("File not found\n");
+		fclose(fptr);
 		return -1;
 	}
 	fclose(fptr);
