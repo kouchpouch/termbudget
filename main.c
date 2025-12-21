@@ -2,37 +2,21 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+#include "helper.h"
 
-#define MAX_UPPER_ASCII 90
-#define MIN_UPPER_ASCII 65
-#define MAX_LOWER_ASCII 122
-#define MIN_LOWER_ASCII 97
-
-int upper(char* letter) {
-	int asciiVal = *letter;
-	// 97 to 122 == lowercase, 65 to 90 == uppercase ASCII codes. 32 between
-	if (asciiVal >= MIN_LOWER_ASCII && asciiVal <= MAX_LOWER_ASCII) {
-		return asciiVal - 32;
-	} else if (asciiVal >= MIN_UPPER_ASCII && asciiVal <= MAX_UPPER_ASCII) {
-		return asciiVal;
-	// This is here just in case we need to convert to lowercase later
-	} else {
-		return asciiVal;
-	}
-	return 0;
-}
+#define BUFF_SIZE 128
 
 int getMonth() {
-	char b1[1024];
+	char buff[BUFF_SIZE];
 	printf("Enter Month:\n");
 
 	// atoi(b1) check if b1 is an interger
-	while (fgets(b1, 1024, stdin) == NULL || atoi(b1) == 0) {
+	while (fgets(buff, BUFF_SIZE, stdin) == NULL || atoi(buff) == 0) {
 		printf("Invalid Input\n");
 //		exit(0);
 	}
 
-	int month = atoi(b1);
+	unsigned char month = atoi(buff);
 	return month;
 }
 
@@ -44,12 +28,12 @@ int viewBudget() {
 	}
 
 	struct {
-		int month;
-		int day;
-		int year;
+		unsigned int month;
+		unsigned int day;
+		unsigned int year;
 		char *category;
 		char *desc;
-		int transtype;
+		unsigned int transtype;
 		float value;
 	} rd;
 
@@ -58,8 +42,7 @@ int viewBudget() {
 	int userMonth = getMonth();
 
 	int buffsize = 128;
-	char tmp[256];
-	char *fields = (char *)calloc(buffsize, sizeof(char));
+	char *fields = (char *)malloc(BUFF_SIZE * sizeof(char));
 	if (fields == NULL) {
 		exit(0);
 	}
@@ -82,7 +65,7 @@ int viewBudget() {
 	/* Read the rest of lines in the CSV after the header */
 
 	while (1 == 1) {
-		char *charbuff = (char *)calloc(buffsize, sizeof(char));
+		char *charbuff = (char *)malloc(buffsize * sizeof(char));
 		if (charbuff == NULL) {
 			exit(0);
 		}
@@ -126,7 +109,7 @@ int viewBudget() {
 		}
 
 		if (rd.month == userMonth && rd.year == userYear) {
-		printf("%d/%d/%d Category: %s, Description: %s, %d, $%.2f\n",
+		printf("%d/%d/%d Category: %10s Description: %10s, \t%5d, \t$%5.2f\n",
 		 		rd.month, rd.day, rd.year, rd.category, rd.desc, rd.transtype,
 		 		rd.value);
 		}
@@ -146,13 +129,15 @@ void getSelection() {
 	printf("v - View Budget Overview\n");
 	printf("q - Quit\n");
 	int ascii;
-	char buff[64];
+	char buff[8];
 	char *ptr;
+
 	while (fgets(buff, sizeof(buff) - 1, stdin) == NULL) {
 		printf("Invalid input\n");
 	}
+
 	int choice = upper(buff);
-	
+
 	if (choice != -1) {
 		switch (choice) {
 			case 'C':
@@ -162,14 +147,14 @@ void getSelection() {
 				printf("Add Expense\n");
 				break;
 			case 'V':
-				printf("Budget overview:\n");
+				printf("-*-Budget overview-*-\n");
 				viewBudget();
 				break;
 			case 'Q':
 				printf("Quiting\n");
 				break;
 			default:
-				printf("\"%c\" is not a valid option\n", *buff);
+				printf("\"%c\" is not a valid option\n", choice);
 				printf("\n");
 				getSelection();
 		}
