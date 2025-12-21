@@ -114,8 +114,8 @@ int viewBudget() {
 
 		if (ld->month == userMonth && ld->year == userYear) {
 		printf("%d/%d/%d Category: %10s Description: %10s, \t%5d, \t$%5.2f\n",
-		 		ld->month, ld->day, ld->year, ld->category, ld->desc, ld->transtype,
-		 		ld->value);
+		 	ld->month, ld->day, ld->year, ld->category, 
+		 	ld->desc, ld->transtype, ld->value);
 		}
 
 		free(charbuff);
