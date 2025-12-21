@@ -4,16 +4,15 @@
 #include <stdbool.h>
 #include "helper.h"
 
-#define BUFF_SIZE 128
-
 int getMonth() {
-	char buff[BUFF_SIZE];
+	size_t b_sz = 8;
+	char buff[b_sz];
 	printf("Enter Month:\n");
 
 	// atoi(b1) check if b1 is an interger
-	while (fgets(buff, BUFF_SIZE, stdin) == NULL || atoi(buff) == 0) {
+	while (fgets(buff, b_sz - 1, stdin) == NULL || atoi(buff) == 0) {
 		printf("Invalid Input\n");
-//		exit(0);
+		exit(0);
 	}
 
 	unsigned char month = atoi(buff);
@@ -27,6 +26,8 @@ int viewBudget() {
 		exit(0);
 	}
 
+
+	// Line data
 	struct {
 		unsigned int month;
 		unsigned int day;
@@ -35,19 +36,23 @@ int viewBudget() {
 		char *desc;
 		unsigned int transtype;
 		float value;
-	} rd;
+	} linedata_, *ld = &linedata_; 
 
 	int userYear = 2025;
 
 	int userMonth = getMonth();
 
-	int buffsize = 128;
-	char *fields = (char *)malloc(BUFF_SIZE * sizeof(char));
+	size_t buffsize = 128;
+	char *fields = (char *)malloc(buffsize * sizeof(char));
 	if (fields == NULL) {
 		exit(0);
 	}
 
-	fgets(fields, buffsize, fptr);
+	if (fgets(fields, buffsize, fptr) == NULL) {
+		free(fields);
+		fields = NULL;
+		exit(0);
+	}
 
 	/* Count number of fields
 	* Init to 1 to count first field where no comma is present */
@@ -79,7 +84,7 @@ int viewBudget() {
 		
 		char *token = strtok(charbuff, ",");
 		if (token != NULL) {
-			rd.month = atoi(token);
+			ld->month = atoi(token);
 		}
 
 		for (int i = 1; i < numFields; i++) {
@@ -87,31 +92,31 @@ int viewBudget() {
 			if (token != NULL) {
 				switch (i) {
 					case 1:
-						rd.day = atoi(token);
+						ld->day = atoi(token);
 						break;
 					case 2:
-						rd.year = atoi(token);
+						ld->year = atoi(token);
 						break;
 					case 3:
-						rd.category = token;
+						ld->category = token;
 						break;
 					case 4:
-						rd.desc = token;
+						ld->desc = token;
 						break;
 					case 5:
-						rd.transtype = atoi(token);
+						ld->transtype = atoi(token);
 						break;
 					case 6:
-						rd.value = atof(token);
+						ld->value = atof(token);
 						break;
 				}
 			}
 		}
 
-		if (rd.month == userMonth && rd.year == userYear) {
+		if (ld->month == userMonth && ld->year == userYear) {
 		printf("%d/%d/%d Category: %10s Description: %10s, \t%5d, \t$%5.2f\n",
-		 		rd.month, rd.day, rd.year, rd.category, rd.desc, rd.transtype,
-		 		rd.value);
+		 		ld->month, ld->day, ld->year, ld->category, ld->desc, ld->transtype,
+		 		ld->value);
 		}
 
 		free(charbuff);
