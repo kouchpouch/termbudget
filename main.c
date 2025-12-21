@@ -26,7 +26,6 @@ int viewBudget() {
 		exit(0);
 	}
 
-
 	// Line data
 	struct {
 		unsigned int month;
@@ -134,6 +133,7 @@ void getSelection() {
 	printf("v - View Budget Overview\n");
 	printf("q - Quit\n");
 	int ascii;
+	int choice;
 	char buff[8];
 	char *ptr;
 
@@ -141,9 +141,9 @@ void getSelection() {
 		printf("Invalid input\n");
 	}
 
-	int choice = upper(buff);
+	choice = upper(buff);
 
-	if (choice != -1) {
+	if (choice != 0) {
 		switch (choice) {
 			case 'C':
 				printf("Adding Category\n");
@@ -163,7 +163,10 @@ void getSelection() {
 				printf("\n");
 				getSelection();
 		}
-	} 
+	} else {
+		printf("Invalid Character\n");
+		getSelection();
+	}
 }
 
 void addCategory() {
