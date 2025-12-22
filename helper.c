@@ -1,4 +1,6 @@
+#include <stdio.h>
 #include <limits.h>
+#include <stdbool.h>
 #include "helper.h"
 
 #define MAX_UPPER_ASCII 90
@@ -56,4 +58,36 @@ int lower(char* ltr) {
 		return 0;
 	}
 	return 0;
+}
+
+bool dayexists(int d, int m, int y) {
+	int thirtyones[] = {1, 3, 5, 7, 8, 10, 12};
+
+	if (m == 2 && y % 4 == 0 && (y % 100 != 0 || y % 400 == 0)) {
+		if (d > 0 && d <= 29) {
+			return true;
+		} else {
+			return false;
+		}
+	} else if (m == 2) {
+		if (d > 0 && d <= 28) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	for (int i = 0; i < 7; i++) {
+		if (m == thirtyones[i] && (d > 0 && d <= 31)) {
+			return true;
+		}
+	}
+
+	for (int i = 0; i < 7; i++) {
+		if (m != thirtyones[i] && (d > 0 && d <= 30)) {
+			return true;
+		}
+	}
+
+	return false;
 }

@@ -6,6 +6,16 @@
 
 #define STDIN_BUFF 64
 
+struct Linedata {
+	unsigned int month;
+	unsigned int day;
+	unsigned int year;
+	char *category;
+	char *desc;
+	unsigned int transtype;
+	float amount;
+};
+
 char *userinput(size_t buffersize) {
 	char *buffer = (char *)malloc(buffersize);
 	if (buffer == NULL) {
@@ -13,17 +23,17 @@ char *userinput(size_t buffersize) {
 	}
 	while (fgets(buffer, buffersize - 1, stdin) == NULL) {
 		printf("Invalid Input\n");
-		exit(0);
+		free(buffer);
+		buffer = NULL;
+		userinput(buffersize);
 	}
 	return buffer; // Must be free'd
 }
 
 int getMonth() {
 	printf("Enter Month:\n");
-	char buff[8];
 	char *userstr = userinput(STDIN_BUFF); // Must be free'd
-
-	unsigned char month = atoi(buff);
+	unsigned char month = atoi(userstr);
 	free(userstr);
 	return month;
 }
@@ -36,13 +46,85 @@ void addexpense() {
 		exit(0);
 	}
 
-	char *userstr = userinput(STDIN_BUFF); // Must be free'd
+	fseek(fptr, 0L, SEEK_END);
 
-	printf("%s\n", userstr);
-	free(userstr);
+	struct Linedata userlinedata_, *uld = &userlinedata_;
+	char userline[512] = {'0'};
+
+	puts("Add Expense:");
+
+	puts("Year:");
+	char *yearstr = userinput(STDIN_BUFF);
+	int year = atoi(yearstr);
+
+	puts("Month:");
+	char *monthstr = userinput(STDIN_BUFF);
+	int month = atoi(monthstr); 
+	while (month <= 0 || month > 12) {
+		printf("MONTH NOT VALID, YOU ENTERED: %d\n", month);
+		char *monthstr = userinput(STDIN_BUFF);
+	    month = atoi(monthstr); 
+		free(monthstr);
+		monthstr = NULL;
+	}
+
+	puts("Day:");
+	char *daystr = userinput(STDIN_BUFF);
+	int day = atoi(daystr);
+	while (dayexists(day, month, year) == false) {
+		printf("DAY NOT VALID, YOU ENTERED: %d\n", day);
+		char *daystr = userinput(STDIN_BUFF);
+		day = atoi(daystr);
+		free(daystr);
+		daystr = NULL;
+	}
+
+	puts("Category:");
+	char *categorystr = userinput(STDIN_BUFF);	
+
+	puts("Description:");
+	char *descstr = userinput(STDIN_BUFF);	
+
+	puts("Choose 1 or 2");
+	puts("1. Expense"); // 0 is an expense in the CSV
+	puts("2. Income"); // 1 is an income in the CSV
+	char *transstr = userinput(STDIN_BUFF);
+	int trans = atoi(transstr);
+	while (trans != 1 && trans != 2) {
+		printf("INVALID, ENTER 1 OR 2, YOU ENTERED: %d\n", trans);
+		char *transstr = userinput(STDIN_BUFF);
+		trans = atoi(transstr);
+		free(transstr);
+		transstr = NULL;
+	}
+
+	puts("$ Amount:");
+	char *amountstr = userinput(STDIN_BUFF);
+	float amount = atof(amountstr);
+
+	uld->month = month;
+	uld->day = day;
+	uld->year = year;
+	uld->category = categorystr;
+	uld->desc = descstr;
+	uld->transtype = trans - 1;
+	uld->amount = amount;
+
+	puts("Verify Data is Correct:");
+	printf("%d/%d/%d Category: %5s Description: %5s, %d, $%5.2f\n", 
+		uld->month, uld->day, uld->year, uld->category, uld->desc, 
+		uld->transtype, uld->amount);
+
 	fclose(fptr);
-}
 
+	if (daystr) {free(daystr);}
+	if (monthstr) {free(monthstr);}
+	if (yearstr) {free(yearstr);}
+	free(categorystr);
+	free(descstr);
+	if (transstr) {free(transstr);}
+	if (amountstr) {free(amountstr);}
+}
 
 void rcsv() {
 	FILE* fptr = fopen("data.csv", "r");
@@ -51,16 +133,7 @@ void rcsv() {
 		exit(0);
 	}
 
-	// Line data
-	struct {
-		unsigned int month;
-		unsigned int day;
-		unsigned int year;
-		char *category;
-		char *desc;
-		unsigned int transtype;
-		float value;
-	} linedata_, *ld = &linedata_; 
+	struct Linedata linedata_, *ld = &linedata_;
 
 	int userYear = 2025;
 	int userMonth = getMonth();
@@ -130,7 +203,7 @@ void rcsv() {
 						ld->transtype = atoi(token);
 						break;
 					case 6:
-						ld->value = atof(token);
+						ld->amount = atof(token);
 						break;
 				}
 			}
@@ -139,7 +212,7 @@ void rcsv() {
 		if (ld->month == userMonth && ld->year == userYear) {
 		printf("%d/%d/%d Category: %10s Description: %10s, \t%5d, \t$%5.2f\n",
 		 	ld->month, ld->day, ld->year, ld->category, 
-		 	ld->desc, ld->transtype, ld->value);
+		 	ld->desc, ld->transtype, ld->amount);
 		}
 
 		free(charbuff);
@@ -150,55 +223,49 @@ void rcsv() {
 }
 
 void getSelection() {
+	int choice;
 	printf("Make a selection:\n");
 	printf("m - Select Month\n");
 	printf("c - Add budget category\n");
 	printf("e - Add transaction\n");
 	printf("v - Read CSV\n");
 	printf("q - Quit\n");
-	int ascii;
-	int choice;
-	char buff[8];
-	char *ptr;
 
-	while (fgets(buff, sizeof(buff) - 1, stdin) == NULL) {
-		printf("Invalid input\n");
-	}
+	char *userstr = userinput(8); // Must be free'd
 
-	choice = upper(buff);
-
-	if (choice != 0) {
-		switch (choice) {
-			case 'C':
-				printf("Adding Category\n");
-				break;
-			case 'E':
-				printf("Add Expense\n");
-				addexpense();
-				break;
-			case 'V':
-				printf("-*-READ CSV-*-\n");
-				rcsv();
-				break;
-			case 'Q':
-				printf("Quiting\n");
-				break;
-			default:
-				printf("\"%c\" is not a valid option\n", choice);
-				printf("\n");
-				getSelection();
-		}
-	} else {
-		printf("Invalid Character\n");
+	if ((choice = upper(userstr)) == 0) {
+		puts("invalid input");
+		free(userstr);
 		getSelection();
 	}
-}
+	
+	free(userstr);
 
+	switch (choice) {
+		case 'C':
+			printf("Adding Category\n");
+			break;
+		case 'E':
+			printf("Add Expense\n");
+			addexpense();
+			break;
+		case 'V':
+			printf("-*-READ CSV-*-\n");
+			rcsv();
+			break;
+		case 'Q':
+			printf("Quiting\n");
+			break;
+		default:
+			printf("\"%c\" is not a valid option\n", choice);
+			printf("\n");
+			getSelection();
+	}
+}
 
 void addCategory() {
 
 }
-
 
 int main() {
 	FILE* fptr = fopen("data.csv", "a"); // Check that CSV exists
