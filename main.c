@@ -19,17 +19,12 @@ char *userinput(size_t buffersize) {
 }
 
 int getMonth() {
-	size_t b_sz = 8;
-	char buff[b_sz];
 	printf("Enter Month:\n");
-
-	// atoi(b1) check if b1 is an interger
-	while (fgets(buff, b_sz - 1, stdin) == NULL || atoi(buff) == 0) {
-		printf("Invalid Input\n");
-		exit(0);
-	}
+	char buff[8];
+	char *userstr = userinput(STDIN_BUFF); // Must be free'd
 
 	unsigned char month = atoi(buff);
+	free(userstr);
 	return month;
 }
 
@@ -97,7 +92,7 @@ void rcsv() {
 
 	/* Read the rest of lines in the CSV after the header */
 
-	while (1 == 1) { // NEVER
+	while (true) { // NEVER
 		char *charbuff = (char *)malloc(buffsize * sizeof(char));
 		if (charbuff == NULL) {
 			exit(0);
