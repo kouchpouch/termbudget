@@ -4,6 +4,20 @@
 #include <stdbool.h>
 #include "helper.h"
 
+#define STDIN_BUFF 64
+
+char *userinput(size_t buffersize) {
+	char *buffer = (char *)malloc(buffersize);
+	if (buffer == NULL) {
+		puts("Failed to allocate memory");
+	}
+	while (fgets(buffer, buffersize - 1, stdin) == NULL) {
+		printf("Invalid Input\n");
+		exit(0);
+	}
+	return buffer; // Must be free'd
+}
+
 int getMonth() {
 	size_t b_sz = 8;
 	char buff[b_sz];
@@ -19,7 +33,23 @@ int getMonth() {
 	return month;
 }
 
-int viewBudget() {
+
+void addexpense() {
+	FILE* fptr = fopen("data.csv", "r+"); // Open to read and write
+	if (fptr == NULL) {
+		printf("Unable to open file\n");
+		exit(0);
+	}
+
+	char *userstr = userinput(STDIN_BUFF); // Must be free'd
+
+	printf("%s\n", userstr);
+	free(userstr);
+	fclose(fptr);
+}
+
+
+void rcsv() {
 	FILE* fptr = fopen("data.csv", "r");
 	if (fptr == NULL) {
 		printf("Unable to open file\n");
@@ -38,7 +68,6 @@ int viewBudget() {
 	} linedata_, *ld = &linedata_; 
 
 	int userYear = 2025;
-
 	int userMonth = getMonth();
 
 	size_t buffsize = 128;
@@ -68,7 +97,7 @@ int viewBudget() {
 
 	/* Read the rest of lines in the CSV after the header */
 
-	while (1 == 1) {
+	while (1 == 1) { // NEVER
 		char *charbuff = (char *)malloc(buffsize * sizeof(char));
 		if (charbuff == NULL) {
 			exit(0);
@@ -122,7 +151,7 @@ int viewBudget() {
 		charbuff = NULL;
 	}
 	fclose(fptr);
-	return 0;
+	fptr = NULL;
 }
 
 void getSelection() {
@@ -130,7 +159,7 @@ void getSelection() {
 	printf("m - Select Month\n");
 	printf("c - Add budget category\n");
 	printf("e - Add transaction\n");
-	printf("v - View Budget Overview\n");
+	printf("v - Read CSV\n");
 	printf("q - Quit\n");
 	int ascii;
 	int choice;
@@ -150,10 +179,11 @@ void getSelection() {
 				break;
 			case 'E':
 				printf("Add Expense\n");
+				addexpense();
 				break;
 			case 'V':
-				printf("-*-Budget overview-*-\n");
-				viewBudget();
+				printf("-*-READ CSV-*-\n");
+				rcsv();
 				break;
 			case 'Q':
 				printf("Quiting\n");
@@ -169,12 +199,14 @@ void getSelection() {
 	}
 }
 
+
 void addCategory() {
 
 }
 
+
 int main() {
-	FILE* fptr = fopen("data.csv", "a");
+	FILE* fptr = fopen("data.csv", "a"); // Check that CSV exists
 	if (fptr == NULL) {
 		printf("File not found\n");
 		fclose(fptr);
