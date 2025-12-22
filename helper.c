@@ -46,7 +46,7 @@ int lower(char* ltr) {
 	if (*ltr >= MIN_LOWER_ASCII && 
 		*ltr <= MAX_LOWER_ASCII)
 	{
-		return *ltr; // Already upppercase
+		return *ltr; // Already lowercase
 	} 
 	else if (*ltr >= MIN_UPPER_ASCII && 
 			 *ltr <= MAX_UPPER_ASCII &&
