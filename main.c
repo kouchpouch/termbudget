@@ -4,7 +4,8 @@
 #include <stdbool.h>
 #include "helper.h"
 
-#define STDIN_BUFF 64
+#define STDIN_LARGE_BUFF 64
+#define STDIN_SMALL_BUFF 8
 
 struct Linedata {
 	unsigned int month;
@@ -20,19 +21,34 @@ char *userinput(size_t buffersize) {
 	char *buffer = (char *)malloc(buffersize);
 	if (buffer == NULL) {
 		puts("Failed to allocate memory");
+		return buffer;
 	}
-	while (fgets(buffer, buffersize - 1, stdin) == NULL) {
+
+	while (fgets(buffer, buffersize, stdin) == NULL) {
 		printf("Invalid Input\n");
 		free(buffer);
 		buffer = NULL;
-		userinput(buffersize);
+		return buffer;
+	}
+
+	int length = strnlen(buffer, buffersize);
+
+	if (buffer[length - 1] != '\n') {
+		printf("Input is too long, try again\n");
+		int c;
+		while (c != '\n') {
+			c = getchar();
+		}
+		free(buffer);
+		buffer = NULL;
+		return buffer;
 	}
 	return buffer; // Must be free'd
 }
 
 int getMonth() {
 	printf("Enter Month:\n");
-	char *userstr = userinput(STDIN_BUFF); // Must be free'd
+	char *userstr = userinput(STDIN_LARGE_BUFF); // Must be free'd
 	unsigned char month = atoi(userstr);
 	free(userstr);
 	return month;
@@ -54,52 +70,55 @@ void addexpense() {
 	puts("Add Expense:");
 
 	puts("Year:");
-	char *yearstr = userinput(STDIN_BUFF);
+	char *yearstr = userinput(STDIN_SMALL_BUFF);
+	while (yearstr == NULL) {
+		yearstr = userinput(STDIN_SMALL_BUFF);
+	}
 	int year = atoi(yearstr);
 
 	puts("Month:");
-	char *monthstr = userinput(STDIN_BUFF);
+	char *monthstr = userinput(STDIN_SMALL_BUFF);
 	int month = atoi(monthstr); 
 	while (month <= 0 || month > 12) {
 		printf("MONTH NOT VALID, YOU ENTERED: %d\n", month);
-		char *monthstr = userinput(STDIN_BUFF);
+		char *monthstr = userinput(STDIN_SMALL_BUFF);
 	    month = atoi(monthstr); 
 		free(monthstr);
 		monthstr = NULL;
 	}
 
 	puts("Day:");
-	char *daystr = userinput(STDIN_BUFF);
+	char *daystr = userinput(STDIN_SMALL_BUFF);
 	int day = atoi(daystr);
 	while (dayexists(day, month, year) == false) {
 		printf("DAY NOT VALID, YOU ENTERED: %d\n", day);
-		char *daystr = userinput(STDIN_BUFF);
+		char *daystr = userinput(STDIN_SMALL_BUFF);
 		day = atoi(daystr);
 		free(daystr);
 		daystr = NULL;
 	}
 
 	puts("Category:");
-	char *categorystr = userinput(STDIN_BUFF);	
+	char *categorystr = userinput(STDIN_LARGE_BUFF);	
 
 	puts("Description:");
-	char *descstr = userinput(STDIN_BUFF);	
+	char *descstr = userinput(STDIN_LARGE_BUFF);	
 
 	puts("Choose 1 or 2");
 	puts("1. Expense"); // 0 is an expense in the CSV
 	puts("2. Income"); // 1 is an income in the CSV
-	char *transstr = userinput(STDIN_BUFF);
+	char *transstr = userinput(STDIN_SMALL_BUFF);
 	int trans = atoi(transstr);
 	while (trans != 1 && trans != 2) {
 		printf("INVALID, ENTER 1 OR 2, YOU ENTERED: %d\n", trans);
-		char *transstr = userinput(STDIN_BUFF);
+		char *transstr = userinput(STDIN_SMALL_BUFF);
 		trans = atoi(transstr);
 		free(transstr);
 		transstr = NULL;
 	}
 
 	puts("$ Amount:");
-	char *amountstr = userinput(STDIN_BUFF);
+	char *amountstr = userinput(STDIN_LARGE_BUFF);
 	float amount = atof(amountstr);
 
 	uld->month = month;
