@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+#include <limits.h>
 #include "helper.h"
 
 #define STDIN_LARGE_BUFF 64
@@ -35,7 +36,7 @@ char *userinput(size_t buffersize) {
 
 	if (buffer[length - 1] != '\n') {
 		printf("Input is too long, try again\n");
-		int c;
+		int c = 0;
 		while (c != '\n') {
 			c = getchar();
 		}
@@ -67,42 +68,72 @@ void addexpense() {
 	struct Linedata userlinedata_, *uld = &userlinedata_;
 	char userline[512] = {'0'};
 
-	puts("Add Expense:");
+	puts("Add Expense");
 
 	puts("Year:");
 	char *yearstr = userinput(STDIN_SMALL_BUFF);
 	while (yearstr == NULL) {
+		free(yearstr);
 		yearstr = userinput(STDIN_SMALL_BUFF);
 	}
 	int year = atoi(yearstr);
 
+
 	puts("Month:");
 	char *monthstr = userinput(STDIN_SMALL_BUFF);
-	int month = atoi(monthstr); 
-	while (month <= 0 || month > 12) {
-		printf("MONTH NOT VALID, YOU ENTERED: %d\n", month);
-		char *monthstr = userinput(STDIN_SMALL_BUFF);
-	    month = atoi(monthstr); 
+	while (monthstr == NULL) {
 		free(monthstr);
-		monthstr = NULL;
+		monthstr = userinput(STDIN_SMALL_BUFF);
+	}
+
+	int month = atoi(monthstr);
+
+	while (month <= 0 || month > 12) {
+		puts("MONTH ENTRY NOT VALID");
+		free(monthstr);
+		monthstr = userinput(STDIN_SMALL_BUFF);
+		if (monthstr == NULL) {
+			free(monthstr);
+			monthstr = userinput(STDIN_SMALL_BUFF);
+		}
+	    month = atoi(monthstr); 
 	}
 
 	puts("Day:");
 	char *daystr = userinput(STDIN_SMALL_BUFF);
-	int day = atoi(daystr);
-	while (dayexists(day, month, year) == false) {
-		printf("DAY NOT VALID, YOU ENTERED: %d\n", day);
-		char *daystr = userinput(STDIN_SMALL_BUFF);
-		day = atoi(daystr);
+	while (daystr == NULL) {
 		free(daystr);
-		daystr = NULL;
+		daystr = userinput(STDIN_SMALL_BUFF);
+	}
+
+	int day = atoi(daystr);
+
+	while (dayexists(day, month, year) == false) {
+		puts("DAY ENTRY NOT VALID");
+		free(daystr);
+		daystr = userinput(STDIN_SMALL_BUFF);
+		if (daystr == NULL) {
+			free(daystr);
+			daystr = userinput(STDIN_SMALL_BUFF);
+		}
+	    day = atoi(daystr); 
 	}
 
 	puts("Category:");
 	char *categorystr = userinput(STDIN_LARGE_BUFF);	
+	while (categorystr == NULL) {
+		puts("CATEGORY ENTRY NOT VALID");
+		free(categorystr);
+		categorystr = userinput(STDIN_LARGE_BUFF);
+	}
 
 	puts("Description:");
 	char *descstr = userinput(STDIN_LARGE_BUFF);	
+	while (descstr == NULL) {
+		puts("CATEGORY ENTRY NOT VALID");
+		free(descstr);
+		descstr = userinput(STDIN_LARGE_BUFF);
+	}
 
 	puts("Choose 1 or 2");
 	puts("1. Expense"); // 0 is an expense in the CSV
@@ -111,16 +142,29 @@ void addexpense() {
 	int trans = atoi(transstr);
 	while (trans != 1 && trans != 2) {
 		printf("INVALID, ENTER 1 OR 2, YOU ENTERED: %d\n", trans);
-		char *transstr = userinput(STDIN_SMALL_BUFF);
-		trans = atoi(transstr);
 		free(transstr);
 		transstr = NULL;
+		transstr = userinput(STDIN_SMALL_BUFF);
+		trans = atoi(transstr);
 	}
 
 	puts("$ Amount:");
 	char *amountstr = userinput(STDIN_LARGE_BUFF);
 	float amount = atof(amountstr);
 
+	int len = strlen(categorystr);
+	char *strings[] = { monthstr, daystr, yearstr, categorystr, descstr, transstr, amountstr };
+
+	for (int i = 0; i < 7; i++) { // Remove all newlines if they exist
+		int len = strlen(strings[i]);
+		if (strings[i][len - 1] == '\n') {
+			strings[i][len - 1] = 0;
+		}
+	}
+
+	puts("Verify Data is Correct:");
+	printf("%s/%s/%s Category: %s Description: %s, %s, %s\n", monthstr, daystr,
+		yearstr, categorystr, descstr, transstr, amountstr);
 	uld->month = month;
 	uld->day = day;
 	uld->year = year;
@@ -130,19 +174,25 @@ void addexpense() {
 	uld->amount = amount;
 
 	puts("Verify Data is Correct:");
-	printf("%d/%d/%d Category: %5s Description: %5s, %d, $%5.2f\n", 
-		uld->month, uld->day, uld->year, uld->category, uld->desc, 
-		uld->transtype, uld->amount);
+	printf("%d/%d/%d Category: %s Description: %s, %d, $%.2f\n", uld->month, uld->day, uld->year, uld->category, uld->desc, uld->transtype, uld->amount);
 
 	fclose(fptr);
 
-	if (daystr) {free(daystr);}
-	if (monthstr) {free(monthstr);}
-	if (yearstr) {free(yearstr);}
+	free(daystr);
+	free(monthstr);
+	free(yearstr);
 	free(categorystr);
 	free(descstr);
-	if (transstr) {free(transstr);}
-	if (amountstr) {free(amountstr);}
+	free(transstr);
+	free(amountstr);
+
+//	if (daystr) {free(daystr);}
+//	if (monthstr) {free(monthstr);}
+//	if (yearstr) {free(yearstr);}
+//	if (categorystr) {free(categorystr);}
+//	if (descstr) {free(descstr);}
+//	if (transstr) {free(transstr);}
+//	if (amountstr) {free(amountstr);}
 }
 
 void rcsv() {
@@ -181,7 +231,6 @@ void rcsv() {
 
 	free(fields);
 	fields = NULL;
-
 	/* Read the rest of lines in the CSV after the header */
 
 	while (true) { // NEVER
