@@ -70,7 +70,6 @@ void addexpense() {
 	puts("Year:");
 	char *yearstr = userinput(STDIN_SMALL_BUFF);
 	while (yearstr == NULL) {
-		free(yearstr);
 		yearstr = userinput(STDIN_SMALL_BUFF);
 	}
 	int year = atoi(yearstr);
@@ -78,7 +77,6 @@ void addexpense() {
 	puts("Month:");
 	char *monthstr = userinput(STDIN_SMALL_BUFF);
 	while (monthstr == NULL) {
-		free(monthstr);
 		monthstr = userinput(STDIN_SMALL_BUFF);
 	}
 
@@ -89,7 +87,6 @@ void addexpense() {
 		free(monthstr);
 		monthstr = userinput(STDIN_SMALL_BUFF);
 		if (monthstr == NULL) {
-			free(monthstr);
 			monthstr = userinput(STDIN_SMALL_BUFF);
 		}
 	    month = atoi(monthstr); 
@@ -98,7 +95,6 @@ void addexpense() {
 	puts("Day:");
 	char *daystr = userinput(STDIN_SMALL_BUFF);
 	while (daystr == NULL) {
-		free(daystr);
 		daystr = userinput(STDIN_SMALL_BUFF);
 	}
 
@@ -109,7 +105,6 @@ void addexpense() {
 		free(daystr);
 		daystr = userinput(STDIN_SMALL_BUFF);
 		if (daystr == NULL) {
-			free(daystr);
 			daystr = userinput(STDIN_SMALL_BUFF);
 		}
 	    day = atoi(daystr); 
@@ -119,7 +114,6 @@ void addexpense() {
 	char *categorystr = userinput(STDIN_LARGE_BUFF);	
 	while (categorystr == NULL) {
 		puts("CATEGORY ENTRY NOT VALID");
-		free(categorystr);
 		categorystr = userinput(STDIN_LARGE_BUFF);
 	}
 
@@ -127,7 +121,6 @@ void addexpense() {
 	char *descstr = userinput(STDIN_LARGE_BUFF);	
 	while (descstr == NULL) {
 		puts("CATEGORY ENTRY NOT VALID");
-		free(descstr);
 		descstr = userinput(STDIN_LARGE_BUFF);
 	}
 
@@ -142,6 +135,7 @@ void addexpense() {
 		free(transstr);
 		transstr = NULL;
 		transstr = userinput(STDIN_SMALL_BUFF);
+		if (transstr == NULL) break;
 		trans = atoi(transstr);
 	}
 
