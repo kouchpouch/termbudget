@@ -55,7 +55,6 @@ int getMonth() {
 	return month;
 }
 
-
 void addexpense() {
 	FILE* fptr = fopen("data.csv", "r+"); // Open to read and write
 	if (fptr == NULL) {
@@ -68,8 +67,6 @@ void addexpense() {
 	struct Linedata userlinedata_, *uld = &userlinedata_;
 	char userline[512] = {'0'};
 
-	puts("Add Expense");
-
 	puts("Year:");
 	char *yearstr = userinput(STDIN_SMALL_BUFF);
 	while (yearstr == NULL) {
@@ -77,7 +74,6 @@ void addexpense() {
 		yearstr = userinput(STDIN_SMALL_BUFF);
 	}
 	int year = atoi(yearstr);
-
 
 	puts("Month:");
 	char *monthstr = userinput(STDIN_SMALL_BUFF);
@@ -139,6 +135,7 @@ void addexpense() {
 	puts("1. Expense"); // 0 is an expense in the CSV
 	puts("2. Income"); // 1 is an income in the CSV
 	char *transstr = userinput(STDIN_SMALL_BUFF);
+
 	int trans = atoi(transstr);
 	while (trans != 1 && trans != 2) {
 		printf("INVALID, ENTER 1 OR 2, YOU ENTERED: %d\n", trans);
@@ -173,9 +170,6 @@ void addexpense() {
 	uld->transtype = trans - 1;
 	uld->amount = amount;
 
-	puts("Verify Data is Correct:");
-	printf("%d/%d/%d Category: %s Description: %s, %d, $%.2f\n", uld->month, uld->day, uld->year, uld->category, uld->desc, uld->transtype, uld->amount);
-
 	fclose(fptr);
 
 	free(daystr);
@@ -186,13 +180,7 @@ void addexpense() {
 	free(transstr);
 	free(amountstr);
 
-//	if (daystr) {free(daystr);}
-//	if (monthstr) {free(monthstr);}
-//	if (yearstr) {free(yearstr);}
-//	if (categorystr) {free(categorystr);}
-//	if (descstr) {free(descstr);}
-//	if (transstr) {free(transstr);}
-//	if (amountstr) {free(amountstr);}
+	return;
 }
 
 void rcsv() {
@@ -300,9 +288,13 @@ void getSelection() {
 	printf("q - Quit\n");
 
 	char *userstr = userinput(8); // Must be free'd
+	
+	while (userstr == NULL) {
+		getSelection();
+	}
 
 	if ((choice = upper(userstr)) == 0) {
-		puts("invalid input");
+		puts("Invalid character");
 		free(userstr);
 		getSelection();
 	}
@@ -325,14 +317,16 @@ void getSelection() {
 			printf("Quiting\n");
 			break;
 		default:
-			printf("\"%c\" is not a valid option\n", choice);
+			puts("Invalid character");
 			printf("\n");
 			getSelection();
 	}
+	return;
 }
 
 void addCategory() {
 
+	return;
 }
 
 int main() {
