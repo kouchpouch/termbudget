@@ -156,6 +156,15 @@ void addexpense() {
 	puts("Verify Data is Correct:");
 	printf("%s/%s/%s Category: %s Description: %s, %s, %s\n", monthstr, daystr,
 		yearstr, categorystr, descstr, transstr, amountstr);
+
+	char *confirmstr;
+	do {
+		puts("Y/N");
+		confirmstr = userinput(STDIN_SMALL_BUFF);
+	} while (confirmstr == NULL);
+
+	char cnfm = *confirmstr;
+
 	uld->month = month;
 	uld->day = day;
 	uld->year = year;
@@ -173,6 +182,7 @@ void addexpense() {
 	free(descstr);
 	free(transstr);
 	free(amountstr);
+	free(confirmstr);
 
 	return;
 }
@@ -281,7 +291,7 @@ void getSelection() {
 	printf("v - Read CSV\n");
 	printf("q - Quit\n");
 
-	char *userstr = userinput(8); // Must be free'd
+	char *userstr = userinput(STDIN_SMALL_BUFF); // Must be free'd
 	
 	while (userstr == NULL) {
 		getSelection();
