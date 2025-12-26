@@ -133,9 +133,9 @@ void addexpense() {
 	while (trans != 1 && trans != 2) {
 		printf("INVALID, ENTER 1 OR 2, YOU ENTERED: %d\n", trans);
 		free(transstr);
-		transstr = NULL;
 		transstr = userinput(STDIN_SMALL_BUFF);
-		if (transstr == NULL) break;
+		if (transstr == NULL) break; // This whole thing needs to be in its own
+		// function
 		trans = atoi(transstr);
 	}
 
@@ -157,13 +157,13 @@ void addexpense() {
 	printf("%s/%s/%s Category: %s Description: %s, %s, %s\n", monthstr, daystr,
 		yearstr, categorystr, descstr, transstr, amountstr);
 
-	char *confirmstr;
-	do {
-		puts("Y/N");
-		confirmstr = userinput(STDIN_SMALL_BUFF);
-	} while (confirmstr == NULL);
+	char confirmstr;
+	puts("Y/N");
+	while (confirmstr != EOF && confirmstr != '\n') {
+		confirmstr = getchar();
+	}
 
-	char cnfm = *confirmstr;
+	printf("Your input = %c\n", confirmstr);
 
 	uld->month = month;
 	uld->day = day;
@@ -182,7 +182,7 @@ void addexpense() {
 	free(descstr);
 	free(transstr);
 	free(amountstr);
-	free(confirmstr);
+	//free(confirmstr);
 
 	return;
 }
