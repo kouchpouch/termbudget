@@ -207,8 +207,17 @@ void addexpense() {
 		goto CLEANUP;
 	}
 
-	int errcheck = fprintf(fptr, "%d,%d,%d,%s,%s,%d,%.2f\n", uld->month, uld->day, uld->year, 
-		 uld->category, uld->desc, uld->transtype, uld->amount);
+	int errcheck = fprintf(
+		fptr, 
+		"%d,%d,%d,%s,%s,%d,%.2f\n", 
+		uld->month, 
+		uld->day, 
+		uld->year, 
+		uld->category,
+		uld->desc, 
+		uld->transtype, 
+		uld->amount
+	);
 
 	if (errcheck < 0) {
 		puts("Failed to write to file");
