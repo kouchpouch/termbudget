@@ -20,6 +20,7 @@ struct Linedata {
 	char *desc;
 	unsigned int transtype;
 	float amount;
+	int linenum;
 };
 
 char *userinput(size_t buffersize) {
@@ -51,8 +52,8 @@ char *userinput(size_t buffersize) {
 	return buffer; // Must be free'd
 }
 
-int inputndigits(int n, int min_len) {
-	size_t bytesize = ((sizeof(char) * n) + 1);
+int inputndigits(int max_len, int min_len) {
+	size_t bytesize = ((sizeof(char) * max_len) + 1);
 	char *str = userinput(bytesize);
 
 	while (str == NULL) {
@@ -173,7 +174,14 @@ void addexpense() {
 	}
 	float amount = atof(amountstr);
 
-	int len = strlen(categorystr);
+	char *strings[] = { categorystr, descstr, transstr, amountstr };
+	for (int i = 0; i < 4; i++) { // Remove all newlines if they exist
+		int len = strlen(strings[i]);
+		printf("%s\n", strings[i]);
+		if (strings[i][len - 1] == '\n') {
+			strings[i][len - 1] = 0;
+		}
+	}
 
 	puts("Verify Data is Correct:");
 	puts("Y/N");
@@ -213,7 +221,7 @@ void addexpense() {
 		uld->month, 
 		uld->day, 
 		uld->year, 
-		uld->category,
+		uld->category, 
 		uld->desc, 
 		uld->transtype, 
 		uld->amount
@@ -251,6 +259,7 @@ void rcsv() {
 
 	int userYear;
 	int userMonth;
+	int linenum = 1; // The first line will be line #1, not zero.
 
 	puts("Enter Year");
 	while((userYear = inputndigits(MAX_LEN_YEAR, MAX_LEN_YEAR)) == -1);
@@ -332,10 +341,22 @@ void rcsv() {
 			}
 		}
 
+		linenum++;
+
+		ld->linenum = linenum;
+
 		if (ld->month == userMonth && ld->year == userYear) {
-		printf("%d/%d/%d Category: %10s Description: %10s, \t%5d, \t$%5.2f\n",
-		 	ld->month, ld->day, ld->year, ld->category, 
-		 	ld->desc, ld->transtype, ld->amount);
+		printf(
+			"%d.) %d/%d/%d Category: %s Description: %s, %d, $%.2f\n",
+		 	ld->linenum, 
+		 	ld->month, 
+		 	ld->day, 
+		 	ld->year, 
+		 	ld->category, 
+		 	ld->desc, 
+		 	ld->transtype, 
+		 	ld->amount
+		 );
 		}
 
 		free(charbuff);
