@@ -13,7 +13,7 @@
 // --------------------------------------------------------------------- //
 
 int upper(char* ltr) {
-	if (*ltr > SCHAR_MAX - 32) { // c CANNOT BE LARGER THAN 95
+	if (*ltr > SCHAR_MAX - 32) { // Check integer overflow
 		;
 	} else {
 		return 0;
