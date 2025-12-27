@@ -3,10 +3,14 @@
 #include <string.h>
 #include <stdbool.h>
 #include <limits.h>
+#include <ctype.h>
 #include "helper.h"
 
 #define STDIN_LARGE_BUFF 64
 #define STDIN_SMALL_BUFF 8
+#define MAX_LEN_DAYMON 3 // With \0
+#define MAX_LEN_YEAR 5 // With \0
+#define MIN_LEN_DAYMON MAX_LEN_DAYMON - 1
 
 struct Linedata {
 	unsigned int month;
@@ -47,12 +51,34 @@ char *userinput(size_t buffersize) {
 	return buffer; // Must be free'd
 }
 
-int getMonth() {
-	printf("Enter Month:\n");
-	char *userstr = userinput(STDIN_SMALL_BUFF); // Must be free'd
-	unsigned char month = atoi(userstr);
-	free(userstr);
-	return month;
+int inputndigits(int n, int min_len) {
+	size_t bytesize = ((sizeof(char) * n) + 1);
+	char *str = userinput(bytesize);
+
+	while (str == NULL) {
+		str = userinput(bytesize);
+	}
+
+	if (strlen(str) < min_len) {
+		puts("Input is too short");
+		goto FAIL;
+	}
+
+	for (int i = 0; i < strlen(str); i++) {
+		if (!isdigit(*(str + i)) && *(str + i) != '\n') {
+			printf("Invalid character \"%c\", must be digit\n", *(str + i));
+			goto FAIL;
+		}
+	}
+	int digits = atoi(str);
+	free(str);
+	str = NULL;
+	return digits;
+
+FAIL:
+	free(str);
+	str = NULL;
+	return -1;
 }
 
 int confirmInput() {
@@ -79,6 +105,9 @@ int confirmInput() {
 }
 
 void addexpense() {
+	unsigned int year;
+	unsigned int month;
+	unsigned int day;
 	FILE* fptr = fopen("data.csv", "r+"); // Open to read and write
 	if (fptr == NULL) {
 		printf("Unable to open file\n");
@@ -88,52 +117,24 @@ void addexpense() {
 	fseek(fptr, 0L, SEEK_END);
 
 	struct Linedata userlinedata_, *uld = &userlinedata_;
-	char userline[512] = {'0'};
 
-	puts("Year:");
-	char *yearstr = userinput(STDIN_SMALL_BUFF);
-	while (yearstr == NULL) {
-		yearstr = userinput(STDIN_SMALL_BUFF);
-	}
-	int year = atoi(yearstr);
-	// -------------------------------------------------------- //
-	// ADD ISDIGIT CHECK ANYTHING PASSING THROUGH ATOI FUNCTION //
-	// -------------------------------------------------------- //
+	puts("Enter Year");
+	while((year = inputndigits(MAX_LEN_YEAR, MAX_LEN_YEAR)) == -1);
 
-	puts("Month:");
-	char *monthstr = userinput(STDIN_SMALL_BUFF);
-	while (monthstr == NULL) {
-		monthstr = userinput(STDIN_SMALL_BUFF);
+	puts("Enter Month");
+	while((month = inputndigits(MAX_LEN_DAYMON, MIN_LEN_DAYMON)) == -1
+		|| month <= 0
+		|| month > 12) {
+		puts("Invalid");
 	}
 
-	int month = atoi(monthstr);
-
-	while (month <= 0 || month > 12) {
-		puts("MONTH ENTRY NOT VALID");
-		free(monthstr);
-		monthstr = userinput(STDIN_SMALL_BUFF);
-		if (monthstr == NULL) {
-			monthstr = userinput(STDIN_SMALL_BUFF);
+	puts("Enter Day");
+	while((day = inputndigits(MAX_LEN_DAYMON, MIN_LEN_DAYMON)) == -1 ||
+			dayexists(day, month, year) == false) {
+		if (dayexists(day, month, year) == false) { // Calling this twice
+			// is GROSS but I'm kinda stupid
+			puts("Invalid Day");
 		}
-	    month = atoi(monthstr); 
-	}
-
-	puts("Day:");
-	char *daystr = userinput(STDIN_SMALL_BUFF);
-	while (daystr == NULL) {
-		daystr = userinput(STDIN_SMALL_BUFF);
-	}
-
-	int day = atoi(daystr);
-
-	while (dayexists(day, month, year) == false) {
-		puts("DAY ENTRY NOT VALID");
-		free(daystr);
-		daystr = userinput(STDIN_SMALL_BUFF);
-		if (daystr == NULL) {
-			daystr = userinput(STDIN_SMALL_BUFF);
-		}
-	    day = atoi(daystr); 
 	}
 
 	puts("Category:");
@@ -174,20 +175,29 @@ void addexpense() {
 	float amount = atof(amountstr);
 
 	int len = strlen(categorystr);
-	char *strings[] = { monthstr, daystr, yearstr, categorystr, descstr, transstr, amountstr };
-
-	for (int i = 0; i < 7; i++) { // Remove all newlines if they exist
-		int len = strlen(strings[i]);
-		if (strings[i][len - 1] == '\n') {
-			strings[i][len - 1] = 0;
-		}
-	}
+										// yearstr
+//	char *strings[] = { monthstr, daystr, categorystr, descstr, transstr, amountstr };
+//
+//	for (int i = 0; i < 7; i++) { // Remove all newlines if they exist
+//		int len = strlen(strings[i]);
+//		if (strings[i][len - 1] == '\n') {
+//			strings[i][len - 1] = 0;
+//		}
+//	}
 
 	puts("Verify Data is Correct:");
-	printf("%s/%s/%s Category: %s Description: %s, %s, %s\n", monthstr, daystr,
-		yearstr, categorystr, descstr, transstr, amountstr);
-
 	puts("Y/N");
+	printf(
+		"%d,%d,%d,%s,%s,%d,%.2f\n", 
+		month,
+		day,
+		year,
+		categorystr,
+		descstr,
+		(trans - 1),
+		amount
+	);
+
 	int result = confirmInput();
 	if (result == 1) {
 		puts("TRUE");
@@ -223,22 +233,14 @@ void addexpense() {
 		puts("Failed to write to file");
 	}
 
-//	uld->month = month;
-//	uld->day = day;
-//	uld->year = year;
-//	uld->category = categorystr;
-//	uld->desc = descstr;
-//	uld->transtype = trans - 1;
-//	uld->amount = amount;
-
 CLEANUP:
 	// DEBUG ONLY
 	puts("CLEANUP");
 	fclose(fptr);
 
-	free(daystr);
-	free(monthstr);
-	free(yearstr);
+//	free(daystr);
+//	free(monthstr);
+//	free(yearstr);
 	free(categorystr);
 	free(descstr);
 	free(transstr);
@@ -256,8 +258,18 @@ void rcsv() {
 
 	struct Linedata linedata_, *ld = &linedata_;
 
-	int userYear = 2025;
-	int userMonth = getMonth();
+	int userYear;
+	int userMonth;
+
+	puts("Enter Year");
+	while((userYear = inputndigits(MAX_LEN_YEAR, MAX_LEN_YEAR)) == -1);
+
+	puts("Enter Month");
+	while((userMonth = inputndigits(MAX_LEN_DAYMON, MIN_LEN_DAYMON)) == -1
+		|| userMonth <= 0
+		|| userMonth > 12) {
+		puts("Invalid");
+	}
 
 	size_t buffsize = 128;
 	char *fields = (char *)malloc(buffsize * sizeof(char));
@@ -360,10 +372,12 @@ void getSelection() {
 	if ((choice = upper(userstr)) == 0) {
 		puts("Invalid character");
 		free(userstr);
+		userstr = NULL;
 		getSelection();
 	}
 	
 	free(userstr);
+	userstr = NULL;
 
 	switch (choice) {
 		case 'C':
@@ -379,7 +393,7 @@ void getSelection() {
 			break;
 		case 'Q':
 			printf("Quiting\n");
-			break;
+			exit(0);
 		default:
 			puts("Invalid character");
 			printf("\n");
@@ -400,6 +414,10 @@ int main() {
 		fclose(fptr);
 		return -1;
 	}
+
 	fclose(fptr);
-	getSelection();
+
+	while (1) {
+		getSelection();
+	}
 }
