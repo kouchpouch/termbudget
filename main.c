@@ -105,7 +105,25 @@ int confirmInput() {
 	return -1;
 }
 
-void addexpense() {
+int inputmonth() {
+	int month;
+	puts("Enter Month");
+	while((month = inputndigits(MAX_LEN_DAYMON, MIN_LEN_DAYMON)) == -1
+		|| month <= 0
+		|| month > 12) {
+		puts("Invalid");
+	}
+	return month;
+}
+
+int inputyear() {
+	int year;
+	puts("Enter Year");
+	while((year = inputndigits(MAX_LEN_YEAR, MAX_LEN_YEAR)) == -1);
+	return year;
+}
+
+void addtransaction() {
 	struct Linedata userlinedata_, *uld = &userlinedata_;
 	unsigned int year;
 	unsigned int month;
@@ -119,15 +137,9 @@ void addexpense() {
 
 	fseek(fptr, 0L, SEEK_END);
 
-	puts("Enter Year");
-	while((year = inputndigits(MAX_LEN_YEAR, MAX_LEN_YEAR)) == -1);
+	year = inputyear();
+	month = inputmonth();
 
-	puts("Enter Month");
-	while((month = inputndigits(MAX_LEN_DAYMON, MIN_LEN_DAYMON)) == -1
-		|| month <= 0
-		|| month > 12) {
-		puts("Invalid");
-	}
 
 	puts("Enter Day");
 	while((day = inputndigits(MAX_LEN_DAYMON, MIN_LEN_DAYMON)) == -1 ||
@@ -154,23 +166,12 @@ void addexpense() {
 	puts("Enter 1 or 2");
 	puts("1. Expense"); // 0 is an expense in the CSV
 	puts("2. Income"); // 1 is an income in the CSV
-//	char *transstr = userinput(STDIN_SMALL_BUFF); // Subtract 1 from the user
 
 	while((transaction = inputndigits(2, 2)) == -1
 		&& transaction != 1
 		&& transaction != 2) {
 		puts("Invalid");
 	}
-
-//	int trans = atoi(transstr);
-//	while (trans != 1 && trans != 2) {
-//		printf("INVALID, ENTER 1 OR 2, YOU ENTERED: %d\n", trans);
-//		free(transstr);
-//		transstr = userinput(STDIN_SMALL_BUFF);
-//		if (transstr == NULL) break; // This whole thing needs to be in its own
-//		// function
-//		trans = atoi(transstr);
-//	}
 
 	puts("$ Amount:");
 	char *amountstr = userinput(STDIN_LARGE_BUFF);
@@ -242,18 +243,42 @@ CLEANUP:
 
 	fclose(fptr);
 
-//	free(daystr);
-//	free(monthstr);
-//	free(yearstr);
 	free(categorystr);
 	free(descstr);
-//	free(transstr);
 	free(amountstr);
 
 	return;
 }
 
-void rcsv() {
+void edittransaction() {
+
+	// ----------------------------------------------------------- //
+	//  Users should be able to delete and edit transactions in a  //
+	//  specific month and year									   //
+	// ----------------------------------------------------------- //
+
+	FILE* fptr = fopen("data.csv", "r+");
+	if (fptr == NULL) {
+		printf("Unable to open file\n");
+		exit(0);
+	}
+
+	int edityear;
+	int editmonth;
+
+	editmonth = inputmonth();
+	edityear = inputyear();
+
+}
+
+void readcsv() {
+	int useryear;
+	int usermonth;
+	float total = 0;
+	float income = 0;
+	float expenses = 0;
+	int linenum = 1; // The first line will be line #1, not zero.
+
 	FILE* fptr = fopen("data.csv", "r");
 	if (fptr == NULL) {
 		printf("Unable to open file\n");
@@ -262,19 +287,8 @@ void rcsv() {
 
 	struct Linedata linedata_, *ld = &linedata_;
 
-	int userYear;
-	int userMonth;
-	int linenum = 1; // The first line will be line #1, not zero.
-
-	puts("Enter Year");
-	while((userYear = inputndigits(MAX_LEN_YEAR, MAX_LEN_YEAR)) == -1);
-
-	puts("Enter Month");
-	while((userMonth = inputndigits(MAX_LEN_DAYMON, MIN_LEN_DAYMON)) == -1
-		|| userMonth <= 0
-		|| userMonth > 12) {
-		puts("Invalid");
-	}
+	useryear = inputyear();
+	usermonth = inputmonth();
 
 	size_t buffsize = 128;
 	char *fields = (char *)malloc(buffsize * sizeof(char));
@@ -347,26 +361,32 @@ void rcsv() {
 		}
 
 		linenum++;
-
 		ld->linenum = linenum;
-
-		if (ld->month == userMonth && ld->year == userYear) {
-		printf(
-			"%d.) %d/%d/%d Category: %s Description: %s, %d, $%.2f\n",
-		 	ld->linenum, 
-		 	ld->month, 
-		 	ld->day, 
-		 	ld->year, 
-		 	ld->category, 
-		 	ld->desc, 
-		 	ld->transtype, 
-		 	ld->amount
-		 );
+		if (ld->month == usermonth && ld->year == useryear) {
+			printf(
+				"%d.) %d/%d/%d Category: %s Description: %s, %d, $%.2f\n",
+				ld->linenum, 
+				ld->month, 
+				ld->day, 
+				ld->year, 
+				ld->category, 
+				ld->desc, 
+				ld->transtype, 
+				ld->amount
+			 );
+			if(ld->transtype == 1) {
+				income+=ld->amount;
+			} else if (ld->transtype == 0) {
+				expenses+=ld->amount;
+			}
 		}
 
 		free(charbuff);
 		charbuff = NULL;
 	}
+	printf("Income: %.2f\n", income);
+	printf("Expense: %.2f\n", expenses);
+	printf("Total: %.2f\n", income - expenses);
 	fclose(fptr);
 	fptr = NULL;
 }
@@ -375,9 +395,10 @@ void getSelection() {
 	int choice;
 	printf("Make a selection:\n");
 	printf("m - Select Month\n");
-	printf("c - Add budget category\n");
-	printf("e - Add transaction\n");
-	printf("v - Read CSV\n");
+	printf("c - Add Budget Category\n");
+	printf("a - Add Transaction\n");
+	printf("e - Edit Transaction\n"); 
+	printf("r - Read CSV\n");
 	printf("q - Quit\n");
 
 	char *userstr = userinput(STDIN_SMALL_BUFF); // Must be free'd
@@ -398,15 +419,18 @@ void getSelection() {
 
 	switch (choice) {
 		case 'C':
-			printf("Adding Category\n");
+			break;
+		case 'A':
+			printf("-*-ADD TRANSACTION-*-\n");
+			addtransaction();
 			break;
 		case 'E':
-			printf("Add Expense\n");
-			addexpense();
+			printf("-*-EDIT TRANSACTION-*-\n");
+			edittransaction();
 			break;
-		case 'V':
+		case 'R':
 			printf("-*-READ CSV-*-\n");
-			rcsv();
+			readcsv();
 			break;
 		case 'Q':
 			printf("Quiting\n");
