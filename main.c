@@ -108,7 +108,7 @@ void addexpense() {
 	unsigned int year;
 	unsigned int month;
 	unsigned int day;
-	FILE* fptr = fopen("data.csv", "r+"); // Open to read and write
+	FILE* fptr = fopen("data.csv", "r+"); // Might have to mess with this mode
 	if (fptr == NULL) {
 		printf("Unable to open file\n");
 		exit(0);
@@ -131,8 +131,7 @@ void addexpense() {
 	puts("Enter Day");
 	while((day = inputndigits(MAX_LEN_DAYMON, MIN_LEN_DAYMON)) == -1 ||
 			dayexists(day, month, year) == false) {
-		if (dayexists(day, month, year) == false) { // Calling this twice
-			// is GROSS but I'm kinda stupid
+		if (dayexists(day, month, year) == false) { // Calling this twice is GROSS but I'm kinda stupid
 			puts("Invalid Day");
 		}
 	}
@@ -175,15 +174,6 @@ void addexpense() {
 	float amount = atof(amountstr);
 
 	int len = strlen(categorystr);
-										// yearstr
-//	char *strings[] = { monthstr, daystr, categorystr, descstr, transstr, amountstr };
-//
-//	for (int i = 0; i < 7; i++) { // Remove all newlines if they exist
-//		int len = strlen(strings[i]);
-//		if (strings[i][len - 1] == '\n') {
-//			strings[i][len - 1] = 0;
-//		}
-//	}
 
 	puts("Verify Data is Correct:");
 	puts("Y/N");
@@ -236,6 +226,7 @@ void addexpense() {
 CLEANUP:
 	// DEBUG ONLY
 	puts("CLEANUP");
+
 	fclose(fptr);
 
 //	free(daystr);
@@ -407,7 +398,7 @@ void addCategory() {
 	return;
 }
 
-int main() {
+int main(char argc, char **argv) {
 	FILE* fptr = fopen("data.csv", "a"); // Check that CSV exists
 	if (fptr == NULL) {
 		printf("File not found\n");
