@@ -424,7 +424,7 @@ void addCategory() {
 	return;
 }
 
-int main(char argc, char **argv) {
+int main(int argc, char **argv) {
 	FILE* fptr = fopen("data.csv", "a"); // Check that CSV exists
 	if (fptr == NULL) {
 		printf("File not found\n");
