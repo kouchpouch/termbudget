@@ -49,10 +49,33 @@ char *userinput(size_t buffersize) {
 
 int getMonth() {
 	printf("Enter Month:\n");
-	char *userstr = userinput(STDIN_LARGE_BUFF); // Must be free'd
+	char *userstr = userinput(STDIN_SMALL_BUFF); // Must be free'd
 	unsigned char month = atoi(userstr);
 	free(userstr);
 	return month;
+}
+
+int confirmInput() {
+	char *confirm = userinput(STDIN_SMALL_BUFF);
+	if (confirm == NULL) {
+		return -1;
+	}
+
+	char c_confirm = (char)upper(confirm);
+
+	free(confirm);
+	confirm = NULL;
+
+	if (c_confirm == 0) {
+		return -1;
+	}
+
+	if (c_confirm == 'Y') {
+		return 1;
+	} else if (c_confirm == 'N') {
+		return 0;
+	}
+	return -1;
 }
 
 void addexpense() {
@@ -73,6 +96,9 @@ void addexpense() {
 		yearstr = userinput(STDIN_SMALL_BUFF);
 	}
 	int year = atoi(yearstr);
+	// -------------------------------------------------------- //
+	// ADD ISDIGIT CHECK ANYTHING PASSING THROUGH ATOI FUNCTION //
+	// -------------------------------------------------------- //
 
 	puts("Month:");
 	char *monthstr = userinput(STDIN_SMALL_BUFF);
@@ -127,7 +153,8 @@ void addexpense() {
 	puts("Choose 1 or 2");
 	puts("1. Expense"); // 0 is an expense in the CSV
 	puts("2. Income"); // 1 is an income in the CSV
-	char *transstr = userinput(STDIN_SMALL_BUFF);
+	char *transstr = userinput(STDIN_SMALL_BUFF); // Subtract 1 from the user
+	// input
 
 	int trans = atoi(transstr);
 	while (trans != 1 && trans != 2) {
@@ -141,6 +168,9 @@ void addexpense() {
 
 	puts("$ Amount:");
 	char *amountstr = userinput(STDIN_LARGE_BUFF);
+	if (amountstr == NULL) {
+		amountstr = userinput(STDIN_LARGE_BUFF);
+	}
 	float amount = atof(amountstr);
 
 	int len = strlen(categorystr);
@@ -157,22 +187,44 @@ void addexpense() {
 	printf("%s/%s/%s Category: %s Description: %s, %s, %s\n", monthstr, daystr,
 		yearstr, categorystr, descstr, transstr, amountstr);
 
-	char confirmstr;
 	puts("Y/N");
-	while (confirmstr != EOF && confirmstr != '\n') {
-		confirmstr = getchar();
+	int result = confirmInput();
+	if (result == 1) {
+		puts("TRUE");
+		uld->month = month;
+		uld->day = day;
+		uld->year = year;
+		uld->category = categorystr;
+		uld->desc = descstr;
+		uld->transtype = trans - 1;
+		uld->amount = amount;
+	} else if (result == 0) {
+		puts("FALSE");
+		goto CLEANUP;
+		// Free heap and exit back to getSelection()
+	} else {
+		puts("Invalid answer");
+		goto CLEANUP;
 	}
 
-	printf("Your input = %c\n", confirmstr);
+	int errcheck = fprintf(fptr, "%d,%d,%d,%s,%s,%d,%.2f\n", uld->month, uld->day, uld->year, 
+		 uld->category, uld->desc, uld->transtype, uld->amount);
 
-	uld->month = month;
-	uld->day = day;
-	uld->year = year;
-	uld->category = categorystr;
-	uld->desc = descstr;
-	uld->transtype = trans - 1;
-	uld->amount = amount;
+	if (errcheck < 0) {
+		puts("Failed to write to file");
+	}
 
+//	uld->month = month;
+//	uld->day = day;
+//	uld->year = year;
+//	uld->category = categorystr;
+//	uld->desc = descstr;
+//	uld->transtype = trans - 1;
+//	uld->amount = amount;
+
+CLEANUP:
+	// DEBUG ONLY
+	puts("CLEANUP");
 	fclose(fptr);
 
 	free(daystr);
@@ -182,7 +234,6 @@ void addexpense() {
 	free(descstr);
 	free(transstr);
 	free(amountstr);
-	//free(confirmstr);
 
 	return;
 }
