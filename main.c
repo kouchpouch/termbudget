@@ -106,9 +106,11 @@ int confirmInput() {
 }
 
 void addexpense() {
+	struct Linedata userlinedata_, *uld = &userlinedata_;
 	unsigned int year;
 	unsigned int month;
 	unsigned int day;
+	unsigned int transaction;
 	FILE* fptr = fopen("data.csv", "r+"); // Might have to mess with this mode
 	if (fptr == NULL) {
 		printf("Unable to open file\n");
@@ -116,8 +118,6 @@ void addexpense() {
 	}
 
 	fseek(fptr, 0L, SEEK_END);
-
-	struct Linedata userlinedata_, *uld = &userlinedata_;
 
 	puts("Enter Year");
 	while((year = inputndigits(MAX_LEN_YEAR, MAX_LEN_YEAR)) == -1);
@@ -151,21 +151,26 @@ void addexpense() {
 		descstr = userinput(STDIN_LARGE_BUFF);
 	}
 
-	puts("Choose 1 or 2");
+	puts("Enter 1 or 2");
 	puts("1. Expense"); // 0 is an expense in the CSV
 	puts("2. Income"); // 1 is an income in the CSV
-	char *transstr = userinput(STDIN_SMALL_BUFF); // Subtract 1 from the user
-	// input
+//	char *transstr = userinput(STDIN_SMALL_BUFF); // Subtract 1 from the user
 
-	int trans = atoi(transstr);
-	while (trans != 1 && trans != 2) {
-		printf("INVALID, ENTER 1 OR 2, YOU ENTERED: %d\n", trans);
-		free(transstr);
-		transstr = userinput(STDIN_SMALL_BUFF);
-		if (transstr == NULL) break; // This whole thing needs to be in its own
-		// function
-		trans = atoi(transstr);
+	while((transaction = inputndigits(2, 2)) == -1
+		&& transaction != 1
+		&& transaction != 2) {
+		puts("Invalid");
 	}
+
+//	int trans = atoi(transstr);
+//	while (trans != 1 && trans != 2) {
+//		printf("INVALID, ENTER 1 OR 2, YOU ENTERED: %d\n", trans);
+//		free(transstr);
+//		transstr = userinput(STDIN_SMALL_BUFF);
+//		if (transstr == NULL) break; // This whole thing needs to be in its own
+//		// function
+//		trans = atoi(transstr);
+//	}
 
 	puts("$ Amount:");
 	char *amountstr = userinput(STDIN_LARGE_BUFF);
@@ -174,8 +179,8 @@ void addexpense() {
 	}
 	float amount = atof(amountstr);
 
-	char *strings[] = { categorystr, descstr, transstr, amountstr };
-	for (int i = 0; i < 4; i++) { // Remove all newlines if they exist
+	char *strings[] = { categorystr, descstr, amountstr };
+	for (int i = 0; i < 3; i++) { // Remove all newlines if they exist
 		int len = strlen(strings[i]);
 		printf("%s\n", strings[i]);
 		if (strings[i][len - 1] == '\n') {
@@ -192,7 +197,7 @@ void addexpense() {
 		year,
 		categorystr,
 		descstr,
-		(trans - 1),
+		(transaction - 1),
 		amount
 	);
 
@@ -204,7 +209,7 @@ void addexpense() {
 		uld->year = year;
 		uld->category = categorystr;
 		uld->desc = descstr;
-		uld->transtype = trans - 1;
+		uld->transtype = transaction - 1;
 		uld->amount = amount;
 	} else if (result == 0) {
 		puts("FALSE");
@@ -242,7 +247,7 @@ CLEANUP:
 //	free(yearstr);
 	free(categorystr);
 	free(descstr);
-	free(transstr);
+//	free(transstr);
 	free(amountstr);
 
 	return;
