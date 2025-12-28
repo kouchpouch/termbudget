@@ -6,6 +6,7 @@
 #include <ctype.h>
 #include "helper.h"
 
+#define LINE_BUFFER 512
 #define STDIN_LARGE_BUFF 64
 #define STDIN_SMALL_BUFF 8
 #define MAX_LEN_DAYMON 3 // With \0
@@ -132,7 +133,7 @@ void addtransaction() {
 	FILE* fptr = fopen("data.csv", "r+"); // Might have to mess with this mode
 	if (fptr == NULL) {
 		printf("Unable to open file\n");
-		exit(0);
+		exit(1);
 	}
 
 	fseek(fptr, 0L, SEEK_END);
@@ -256,19 +257,107 @@ void edittransaction() {
 	//  Users should be able to delete and edit transactions in a  //
 	//  specific month and year									   //
 	// ----------------------------------------------------------- //
+	int edityear;
+	int editmonth;
+	int linenum = 1;
+	int fields = 0;
+
+	struct Linedata linedata_, *ld = &linedata_;
 
 	FILE* fptr = fopen("data.csv", "r+");
 	if (fptr == NULL) {
 		printf("Unable to open file\n");
-		exit(0);
+		exit(1);
 	}
 
-	int edityear;
-	int editmonth;
-
-	editmonth = inputmonth();
 	edityear = inputyear();
+	editmonth = inputmonth();
 
+	char *header = (char *)malloc(LINE_BUFFER);
+	if (header == NULL) {
+		exit(1);
+	}
+
+	fgets(header, LINE_BUFFER, fptr);
+	if (header == NULL) {
+		free(header);
+		header = NULL;
+		puts("Failed to read header, quitting");
+		exit(1);
+	}
+
+	// Count how many fields there are
+	for (int i = 0; i < strlen(header); i++) {
+		if (header[i] == ',') {
+			fields++;	
+		}
+	}
+
+	printf("Fields: %d\n", fields);
+
+	while (1) {
+		char *line = (char *)malloc(LINE_BUFFER);
+		if (line == NULL) {
+			exit(1);
+		}
+
+		if (fgets(line, LINE_BUFFER, fptr) == NULL) {
+			free(line);
+			line = NULL;
+			break;
+		}
+
+		char *token = strtok(line, ",");
+		if (token != NULL) {
+			ld->month = atoi(token);
+		}
+
+		for (int i = 1; i < fields; i++) {
+			token = strtok(NULL, ",");
+			if (token != NULL) {
+				switch (i) {
+					case 1:
+						ld->day = atoi(token);
+						break;
+					case 2:
+						ld->year = atoi(token);
+						break;
+					case 3:
+						ld->category = token;
+						break;
+					case 4:
+						ld->desc = token;
+						break;
+					case 5:
+						ld->transtype = atoi(token);
+						break;
+					case 6:
+						ld->amount = atof(token);
+						break;
+				}
+			}
+		}
+
+		linenum++;
+		ld->linenum = linenum;
+		if (ld->month == editmonth && ld->year == edityear) {
+			printf(
+				"%d.) %d/%d/%d Category: %s Description: %s, %d, $%.2f\n",
+				ld->linenum, 
+				ld->month, 
+				ld->day, 
+				ld->year, 
+				ld->category, 
+				ld->desc, 
+				ld->transtype, 
+				ld->amount
+			 );
+		}
+		free(line);
+		line = NULL;
+	}
+	free(header);
+	header = NULL;
 }
 
 void readcsv() {
@@ -282,7 +371,7 @@ void readcsv() {
 	FILE* fptr = fopen("data.csv", "r");
 	if (fptr == NULL) {
 		printf("Unable to open file\n");
-		exit(0);
+		exit(1);
 	}
 
 	struct Linedata linedata_, *ld = &linedata_;
@@ -293,13 +382,13 @@ void readcsv() {
 	size_t buffsize = 128;
 	char *fields = (char *)malloc(buffsize * sizeof(char));
 	if (fields == NULL) {
-		exit(0);
+		exit(1);
 	}
 
 	if (fgets(fields, buffsize, fptr) == NULL) {
 		free(fields);
 		fields = NULL;
-		exit(0);
+		exit(1);
 	}
 
 	/* Count number of fields
@@ -316,10 +405,10 @@ void readcsv() {
 	fields = NULL;
 	/* Read the rest of lines in the CSV after the header */
 
-	while (true) { // NEVER
+	while (1) {
 		char *charbuff = (char *)malloc(buffsize * sizeof(char));
 		if (charbuff == NULL) {
-			exit(0);
+			exit(1);
 		}
 		/* For each line, tokenize the fields to retrieve each cell's data */
 
