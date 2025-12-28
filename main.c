@@ -14,15 +14,15 @@
 #define MAX_LEN_YEAR 5 // With \0
 #define MIN_LEN_DAYMON MAX_LEN_DAYMON - 1
 
-const bool debug = false;
+const bool debug = true;
 
 struct Linedata {
-	unsigned int month;
-	unsigned int day;
-	unsigned int year;
+	int month;
+	int day;
+	int year;
 	char *category;
 	char *desc;
-	unsigned int transtype;
+	int transtype;
 	float amount;
 	int linenum;
 	int offset;
@@ -31,7 +31,7 @@ struct Linedata {
 struct csvindex { // Dynamically Sized Array
 	int lines;
 	int offsets[];
-} csvindex_, *pcsvindex = &csvindex_;
+}; // csvindex_, *pcsvindex = &csvindex_;
 
 char *userinput(size_t buffersize) {
 	char *buffer = (char *)malloc(buffersize);
@@ -168,12 +168,18 @@ void addtransaction() {
 		puts("CATEGORY ENTRY NOT VALID");
 		categorystr = userinput(STDIN_LARGE_BUFF);
 	}
+	if (strlen(categorystr) <= 1) {
+		categorystr = "null";
+	}
 
 	puts("Description:");
 	char *descstr = userinput(STDIN_LARGE_BUFF);	
 	while (descstr == NULL) {
 		puts("CATEGORY ENTRY NOT VALID");
 		descstr = userinput(STDIN_LARGE_BUFF);
+	}
+	if (strlen(descstr) <= 1) {
+		descstr = "null";
 	}
 
 	puts("Enter 1 or 2");
@@ -264,7 +270,7 @@ CLEANUP:
 
 struct csvindex *indexcsv() {
 	// Inital alloc
-	pcsvindex = malloc(sizeof(csvindex_) + 0 * sizeof(int));
+	struct csvindex *pcsvindex = malloc(sizeof(struct csvindex) + 0 * sizeof(int));
 	if (pcsvindex == NULL) {
 		puts("Failed to allocate memory");
 		exit(1);
@@ -327,7 +333,6 @@ struct csvindex *indexcsv() {
 void readcsv(void) {
 	int useryear;
 	int usermonth;
-	int offset;
 	float total = 0;
 	float income = 0;
 	float expenses = 0;
@@ -424,7 +429,6 @@ void readcsv(void) {
 				expenses+=ld->amount;
 			}
 		}
-
 		free(charbuff);
 		charbuff = NULL;
 	}
@@ -443,6 +447,7 @@ void edittransaction() {
 	// ----------------------------------------------------------- //
 
 	int target;
+	int targetoffset;
 
 	FILE* fptr = fopen("data.csv", "r+");
 	if (fptr == NULL) {
@@ -451,12 +456,14 @@ void edittransaction() {
 	}
 	assert(ftell(fptr) == 0);
 	
-	readcsv(); // To print the transaction line numbers
-	pcsvindex = indexcsv();
+	readcsv();
+	struct csvindex *pcsvindex = indexcsv();
+	struct Linedata linedata, *ld = &linedata;
 
 	puts("Enter a line number");
 	target = inputndigits(sizeof(long long) + 1, 2);
 	target -= 1;
+	targetoffset = pcsvindex->offsets[target];
 
 	if (debug == true) printf("TARGET: %d\n", target);
 
@@ -466,11 +473,60 @@ void edittransaction() {
 		printf("COMMANDED SEEK OFFSET: %d\n", pcsvindex->offsets[target]);
 	}
 	
-	char buff[512];
-
+	char buff[LINE_BUFFER];
 	char *str = fgets(buff, sizeof(buff), fptr);
-	if (str == NULL) exit(1);
+	if (str == NULL) {
+		puts("failed to read line");
+		exit(1);
+	}
+
+	char *token;
 	printf("%s\n", str);
+
+	token = strtok(buff, ",");
+	if (token != NULL) {
+		ld->month = atoi(token);
+	}
+	for (int i = 1; i < 7; i++) {
+		token = strtok(NULL, ",");
+		if (token != NULL) {
+			switch (i) {
+				case 1:
+					ld->day = atoi(token);
+					break;
+				case 2:
+					ld->year = atoi(token);
+					break;
+				case 3:
+					ld->category = token;
+					break;
+				case 4:
+					ld->desc = token;
+					break;
+				case 5:
+					ld->transtype = atoi(token);
+					break;
+				case 6:
+					ld->amount = atof(token);
+					break;
+			}
+		}
+	}
+
+	printf(
+		"Date-->     %d/%d/%d\n"
+		"Category--> %s\n"
+		"Desc-->     %s\n"
+		"Type-->     %d\n"
+		"Amount -->  $%.2f\n",
+		ld->month, 
+		ld->day, 
+		ld->year, 
+		ld->category, 
+		ld->desc, 
+		ld->transtype, 
+		ld->amount
+	);
 
 	free(pcsvindex);
 	fclose(fptr);
@@ -543,8 +599,6 @@ int main(int argc, char **argv) {
 	}
 	
 	fclose(fptr);
-
-//	pcsvindex = indexcsv();
 
 	while (1) {
 		getSelection();
