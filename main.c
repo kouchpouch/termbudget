@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -13,6 +14,8 @@
 #define MAX_LEN_YEAR 5 // With \0
 #define MIN_LEN_DAYMON MAX_LEN_DAYMON - 1
 
+const bool debug = false;
+
 struct Linedata {
 	unsigned int month;
 	unsigned int day;
@@ -22,7 +25,13 @@ struct Linedata {
 	unsigned int transtype;
 	float amount;
 	int linenum;
+	int offset;
 };
+
+struct csvindex { // Dynamically Sized Array
+	int lines;
+	int offsets[];
+} csvindex_, *pcsvindex = &csvindex_;
 
 char *userinput(size_t buffersize) {
 	char *buffer = (char *)malloc(buffersize);
@@ -97,7 +106,6 @@ int confirmInput() {
 	if (c_confirm == 0) {
 		return -1;
 	}
-
 	if (c_confirm == 'Y') {
 		return 1;
 	} else if (c_confirm == 'N') {
@@ -112,7 +120,7 @@ int inputmonth() {
 	while((month = inputndigits(MAX_LEN_DAYMON, MIN_LEN_DAYMON)) == -1
 		|| month <= 0
 		|| month > 12) {
-		puts("Invalid");
+		puts("Enter a Vaid Month");
 	}
 	return month;
 }
@@ -122,6 +130,18 @@ int inputyear() {
 	puts("Enter Year");
 	while((year = inputndigits(MAX_LEN_YEAR, MAX_LEN_YEAR)) == -1);
 	return year;
+}
+
+int inputday(int month, int year) {
+	int day;
+	puts("Enter Day");
+	while((day = inputndigits(MAX_LEN_DAYMON, MIN_LEN_DAYMON)) == -1 ||
+			dayexists(day, month, year) == false) {
+		if (dayexists(day, month, year) == false) { // Calling this twice is GROSS but I'm kinda stupid
+			puts("Invalid Day");
+		}
+	}
+	return day;
 }
 
 void addtransaction() {
@@ -140,15 +160,7 @@ void addtransaction() {
 
 	year = inputyear();
 	month = inputmonth();
-
-
-	puts("Enter Day");
-	while((day = inputndigits(MAX_LEN_DAYMON, MIN_LEN_DAYMON)) == -1 ||
-			dayexists(day, month, year) == false) {
-		if (dayexists(day, month, year) == false) { // Calling this twice is GROSS but I'm kinda stupid
-			puts("Invalid Day");
-		}
-	}
+	day = inputday(month, year);
 
 	puts("Category:");
 	char *categorystr = userinput(STDIN_LARGE_BUFF);	
@@ -191,7 +203,6 @@ void addtransaction() {
 	}
 
 	puts("Verify Data is Correct:");
-	puts("Y/N");
 	printf(
 		"%d,%d,%d,%s,%s,%d,%.2f\n", 
 		month,
@@ -202,10 +213,11 @@ void addtransaction() {
 		(transaction - 1),
 		amount
 	);
+	printf("Y/N:  ");
 
 	int result = confirmInput();
 	if (result == 1) {
-		puts("TRUE");
+		if (debug == true) puts("TRUE");
 		uld->month = month;
 		uld->day = day;
 		uld->year = year;
@@ -214,7 +226,7 @@ void addtransaction() {
 		uld->transtype = transaction - 1;
 		uld->amount = amount;
 	} else if (result == 0) {
-		puts("FALSE");
+		if (debug == true) puts("FALSE");
 		goto CLEANUP;
 		// Free heap and exit back to getSelection()
 	} else {
@@ -239,8 +251,7 @@ void addtransaction() {
 	}
 
 CLEANUP:
-	// DEBUG ONLY
-	puts("CLEANUP");
+	if (debug == true) puts("CLEANUP");
 
 	fclose(fptr);
 
@@ -251,122 +262,76 @@ CLEANUP:
 	return;
 }
 
-void edittransaction() {
+struct csvindex *indexcsv() {
+	// Inital alloc
+	pcsvindex = malloc(sizeof(csvindex_) + 0 * sizeof(int));
+	if (pcsvindex == NULL) {
+		puts("Failed to allocate memory");
+		exit(1);
+	}
 
-	// ----------------------------------------------------------- //
-	//  Users should be able to delete and edit transactions in a  //
-	//  specific month and year									   //
-	// ----------------------------------------------------------- //
-	int edityear;
-	int editmonth;
-	int linenum = 1;
-	int fields = 0;
-
-	struct Linedata linedata_, *ld = &linedata_;
-
-	FILE* fptr = fopen("data.csv", "r+");
+	pcsvindex->lines = 0;
+	
+	FILE* fptr = fopen("data.csv", "r"); // Beginning of file stream 'r'
 	if (fptr == NULL) {
 		printf("Unable to open file\n");
 		exit(1);
 	}
 
-	edityear = inputyear();
-	editmonth = inputmonth();
+	assert(ftell(fptr) == 0); // Must start at a zero offset
 
-	char *header = (char *)malloc(LINE_BUFFER);
-	if (header == NULL) {
-		exit(1);
-	}
-
-	fgets(header, LINE_BUFFER, fptr);
-	if (header == NULL) {
-		free(header);
-		header = NULL;
-		puts("Failed to read header, quitting");
-		exit(1);
-	}
-
-	// Count how many fields there are
-	for (int i = 0; i < strlen(header); i++) {
-		if (header[i] == ',') {
-			fields++;	
-		}
-	}
-
-	printf("Fields: %d\n", fields);
+	char charbuff[LINE_BUFFER]; // write into a buffer on the stack
 
 	while (1) {
-		char *line = (char *)malloc(LINE_BUFFER);
-		if (line == NULL) {
-			exit(1);
-		}
-
-		if (fgets(line, LINE_BUFFER, fptr) == NULL) {
-			free(line);
-			line = NULL;
+		char* test = fgets(charbuff, sizeof(charbuff), fptr);
+		if (test == NULL) {
 			break;
 		}
-
-		char *token = strtok(line, ",");
-		if (token != NULL) {
-			ld->month = atoi(token);
-		}
-
-		for (int i = 1; i < fields; i++) {
-			token = strtok(NULL, ",");
-			if (token != NULL) {
-				switch (i) {
-					case 1:
-						ld->day = atoi(token);
-						break;
-					case 2:
-						ld->year = atoi(token);
-						break;
-					case 3:
-						ld->category = token;
-						break;
-					case 4:
-						ld->desc = token;
-						break;
-					case 5:
-						ld->transtype = atoi(token);
-						break;
-					case 6:
-						ld->amount = atof(token);
-						break;
-				}
-			}
-		}
-
-		linenum++;
-		ld->linenum = linenum;
-		if (ld->month == editmonth && ld->year == edityear) {
-			printf(
-				"%d.) %d/%d/%d Category: %s Description: %s, %d, $%.2f\n",
-				ld->linenum, 
-				ld->month, 
-				ld->day, 
-				ld->year, 
-				ld->category, 
-				ld->desc, 
-				ld->transtype, 
-				ld->amount
-			 );
-		}
-		free(line);
-		line = NULL;
+		pcsvindex->lines++;
 	}
-	free(header);
-	header = NULL;
+
+	printf("%d Lines\n", pcsvindex->lines); // Now we know the # of lines,
+	// realloc the struct to hold the offset data
+	if (debug == true) {
+		printf("NUMBER OF LINES: %d\n", pcsvindex->lines);
+	}
+	struct csvindex *tmp = realloc(pcsvindex, sizeof(*pcsvindex) + 
+						       (pcsvindex->lines * sizeof(int)));
+	if (tmp == NULL) {
+		puts("Failed to allocate memory");
+		exit(1);
+	}
+	pcsvindex = tmp;
+
+	rewind(fptr);
+	assert(ftell(fptr) == 0); // Make sure we are back to the starting point
+
+	for (int i = 0; i < pcsvindex->lines; i++) {
+		char* test = fgets(charbuff, sizeof(charbuff), fptr);
+		if (test == NULL) {
+			break;
+		}
+		pcsvindex->offsets[i] = ftell(fptr);
+	}
+
+// --- Uncomment to see every single line's offset
+//	for (int i = 0; i < pcsvindex->lines; i++) {
+//		printf("Offset is %d at line %d\n", pcsvindex->offsets[i], i+1);
+//	}
+
+	fclose(fptr);
+	fptr = NULL;
+	return pcsvindex;
 }
 
-void readcsv() {
+void readcsv(void) {
 	int useryear;
 	int usermonth;
+	int offset;
 	float total = 0;
 	float income = 0;
 	float expenses = 0;
-	int linenum = 1; // The first line will be line #1, not zero.
+	int linenum = 0;
 
 	FILE* fptr = fopen("data.csv", "r");
 	if (fptr == NULL) {
@@ -379,15 +344,9 @@ void readcsv() {
 	useryear = inputyear();
 	usermonth = inputmonth();
 
-	size_t buffsize = 128;
-	char *fields = (char *)malloc(buffsize * sizeof(char));
-	if (fields == NULL) {
-		exit(1);
-	}
+	char fields[LINE_BUFFER];
 
-	if (fgets(fields, buffsize, fptr) == NULL) {
-		free(fields);
-		fields = NULL;
+	if (fgets(fields, sizeof(fields), fptr) == NULL) {
 		exit(1);
 	}
 
@@ -401,23 +360,19 @@ void readcsv() {
 		}
 	}
 
-	free(fields);
-	fields = NULL;
-	/* Read the rest of lines in the CSV after the header */
-
 	while (1) {
-		char *charbuff = (char *)malloc(buffsize * sizeof(char));
+		char *charbuff = (char *)malloc(LINE_BUFFER * sizeof(char));
 		if (charbuff == NULL) {
 			exit(1);
 		}
 		/* For each line, tokenize the fields to retrieve each cell's data */
 
-		if (fgets(charbuff, buffsize, fptr) == NULL) {
+		if (fgets(charbuff, LINE_BUFFER, fptr) == NULL) {
 			free(charbuff);
 			charbuff = NULL;
 			break;
 		}
-		
+
 		char *token = strtok(charbuff, ",");
 		if (token != NULL) {
 			ld->month = atoi(token);
@@ -480,10 +435,51 @@ void readcsv() {
 	fptr = NULL;
 }
 
+void edittransaction() {
+
+	// ----------------------------------------------------------- //
+	//  Users should be able to delete and edit transactions in a  //
+	//  specific month and year									   //
+	// ----------------------------------------------------------- //
+
+	int target;
+
+	FILE* fptr = fopen("data.csv", "r+");
+	if (fptr == NULL) {
+		printf("Unable to open file\n");
+		exit(1);
+	}
+	assert(ftell(fptr) == 0);
+	
+	readcsv(); // To print the transaction line numbers
+	pcsvindex = indexcsv();
+
+	puts("Enter a line number");
+	target = inputndigits(sizeof(long long) + 1, 2);
+	target -= 1;
+
+	if (debug == true) printf("TARGET: %d\n", target);
+
+	fseek(fptr, pcsvindex->offsets[target], SEEK_SET);
+
+	if (debug == true) {
+		printf("COMMANDED SEEK OFFSET: %d\n", pcsvindex->offsets[target]);
+	}
+	
+	char buff[512];
+
+	char *str = fgets(buff, sizeof(buff), fptr);
+	if (str == NULL) exit(1);
+	printf("%s\n", str);
+
+	free(pcsvindex);
+	fclose(fptr);
+	fptr = NULL;
+}
+
 void getSelection() {
 	int choice;
 	printf("Make a selection:\n");
-	printf("m - Select Month\n");
 	printf("c - Add Budget Category\n");
 	printf("a - Add Transaction\n");
 	printf("e - Edit Transaction\n"); 
@@ -508,6 +504,7 @@ void getSelection() {
 
 	switch (choice) {
 		case 'C':
+			indexcsv();
 			break;
 		case 'A':
 			printf("-*-ADD TRANSACTION-*-\n");
@@ -544,10 +541,13 @@ int main(int argc, char **argv) {
 		fclose(fptr);
 		return -1;
 	}
-
+	
 	fclose(fptr);
+
+//	pcsvindex = indexcsv();
 
 	while (1) {
 		getSelection();
+		getchar();
 	}
 }
