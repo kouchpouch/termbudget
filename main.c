@@ -448,6 +448,7 @@ void edittransaction() {
 
 	int target;
 	int targetoffset;
+	struct Linedata linedata, *ld = &linedata;
 
 	FILE* fptr = fopen("data.csv", "r+");
 	if (fptr == NULL) {
@@ -455,10 +456,9 @@ void edittransaction() {
 		exit(1);
 	}
 	assert(ftell(fptr) == 0);
-	
+
 	readcsv();
 	struct csvindex *pcsvindex = indexcsv();
-	struct Linedata linedata, *ld = &linedata;
 
 	puts("Enter a line number");
 	target = inputndigits(sizeof(long long) + 1, 2);
@@ -514,11 +514,11 @@ void edittransaction() {
 	}
 
 	printf(
-		"Date-->     %d/%d/%d\n"
-		"Category--> %s\n"
-		"Desc-->     %s\n"
-		"Type-->     %d\n"
-		"Amount -->  $%.2f\n",
+		"1.) Date-->     %d/%d/%d\n"
+		"2.) Category--> %s\n"
+		"3.) Desc-->     %s\n"
+		"4.) Type-->     %d\n"
+		"5.) Amount -->  $%.2f\n",
 		ld->month, 
 		ld->day, 
 		ld->year, 
@@ -527,6 +527,32 @@ void edittransaction() {
 		ld->transtype, 
 		ld->amount
 	);
+	
+	int fieldtoedit = 0;
+	while (fieldtoedit > 5 || fieldtoedit < 1) { // There's only 5 fields
+		puts("Enter field to change");
+		fieldtoedit = inputndigits(2, 2); // Only input 1 digit
+	}
+
+	switch(fieldtoedit) {
+		case 1:
+			puts("case 1");
+			break;
+		case 2:
+			puts("case 2");
+			break;
+		case 3:
+			puts("case 3");
+			break;
+		case 4:
+			puts("case 4");
+			break;
+		case 5:
+			puts("case 5");
+			break;
+		default:
+			return;
+	}
 
 	free(pcsvindex);
 	fclose(fptr);
