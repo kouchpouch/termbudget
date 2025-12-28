@@ -37,3 +37,4 @@ month,day,year,category,description,transtype,value
 4,18,2025,healthcare,dental cleaning,0,85.00
 4,22,2025,entertainment,local event,0,40.00
 12,23,2025,Test Category,Test Description,0,280.25
+12,12,2025,something,something else,1,420.69
