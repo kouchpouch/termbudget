@@ -1,7 +1,5 @@
 month,day,year,category,description,transtype,value
-1,2,2025,rent,apartment rent,0,1250.00
 1,3,2025,utilities,electric bill,0,142.37
-1,5,2025,groceries,weekly groceries,0,186.42
 1,7,2025,gas,vehicle fuel,0,54.18
 1,10,2025,eating out,restaurant dinner,0,68.90
 1,12,2025,subscriptions,streaming services,0,32.97
@@ -19,7 +17,6 @@ month,day,year,category,description,transtype,value
 3,1,2025,salary,monthly paycheck,1,2850.00
 3,2,2025,rent,apartment rent,0,1250.00
 3,4,2025,utilities,internet bill,0,79.99
-3,6,2025,groceries,weekly groceries,0,193.27
 3,9,2025,gas,vehicle fuel,0,52.64
 3,12,2025,eating out,coffee shop,0,18.45
 3,15,2025,insurance,health insurance,0,210.00
@@ -38,3 +35,4 @@ month,day,year,category,description,transtype,value
 2,15,2025,2,2,1,420.69
 2,15,2025,Some category i dunno,null,0,69.42
 2,20,2025,test,whatever,1,1021.54
+4,13,2025,Eating out,food,1,204.40

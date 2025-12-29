@@ -31,7 +31,7 @@ struct Linedata {
 struct csvindex { // Dynamically Sized Array
 	int lines;
 	int offsets[];
-}; // csvindex_, *pcsvindex = &csvindex_;
+};
 
 char *userinput(size_t buffersize) {
 	int minchar = 2;
@@ -157,12 +157,20 @@ int inputday(int month, int year) {
 	return day;
 }
 
+//---------------------------------------------------------------------------//
+//---------------------------------------------------------------------------//
+//---------------------------------------------------------------------------//
+//--------------------------USER INPUT ABOVE---------------------------------//
+//---------------------------------------------------------------------------//
+//---------------------------------------------------------------------------//
+//---------------------------------------------------------------------------//
+
 void addtransaction() {
 	struct Linedata userlinedata_, *uld = &userlinedata_;
-	unsigned int year;
-	unsigned int month;
-	unsigned int day;
-	unsigned int transaction;
+	int year;
+	int month;
+	int day;
+	int transaction;
 	FILE* fptr = fopen("data.csv", "r+"); // Might have to mess with this mode
 	if (fptr == NULL) {
 		printf("Unable to open file\n");
@@ -493,13 +501,15 @@ int deletecsvline(int linetodelete) {
 void edittransaction() {
 
 	// ----------------------------------------------------------- //
-	//  Users should be able to delete and edit transactions in a  //
+	//  Users should be able to delete--DONE;					   // 
+	//  and edit transactions in a  							   //
 	//  specific month and year									   //
 	// ----------------------------------------------------------- //
 
 	int target;
-	int humanreadabletarget;
+	int humantarget;
 	int targetoffset;
+	int totallines;
 	struct Linedata linedata, *ld = &linedata;
 
 	FILE* fptr = fopen("data.csv", "r+");
@@ -511,12 +521,12 @@ void edittransaction() {
 
 	readcsv();
 	struct csvindex *pcsvindex = indexcsv();
-
+	printf("LINES: %d\n", pcsvindex->lines);
 	do {
 		puts("Enter a line number");
-		humanreadabletarget = inputndigits(sizeof(long long) + 1, 2);
-	} while (humanreadabletarget <= 0);
-	target = humanreadabletarget - 1;;
+		humantarget = inputndigits(sizeof(long long) + 1, 2);
+	} while (humantarget <= 0 || humantarget > pcsvindex->lines);
+	target = humantarget - 1;
 	targetoffset = pcsvindex->offsets[target];
 
 	if (debug == true) printf("TARGET: %d\n", target);
@@ -605,7 +615,7 @@ void edittransaction() {
 			puts("case 5");
 			break;
 		case 0:
-			if (deletecsvline(humanreadabletarget) == 0) {
+			if (deletecsvline(humantarget) == 0) {
 				puts("Successfully Deleted Transaction");
 			}
 			break;
