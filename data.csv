@@ -27,12 +27,13 @@ month,day,year,category,description,transtype,value
 4,5,2025,utilities,gas bill,0,97.36
 4,7,2025,groceries,weekly groceries,0,181.90
 4,10,2025,gas,vehicle fuel,0,56.21
-4,12,2025,eating out,restaurant lunch,0,29.84
 4,15,2025,subscriptions,music streaming,0,10.99
-4,18,2025,healthcare,dental cleaning,0,85.00
 4,22,2025,entertainment,local event,0,40.00
 12,12,2025,something,something else,1,420.69
 2,15,2025,2,2,1,420.69
 2,15,2025,Some category i dunno,null,0,69.42
 2,20,2025,test,whatever,1,1021.54
-4,13,2025,Eating out,food,1,204.40
+2,4,2025,4,whatever,1,420.40
+4,12,2025,christmas,whateve         r,1,42.55
+4,2,2025,whatever,whatever,1,0.10
+4,12,2025,eating out,in n out,1,0.00

@@ -33,6 +33,11 @@ struct csvindex { // Dynamically Sized Array
 	int offsets[];
 };
 
+struct Categories { // Dynamically Sized Array
+	int size;
+	char **categories;
+};
+
 char *userinput(size_t buffersize) {
 	int minchar = 2;
 	char *buffer = (char *)malloc(buffersize);
@@ -165,17 +170,38 @@ int inputday(int month, int year) {
 //---------------------------------------------------------------------------//
 //---------------------------------------------------------------------------//
 
+FILE *opencsv(char *mode) {
+	FILE *fptr = fopen("data.csv", mode);
+	if (fptr == NULL) {
+		puts("Failed to open file");
+		exit(1);
+	} else {
+		return fptr;
+	}
+}
+
+struct Categories *getcategories() {
+	// ----------------------------------------------------------- //
+	// Try to group categories by year
+	// ----------------------------------------------------------- //
+	struct Categories c, *pc = &c;
+	
+
+	return pc;
+}
+
 void addtransaction() {
 	struct Linedata userlinedata_, *uld = &userlinedata_;
 	int year;
 	int month;
 	int day;
 	int transaction;
-	FILE* fptr = fopen("data.csv", "r+"); // Might have to mess with this mode
-	if (fptr == NULL) {
-		printf("Unable to open file\n");
-		exit(1);
-	}
+	FILE* fptr = opencsv("r+");
+//	FILE* fptr = fopen("data.csv", "r+"); // Might have to mess with this mode
+//	if (fptr == NULL) {
+//		printf("Unable to open file\n");
+//		exit(1);
+//	}
 
 	fseek(fptr, 0L, SEEK_END);
 
@@ -199,8 +225,8 @@ void addtransaction() {
 	puts("1. Expenses"); // 0 is an expense in the CSV
 	puts("2. Income"); // 1 is an income in the CSV
 
-	while((transaction = inputndigits(2, 2)) == -1
-		&& transaction != 1
+	while((transaction = inputndigits(2, 2)) == -1 ||
+		transaction != 1
 		&& transaction != 2) {
 		puts("Invalid");
 	}
@@ -247,7 +273,7 @@ void addtransaction() {
 	} else if (result == 0) {
 		if (debug == true) puts("FALSE");
 		goto CLEANUP;
-		// Free heap and exit back to getSelection()
+		// Free heap and exit back to getselection()
 	} else {
 		puts("Invalid answer");
 		goto CLEANUP;
@@ -286,11 +312,12 @@ struct csvindex *indexcsv() {
 
 	pcsvindex->lines = 0;
 	
-	FILE* fptr = fopen("data.csv", "r"); // Beginning of file stream 'r'
-	if (fptr == NULL) {
-		printf("Unable to open file\n");
-		exit(1);
-	}
+	FILE *fptr = opencsv("r");
+//	FILE* fptr = fopen("data.csv", "r"); // Beginning of file stream 'r'
+//	if (fptr == NULL) {
+//		printf("Unable to open file\n");
+//		exit(1);
+//	}
 
 	assert(ftell(fptr) == 0); // Must start at a zero offset
 
@@ -346,11 +373,12 @@ void readcsv(void) {
 	float expenses = 0;
 	int linenum = 0;
 
-	FILE* fptr = fopen("data.csv", "r");
-	if (fptr == NULL) {
-		printf("Unable to open file\n");
-		exit(1);
-	}
+	FILE *fptr = opencsv("r");
+//	FILE* fptr = fopen("data.csv", "r");
+//	if (fptr == NULL) {
+//		printf("Unable to open file\n");
+//		exit(1);
+//	}
 
 	struct Linedata linedata_, *ld = &linedata_;
 
@@ -512,11 +540,12 @@ void edittransaction() {
 	int totallines;
 	struct Linedata linedata, *ld = &linedata;
 
-	FILE* fptr = fopen("data.csv", "r+");
-	if (fptr == NULL) {
-		printf("Unable to open file\n");
-		exit(1);
-	}
+	FILE* fptr = opencsv("r+");
+//	FILE* fptr = fopen("data.csv", "r+");
+//	if (fptr == NULL) {
+//		printf("Unable to open file\n");
+//		exit(1);
+//	}
 	assert(ftell(fptr) == 0);
 
 	readcsv();
@@ -628,7 +657,7 @@ void edittransaction() {
 	fptr = NULL;
 }
 
-void getSelection() {
+void getselection() {
 	int choice;
 	printf("Make a selection:\n");
 	printf("a - Add Transaction\n");
@@ -639,14 +668,14 @@ void getSelection() {
 	char *userstr = userinput(STDIN_SMALL_BUFF); // Must be free'd
 	
 	while (userstr == NULL) {
-		getSelection();
+		getselection();
 	}
 
 	if ((choice = upper(userstr)) == 0) {
 		puts("Invalid character");
 		free(userstr);
 		userstr = NULL;
-		getSelection();
+		getselection();
 	}
 	
 	free(userstr);
@@ -671,28 +700,23 @@ void getSelection() {
 		default:
 			puts("Invalid character");
 			printf("\n");
-			getSelection();
+			getselection();
 	}
-	return;
-}
-
-void addCategory() {
-
 	return;
 }
 
 int main(int argc, char **argv) {
-	FILE* fptr = fopen("data.csv", "a"); // Check that CSV exists
-	if (fptr == NULL) {
-		printf("File not found\n");
-		fclose(fptr);
-		return -1;
-	}
-	
+	FILE* fptr = opencsv("a");
+//	FILE* fptr = fopen("data.csv", "a"); // Check that CSV exists
+//	if (fptr == NULL) {
+//		printf("File not found\n");
+//		fclose(fptr);
+//		return -1;
+//	}
 	fclose(fptr);
 
 	while (1) {
-		getSelection();
+		getselection();
 		getchar();
 	}
 }
