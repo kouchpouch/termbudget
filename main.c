@@ -41,13 +41,12 @@ char *userinput(size_t buffersize) {
 		return buffer;
 	}
 
-	while (fgets(buffer, buffersize, stdin) == NULL) {
+	if (fgets(buffer, buffersize, stdin) == NULL) {
 		printf("Invalid Input\n");
 		free(buffer);
 		buffer = NULL;
 		return buffer;
 	}
-
 	int length = strnlen(buffer, buffersize);
 
 	if (buffer[length - 1] != '\n') {
@@ -60,9 +59,14 @@ char *userinput(size_t buffersize) {
 		buffer = NULL;
 		return buffer;
 	}
-	
 	if (length < minchar) {
 		puts("Input is too short");
+		free(buffer);
+		buffer = NULL;
+		return buffer;
+	}
+	if (strstr(buffer, ",")) {
+		puts("No commas allowed, we're using a CSV, after all!");
 		free(buffer);
 		buffer = NULL;
 		return buffer;
@@ -75,6 +79,7 @@ int inputndigits(int max_len, int min_len) {
 	char *str = userinput(bytesize);
 
 	while (str == NULL) {
+		puts("Invalid Entry");
 		str = userinput(bytesize);
 	}
 
@@ -183,7 +188,7 @@ void addtransaction() {
 	}
 
 	puts("Enter 1 or 2");
-	puts("1. Expense"); // 0 is an expense in the CSV
+	puts("1. Expenses"); // 0 is an expense in the CSV
 	puts("2. Income"); // 1 is an income in the CSV
 
 	while((transaction = inputndigits(2, 2)) == -1
@@ -194,7 +199,7 @@ void addtransaction() {
 
 	puts("$ Amount:");
 	char *amountstr = userinput(STDIN_LARGE_BUFF);
-	if (amountstr == NULL) {
+	while (amountstr == NULL) {
 		amountstr = userinput(STDIN_LARGE_BUFF);
 	}
 	float amount = atof(amountstr);
@@ -258,14 +263,10 @@ void addtransaction() {
 
 CLEANUP:
 	if (debug == true) puts("CLEANUP");
-
 	fclose(fptr);
-
 	free(categorystr);
 	free(descstr);
 	free(amountstr);
-
-	return;
 }
 
 struct csvindex *indexcsv() {
@@ -439,6 +440,10 @@ void readcsv(void) {
 }
 
 int deletecsvline(int linetodelete) {
+	if (linetodelete == 0) {
+		puts("Cannot delete line 0");
+		return -1;
+	}
 	FILE *fptr = fopen("data.csv", "r");
 	if (fptr == NULL) {
 		puts("Failed to open file");
@@ -474,14 +479,14 @@ int deletecsvline(int linetodelete) {
 	} else {
 		tmpfptr = NULL;
 	}
-//	if (rename("data.csv", "data.csv.bak") == -1) {
-//		puts("Failed to move main file");	
-//		return -1;
-//	}
-//	if (rename("tmp.txt", "data.csv") == -1) {
-//		puts("Failed to move temporary file");	
-//		return -1;
-//	}
+	if (rename("data.csv", "data.csv.bak") == -1) {
+		puts("Failed to move main file");	
+		return -1;
+	}
+	if (rename("tmp.txt", "data.csv") == -1) {
+		puts("Failed to move temporary file");	
+		return -1;
+	}
 	return 0;
 }
 
@@ -493,6 +498,7 @@ void edittransaction() {
 	// ----------------------------------------------------------- //
 
 	int target;
+	int humanreadabletarget;
 	int targetoffset;
 	struct Linedata linedata, *ld = &linedata;
 
@@ -506,9 +512,11 @@ void edittransaction() {
 	readcsv();
 	struct csvindex *pcsvindex = indexcsv();
 
-	puts("Enter a line number");
-	target = inputndigits(sizeof(long long) + 1, 2);
-	target -= 1;
+	do {
+		puts("Enter a line number");
+		humanreadabletarget = inputndigits(sizeof(long long) + 1, 2);
+	} while (humanreadabletarget <= 0);
+	target = humanreadabletarget - 1;;
 	targetoffset = pcsvindex->offsets[target];
 
 	if (debug == true) printf("TARGET: %d\n", target);
@@ -574,11 +582,11 @@ void edittransaction() {
 		ld->amount
 	);
 	
-	int fieldtoedit = 0;
-	while (fieldtoedit > 5 || fieldtoedit < 1) { // There's only 5 fields
+	int fieldtoedit;
+	do {
 		puts("Enter field to change or press \"0\" to delete this transaction");
 		fieldtoedit = inputndigits(2, 2); // Only input 1 digit
-	}
+	} while (fieldtoedit > 5 || fieldtoedit < 0);
 
 	switch(fieldtoedit) {
 		case 1:
@@ -597,7 +605,9 @@ void edittransaction() {
 			puts("case 5");
 			break;
 		case 0:
-			deletecsvline(target);
+			if (deletecsvline(humanreadabletarget) == 0) {
+				puts("Successfully Deleted Transaction");
+			}
 			break;
 		default:
 			return;
