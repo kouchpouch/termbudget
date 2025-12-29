@@ -562,7 +562,6 @@ void edittransaction() {
 void getSelection() {
 	int choice;
 	printf("Make a selection:\n");
-	printf("c - Add Budget Category\n");
 	printf("a - Add Transaction\n");
 	printf("e - Edit Transaction\n"); 
 	printf("r - Read CSV\n");
@@ -585,9 +584,6 @@ void getSelection() {
 	userstr = NULL;
 
 	switch (choice) {
-		case 'C':
-			indexcsv();
-			break;
 		case 'A':
 			printf("-*-ADD TRANSACTION-*-\n");
 			addtransaction();
