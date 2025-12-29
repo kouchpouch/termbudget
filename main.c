@@ -34,6 +34,7 @@ struct csvindex { // Dynamically Sized Array
 }; // csvindex_, *pcsvindex = &csvindex_;
 
 char *userinput(size_t buffersize) {
+	int minchar = 2;
 	char *buffer = (char *)malloc(buffersize);
 	if (buffer == NULL) {
 		puts("Failed to allocate memory");
@@ -55,6 +56,13 @@ char *userinput(size_t buffersize) {
 		while (c != '\n') {
 			c = getchar();
 		}
+		free(buffer);
+		buffer = NULL;
+		return buffer;
+	}
+	
+	if (length < minchar) {
+		puts("Input is too short");
 		free(buffer);
 		buffer = NULL;
 		return buffer;
@@ -165,21 +173,13 @@ void addtransaction() {
 	puts("Category:");
 	char *categorystr = userinput(STDIN_LARGE_BUFF);	
 	while (categorystr == NULL) {
-		puts("CATEGORY ENTRY NOT VALID");
 		categorystr = userinput(STDIN_LARGE_BUFF);
-	}
-	if (strlen(categorystr) <= 1) {
-		categorystr = "null";
 	}
 
 	puts("Description:");
 	char *descstr = userinput(STDIN_LARGE_BUFF);	
 	while (descstr == NULL) {
-		puts("CATEGORY ENTRY NOT VALID");
 		descstr = userinput(STDIN_LARGE_BUFF);
-	}
-	if (strlen(descstr) <= 1) {
-		descstr = "null";
 	}
 
 	puts("Enter 1 or 2");
@@ -269,7 +269,6 @@ CLEANUP:
 }
 
 struct csvindex *indexcsv() {
-	// Inital alloc
 	struct csvindex *pcsvindex = malloc(sizeof(struct csvindex) + 0 * sizeof(int));
 	if (pcsvindex == NULL) {
 		puts("Failed to allocate memory");
@@ -439,6 +438,53 @@ void readcsv(void) {
 	fptr = NULL;
 }
 
+int deletecsvline(int linetodelete) {
+	FILE *fptr = fopen("data.csv", "r");
+	if (fptr == NULL) {
+		puts("Failed to open file");
+		return -1;
+	}
+	FILE *tmpfptr = fopen("tmp.txt", "w+");
+	if (fptr == NULL) {
+		puts("Failed to open file");
+		return -1;
+	}
+	// Copy every line from fptr to tmpfptr except the line to delete
+	char buff[LINE_BUFFER];
+	char *line;
+	int linenum = 0;
+	do {
+		line = fgets(buff, sizeof(buff), fptr);
+		if (line == NULL) break;
+		if (linenum != linetodelete) {
+			fputs(line, tmpfptr);
+		}
+		linenum++;	
+	} while(line != NULL);
+
+	if (fclose(fptr) == -1) {
+		puts("Failed to close main file");
+		return -1;
+	} else {
+		fptr = NULL;
+	}
+	if (fclose(tmpfptr) == -1) {
+		puts("Failed to close temporary file");
+		return -1;
+	} else {
+		tmpfptr = NULL;
+	}
+//	if (rename("data.csv", "data.csv.bak") == -1) {
+//		puts("Failed to move main file");	
+//		return -1;
+//	}
+//	if (rename("tmp.txt", "data.csv") == -1) {
+//		puts("Failed to move temporary file");	
+//		return -1;
+//	}
+	return 0;
+}
+
 void edittransaction() {
 
 	// ----------------------------------------------------------- //
@@ -530,7 +576,7 @@ void edittransaction() {
 	
 	int fieldtoedit = 0;
 	while (fieldtoedit > 5 || fieldtoedit < 1) { // There's only 5 fields
-		puts("Enter field to change");
+		puts("Enter field to change or press \"0\" to delete this transaction");
 		fieldtoedit = inputndigits(2, 2); // Only input 1 digit
 	}
 
@@ -549,6 +595,9 @@ void edittransaction() {
 			break;
 		case 5:
 			puts("case 5");
+			break;
+		case 0:
+			deletecsvline(target);
 			break;
 		default:
 			return;
