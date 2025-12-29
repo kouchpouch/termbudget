@@ -196,13 +196,8 @@ void addtransaction() {
 	int month;
 	int day;
 	int transaction;
-	FILE* fptr = opencsv("r+");
-//	FILE* fptr = fopen("data.csv", "r+"); // Might have to mess with this mode
-//	if (fptr == NULL) {
-//		printf("Unable to open file\n");
-//		exit(1);
-//	}
 
+	FILE* fptr = opencsv("r+");
 	fseek(fptr, 0L, SEEK_END);
 
 	year = inputyear();
@@ -313,11 +308,6 @@ struct csvindex *indexcsv() {
 	pcsvindex->lines = 0;
 	
 	FILE *fptr = opencsv("r");
-//	FILE* fptr = fopen("data.csv", "r"); // Beginning of file stream 'r'
-//	if (fptr == NULL) {
-//		printf("Unable to open file\n");
-//		exit(1);
-//	}
 
 	assert(ftell(fptr) == 0); // Must start at a zero offset
 
@@ -374,11 +364,6 @@ void readcsv(void) {
 	int linenum = 0;
 
 	FILE *fptr = opencsv("r");
-//	FILE* fptr = fopen("data.csv", "r");
-//	if (fptr == NULL) {
-//		printf("Unable to open file\n");
-//		exit(1);
-//	}
 
 	struct Linedata linedata_, *ld = &linedata_;
 
@@ -541,11 +526,6 @@ void edittransaction() {
 	struct Linedata linedata, *ld = &linedata;
 
 	FILE* fptr = opencsv("r+");
-//	FILE* fptr = fopen("data.csv", "r+");
-//	if (fptr == NULL) {
-//		printf("Unable to open file\n");
-//		exit(1);
-//	}
 	assert(ftell(fptr) == 0);
 
 	readcsv();
@@ -707,12 +687,6 @@ void getselection() {
 
 int main(int argc, char **argv) {
 	FILE* fptr = opencsv("a");
-//	FILE* fptr = fopen("data.csv", "a"); // Check that CSV exists
-//	if (fptr == NULL) {
-//		printf("File not found\n");
-//		fclose(fptr);
-//		return -1;
-//	}
 	fclose(fptr);
 
 	while (1) {
