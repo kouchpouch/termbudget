@@ -242,15 +242,6 @@ void add_transaction() {
 	}
 	float amount = atof(amountstr);
 
-//	char *strings[] = { categorystr, descstr, amountstr };
-//	for (int i = 0; i < 3; i++) { // Remove all newlines if they exist
-//		int len = strlen(strings[i]);
-//		printf("%s\n", strings[i]);
-//		if (strings[i][len - 1] == '\n') {
-//			strings[i][len - 1] = 0;
-//		}
-//	}
-
 	puts("Verify Data is Correct:");
 	printf(
 		"%d,%d,%d,%s,%s,%d,%.2f\n", 
@@ -512,25 +503,25 @@ int edit_csv_line(int linetoreplace, struct Linedata* ld, int field) {
 	int transaction;
 
 	switch(field) {
-		case 1: // change the date
-			ld->month = input_month();
+		case 1:
 			ld->year = input_year();
+			ld->month = input_month();
 			ld->day = input_day(ld->month, ld->year);
 			break;
-		case 2: // change category
+		case 2:
 			ld->category = input_str_retry("Enter Category");
 			break;
-		case 3: // desc
+		case 3:
 			ld->desc = input_str_retry("Enter Description");	
 			break;
-		case 4: // transaction type
+		case 4:
 			while((transaction = input_n_digits(2, 2)) == -1 || 
 				transaction != 1 && transaction != 2) {
 				puts("Invalid");
 			}
 			ld->transtype = transaction;
 			break;
-		case 5: // amount
+		case 5:
 			amountstr = user_input(AMOUNT_BUFFER);
 			while (amountstr == NULL) {
 				amountstr = user_input(AMOUNT_BUFFER);
