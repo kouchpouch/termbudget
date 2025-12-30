@@ -2,7 +2,6 @@ month,day,year,category,description,transtype,value
 1,3,2025,utilities,electric bill,0,142.37
 1,7,2025,gas,vehicle fuel,0,54.18
 1,10,2025,eating out,restaurant dinner,0,68.90
-1,12,2025,subscriptions,streaming services,0,32.97
 1,15,2025,insurance,car insurance,0,118.45
 1,18,2025,entertainment,movie night,0,27.50
 1,20,2025,healthcare,pharmacy visit,0,44.63
@@ -24,7 +23,6 @@ month,day,year,category,description,transtype,value
 3,21,2025,miscellaneous,household supplies,0,41.28
 4,1,2025,salary,monthly paycheck,1,2850.00
 4,2,2025,rent,apartment rent,0,1250.00
-4,5,2025,utilities,gas bill,0,97.36
 4,7,2025,groceries,weekly groceries,0,181.90
 4,10,2025,gas,vehicle fuel,0,56.21
 4,15,2025,subscriptions,music streaming,0,10.99
@@ -34,6 +32,8 @@ month,day,year,category,description,transtype,value
 2,15,2025,Some category i dunno,null,0,69.42
 2,20,2025,test,whatever,1,1021.54
 2,4,2025,4,whatever,1,420.40
-4,12,2025,christmas,whateve         r,1,42.55
 4,2,2025,whatever,whatever,1,0.10
-4,12,2025,eating out,in n out,1,0.00
+4,12,2025,whatever,whatever,1,202.40
+12,25,2025,christmas,whatever,1,420.69
+2,2,2025,....,whatever,1,420.69
+2,24,2025,2,2,1,1.00

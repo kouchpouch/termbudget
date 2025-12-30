@@ -7,9 +7,13 @@
 #include <ctype.h>
 #include "helper.h"
 
-#define LINE_BUFFER 512
+#define CSV_DIR "./data.csv"
+#define CSV_BAK_DIR "./data.csv.bak"
+#define TEMP_FILE_DIR "./tmp.txt"
+#define LINE_BUFFER 200
 #define STDIN_LARGE_BUFF 64
 #define STDIN_SMALL_BUFF 8
+#define AMOUNT_BUFFER 16
 #define MAX_LEN_DAYMON 3 // With \0
 #define MAX_LEN_YEAR 5 // With \0
 #define MIN_LEN_DAYMON MAX_LEN_DAYMON - 1
@@ -17,15 +21,15 @@
 const bool debug = true;
 
 struct Linedata {
-	int month;
-	int day;
-	int year;
-	char *category;
-	char *desc;
-	int transtype;
-	float amount;
-	int linenum;
-	int offset;
+	int month; // 4
+	int day; // 4
+	int year; // 4
+	char *category; // up to 64
+	char *desc; // up to 64
+	int transtype; // 4
+	float amount; // 4
+	int linenum; // 4 
+	int offset; // 4
 };
 
 struct csvindex { // Dynamically Sized Array
@@ -162,16 +166,21 @@ int inputday(int month, int year) {
 	return day;
 }
 
-//---------------------------------------------------------------------------//
-//---------------------------------------------------------------------------//
+char *input_str_retry(char *msg) {
+	puts(msg);
+	char *str = userinput(STDIN_LARGE_BUFF);	
+	while (str == NULL) {
+		str = userinput(STDIN_LARGE_BUFF);
+	}
+	return str;
+}
+
 //---------------------------------------------------------------------------//
 //--------------------------USER INPUT ABOVE---------------------------------//
 //---------------------------------------------------------------------------//
-//---------------------------------------------------------------------------//
-//---------------------------------------------------------------------------//
 
 FILE *opencsv(char *mode) {
-	FILE *fptr = fopen("data.csv", mode);
+	FILE *fptr = fopen(CSV_DIR, mode);
 	if (fptr == NULL) {
 		puts("Failed to open file");
 		exit(1);
@@ -181,11 +190,26 @@ FILE *opencsv(char *mode) {
 }
 
 struct Categories *getcategories() {
-	// ----------------------------------------------------------- //
 	// Try to group categories by year
-	// ----------------------------------------------------------- //
 	struct Categories c, *pc = &c;
-	
+	pc->size = 0;
+	FILE *fptr = opencsv("r");
+	char *line;
+	char buff[LINE_BUFFER];
+	int year;
+	do {
+		line = fgets(buff, sizeof(buff), fptr);
+		if (line == NULL) {
+			break;
+		} else {
+			strtok(line, ","); // Month
+			strtok(NULL, ","); // Day
+			if (atoi(strtok(NULL, ",")) == year) {
+				pc->size++;	
+			}
+			strtok(NULL, ",");
+		}
+	} while (line != NULL);
 
 	return pc;
 }
@@ -196,6 +220,8 @@ void addtransaction() {
 	int month;
 	int day;
 	int transaction;
+	char *categorystr;
+	char *descstr;
 
 	FILE* fptr = opencsv("r+");
 	fseek(fptr, 0L, SEEK_END);
@@ -203,18 +229,8 @@ void addtransaction() {
 	year = inputyear();
 	month = inputmonth();
 	day = inputday(month, year);
-
-	puts("Category:");
-	char *categorystr = userinput(STDIN_LARGE_BUFF);	
-	while (categorystr == NULL) {
-		categorystr = userinput(STDIN_LARGE_BUFF);
-	}
-
-	puts("Description:");
-	char *descstr = userinput(STDIN_LARGE_BUFF);	
-	while (descstr == NULL) {
-		descstr = userinput(STDIN_LARGE_BUFF);
-	}
+	categorystr = input_str_retry("Category:");
+	descstr = input_str_retry("Description:");
 
 	puts("Enter 1 or 2");
 	puts("1. Expenses"); // 0 is an expense in the CSV
@@ -227,9 +243,9 @@ void addtransaction() {
 	}
 
 	puts("$ Amount:");
-	char *amountstr = userinput(STDIN_LARGE_BUFF);
+	char *amountstr = userinput(AMOUNT_BUFFER);
 	while (amountstr == NULL) {
-		amountstr = userinput(STDIN_LARGE_BUFF);
+		amountstr = userinput(AMOUNT_BUFFER);
 	}
 	float amount = atof(amountstr);
 
@@ -376,8 +392,7 @@ void readcsv(void) {
 		exit(1);
 	}
 
-	/* Count number of fields
-	* Init to 1 to count first field where no comma is present */
+	// Init to 1 to count first field where no comma is present
 	int numFields = 1; 
 
 	for (int i = 0; i < strlen(fields); i++) {
@@ -387,15 +402,10 @@ void readcsv(void) {
 	}
 
 	while (1) {
-		char *charbuff = (char *)malloc(LINE_BUFFER * sizeof(char));
-		if (charbuff == NULL) {
-			exit(1);
-		}
-		/* For each line, tokenize the fields to retrieve each cell's data */
+		char charbuff[LINE_BUFFER];
 
-		if (fgets(charbuff, LINE_BUFFER, fptr) == NULL) {
-			free(charbuff);
-			charbuff = NULL;
+		// For each line, tokenize the fields to retrieve each cell's data
+		if (fgets(charbuff, sizeof(charbuff), fptr) == NULL) {
 			break;
 		}
 
@@ -450,8 +460,6 @@ void readcsv(void) {
 				expenses+=ld->amount;
 			}
 		}
-		free(charbuff);
-		charbuff = NULL;
 	}
 	printf("Income: %.2f\n", income);
 	printf("Expense: %.2f\n", expenses);
@@ -460,23 +468,70 @@ void readcsv(void) {
 	fptr = NULL;
 }
 
-int deletecsvline(int linetodelete) {
-	if (linetodelete == 0) {
+int copytemptomain(FILE* tempfile, FILE* mainfile) {
+	if (fclose(mainfile) == -1) {
+		puts("Failed to close main file");
+		return -1;
+	} else {
+		mainfile = NULL;
+	}
+	if (fclose(tempfile) == -1) {
+		puts("Failed to close temporary file");
+		return -1;
+	} else {
+		tempfile = NULL;
+	}
+	if (rename(CSV_DIR, CSV_BAK_DIR) == -1) {
+		puts("Failed to move main file");	
+		return -1;
+	}
+	if (rename("tmp.txt", CSV_DIR) == -1) {
+		puts("Failed to move temporary file");	
+		return -1;
+	}
+	return 0;
+}
+
+int editcsvline(int linetoreplace, struct Linedata* ld) {
+	if (linetoreplace == 0) {
 		puts("Cannot delete line 0");
 		return -1;
 	}
-	FILE *fptr = fopen("data.csv", "r");
-	if (fptr == NULL) {
-		puts("Failed to open file");
-		return -1;
-	}
+	FILE *fptr = opencsv("r");
 	FILE *tmpfptr = fopen("tmp.txt", "w+");
 	if (fptr == NULL) {
 		puts("Failed to open file");
 		return -1;
 	}
-	// Copy every line from fptr to tmpfptr except the line to delete
-	char buff[LINE_BUFFER];
+	char buff[LINE_BUFFER * 2];
+	char *line;
+	int linenum = 0;
+	do {
+		line = fgets(buff, sizeof(buff), fptr);
+		if (line == NULL) break;
+		if (linenum != linetoreplace) {
+			fputs(line, tmpfptr);
+		} else if (linenum == linetoreplace) {
+			;// TODO
+		}
+		linenum++;	
+	} while(line != NULL);
+	copytemptomain(tmpfptr, fptr);
+	return 0;
+}
+
+int deletecsvline(int linetodelete) {
+	if (linetodelete == 0) {
+		puts("Cannot delete line 0");
+		return -1;
+	}
+	FILE *fptr = opencsv("r");
+	FILE *tmpfptr = fopen("tmp.txt", "w+");
+	if (fptr == NULL) {
+		puts("Failed to open file");
+		return -1;
+	}
+	char buff[LINE_BUFFER * 2];
 	char *line;
 	int linenum = 0;
 	do {
@@ -487,38 +542,11 @@ int deletecsvline(int linetodelete) {
 		}
 		linenum++;	
 	} while(line != NULL);
-
-	if (fclose(fptr) == -1) {
-		puts("Failed to close main file");
-		return -1;
-	} else {
-		fptr = NULL;
-	}
-	if (fclose(tmpfptr) == -1) {
-		puts("Failed to close temporary file");
-		return -1;
-	} else {
-		tmpfptr = NULL;
-	}
-	if (rename("data.csv", "data.csv.bak") == -1) {
-		puts("Failed to move main file");	
-		return -1;
-	}
-	if (rename("tmp.txt", "data.csv") == -1) {
-		puts("Failed to move temporary file");	
-		return -1;
-	}
+	copytemptomain(tmpfptr, fptr);
 	return 0;
 }
 
 void edittransaction() {
-
-	// ----------------------------------------------------------- //
-	//  Users should be able to delete--DONE;					   // 
-	//  and edit transactions in a  							   //
-	//  specific month and year									   //
-	// ----------------------------------------------------------- //
-
 	int target;
 	int humantarget;
 	int targetoffset;
@@ -585,13 +613,23 @@ void edittransaction() {
 			}
 		}
 	}
+	struct Linedata *pLd = malloc(sizeof(*ld));
+	if (pLd == NULL) {
+		puts("Failed to allocate memory");
+		free(pcsvindex);
+		fclose(fptr);
+		fptr = NULL;
+		exit(1);
+	}
+
+	memcpy(pLd, ld, sizeof(*ld));
 
 	printf(
-		"1.) Date-->     %d/%d/%d\n"
-		"2.) Category--> %s\n"
-		"3.) Desc-->     %s\n"
-		"4.) Type-->     %d\n"
-		"5.) Amount -->  $%.2f\n",
+		"1.) Date-->  %d/%d/%d\n"
+		"2.) Cat.-->  %s\n"
+		"3.) Desc-->  %s\n"
+		"4.) Type-->  %d\n"
+		"5.) Amt.-->  $%.2f\n",
 		ld->month, 
 		ld->day, 
 		ld->year, 
@@ -605,34 +643,25 @@ void edittransaction() {
 	do {
 		puts("Enter field to change or press \"0\" to delete this transaction");
 		fieldtoedit = inputndigits(2, 2); // Only input 1 digit
-	} while (fieldtoedit > 5 || fieldtoedit < 0);
+	} while (fieldtoedit > 1 || fieldtoedit < 0);
 
 	switch(fieldtoedit) {
-		case 1:
-			puts("case 1");
-			break;
-		case 2:
-			puts("case 2");
-			break;
-		case 3:
-			puts("case 3");
-			break;
-		case 4:
-			puts("case 4");
-			break;
-		case 5:
-			puts("case 5");
-			break;
 		case 0:
 			if (deletecsvline(humantarget) == 0) {
 				puts("Successfully Deleted Transaction");
 			}
 			break;
+		case 1:
+			editcsvline(humantarget, pLd);
+			break;
 		default:
 			return;
 	}
 
+	free(pLd);
+	pLd = NULL;
 	free(pcsvindex);
+	pcsvindex = NULL;
 	fclose(fptr);
 	fptr = NULL;
 }
