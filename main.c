@@ -9,6 +9,7 @@
 
 #define CSV_DIR "./data.csv"
 #define CSV_BAK_DIR "./data.csv.bak"
+#define CSV_FIELDS 7
 #define TEMP_FILE_DIR "./tmp.txt"
 #define LINE_BUFFER 200
 #define STDIN_LARGE_BUFF 64
@@ -21,23 +22,23 @@
 const bool debug = true;
 
 struct Linedata {
-	int month; // 4
-	int day; // 4
-	int year; // 4
-	char *category; // up to 64
-	char *desc; // up to 64
-	int transtype; // 4
-	float amount; // 4
-	int linenum; // 4 
-	int offset; // 4
+	int month;
+	int day;
+	int year;
+	char *category;
+	char *desc;
+	int transtype;
+	float amount;
+	int linenum;
+	int offset;
 };
 
-struct csvindex { // Dynamically Sized Array
+struct csvindex {
 	int lines;
 	int offsets[];
 };
 
-struct Categories { // Dynamically Sized Array
+struct Categories {
 	int size;
 	char **categories;
 };
@@ -197,20 +198,6 @@ struct Categories *getcategories() {
 	char *line;
 	char buff[LINE_BUFFER];
 	int year;
-	do {
-		line = fgets(buff, sizeof(buff), fptr);
-		if (line == NULL) {
-			break;
-		} else {
-			strtok(line, ","); // Month
-			strtok(NULL, ","); // Day
-			if (atoi(strtok(NULL, ",")) == year) {
-				pc->size++;	
-			}
-			strtok(NULL, ",");
-		}
-	} while (line != NULL);
-
 	return pc;
 }
 
@@ -236,9 +223,8 @@ void addtransaction() {
 	puts("1. Expenses"); // 0 is an expense in the CSV
 	puts("2. Income"); // 1 is an income in the CSV
 
-	while((transaction = inputndigits(2, 2)) == -1 ||
-		transaction != 1
-		&& transaction != 2) {
+	while((transaction = inputndigits(2, 2)) == -1 || 
+		transaction != 1 && transaction != 2) {
 		puts("Invalid");
 	}
 
@@ -371,10 +357,42 @@ struct csvindex *indexcsv() {
 	return pcsvindex;
 }
 
+struct Linedata *tokenize_str(struct Linedata *pLd, char *str) {
+	char **psavestr = &str;
+	char *ptoken;
+	for (int i = 0; i < CSV_FIELDS; i++) {
+		ptoken = strsep(psavestr, ",");
+		if (ptoken == NULL) break;
+		switch (i) {
+			case 0:
+				pLd->month = atoi(ptoken);
+				break;
+			case 1:
+				pLd->day = atoi(ptoken);
+				break;
+			case 2:
+				pLd->year = atoi(ptoken);
+				break;
+			case 3:
+				pLd->category = ptoken;
+				break;
+			case 4:
+				pLd->desc = ptoken;
+				break;
+			case 5:
+				pLd->transtype = atoi(ptoken);
+				break;
+			case 6:
+				pLd->amount = atof(ptoken);
+				break;
+		}
+	}
+	return pLd;
+}
+
 void readcsv(void) {
 	int useryear;
 	int usermonth;
-	float total = 0;
 	float income = 0;
 	float expenses = 0;
 	int linenum = 0;
@@ -386,59 +404,33 @@ void readcsv(void) {
 	useryear = inputyear();
 	usermonth = inputmonth();
 
-	char fields[LINE_BUFFER];
+	// --------------------------------- //
+	// Might want to keep this for later //
+	// --------------------------------- //
 
-	if (fgets(fields, sizeof(fields), fptr) == NULL) {
-		exit(1);
-	}
+//	char fields[LINE_BUFFER];
+//
+//	if (fgets(fields, sizeof(fields), fptr) == NULL) {
+//		exit(1);
+//	}
 
 	// Init to 1 to count first field where no comma is present
-	int numFields = 1; 
-
-	for (int i = 0; i < strlen(fields); i++) {
-		if (fields[i] == ',') {
-			numFields++;	
-		}
-	}
+//	int nfields = 1; 
+//
+//	for (int i = 0; i < strlen(fields); i++) {
+//		if (fields[i] == ',') {
+//			nfields++;	
+//		}
+//	}
 
 	while (1) {
-		char charbuff[LINE_BUFFER];
+		char linebuff[LINE_BUFFER] = {0};
 
-		// For each line, tokenize the fields to retrieve each cell's data
-		if (fgets(charbuff, sizeof(charbuff), fptr) == NULL) {
+		if (fgets(linebuff, sizeof(linebuff), fptr) == NULL) {
 			break;
 		}
 
-		char *token = strtok(charbuff, ",");
-		if (token != NULL) {
-			ld->month = atoi(token);
-		}
-
-		for (int i = 1; i < numFields; i++) {
-			token = strtok(NULL, ",");
-			if (token != NULL) {
-				switch (i) {
-					case 1:
-						ld->day = atoi(token);
-						break;
-					case 2:
-						ld->year = atoi(token);
-						break;
-					case 3:
-						ld->category = token;
-						break;
-					case 4:
-						ld->desc = token;
-						break;
-					case 5:
-						ld->transtype = atoi(token);
-						break;
-					case 6:
-						ld->amount = atof(token);
-						break;
-				}
-			}
-		}
+		ld = tokenize_str(ld, linebuff);
 
 		linenum++;
 		ld->linenum = linenum;
@@ -549,8 +541,6 @@ int deletecsvline(int linetodelete) {
 void edittransaction() {
 	int target;
 	int humantarget;
-	int targetoffset;
-	int totallines;
 	struct Linedata linedata, *ld = &linedata;
 
 	FILE* fptr = opencsv("r+");
@@ -563,10 +553,20 @@ void edittransaction() {
 		puts("Enter a line number");
 		humantarget = inputndigits(sizeof(long long) + 1, 2);
 	} while (humantarget <= 0 || humantarget > pcsvindex->lines);
-	target = humantarget - 1;
-	targetoffset = pcsvindex->offsets[target];
 
-	if (debug == true) printf("TARGET: %d\n", target);
+	/*	Subtract 2 from the human-readable target value because the index
+	*	accessed in pcsv-offsets starts at zero, that's the first -1. Then
+	*	the offset value itself is pointed to the last byte of the the prev.
+	*	line, -1 again. I.E. the last offset in pcsv->offsets is the stream
+	*	position of the very last byte in the stream. If passed the fgets
+	*	function will return null and the program will exit */	
+
+	target = humantarget - 2;
+
+	if (debug == true) {
+		printf("TARGET: %d\n", target);
+		printf("TARGET OFFSET: %d\n", pcsvindex->offsets[target]);
+	}
 
 	fseek(fptr, pcsvindex->offsets[target], SEEK_SET);
 
@@ -574,45 +574,15 @@ void edittransaction() {
 		printf("COMMANDED SEEK OFFSET: %d\n", pcsvindex->offsets[target]);
 	}
 	
-	char buff[LINE_BUFFER];
-	char *str = fgets(buff, sizeof(buff), fptr);
+	char linebuff[LINE_BUFFER];
+	char *str = fgets(linebuff, sizeof(linebuff), fptr);
 	if (str == NULL) {
 		puts("failed to read line");
 		exit(1);
 	}
 
-	char *token;
-	printf("%s\n", str);
+	ld = tokenize_str(ld, linebuff);
 
-	token = strtok(buff, ",");
-	if (token != NULL) {
-		ld->month = atoi(token);
-	}
-	for (int i = 1; i < 7; i++) {
-		token = strtok(NULL, ",");
-		if (token != NULL) {
-			switch (i) {
-				case 1:
-					ld->day = atoi(token);
-					break;
-				case 2:
-					ld->year = atoi(token);
-					break;
-				case 3:
-					ld->category = token;
-					break;
-				case 4:
-					ld->desc = token;
-					break;
-				case 5:
-					ld->transtype = atoi(token);
-					break;
-				case 6:
-					ld->amount = atof(token);
-					break;
-			}
-		}
-	}
 	struct Linedata *pLd = malloc(sizeof(*ld));
 	if (pLd == NULL) {
 		puts("Failed to allocate memory");
