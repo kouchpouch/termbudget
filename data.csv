@@ -34,6 +34,6 @@ month,day,year,category,description,transtype,value
 2,4,2025,4,whatever,1,420.40
 4,2,2025,whatever,whatever,1,0.10
 4,12,2025,whatever,whatever,1,202.40
-12,25,2025,christmas,whatever,1,420.69
 2,2,2025,....,whatever,1,420.69
 2,24,2025,2,2,1,1.00
+2,2,2025,2,2,1,2.00
