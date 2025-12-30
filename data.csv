@@ -18,22 +18,18 @@ month,day,year,category,description,transtype,value
 3,4,2025,utilities,internet bill,0,79.99
 3,9,2025,gas,vehicle fuel,0,52.64
 3,12,2025,eating out,coffee shop,0,18.45
-3,15,2025,insurance,health insurance,0,210.00
+3,15,2025,SCAM INSURANCE,health insurance,0,210.00
 3,18,2025,entertainment,video game purchase,0,59.99
 3,21,2025,miscellaneous,household supplies,0,41.28
 4,1,2025,salary,monthly paycheck,1,2850.00
 4,2,2025,rent,apartment rent,0,1250.00
 4,7,2025,groceries,weekly groceries,0,181.90
 4,10,2025,gas,vehicle fuel,0,56.21
-4,15,2025,subscriptions,music streaming,0,10.99
-4,22,2025,entertainment,local event,0,40.00
-12,12,2025,something,something else,1,420.69
-2,15,2025,2,2,1,420.69
+4,10,2025,gas,CHANGE THIS,0,56.21
 2,15,2025,Some category i dunno,null,0,69.42
 2,20,2025,test,whatever,1,1021.54
-2,4,2025,4,whatever,1,420.40
+3,6,2025,4,whatever,1,420.40
 4,2,2025,whatever,whatever,1,0.10
-4,12,2025,whatever,whatever,1,202.40
-2,2,2025,....,whatever,1,420.69
-2,24,2025,2,2,1,1.00
-2,2,2025,2,2,1,2.00
+4,12,2025,cat,whatever,1,202.40
+2,24,2025,2,2,1,100000.00
+4,12,2025,april showers,bring may flowers,1,420.69
