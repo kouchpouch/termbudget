@@ -197,7 +197,7 @@ FILE *open_csv(char *mode) {
 	}
 }
 
-struct Categories *getcategories() {
+struct Categories *get_categories() {
 	// Try to group categories by year
 	struct Categories c, *pc = &c;
 	pc->size = 0;
@@ -491,7 +491,7 @@ int move_temp_to_main(FILE* tempfile, FILE* mainfile) {
 	return 0;
 }
 
-int editcsvline(int linetoreplace, struct Linedata* ld, int field) {
+int edit_csv_line(int linetoreplace, struct Linedata* ld, int field) {
 	if (linetoreplace == 0) {
 		puts("Cannot delete line 0");
 		return -1;
@@ -569,7 +569,7 @@ int editcsvline(int linetoreplace, struct Linedata* ld, int field) {
 	return 0;
 }
 
-int deletecsvline(int linetodelete) {
+int delete_csv_line(int linetodelete) {
 	if (linetodelete == 0) {
 		puts("Cannot delete line 0");
 		return -1;
@@ -674,24 +674,24 @@ void edit_transaction() {
 
 	switch(fieldtoedit) {
 		case 0:
-			if (deletecsvline(humantarget) == 0) {
+			if (delete_csv_line(humantarget) == 0) {
 				puts("Successfully Deleted Transaction");
 			}
 			break;
 		case 1:
-			editcsvline(humantarget, pLd, 1);
+			edit_csv_line(humantarget, pLd, 1);
 			break;
 		case 2:
-			editcsvline(humantarget, pLd, 2);
+			edit_csv_line(humantarget, pLd, 2);
 			break;
 		case 3:
-			editcsvline(humantarget, pLd, 3);
+			edit_csv_line(humantarget, pLd, 3);
 			break;
 		case 4:
-			editcsvline(humantarget, pLd, 4);
+			edit_csv_line(humantarget, pLd, 4);
 			break;
 		case 5:
-			editcsvline(humantarget, pLd, 5);
+			edit_csv_line(humantarget, pLd, 5);
 			break;
 		default:
 			return;
