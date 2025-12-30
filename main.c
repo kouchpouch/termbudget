@@ -43,7 +43,7 @@ struct Categories {
 	char **categories;
 };
 
-char *userinput(size_t buffersize) {
+char *user_input(size_t buffersize) {
 	int minchar = 2;
 	char *buffer = (char *)malloc(buffersize);
 	if (buffer == NULL) {
@@ -84,13 +84,13 @@ char *userinput(size_t buffersize) {
 	return buffer; // Must be free'd
 }
 
-int inputndigits(int max_len, int min_len) {
+int input_n_digits(int max_len, int min_len) {
 	size_t bytesize = ((sizeof(char) * max_len) + 1);
-	char *str = userinput(bytesize);
+	char *str = user_input(bytesize);
 
 	while (str == NULL) {
 		puts("Invalid Entry");
-		str = userinput(bytesize);
+		str = user_input(bytesize);
 	}
 
 	if (strlen(str) < min_len) {
@@ -115,8 +115,8 @@ FAIL:
 	return -1;
 }
 
-int confirmInput() {
-	char *confirm = userinput(STDIN_SMALL_BUFF);
+int confirm_input() {
+	char *confirm = user_input(STDIN_SMALL_BUFF);
 	if (confirm == NULL) {
 		return -1;
 	}
@@ -137,10 +137,10 @@ int confirmInput() {
 	return -1;
 }
 
-int inputmonth() {
+int input_month() {
 	int month;
 	puts("Enter Month");
-	while((month = inputndigits(MAX_LEN_DAYMON, MIN_LEN_DAYMON)) == -1
+	while((month = input_n_digits(MAX_LEN_DAYMON, MIN_LEN_DAYMON)) == -1
 		|| month <= 0
 		|| month > 12) {
 		puts("Enter a Vaid Month");
@@ -148,17 +148,17 @@ int inputmonth() {
 	return month;
 }
 
-int inputyear() {
+int input_year() {
 	int year;
 	puts("Enter Year");
-	while((year = inputndigits(MAX_LEN_YEAR, MAX_LEN_YEAR)) == -1);
+	while((year = input_n_digits(MAX_LEN_YEAR, MAX_LEN_YEAR)) == -1);
 	return year;
 }
 
-int inputday(int month, int year) {
+int input_day(int month, int year) {
 	int day;
 	puts("Enter Day");
-	while((day = inputndigits(MAX_LEN_DAYMON, MIN_LEN_DAYMON)) == -1 ||
+	while((day = input_n_digits(MAX_LEN_DAYMON, MIN_LEN_DAYMON)) == -1 ||
 			dayexists(day, month, year) == false) {
 		if (dayexists(day, month, year) == false) { // Calling this twice is GROSS but I'm kinda stupid
 			puts("Invalid Day");
@@ -167,12 +167,14 @@ int inputday(int month, int year) {
 	return day;
 }
 
+/* Takes a user's input and displays msg, on failure to read the user's
+ * input the user's input is read again. The newline character is removed */
 char *input_str_retry(char *msg) {
 	puts(msg);
 	int len;
-	char *str = userinput(STDIN_LARGE_BUFF);	
+	char *str = user_input(STDIN_LARGE_BUFF);	
 	while (str == NULL) {
-		str = userinput(STDIN_LARGE_BUFF);
+		str = user_input(STDIN_LARGE_BUFF);
 	}
 	len = strlen(str);
 	if (str[len - 1] == '\n') {
@@ -185,7 +187,7 @@ char *input_str_retry(char *msg) {
 //--------------------------USER INPUT ABOVE---------------------------------//
 //---------------------------------------------------------------------------//
 
-FILE *opencsv(char *mode) {
+FILE *open_csv(char *mode) {
 	FILE *fptr = fopen(CSV_DIR, mode);
 	if (fptr == NULL) {
 		puts("Failed to open file");
@@ -199,14 +201,14 @@ struct Categories *getcategories() {
 	// Try to group categories by year
 	struct Categories c, *pc = &c;
 	pc->size = 0;
-	FILE *fptr = opencsv("r");
+	FILE *fptr = open_csv("r");
 	char *line;
 	char buff[LINE_BUFFER];
 	int year;
 	return pc;
 }
 
-void addtransaction() {
+void add_transaction() {
 	struct Linedata userlinedata_, *uld = &userlinedata_;
 	int year;
 	int month;
@@ -215,12 +217,12 @@ void addtransaction() {
 	char *categorystr;
 	char *descstr;
 
-	FILE* fptr = opencsv("r+");
+	FILE* fptr = open_csv("r+");
 	fseek(fptr, 0L, SEEK_END);
 
-	year = inputyear();
-	month = inputmonth();
-	day = inputday(month, year);
+	year = input_year();
+	month = input_month();
+	day = input_day(month, year);
 	categorystr = input_str_retry("Category:");
 	descstr = input_str_retry("Description:");
 
@@ -228,15 +230,15 @@ void addtransaction() {
 	puts("1. Expenses"); // 0 is an expense in the CSV
 	puts("2. Income"); // 1 is an income in the CSV
 
-	while((transaction = inputndigits(2, 2)) == -1 || 
+	while((transaction = input_n_digits(2, 2)) == -1 || 
 		transaction != 1 && transaction != 2) {
 		puts("Invalid");
 	}
 
 	puts("$ Amount:");
-	char *amountstr = userinput(AMOUNT_BUFFER);
+	char *amountstr = user_input(AMOUNT_BUFFER);
 	while (amountstr == NULL) {
-		amountstr = userinput(AMOUNT_BUFFER);
+		amountstr = user_input(AMOUNT_BUFFER);
 	}
 	float amount = atof(amountstr);
 
@@ -262,7 +264,7 @@ void addtransaction() {
 	);
 	printf("Y/N:  ");
 
-	int result = confirmInput();
+	int result = confirm_input();
 	if (result == 1) {
 		if (debug == true) puts("TRUE");
 		uld->month = month;
@@ -275,7 +277,7 @@ void addtransaction() {
 	} else if (result == 0) {
 		if (debug == true) puts("FALSE");
 		goto CLEANUP;
-		// Free heap and exit back to getselection()
+		// Free heap and exit back to get_selection()
 	} else {
 		puts("Invalid answer");
 		goto CLEANUP;
@@ -305,7 +307,7 @@ CLEANUP:
 	free(amountstr);
 }
 
-struct csvindex *indexcsv() {
+struct csvindex *index_csv() {
 	struct csvindex *pcsvindex = malloc(sizeof(struct csvindex) + 0 * sizeof(int));
 	if (pcsvindex == NULL) {
 		puts("Failed to allocate memory");
@@ -314,7 +316,7 @@ struct csvindex *indexcsv() {
 
 	pcsvindex->lines = 0;
 	
-	FILE *fptr = opencsv("r");
+	FILE *fptr = open_csv("r");
 
 	assert(ftell(fptr) == 0); // Must start at a zero offset
 
@@ -395,19 +397,19 @@ struct Linedata *tokenize_str(struct Linedata *pLd, char *str) {
 	return pLd;
 }
 
-void readcsv(void) {
+void read_csv(void) {
 	int useryear;
 	int usermonth;
 	float income = 0;
 	float expenses = 0;
 	int linenum = 0;
 
-	FILE *fptr = opencsv("r");
+	FILE *fptr = open_csv("r");
 
 	struct Linedata linedata_, *ld = &linedata_;
 
-	useryear = inputyear();
-	usermonth = inputmonth();
+	useryear = input_year();
+	usermonth = input_month();
 
 	// --------------------------------- //
 	// Might want to keep this for later //
@@ -465,7 +467,7 @@ void readcsv(void) {
 	fptr = NULL;
 }
 
-int copytemptomain(FILE* tempfile, FILE* mainfile) {
+int move_temp_to_main(FILE* tempfile, FILE* mainfile) {
 	if (fclose(mainfile) == -1) {
 		puts("Failed to close main file");
 		return -1;
@@ -494,7 +496,7 @@ int editcsvline(int linetoreplace, struct Linedata* ld, int field) {
 		puts("Cannot delete line 0");
 		return -1;
 	}
-	FILE *fptr = opencsv("r");
+	FILE *fptr = open_csv("r");
 	FILE *tmpfptr = fopen("tmp.txt", "w+");
 	if (fptr == NULL) {
 		puts("Failed to open file");
@@ -511,9 +513,9 @@ int editcsvline(int linetoreplace, struct Linedata* ld, int field) {
 
 	switch(field) {
 		case 1: // change the date
-			ld->month = inputmonth();
-			ld->year = inputyear();
-			ld->day = inputday(ld->month, ld->year);
+			ld->month = input_month();
+			ld->year = input_year();
+			ld->day = input_day(ld->month, ld->year);
 			break;
 		case 2: // change category
 			ld->category = input_str_retry("Enter Category");
@@ -522,16 +524,16 @@ int editcsvline(int linetoreplace, struct Linedata* ld, int field) {
 			ld->desc = input_str_retry("Enter Description");	
 			break;
 		case 4: // transaction type
-			while((transaction = inputndigits(2, 2)) == -1 || 
+			while((transaction = input_n_digits(2, 2)) == -1 || 
 				transaction != 1 && transaction != 2) {
 				puts("Invalid");
 			}
 			ld->transtype = transaction;
 			break;
 		case 5: // amount
-			amountstr = userinput(AMOUNT_BUFFER);
+			amountstr = user_input(AMOUNT_BUFFER);
 			while (amountstr == NULL) {
-				amountstr = userinput(AMOUNT_BUFFER);
+				amountstr = user_input(AMOUNT_BUFFER);
 			}
 			float amount = atof(amountstr);
 			ld->amount = amount;
@@ -561,7 +563,7 @@ int editcsvline(int linetoreplace, struct Linedata* ld, int field) {
 		}
 		linenum++;	
 	} while(line != NULL);
-	if (copytemptomain(tmpfptr, fptr) == 0) {
+	if (move_temp_to_main(tmpfptr, fptr) == 0) {
 		puts("Edit Complete");
 	}
 	return 0;
@@ -572,7 +574,7 @@ int deletecsvline(int linetodelete) {
 		puts("Cannot delete line 0");
 		return -1;
 	}
-	FILE *fptr = opencsv("r");
+	FILE *fptr = open_csv("r");
 	FILE *tmpfptr = fopen("tmp.txt", "w+");
 	if (fptr == NULL) {
 		puts("Failed to open file");
@@ -589,24 +591,24 @@ int deletecsvline(int linetodelete) {
 		}
 		linenum++;	
 	} while(line != NULL);
-	copytemptomain(tmpfptr, fptr);
+	move_temp_to_main(tmpfptr, fptr);
 	return 0;
 }
 
-void edittransaction() {
+void edit_transaction() {
 	int target;
 	int humantarget;
 	struct Linedata linedata, *ld = &linedata;
 
-	FILE* fptr = opencsv("r+");
+	FILE* fptr = open_csv("r+");
 	assert(ftell(fptr) == 0);
 
-	readcsv();
-	struct csvindex *pcsvindex = indexcsv();
+	read_csv();
+	struct csvindex *pcsvindex = index_csv();
 	printf("LINES: %d\n", pcsvindex->lines);
 	do {
 		puts("Enter a line number");
-		humantarget = inputndigits(sizeof(long long) + 1, 2);
+		humantarget = input_n_digits(sizeof(long long) + 1, 2);
 	} while (humantarget <= 0 || humantarget > pcsvindex->lines);
 
 	/*	Subtract 2 from the human-readable target value because the index
@@ -667,7 +669,7 @@ void edittransaction() {
 	int fieldtoedit;
 	do {
 		puts("Enter field to change or press \"0\" to delete this transaction");
-		fieldtoedit = inputndigits(2, 2); // Only input 1 digit
+		fieldtoedit = input_n_digits(2, 2); // Only input 1 digit
 	} while (fieldtoedit > 5 || fieldtoedit < 0);
 
 	switch(fieldtoedit) {
@@ -703,7 +705,7 @@ void edittransaction() {
 	fptr = NULL;
 }
 
-void getselection() {
+void get_selection() {
 	int choice;
 	printf("Make a selection:\n");
 	printf("a - Add Transaction\n");
@@ -711,17 +713,17 @@ void getselection() {
 	printf("r - Read CSV\n");
 	printf("q - Quit\n");
 
-	char *userstr = userinput(STDIN_SMALL_BUFF); // Must be free'd
+	char *userstr = user_input(STDIN_SMALL_BUFF); // Must be free'd
 	
 	while (userstr == NULL) {
-		getselection();
+		get_selection();
 	}
 
 	if ((choice = upper(userstr)) == 0) {
 		puts("Invalid character");
 		free(userstr);
 		userstr = NULL;
-		getselection();
+		get_selection();
 	}
 	
 	free(userstr);
@@ -730,15 +732,15 @@ void getselection() {
 	switch (choice) {
 		case 'A':
 			printf("-*-ADD TRANSACTION-*-\n");
-			addtransaction();
+			add_transaction();
 			break;
 		case 'E':
 			printf("-*-EDIT TRANSACTION-*-\n");
-			edittransaction();
+			edit_transaction();
 			break;
 		case 'R':
 			printf("-*-READ CSV-*-\n");
-			readcsv();
+			read_csv();
 			break;
 		case 'Q':
 			printf("Quiting\n");
@@ -746,17 +748,17 @@ void getselection() {
 		default:
 			puts("Invalid character");
 			printf("\n");
-			getselection();
+			get_selection();
 	}
 	return;
 }
 
 int main(int argc, char **argv) {
-	FILE* fptr = opencsv("a");
+	FILE* fptr = open_csv("a");
 	fclose(fptr);
 
 	while (1) {
-		getselection();
+		get_selection();
 		getchar();
 	}
 }
