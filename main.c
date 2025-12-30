@@ -169,9 +169,14 @@ int inputday(int month, int year) {
 
 char *input_str_retry(char *msg) {
 	puts(msg);
+	int len;
 	char *str = userinput(STDIN_LARGE_BUFF);	
 	while (str == NULL) {
 		str = userinput(STDIN_LARGE_BUFF);
+	}
+	len = strlen(str);
+	if (str[len - 1] == '\n') {
+		str[len - 1] = 0;
 	}
 	return str;
 }
@@ -235,14 +240,14 @@ void addtransaction() {
 	}
 	float amount = atof(amountstr);
 
-	char *strings[] = { categorystr, descstr, amountstr };
-	for (int i = 0; i < 3; i++) { // Remove all newlines if they exist
-		int len = strlen(strings[i]);
-		printf("%s\n", strings[i]);
-		if (strings[i][len - 1] == '\n') {
-			strings[i][len - 1] = 0;
-		}
-	}
+//	char *strings[] = { categorystr, descstr, amountstr };
+//	for (int i = 0; i < 3; i++) { // Remove all newlines if they exist
+//		int len = strlen(strings[i]);
+//		printf("%s\n", strings[i]);
+//		if (strings[i][len - 1] == '\n') {
+//			strings[i][len - 1] = 0;
+//		}
+//	}
 
 	puts("Verify Data is Correct:");
 	printf(
@@ -484,7 +489,7 @@ int copytemptomain(FILE* tempfile, FILE* mainfile) {
 	return 0;
 }
 
-int editcsvline(int linetoreplace, struct Linedata* ld) {
+int editcsvline(int linetoreplace, struct Linedata* ld, int field) {
 	if (linetoreplace == 0) {
 		puts("Cannot delete line 0");
 		return -1;
@@ -495,20 +500,70 @@ int editcsvline(int linetoreplace, struct Linedata* ld) {
 		puts("Failed to open file");
 		return -1;
 	}
+	/* LINE_BUFFER * 2 to account for any line that may be longer
+	 * due to a manual CSV entry, which shouldn't happen, but this will
+	 * protect us in case it does */
 	char buff[LINE_BUFFER * 2];
 	char *line;
 	int linenum = 0;
+	char *amountstr;
+	int transaction;
+
+	switch(field) {
+		case 1: // change the date
+			ld->month = inputmonth();
+			ld->year = inputyear();
+			ld->day = inputday(ld->month, ld->year);
+			break;
+		case 2: // change category
+			ld->category = input_str_retry("Enter Category");
+			break;
+		case 3: // desc
+			ld->desc = input_str_retry("Enter Description");	
+			break;
+		case 4: // transaction type
+			while((transaction = inputndigits(2, 2)) == -1 || 
+				transaction != 1 && transaction != 2) {
+				puts("Invalid");
+			}
+			ld->transtype = transaction;
+			break;
+		case 5: // amount
+			amountstr = userinput(AMOUNT_BUFFER);
+			while (amountstr == NULL) {
+				amountstr = userinput(AMOUNT_BUFFER);
+			}
+			float amount = atof(amountstr);
+			ld->amount = amount;
+			break;
+		default:
+			puts("Not a valid choice, exiting");
+			fclose(fptr);
+			fclose(tmpfptr);
+			return -1;
+	}
+
 	do {
 		line = fgets(buff, sizeof(buff), fptr);
 		if (line == NULL) break;
-		if (linenum != linetoreplace) {
+		if (linenum != linetoreplace - 1) {
 			fputs(line, tmpfptr);
-		} else if (linenum == linetoreplace) {
-			;// TODO
+		} else if (linenum == linetoreplace - 1) {
+			fprintf(tmpfptr, "%d,%d,%d,%s,%s,%d,%.2f\n",
+			ld->month, 
+			ld->day, 
+			ld->year, 
+			ld->category, 
+			ld->desc, 
+			ld->transtype, 
+			ld->amount
+		   );
 		}
 		linenum++;	
 	} while(line != NULL);
-	copytemptomain(tmpfptr, fptr);
+	if (copytemptomain(tmpfptr, fptr) == 0) {
+		puts("Edit Complete");
+	}
 	return 0;
 }
 
@@ -613,7 +668,7 @@ void edittransaction() {
 	do {
 		puts("Enter field to change or press \"0\" to delete this transaction");
 		fieldtoedit = inputndigits(2, 2); // Only input 1 digit
-	} while (fieldtoedit > 1 || fieldtoedit < 0);
+	} while (fieldtoedit > 5 || fieldtoedit < 0);
 
 	switch(fieldtoedit) {
 		case 0:
@@ -622,7 +677,19 @@ void edittransaction() {
 			}
 			break;
 		case 1:
-			editcsvline(humantarget, pLd);
+			editcsvline(humantarget, pLd, 1);
+			break;
+		case 2:
+			editcsvline(humantarget, pLd, 2);
+			break;
+		case 3:
+			editcsvline(humantarget, pLd, 3);
+			break;
+		case 4:
+			editcsvline(humantarget, pLd, 4);
+			break;
+		case 5:
+			editcsvline(humantarget, pLd, 5);
 			break;
 		default:
 			return;
