@@ -515,13 +515,17 @@ int edit_csv_line(int linetoreplace, struct Linedata* ld, int field) {
 			ld->desc = input_str_retry("Enter Description");	
 			break;
 		case 4:
+			puts("Enter 1 or 2");
+			puts("1. Expenses");
+			puts("2. Income");
 			while((transaction = input_n_digits(2, 2)) == -1 || 
 				transaction != 1 && transaction != 2) {
 				puts("Invalid");
 			}
-			ld->transtype = transaction;
+			ld->transtype = transaction - 1;
 			break;
 		case 5:
+			puts("$ Amount:");
 			amountstr = user_input(AMOUNT_BUFFER);
 			while (amountstr == NULL) {
 				amountstr = user_input(AMOUNT_BUFFER);
@@ -539,9 +543,10 @@ int edit_csv_line(int linetoreplace, struct Linedata* ld, int field) {
 	do {
 		line = fgets(buff, sizeof(buff), fptr);
 		if (line == NULL) break;
-		if (linenum != linetoreplace - 1) {
+		linenum++;	
+		if (linenum != linetoreplace) {
 			fputs(line, tmpfptr);
-		} else if (linenum == linetoreplace - 1) {
+		} else if (linenum == linetoreplace) {
 			fprintf(tmpfptr, "%d,%d,%d,%s,%s,%d,%.2f\n",
 			ld->month, 
 			ld->day, 
@@ -552,7 +557,6 @@ int edit_csv_line(int linetoreplace, struct Linedata* ld, int field) {
 			ld->amount
 		   );
 		}
-		linenum++;	
 	} while(line != NULL);
 	if (move_temp_to_main(tmpfptr, fptr) == 0) {
 		puts("Edit Complete");

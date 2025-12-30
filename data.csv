@@ -23,7 +23,7 @@ month,day,year,category,description,transtype,value
 3,21,2025,miscellaneous,household supplies,0,41.28
 4,1,2025,salary,monthly paycheck,1,2850.00
 4,2,2025,rent,apartment rent,0,1250.00
-4,7,2025,groceries,weekly groceries,0,181.90
+4,7,2025,groceries,all the groceries,0,181.90
 4,10,2025,gas,vehicle fuel,0,56.21
 4,10,2025,gas,CHANGE THIS,0,56.21
 2,15,2025,Some category i dunno,null,0,69.42
@@ -32,4 +32,4 @@ month,day,year,category,description,transtype,value
 4,2,2025,whatever,whatever,1,0.10
 4,12,2025,cat,whatever,1,202.40
 2,24,2025,2,2,1,100000.00
-4,12,2025,april showers,bring may flowers,1,420.69
+4,12,2025,showers april,bring may flowers,1,420.69
