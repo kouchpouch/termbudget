@@ -1,9 +1,9 @@
-#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
 #include <limits.h>
+#include <assert.h>
 #include <ctype.h>
 #include "helper.h"
 
@@ -158,9 +158,11 @@ int input_year() {
 int input_day(int month, int year) {
 	int day;
 	puts("Enter Day");
+
 	while((day = input_n_digits(MAX_LEN_DAYMON, MIN_LEN_DAYMON)) == -1 ||
 			dayexists(day, month, year) == false) {
-		if (dayexists(day, month, year) == false) { // Calling this twice is GROSS but I'm kinda stupid
+		if (dayexists(day, month, year) == false) { 
+	// Calling this twice is GROSS but I'm kinda stupid
 			puts("Invalid Day");
 		}
 	}
@@ -195,6 +197,24 @@ FILE *open_csv(char *mode) {
 	} else {
 		return fptr;
 	}
+}
+
+void sort_csv() {
+	// First get the dates and sort by year, then by month, then by day.
+	// This is probably going to be very inefficient... but maybe
+	// better later
+	
+	FILE *fptr = open_csv();
+	// Get the first field of each line, exlcuding the first line
+	char linebuffer[LINE_BUFFER];
+	char *line;
+	char **psave = &line;
+	linenum = 0;
+
+	do {
+		line = fgets(linebuffer, sizeof(linebuffer), fptr);
+		linenum++;
+		strsep(
 }
 
 struct Categories *get_categories() {
@@ -306,12 +326,9 @@ struct csvindex *index_csv() {
 	}
 
 	pcsvindex->lines = 0;
-	
 	FILE *fptr = open_csv("r");
-
-	assert(ftell(fptr) == 0); // Must start at a zero offset
-
-	char charbuff[LINE_BUFFER]; // write into a buffer on the stack
+	assert(ftell(fptr) == 0);
+	char charbuff[LINE_BUFFER];
 
 	while (1) {
 		char* test = fgets(charbuff, sizeof(charbuff), fptr);
@@ -321,7 +338,8 @@ struct csvindex *index_csv() {
 		pcsvindex->lines++;
 	}
 
-	printf("%d Lines\n", pcsvindex->lines); // Now we know the # of lines,
+	printf("%d Lines\n", pcsvindex->lines); 
+	// Now we know the # of lines,
 	// realloc the struct to hold the offset data
 	if (debug == true) {
 		printf("NUMBER OF LINES: %d\n", pcsvindex->lines);
@@ -335,7 +353,7 @@ struct csvindex *index_csv() {
 	pcsvindex = tmp;
 
 	rewind(fptr);
-	assert(ftell(fptr) == 0); // Make sure we are back to the starting point
+	assert(ftell(fptr) == 0);
 
 	for (int i = 0; i < pcsvindex->lines; i++) {
 		char* test = fgets(charbuff, sizeof(charbuff), fptr);
