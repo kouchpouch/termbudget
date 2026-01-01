@@ -198,24 +198,16 @@ FILE *open_csv(char *mode) {
 		return fptr;
 	}
 }
-
-void sort_csv() {
-	// First get the dates and sort by year, then by month, then by day.
-	// This is probably going to be very inefficient... but maybe
-	// better later
-	
-	FILE *fptr = open_csv();
-	// Get the first field of each line, exlcuding the first line
-	char linebuffer[LINE_BUFFER];
-	char *line;
-	char **psave = &line;
-	linenum = 0;
-
-	do {
-		line = fgets(linebuffer, sizeof(linebuffer), fptr);
-		linenum++;
-		strsep(
+/* Temp csv will always open with mode w+ */
+FILE *open_temp_csv() {
+	FILE *tmpfptr = fopen("tmp.txt", "w+");
+	if (tmpfptr == NULL) {
+		puts("Failed to open file");
+		exit(1);
+	}
+	return tmpfptr;
 }
+
 
 struct Categories *get_categories() {
 	// Try to group categories by year
@@ -373,6 +365,58 @@ struct csvindex *index_csv() {
 	return pcsvindex;
 }
 
+int test_sorting(int day, int month, int year) {
+	// Sorts by date
+	// fuck this is TOUUUUUGH
+	// Need to find every year, then every month, then every day
+	// Once we reach i.e. year = 2000, x > year, stop searching. The csv
+	// will naturally be sorted from edit_transaction on case 1 switch and
+	// adding transaction
+	
+	struct csvindex *pCi = index_csv();
+
+	int line = 0;
+	FILE *fptr = open_csv("r");
+	char buff[LINE_BUFFER];
+	int buffsize = sizeof(buff);
+	char *str;
+	str = fgets(buff, buffsize, fptr); // Throwaway for the fields
+
+	int monthtok, daytok, yeartok;
+	int matches = 0;
+
+	int *yearmatches = calloc(pCi->lines, sizeof(int));
+	if (yearmatches == NULL) {
+		puts("Failed to allocate memory");
+		free(pCi);
+		fclose(fptr);
+		exit(1);
+	}
+
+	do {
+		str = fgets(buff, buffsize, fptr);
+		if (str == NULL) break;
+		line++;
+		monthtok = atoi(strsep(&str, ",")); // Month
+		daytok = atoi(strsep(&str, ",")); // Day
+		yeartok = atoi(strsep(&str, ",")); // Year
+		if (yeartok == year) {
+			yearmatches[line] = line;
+			matches++;
+		}
+		// Should be able to just quit after this
+	} while (str != NULL);
+
+	printf("MATCHES: %d\n", matches);
+	for (int i = 0; i < matches; i++) {
+		printf("LINE: %d\n", yearmatches[i]);	
+	}
+	
+	free(yearmatches);
+	
+	return line; // Returns the line to insert the transaction into
+}
+
 struct Linedata *tokenize_str(struct Linedata *pLd, char *str) {
 	char **psavestr = &str;
 	char *ptoken;
@@ -506,11 +550,8 @@ int edit_csv_line(int linetoreplace, struct Linedata* ld, int field) {
 		return -1;
 	}
 	FILE *fptr = open_csv("r");
-	FILE *tmpfptr = fopen("tmp.txt", "w+");
-	if (fptr == NULL) {
-		puts("Failed to open file");
-		return -1;
-	}
+	FILE *tmpfptr = open_temp_csv();
+
 	/* LINE_BUFFER * 2 to account for any line that may be longer
 	 * due to a manual CSV entry, which shouldn't happen, but this will
 	 * protect us in case it does */
@@ -520,11 +561,14 @@ int edit_csv_line(int linetoreplace, struct Linedata* ld, int field) {
 	char *amountstr;
 	int transaction;
 
+	int test;
+
 	switch(field) {
 		case 1:
 			ld->year = input_year();
 			ld->month = input_month();
 			ld->day = input_day(ld->month, ld->year);
+			test = test_sorting(ld->day, ld->month, ld->year);
 			break;
 		case 2:
 			ld->category = input_str_retry("Enter Category");
@@ -724,6 +768,7 @@ void get_selection() {
 	printf("a - Add Transaction\n");
 	printf("e - Edit Transaction\n"); 
 	printf("r - Read CSV\n");
+	printf("s - DEBUG Sort CSV\n");
 	printf("q - Quit\n");
 
 	char *userstr = user_input(STDIN_SMALL_BUFF); // Must be free'd
