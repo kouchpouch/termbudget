@@ -17,7 +17,7 @@ int sort_csv(int month, int day, int year, int maxlines) {
 	//printf("Target: %d/%d/%d\n", month, day, year);
 	int result_line = -1;
 	int line = 1;
-	char buff[1024];
+	char buff[200];
 	int buffsize = sizeof(buff);
 	char *str;
 	int maxyear = 0;

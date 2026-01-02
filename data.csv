@@ -1,7 +1,6 @@
 month,day,year,category,description,transtype,value
 1,2,2023,shopping,online order,0,134.69
 1,2,2023,healthcare,pharmacy visit,0,104.81
-1,8,2023,entertainment,movie night,0,133.84
 1,10,2023,shopping,online order,0,82.69
 1,10,2023,entertainment,movie night,0,132.49
 1,13,2023,transport,fuel purchase,0,74.4
@@ -23,6 +22,7 @@ month,day,year,category,description,transtype,value
 1,29,2023,dining,restaurant,0,187.13
 1,30,2023,healthcare,pharmacy visit,0,31.07
 1,31,2023,entertainment,movie night,0,22.43
+2,1,2023,entertainment,movie night,0,133.84
 2,2,2023,shopping,online order,0,33.71
 2,4,2023,dining,restaurant,0,86.07
 2,5,2023,groceries,grocery store,0,131.19
@@ -735,6 +735,7 @@ month,day,year,category,description,transtype,value
 4,4,2025,dining,restaurant,0,166.64
 4,5,2025,groceries,grocery store,0,154.94
 4,5,2025,entertainment,movie night,0,99.49
+4,5,2025,whatever,whatever,1,2.00
 4,6,2025,transport,fuel purchase,0,81.3
 4,6,2025,groceries,grocery store,0,30.5
 4,7,2025,groceries,grocery store,0,187.8
@@ -750,7 +751,8 @@ month,day,year,category,description,transtype,value
 4,18,2025,healthcare,pharmacy visit,0,58.38
 4,22,2025,entertainment,movie night,0,57.02
 4,22,2025,dining,restaurant,0,177.55
-4,24,2025,utilities,monthly bill,0,43.36
+4,23,2025,utilities,monthly bill,0,43.36
+4,24,2025,whatever,whatever,1,2.00
 4,25,2025,groceries,grocery store,0,129.28
 4,25,2025,groceries,grocery store,0,136.29
 4,26,2025,entertainment,movie night,0,14.27

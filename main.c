@@ -45,6 +45,8 @@ struct Categories {
 };
 
 struct csvindex *index_csv();
+int move_temp_to_main(FILE* tempfile, FILE* mainfile);
+int delete_csv_record(int linetodelete);
 
 char *user_input(size_t buffersize) {
 	int minchar = 2;
@@ -223,6 +225,39 @@ struct Categories *get_categories() {
 	return pc;
 }
 
+/* Adds a record to the CSV on line linetoadd*/
+void add_csv_record(int linetoadd, struct Linedata *ld) {
+	FILE *fptr = open_csv("r");
+	FILE *tmpfptr = open_temp_csv();
+
+	char buff[LINE_BUFFER];
+	char *line;
+	int linenum = 0;
+
+	do {
+		line = fgets(buff, sizeof(buff), fptr);
+		if (line == NULL) break;
+		linenum++;	
+		if (linenum != linetoadd) {
+			fputs(line, tmpfptr);
+		} else if (linenum == linetoadd) {
+			fputs(line, tmpfptr);
+			fprintf(tmpfptr, "%d,%d,%d,%s,%s,%d,%.2f\n",
+			ld->month, 
+			ld->day, 
+			ld->year, 
+			ld->category, 
+			ld->desc, 
+			ld->transtype, 
+			ld->amount
+		   );
+		}
+	} while(line != NULL);
+	if (move_temp_to_main(tmpfptr, fptr) == 0) {
+		puts("Complete");
+	}
+}
+
 void add_transaction() {
 	struct Linedata userlinedata_, *uld = &userlinedata_;
 	struct csvindex *pcsvindex = index_csv();
@@ -287,25 +322,29 @@ void add_transaction() {
 		goto CLEANUP;
 	}
 
-	resultline = sort_csv(uld->month, uld->day, uld->year, 1024);
-	printf("Resultant Line: %d\n", resultline);
-	printf("Resultant Offset: %d\n", pcsvindex->offsets[resultline]);
-	fseek(fptr, pcsvindex->offsets[resultline], SEEK_SET);
-	int errcheck = fprintf(
-		fptr, 
-		"%d,%d,%d,%s,%s,%d,%.2f\n", 
-		uld->month, 
-		uld->day, 
-		uld->year, 
-		uld->category, 
-		uld->desc, 
-		uld->transtype, 
-		uld->amount
-	);
-
-	if (errcheck < 0) {
-		puts("Failed to write to file");
+	resultline = sort_csv(uld->month, uld->day, uld->year, pcsvindex->lines);
+	if (resultline < 0) {
+		puts("Failed to find where to add this record");
+		goto CLEANUP;
 	}
+	printf("Result line: %d\n", resultline);
+	add_csv_record(resultline, uld);
+	
+//	int errcheck = fprintf(
+//		fptr, 
+//		"%d,%d,%d,%s,%s,%d,%.2f\n", 
+//		uld->month, 
+//		uld->day, 
+//		uld->year, 
+//		uld->category, 
+//		uld->desc, 
+//		uld->transtype, 
+//		uld->amount
+//	);
+
+//	if (errcheck < 0) {
+//		puts("Failed to write to file");
+//	}
 
 CLEANUP:
 	if (debug == true) puts("CLEANUP");
@@ -503,7 +542,7 @@ int move_temp_to_main(FILE* tempfile, FILE* mainfile) {
 	return 0;
 }
 
-int edit_csv_line(int linetoreplace, struct Linedata* ld, int field) {
+int edit_csv_record(int linetoreplace, struct Linedata *ld, int field) {
 	if (linetoreplace == 0) {
 		puts("Cannot delete line 0");
 		return -1;
@@ -529,7 +568,11 @@ int edit_csv_line(int linetoreplace, struct Linedata* ld, int field) {
 			ld->year = input_year();
 			ld->month = input_month();
 			ld->day = input_day(ld->month, ld->year);
-			break;
+			fclose(fptr);
+			fclose(tmpfptr);
+			delete_csv_record(linetoreplace - 1);
+			add_csv_record(sort_csv(ld->month, ld->day, ld->year, 2000), ld);
+			return 0;
 		case 2:
 			ld->category = input_str_retry("Enter Category");
 			break;
@@ -586,7 +629,7 @@ int edit_csv_line(int linetoreplace, struct Linedata* ld, int field) {
 	return 0;
 }
 
-int delete_csv_line(int linetodelete) {
+int delete_csv_record(int linetodelete) {
 	if (linetodelete == 0) {
 		puts("Cannot delete line 0");
 		return -1;
@@ -691,24 +734,24 @@ void edit_transaction() {
 
 	switch(fieldtoedit) {
 		case 0:
-			if (delete_csv_line(humantarget) == 0) {
+			if (delete_csv_record(humantarget) == 0) {
 				puts("Successfully Deleted Transaction");
 			}
 			break;
 		case 1:
-			edit_csv_line(humantarget, pLd, 1);
+			edit_csv_record(humantarget, pLd, 1);
 			break;
 		case 2:
-			edit_csv_line(humantarget, pLd, 2);
+			edit_csv_record(humantarget, pLd, 2);
 			break;
 		case 3:
-			edit_csv_line(humantarget, pLd, 3);
+			edit_csv_record(humantarget, pLd, 3);
 			break;
 		case 4:
-			edit_csv_line(humantarget, pLd, 4);
+			edit_csv_record(humantarget, pLd, 4);
 			break;
 		case 5:
-			edit_csv_line(humantarget, pLd, 5);
+			edit_csv_record(humantarget, pLd, 5);
 			break;
 		default:
 			return;
