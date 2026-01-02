@@ -367,7 +367,6 @@ struct csvindex *index_csv() {
 
 int test_sorting(int day, int month, int year) {
 	// Sorts by date
-	// fuck this is TOUUUUUGH
 	// Need to find every year, then every month, then every day
 	// Once we reach i.e. year = 2000, x > year, stop searching. The csv
 	// will naturally be sorted from edit_transaction on case 1 switch and
@@ -456,13 +455,20 @@ void read_csv(void) {
 	float income = 0;
 	float expenses = 0;
 	int linenum = 0;
-
+	char linebuff[LINE_BUFFER] = {0};
 	FILE *fptr = open_csv("r");
 
 	struct Linedata linedata_, *ld = &linedata_;
 
 	useryear = input_year();
 	usermonth = input_month();
+
+	/* Read the header and throw it away */
+	if (fgets(linebuff, sizeof(linebuff), fptr) == NULL) {
+		puts("failed to read line");
+		fclose(fptr);
+		return;
+	}
 
 	// --------------------------------- //
 	// Might want to keep this for later //
@@ -484,15 +490,13 @@ void read_csv(void) {
 //	}
 
 	while (1) {
-		char linebuff[LINE_BUFFER] = {0};
-
+		linenum++;
+		memset(linebuff, 0, LINE_BUFFER);
 		if (fgets(linebuff, sizeof(linebuff), fptr) == NULL) {
 			break;
 		}
 
 		ld = tokenize_str(ld, linebuff);
-
-		linenum++;
 		ld->linenum = linenum;
 		if (ld->month == usermonth && ld->year == useryear) {
 			printf(
@@ -549,6 +553,8 @@ int edit_csv_line(int linetoreplace, struct Linedata* ld, int field) {
 		puts("Cannot delete line 0");
 		return -1;
 	}
+	linetoreplace += 1; // Count up by 1 to skip the header on line 1. So
+	// when the user enters 1 the program will edit line 2.
 	FILE *fptr = open_csv("r");
 	FILE *tmpfptr = open_temp_csv();
 
@@ -675,7 +681,7 @@ void edit_transaction() {
 	*	position of the very last byte in the stream. If passed the fgets
 	*	function will return null and the program will exit */	
 
-	target = humantarget - 2;
+	target = humantarget - 1;
 
 	if (debug == true) {
 		printf("TARGET: %d\n", target);
