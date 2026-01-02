@@ -15,6 +15,6 @@
     - (*) Delete   " "
 
 #### Bugs
-    - ( ) A line number is able to be selected (line 1) and it will edit the
+    - (*) A line number is able to be selected (line 1) and it will edit the
             header line. Also line 1 is displayed as line 2. Probably something
             to do with the humanreadable target variable being subtracted by 2
