@@ -6,6 +6,7 @@
 #include <assert.h>
 #include <ctype.h>
 #include "helper.h"
+#include "sorter.h"
 
 #define CSV_DIR "./data.csv"
 #define CSV_BAK_DIR "./data.csv.bak"
@@ -42,6 +43,8 @@ struct Categories {
 	int size;
 	char **categories;
 };
+
+struct csvindex *index_csv();
 
 char *user_input(size_t buffersize) {
 	int minchar = 2;
@@ -222,10 +225,8 @@ struct Categories *get_categories() {
 
 void add_transaction() {
 	struct Linedata userlinedata_, *uld = &userlinedata_;
-	int year;
-	int month;
-	int day;
-	int transaction;
+	struct csvindex *pcsvindex = index_csv();
+	int year, month, day, resultline, transaction;
 	char *categorystr;
 	char *descstr;
 
@@ -286,6 +287,10 @@ void add_transaction() {
 		goto CLEANUP;
 	}
 
+	resultline = sort_csv(uld->month, uld->day, uld->year, 1024);
+	printf("Resultant Line: %d\n", resultline);
+	printf("Resultant Offset: %d\n", pcsvindex->offsets[resultline]);
+	fseek(fptr, pcsvindex->offsets[resultline], SEEK_SET);
 	int errcheck = fprintf(
 		fptr, 
 		"%d,%d,%d,%s,%s,%d,%.2f\n", 
@@ -304,6 +309,7 @@ void add_transaction() {
 
 CLEANUP:
 	if (debug == true) puts("CLEANUP");
+	free(pcsvindex);
 	fclose(fptr);
 	free(categorystr);
 	free(descstr);
@@ -363,57 +369,6 @@ struct csvindex *index_csv() {
 	fclose(fptr);
 	fptr = NULL;
 	return pcsvindex;
-}
-
-int test_sorting(int day, int month, int year) {
-	// Sorts by date
-	// Need to find every year, then every month, then every day
-	// Once we reach i.e. year = 2000, x > year, stop searching. The csv
-	// will naturally be sorted from edit_transaction on case 1 switch and
-	// adding transaction
-	
-	struct csvindex *pCi = index_csv();
-
-	int line = 0;
-	FILE *fptr = open_csv("r");
-	char buff[LINE_BUFFER];
-	int buffsize = sizeof(buff);
-	char *str;
-	str = fgets(buff, buffsize, fptr); // Throwaway for the fields
-
-	int monthtok, daytok, yeartok;
-	int matches = 0;
-
-	int *yearmatches = calloc(pCi->lines, sizeof(int));
-	if (yearmatches == NULL) {
-		puts("Failed to allocate memory");
-		free(pCi);
-		fclose(fptr);
-		exit(1);
-	}
-
-	do {
-		str = fgets(buff, buffsize, fptr);
-		if (str == NULL) break;
-		line++;
-		monthtok = atoi(strsep(&str, ",")); // Month
-		daytok = atoi(strsep(&str, ",")); // Day
-		yeartok = atoi(strsep(&str, ",")); // Year
-		if (yeartok == year) {
-			yearmatches[line] = line;
-			matches++;
-		}
-		// Should be able to just quit after this
-	} while (str != NULL);
-
-	printf("MATCHES: %d\n", matches);
-	for (int i = 0; i < matches; i++) {
-		printf("LINE: %d\n", yearmatches[i]);	
-	}
-	
-	free(yearmatches);
-	
-	return line; // Returns the line to insert the transaction into
 }
 
 struct Linedata *tokenize_str(struct Linedata *pLd, char *str) {
@@ -574,7 +529,6 @@ int edit_csv_line(int linetoreplace, struct Linedata* ld, int field) {
 			ld->year = input_year();
 			ld->month = input_month();
 			ld->day = input_day(ld->month, ld->year);
-			test = test_sorting(ld->day, ld->month, ld->year);
 			break;
 		case 2:
 			ld->category = input_str_retry("Enter Category");
