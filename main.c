@@ -815,7 +815,11 @@ void get_selection() {
 }
 
 int main(int argc, char **argv) {
-	FILE* fptr = open_csv("a");
+	FILE* fptr = open_csv("a"); // Make sure the CSV exists
+	fseek(fptr, 0, SEEK_END);
+	if (ftell(fptr) == 0) {
+		fputs("month,day,year,category,description,transtype,value\n", fptr);
+	}
 	fclose(fptr);
 
 	while (1) {
