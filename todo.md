@@ -7,6 +7,10 @@
     - (*) Get rid of strtok and use strsep
     - ( ) Create some unit tests for input validation
     - (*) Sorting The CSV By Date
+    - ( ) In the read function, implement a way to list what dates have data
+            in them.
+    - ( ) In the read function, implement a better warning for accessing a 
+            date range that doesn't contain any data.
 
 #### Main Feature Set
     - (*) Create a transaction

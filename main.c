@@ -39,6 +39,11 @@ struct csvindex {
 	int offsets[];
 };
 
+struct Date_records {
+	int size;
+	int **yearmonth;
+};
+
 struct Categories {
 	int size;
 	char **categories;
@@ -443,6 +448,29 @@ struct Linedata *tokenize_str(struct Linedata *pLd, char *str) {
 	return pLd;
 }
 
+void list_records_by_date(FILE *fptr) {
+	struct Date_records dr, *pDr = &dr;
+	pDr->yearmonth = malloc((sizeof(*pDr) + sizeof(int))); // Init alloc
+	char buff[LINE_BUFFER];
+	int buffsize = sizeof(buff);
+	char *str;
+	int year;
+	int month;
+	(void)fgets(buff, buffsize, fptr); // Read the header and throwaway
+	
+	// For efficiency I want to find the first year, then find all the unique
+	// months. Then find the next year and so on.
+
+	while((str = fgets(buff, buffsize, fptr)) != NULL) {
+		month = atoi(strsep(&str, ",")); // month
+		(void)strsep(&str, ","); // day, throwaway
+		year = atoi(strsep(&str, ",")); // year
+		if(pDr->yearmonth != year) {
+			;	
+		}
+	}
+}
+
 void read_csv(void) {
 	int useryear;
 	int usermonth;
@@ -451,6 +479,7 @@ void read_csv(void) {
 	int linenum = 0;
 	char linebuff[LINE_BUFFER] = {0};
 	FILE *fptr = open_csv("r");
+	bool record_exists = false; // NEW
 
 	struct Linedata linedata_, *ld = &linedata_;
 
@@ -464,9 +493,10 @@ void read_csv(void) {
 		return;
 	}
 
-	// --------------------------------- //
-	// Might want to keep this for later //
-	// --------------------------------- //
+	// ------------------------------------------------- //
+	// 			Might want to keep this for later 		 //
+	// 		Counts the number of fields in the CSV   	 //
+	// ------------------------------------------------- //
 
 //	char fields[LINE_BUFFER];
 //
@@ -493,6 +523,7 @@ void read_csv(void) {
 		ld = tokenize_str(ld, linebuff);
 		ld->linenum = linenum;
 		if (ld->month == usermonth && ld->year == useryear) {
+			record_exists = true;
 			printf(
 				"%d.) %d/%d/%d Category: %s Description: %s, %d, $%.2f\n",
 				ld->linenum, 
@@ -511,9 +542,13 @@ void read_csv(void) {
 			}
 		}
 	}
-	printf("Income: %.2f\n", income);
-	printf("Expense: %.2f\n", expenses);
-	printf("Total: %.2f\n", income - expenses);
+	if (record_exists) {
+		printf("Income: %.2f\n", income);
+		printf("Expense: %.2f\n", expenses);
+		printf("Total: %.2f\n", income - expenses);
+	} else {
+		printf("No records match the entered date\n");
+	}
 	fclose(fptr);
 	fptr = NULL;
 }
