@@ -6,7 +6,7 @@
         - ( ) Command line arguments?
     - (*) Get rid of strtok and use strsep
     - ( ) Create some unit tests for input validation
-    - ( ) Sorting The CSV By Date
+    - (*) Sorting The CSV By Date
 
 #### Main Feature Set
     - (*) Create a transaction
