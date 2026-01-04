@@ -746,13 +746,6 @@ void edit_transaction() {
 		humantarget = input_n_digits(sizeof(long long) + 1, 2);
 	} while (humantarget <= 0 || humantarget > pcsvindex->lines);
 
-	/*	Subtract 2 from the human-readable target value because the index
-	*	accessed in pcsv-offsets starts at zero, that's the first -1. Then
-	*	the offset value itself is pointed to the last byte of the the prev.
-	*	line, -1 again. I.E. the last offset in pcsv->offsets is the stream
-	*	position of the very last byte in the stream. If passed the fgets
-	*	function will return null and the program will exit */	
-
 	target = humantarget - 1;
 
 	if (debug == true) {
