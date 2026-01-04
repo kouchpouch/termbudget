@@ -98,12 +98,12 @@ int input_n_digits(int max_len, int min_len) {
 		str = user_input(bytesize);
 	}
 
-	if (strlen(str) < min_len) {
+	if ((int)strlen(str) < min_len) {
 		puts("Input is too short");
 		goto FAIL;
 	}
 
-	for (int i = 0; i < strlen(str); i++) {
+	for (int i = 0; i < (int)strlen(str); i++) {
 		if (!isdigit(*(str + i)) && *(str + i) != '\n') {
 			printf("Invalid character \"%c\", must be digit\n", *(str + i));
 			goto FAIL;
@@ -491,8 +491,8 @@ void read_csv(void) {
 
 	struct Linedata linedata_, *ld = &linedata_;
 
-	list_records_by_year(fptr);
-	rewind(fptr);
+//	list_records_by_year(fptr);
+//	rewind(fptr);
 	useryear = input_year();
 	usermonth = input_month();
 
@@ -605,8 +605,6 @@ int edit_csv_record(int linetoreplace, struct Linedata *ld, int field) {
 	int linenum = 0;
 	char *amountstr;
 	int transaction;
-
-	int test;
 
 	switch(field) {
 		case 1:
