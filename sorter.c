@@ -14,7 +14,6 @@ int sort_csv(int month, int day, int year, int maxlines) {
 	FILE *fptr = fopen("data.csv", "r");
 	if (fptr == NULL) exit(1);
 
-	//printf("Target: %d/%d/%d\n", month, day, year);
 	int result_line = -1;
 	int line = 1;
 	char buff[200];
@@ -38,7 +37,8 @@ int sort_csv(int month, int day, int year, int maxlines) {
 
 		if (yeartoken < minyear) {
 			minyear = yeartoken;
-		} else if (yeartoken > maxyear) {
+		}
+		if (yeartoken > maxyear) {
 			maxyear = yeartoken;
 		}
 
@@ -92,20 +92,13 @@ int sort_csv(int month, int day, int year, int maxlines) {
 		// No match was found for year, so the year must
 		// not exist in the CSV. Either the record will be placed at the 
 		// beginning or the end of the CSV
-		//puts("No matches");
-		//printf("Max year: %d\n", maxyear);
-		//printf("Min year: %d\n", minyear);
-		year > maxyear ? (result_line = line) : (result_line = 2);
+		year > maxyear ? (result_line = line) : (result_line = 1);
+	}
+	if (foundmatch == true && monthmatch == false) {
+		return result_line - 1;
 	}
 
 	free(arr);
 	fclose(fptr);
-	//printf("Iterations %d\n", line);
 	return result_line;
 }
-//
-//int main(void) {
-//	int line = sort_csv(2022, 10, 1, 2048);
-//	//printf("RESULTANT LINE %d\n", line);
-//	return 0;
-//}
