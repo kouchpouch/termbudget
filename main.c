@@ -39,11 +39,6 @@ struct csvindex {
 	int offsets[];
 };
 
-struct Date_records {
-	int size;
-	int **yearmonth;
-};
-
 struct Categories {
 	int size;
 	char **categories;
@@ -448,27 +443,40 @@ struct Linedata *tokenize_str(struct Linedata *pLd, char *str) {
 	return pLd;
 }
 
-void list_records_by_date(FILE *fptr) {
-	struct Date_records dr, *pDr = &dr;
-	pDr->yearmonth = malloc((sizeof(*pDr) + sizeof(int))); // Init alloc
+void list_records_by_year(FILE *fptr) {
 	char buff[LINE_BUFFER];
 	int buffsize = sizeof(buff);
 	char *str;
+	int *years = calloc(1, sizeof(int));
 	int year;
-	int month;
+	int i = 0;
 	(void)fgets(buff, buffsize, fptr); // Read the header and throwaway
 	
 	// For efficiency I want to find the first year, then find all the unique
 	// months. Then find the next year and so on.
 
 	while((str = fgets(buff, buffsize, fptr)) != NULL) {
-		month = atoi(strsep(&str, ",")); // month
+		(void)strsep(&str, ","); // month
 		(void)strsep(&str, ","); // day, throwaway
 		year = atoi(strsep(&str, ",")); // year
-		if(pDr->yearmonth != year) {
-			;	
+		if (year != years[i]) {
+			int *tmp = reallocarray(years, i + 2, sizeof(int));
+			if (tmp == NULL) {
+				free(years);
+				puts("Failed to reallocate memory");
+				exit(1);
+			}
+			years = tmp;
+			years[i] = year;
+			i++;
+			years[i] = 0;
 		}
 	}
+	printf("Size of years array: %zu\n", sizeof(*years));
+	for (int i = 0; i < 5; i++) {
+		printf("%d\n", years[i]);
+	}
+	free(years);
 }
 
 void read_csv(void) {
@@ -483,6 +491,8 @@ void read_csv(void) {
 
 	struct Linedata linedata_, *ld = &linedata_;
 
+	list_records_by_year(fptr);
+	rewind(fptr);
 	useryear = input_year();
 	usermonth = input_month();
 
