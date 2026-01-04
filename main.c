@@ -443,7 +443,7 @@ struct Linedata *tokenize_str(struct Linedata *pLd, char *str) {
 	return pLd;
 }
 
-void list_records_by_year(FILE *fptr) {
+int *list_records_by_year(FILE *fptr) {
 	char buff[LINE_BUFFER];
 	int buffsize = sizeof(buff);
 	char *str;
@@ -451,16 +451,23 @@ void list_records_by_year(FILE *fptr) {
 	int year;
 	int i = 0;
 	(void)fgets(buff, buffsize, fptr); // Read the header and throwaway
-	
-	// For efficiency I want to find the first year, then find all the unique
-	// months. Then find the next year and so on.
+	str = fgets(buff, buffsize, fptr); // Read first year into index 0
+	if (str == NULL) {
+		puts("Failed to read line");
+		free(years);
+		exit(1);
+	}
+	(void)strsep(&str, ","); // month
+	(void)strsep(&str, ","); // day, throwaway
+	years[i] = atoi(strsep(&str, ",")); // year
 
 	while((str = fgets(buff, buffsize, fptr)) != NULL) {
 		(void)strsep(&str, ","); // month
 		(void)strsep(&str, ","); // day, throwaway
 		year = atoi(strsep(&str, ",")); // year
 		if (year != years[i]) {
-			int *tmp = reallocarray(years, i + 2, sizeof(int));
+			i++;
+			int *tmp = reallocarray(years, i + 1, sizeof(int));
 			if (tmp == NULL) {
 				free(years);
 				puts("Failed to reallocate memory");
@@ -468,15 +475,24 @@ void list_records_by_year(FILE *fptr) {
 			}
 			years = tmp;
 			years[i] = year;
-			i++;
-			years[i] = 0;
 		}
 	}
-	printf("Size of years array: %zu\n", sizeof(*years));
-	for (int i = 0; i < 5; i++) {
-		printf("%d\n", years[i]);
+	int *tmp = reallocarray(years, i + 2, sizeof(int));
+	if (tmp == NULL) {
+		free(years);
+		puts("Failed to reallocate memory");
+		exit(1);
 	}
-	free(years);
+	years = tmp;
+	years[i + 1] = 0; 
+	// Place a zero at the end of the array so we can loop
+	// through and not go past the end
+	puts("Years:");
+	for (int j = 0; j < i + 1; j++) {
+		printf("%d ", years[j]);
+	}
+	printf("\n");
+	return years;
 }
 
 void read_csv(void) {
@@ -487,13 +503,30 @@ void read_csv(void) {
 	int linenum = 0;
 	char linebuff[LINE_BUFFER] = {0};
 	FILE *fptr = open_csv("r");
-	bool record_exists = false; // NEW
+	int *yearsarr;
+	int i = 0;
+	bool month_record_exists = false;
+	bool year_record_exists = false;
 
 	struct Linedata linedata_, *ld = &linedata_;
 
-//	list_records_by_year(fptr);
-//	rewind(fptr);
-	useryear = input_year();
+	yearsarr = list_records_by_year(fptr);
+	rewind(fptr);
+	while (year_record_exists == false) {
+		if (i > 0) puts("No records match that year");
+		i = 0;
+		useryear = input_year();
+		while (yearsarr[i] != 0) {
+			if (useryear == yearsarr[i]) {
+				year_record_exists = true;
+				break;
+			}
+			i++;
+		}
+	}
+	free(yearsarr);
+	yearsarr = NULL;
+
 	usermonth = input_month();
 
 	/* Read the header and throw it away */
@@ -529,11 +562,10 @@ void read_csv(void) {
 		if (fgets(linebuff, sizeof(linebuff), fptr) == NULL) {
 			break;
 		}
-
 		ld = tokenize_str(ld, linebuff);
 		ld->linenum = linenum;
 		if (ld->month == usermonth && ld->year == useryear) {
-			record_exists = true;
+			month_record_exists = true;
 			printf(
 				"%d.) %d/%d/%d Category: %s Description: %s, %d, $%.2f\n",
 				ld->linenum, 
@@ -552,7 +584,7 @@ void read_csv(void) {
 			}
 		}
 	}
-	if (record_exists) {
+	if (month_record_exists) {
 		printf("Income: %.2f\n", income);
 		printf("Expense: %.2f\n", expenses);
 		printf("Total: %.2f\n", income - expenses);
