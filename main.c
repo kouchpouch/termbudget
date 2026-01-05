@@ -167,11 +167,37 @@ int input_day(int month, int year) {
 	while((day = input_n_digits(MAX_LEN_DAYMON, MIN_LEN_DAYMON)) == -1 ||
 			dayexists(day, month, year) == false) {
 		if (dayexists(day, month, year) == false) { 
-	// Calling this twice is GROSS but I'm kinda stupid
 			puts("Invalid Day");
 		}
 	}
 	return day;
+}
+
+int input_transaction_type() {
+	int t;
+
+	/* 0 is an expense and 1 is income in the CSV */
+	puts("Enter 1 or 2");
+	puts("1. Expense");
+	puts("2. Income");
+
+	while((t = input_n_digits(2, 2)) == -1 || (t != 1 && t != 2)) {
+		puts("Invalid");
+	}
+	return t - 1; // -1 To convert human readable to CSV format
+}
+
+float input_amount() {
+	puts("$ Amount:");
+	char *str = user_input(AMOUNT_BUFFER);
+	while (str == NULL) {
+		puts("Invalid");
+		str = user_input(AMOUNT_BUFFER);
+	}
+	float amount = atof(str);
+	free(str);
+	str = NULL;
+	return amount;
 }
 
 /* Takes a user's input and displays msg, on failure to read the user's
@@ -203,6 +229,7 @@ FILE *open_csv(char *mode) {
 		return fptr;
 	}
 }
+
 /* Temp csv will always open with mode w+ */
 FILE *open_temp_csv() {
 	FILE *tmpfptr = fopen("tmp.txt", "w+");
@@ -212,7 +239,6 @@ FILE *open_temp_csv() {
 	}
 	return tmpfptr;
 }
-
 
 struct Categories *get_categories() {
 	// Try to group categories by year
@@ -225,7 +251,7 @@ struct Categories *get_categories() {
 	return pc;
 }
 
-/* Adds a record to the CSV on line linetoadd*/
+/* Adds a record to the CSV on line linetoadd */
 void add_csv_record(int linetoadd, struct Linedata *ld) {
 	FILE *fptr = open_csv("r");
 	FILE *tmpfptr = open_temp_csv();
@@ -264,6 +290,7 @@ void add_transaction() {
 	int year, month, day, resultline, transaction;
 	char *categorystr;
 	char *descstr;
+	float amount;
 
 	FILE* fptr = open_csv("r+");
 	fseek(fptr, 0L, SEEK_END);
@@ -273,22 +300,8 @@ void add_transaction() {
 	day = input_day(month, year);
 	categorystr = input_str_retry("Category:");
 	descstr = input_str_retry("Description:");
-
-	puts("Enter 1 or 2");
-	puts("1. Expenses"); // 0 is an expense in the CSV
-	puts("2. Income"); // 1 is an income in the CSV
-
-	while((transaction = input_n_digits(2, 2)) == -1 || 
-		transaction != 1 && transaction != 2) {
-		puts("Invalid");
-	}
-
-	puts("$ Amount:");
-	char *amountstr = user_input(AMOUNT_BUFFER);
-	while (amountstr == NULL) {
-		amountstr = user_input(AMOUNT_BUFFER);
-	}
-	float amount = atof(amountstr);
+	transaction = input_transaction_type();
+	amount = input_amount();
 
 	puts("Verify Data is Correct:");
 	printf(
@@ -298,7 +311,7 @@ void add_transaction() {
 		year,
 		categorystr,
 		descstr,
-		(transaction - 1),
+		transaction,
 		amount
 	);
 	printf("Y/N:  ");
@@ -311,7 +324,7 @@ void add_transaction() {
 		uld->year = year;
 		uld->category = categorystr;
 		uld->desc = descstr;
-		uld->transtype = transaction - 1;
+		uld->transtype = transaction;
 		uld->amount = amount;
 	} else if (result == 0) {
 		if (debug == true) puts("FALSE");
@@ -329,22 +342,6 @@ void add_transaction() {
 	}
 	printf("Result line: %d\n", resultline);
 	add_csv_record(resultline, uld);
-	
-//	int errcheck = fprintf(
-//		fptr, 
-//		"%d,%d,%d,%s,%s,%d,%.2f\n", 
-//		uld->month, 
-//		uld->day, 
-//		uld->year, 
-//		uld->category, 
-//		uld->desc, 
-//		uld->transtype, 
-//		uld->amount
-//	);
-
-//	if (errcheck < 0) {
-//		puts("Failed to write to file");
-//	}
 
 CLEANUP:
 	if (debug == true) puts("CLEANUP");
@@ -352,7 +349,6 @@ CLEANUP:
 	fclose(fptr);
 	free(categorystr);
 	free(descstr);
-	free(amountstr);
 }
 
 struct csvindex *index_csv() {
@@ -539,10 +535,10 @@ void read_csv(void) {
 	float income = 0;
 	float expenses = 0;
 	int linenum = 0;
+	int i = 0;
 	char linebuff[LINE_BUFFER] = {0};
 	FILE *fptr = open_csv("r");
 	int *yearsarr;
-	int i = 0;
 	bool month_record_exists = false;
 	bool year_record_exists = false;
 
@@ -550,6 +546,7 @@ void read_csv(void) {
 
 	yearsarr = list_records_by_year(fptr);
 	rewind(fptr);
+
 	while (year_record_exists == false) {
 		if (i > 0) puts("No records match that year");
 		i = 0;
@@ -562,15 +559,29 @@ void read_csv(void) {
 			i++;
 		}
 	}
+	i = 0;
 	free(yearsarr);
 	yearsarr = NULL;
-
 	rewind(fptr);
+
 	int *monthsarr = list_records_by_month(fptr, useryear);
+	i = 0;
+
+	while (month_record_exists == false) {
+		if (i > 0) puts("No records match that month");
+		i = 0;
+		usermonth = input_month();
+		while (monthsarr[i] != 0) {
+			if (usermonth == monthsarr[i]) {
+				month_record_exists = true;
+				break;
+			}
+			i++;
+		}
+	}
 	free(monthsarr);
 	monthsarr = NULL;
 	rewind(fptr);
-	usermonth = input_month();
 
 	/* Read the header and throw it away */
 	(void)fgets(linebuff, sizeof(linebuff), fptr);
@@ -586,14 +597,14 @@ void read_csv(void) {
 		if (ld->month == usermonth && ld->year == useryear) {
 			month_record_exists = true;
 			printf(
-				"%d.) %d/%d/%d Category: %s Description: %s, %d, $%.2f\n",
+				"%d.) %d/%d/%d Category: %s Description: %s, %s, $%.2f\n",
 				ld->linenum, 
 				ld->month, 
 				ld->day, 
 				ld->year, 
 				ld->category, 
 				ld->desc, 
-				ld->transtype, 
+				ld->transtype == 0 ? "Expense" : "Income", 
 				ld->amount
 			 );
 			if(ld->transtype == 1) {
@@ -654,8 +665,6 @@ int edit_csv_record(int linetoreplace, struct Linedata *ld, int field) {
 	char buff[LINE_BUFFER * 2];
 	char *line;
 	int linenum = 0;
-	char *amountstr;
-	int transaction;
 
 	switch(field) {
 		case 1:
@@ -674,23 +683,10 @@ int edit_csv_record(int linetoreplace, struct Linedata *ld, int field) {
 			ld->desc = input_str_retry("Enter Description");	
 			break;
 		case 4:
-			puts("Enter 1 or 2");
-			puts("1. Expenses");
-			puts("2. Income");
-			while((transaction = input_n_digits(2, 2)) == -1 || 
-				transaction != 1 && transaction != 2) {
-				puts("Invalid");
-			}
-			ld->transtype = transaction - 1;
+			ld->transtype = input_transaction_type();
 			break;
 		case 5:
-			puts("$ Amount:");
-			amountstr = user_input(AMOUNT_BUFFER);
-			while (amountstr == NULL) {
-				amountstr = user_input(AMOUNT_BUFFER);
-			}
-			float amount = atof(amountstr);
-			ld->amount = amount;
+			ld->amount = input_amount();
 			break;
 		default:
 			puts("Not a valid choice, exiting");
@@ -720,6 +716,8 @@ int edit_csv_record(int linetoreplace, struct Linedata *ld, int field) {
 	if (move_temp_to_main(tmpfptr, fptr) == 0) {
 		puts("Edit Complete");
 	}
+	if (field == 2) free(ld->category);
+	if (field == 3) free(ld->desc);
 	return 0;
 }
 
@@ -802,14 +800,14 @@ void edit_transaction() {
 		"1.) Date-->  %d/%d/%d\n"
 		"2.) Cat.-->  %s\n"
 		"3.) Desc-->  %s\n"
-		"4.) Type-->  %d\n"
+		"4.) Type-->  %s\n"
 		"5.) Amt.-->  $%.2f\n",
 		ld->month, 
 		ld->day, 
 		ld->year, 
 		ld->category, 
 		ld->desc, 
-		ld->transtype, 
+		ld->transtype == 0 ? "Expense" : "Income", 
 		ld->amount
 	);
 	
