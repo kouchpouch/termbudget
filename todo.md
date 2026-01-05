@@ -11,6 +11,7 @@
             in them.
     - (*) In the read function, implement a better warning for accessing a 
             date range that doesn't contain any data.
+    - (*) Display transaction type as a string instead of a bare number
 
 #### Main Feature Set
     - (*) Create a transaction
@@ -25,6 +26,7 @@
             to do with the humanreadable target variable being subtracted by 2
     - (*) Sorter places a previous year on line 3 when a more recent year is on
             line 2.
-    - (*) Sorter edge case on adding a January transaction in a year that does
-            not exist in the CSV. Subsequent other months will be placed ABOVE
-            the January record.
+    - (*) Sorter edge case on adding a transaction to a month which does not
+            match and is not greater than the target month. If the months in
+            the CSV are all less than the target, the record will be 
+            erroneously be added out of chronological order.
