@@ -400,7 +400,8 @@ struct csvindex *index_csv() {
 		pcsvindex->offsets[i] = ftell(fptr);
 	}
 
-// --- Uncomment to see every single line's offset
+// Uncomment to see every single line's offset
+//
 //	for (int i = 0; i < pcsvindex->lines; i++) {
 //		printf("Offset is %d at line %d\n", pcsvindex->offsets[i], i+1);
 //	}
@@ -450,6 +451,7 @@ int *list_records_by_year(FILE *fptr) {
 	int *years = calloc(1, sizeof(int));
 	int year;
 	int i = 0;
+
 	(void)fgets(buff, buffsize, fptr); // Read the header and throwaway
 	str = fgets(buff, buffsize, fptr); // Read first year into index 0
 	if (str == NULL) {
@@ -487,12 +489,48 @@ int *list_records_by_year(FILE *fptr) {
 	years[i + 1] = 0; 
 	// Place a zero at the end of the array so we can loop
 	// through and not go past the end
-	puts("Years:");
+	puts("Years With Records:");
 	for (int j = 0; j < i + 1; j++) {
 		printf("%d ", years[j]);
 	}
 	printf("\n");
 	return years;
+}
+
+int *list_records_by_month(FILE *fptr, int matchyear) {
+	char buff[LINE_BUFFER];
+	int buffsize = sizeof(buff);
+	char *str;
+	int *months = calloc(12, sizeof(int));
+	int year;
+	int month;
+	int i = 0;
+
+	(void)fgets(buff, buffsize, fptr); // Read the header and throwaway
+
+	while((str = fgets(buff, buffsize, fptr)) != NULL) {
+		month = atoi(strsep(&str, ","));
+		strsep(&str, ",");
+		year = atoi(strsep(&str, ","));
+		if (matchyear == year) {
+			if (months[0] == 0) {
+				months[0] = month;
+			} else if (month != months[i]) {
+				i++;
+				months[i] = month;
+			}
+		} else if (matchyear < year) {
+			break;
+		}
+	}
+	puts("Months With Records:");
+	for (int i = 0; i < 12; i++) {
+		if (months[i] != 0) {
+			printf("%d ", months[i]);
+		}
+	}
+	printf("\n");
+	return months;
 }
 
 void read_csv(void) {
@@ -527,34 +565,15 @@ void read_csv(void) {
 	free(yearsarr);
 	yearsarr = NULL;
 
+	rewind(fptr);
+	int *monthsarr = list_records_by_month(fptr, useryear);
+	free(monthsarr);
+	monthsarr = NULL;
+	rewind(fptr);
 	usermonth = input_month();
 
 	/* Read the header and throw it away */
-	if (fgets(linebuff, sizeof(linebuff), fptr) == NULL) {
-		puts("failed to read line");
-		fclose(fptr);
-		return;
-	}
-
-	// ------------------------------------------------- //
-	// 			Might want to keep this for later 		 //
-	// 		Counts the number of fields in the CSV   	 //
-	// ------------------------------------------------- //
-
-//	char fields[LINE_BUFFER];
-//
-//	if (fgets(fields, sizeof(fields), fptr) == NULL) {
-//		exit(1);
-//	}
-
-	// Init to 1 to count first field where no comma is present
-//	int nfields = 1; 
-//
-//	for (int i = 0; i < strlen(fields); i++) {
-//		if (fields[i] == ',') {
-//			nfields++;	
-//		}
-//	}
+	(void)fgets(linebuff, sizeof(linebuff), fptr);
 
 	while (1) {
 		linenum++;
