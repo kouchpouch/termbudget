@@ -22,8 +22,9 @@ int sort_csv(int month, int day, int year, int maxlines) {
 	int maxyear = 0;
 	int minyear = INT_MAX;
 	int yeartoken, monthtoken, daytoken;
-	bool foundmatch = false;
+	bool yearmatch = false;
 	bool monthmatch = false;
+	bool lessermonthsfound = false;
 	int *arr = calloc(maxlines, sizeof(int));
 	int idx = 0;
 
@@ -42,7 +43,7 @@ int sort_csv(int month, int day, int year, int maxlines) {
 			maxyear = yeartoken;
 		}
 
-		/* If the year is not found in the CSV, foundmatch will remain false
+		/* If the year is not found in the CSV, yearmatch will remain false
 		 * and the result line will be overwritten to either the end of the 
 		 * file or the beginning of the file. */
 
@@ -63,10 +64,12 @@ int sort_csv(int month, int day, int year, int maxlines) {
 			 */
 
 			idx++;
-			foundmatch = true;
+			yearmatch = true;
 			if (monthtoken < month) {
 				result_line = line;
-			} else if (monthtoken == month) { 
+				lessermonthsfound = true;
+			} else if (monthtoken == month) {
+				lessermonthsfound = false;
 				monthmatch = true;
 				if (daytoken <= day) {
 					result_line = line;
@@ -74,8 +77,9 @@ int sort_csv(int month, int day, int year, int maxlines) {
 					result_line = line - 1; // Went too far, go back one line
 					break;
 				}
-			/* Handle edge case where E.G. line 18 has only 1 matching month */
+			/* Handle edge case where E.G. a line has only 1 matching month */
 			} else if (monthmatch == true && monthtoken > month) {
+				lessermonthsfound = false;
 				break;
 			} else {
 				result_line = arr[0];
@@ -88,13 +92,19 @@ int sort_csv(int month, int day, int year, int maxlines) {
 		str = fgets(buff, buffsize, fptr);
 	}
 
-	if (foundmatch == false) { 
+	if (yearmatch == false) { 
 		// No match was found for year, so the year must
 		// not exist in the CSV. Either the record will be placed at the 
 		// beginning or the end of the CSV
 		year > maxyear ? (result_line = line) : (result_line = 1);
 	}
-	if (foundmatch == true && monthmatch == false) {
+	if (yearmatch == true && monthmatch == false && lessermonthsfound == true) {
+		free(arr);
+		fclose(fptr);
+		return result_line;
+	} else if (yearmatch == true && monthmatch == false) {
+		free(arr);
+		fclose(fptr);
 		return result_line - 1;
 	}
 
