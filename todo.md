@@ -7,7 +7,7 @@
     - (*) Get rid of strtok and use strsep
     - ( ) Create some unit tests for input validation
     - (*) Sorting The CSV By Date
-    - ( ) In the read function, implement a way to list what dates have data
+    - (*) In the read function, implement a way to list what dates have data
             in them.
     - (*) In the read function, implement a better warning for accessing a 
             date range that doesn't contain any data.
@@ -25,3 +25,6 @@
             to do with the humanreadable target variable being subtracted by 2
     - (*) Sorter places a previous year on line 3 when a more recent year is on
             line 2.
+    - (*) Sorter edge case on adding a January transaction in a year that does
+            not exist in the CSV. Subsequent other months will be placed ABOVE
+            the January record.
