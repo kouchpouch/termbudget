@@ -40,8 +40,8 @@ struct csvindex {
 };
 
 struct Categories {
-	int size;
-	char **categories;
+	int count;
+	char *categories[];
 };
 
 struct csvindex *index_csv();
@@ -240,14 +240,47 @@ FILE *open_temp_csv() {
 	return tmpfptr;
 }
 
-struct Categories *get_categories() {
-	// Try to group categories by year
-	struct Categories c, *pc = &c;
-	pc->size = 0;
+struct Categories *list_categories() {
 	FILE *fptr = open_csv("r");
 	char *line;
+	char *token;
 	char buff[LINE_BUFFER];
-	int year;
+	struct Categories *pc = malloc(sizeof(struct Categories));
+	pc->count = 0;
+
+	(void)fgets(buff, sizeof(buff), fptr); // Read header, throw it away
+	while ((line = fgets(buff, sizeof(buff), fptr)) != NULL) {
+		(void)strsep(&line, ",");
+		(void)strsep(&line, ",");
+		(void)strsep(&line, ",");
+
+		token = strsep(&line, ",");
+		
+		if (token == NULL) break;
+
+		struct Categories *temp = 
+			realloc(pc, sizeof(struct Categories) + ((pc->count + 1) * sizeof(char *)));
+
+		if (temp == NULL) {
+			exit(1);
+		} else {
+			pc = temp;
+		}
+
+		token[strcspn(token, "\n")] = '\0'; // Remove Null Terminator
+
+		pc->categories[pc->count] = strdup(token);
+
+		pc->count++;
+
+		memset(buff, 0, sizeof(buff)); // Reset the Buffer
+	}
+	for (int i = 0; i < pc->count; i++) {
+		printf("FROM ARRAY: %s\n", pc->categories[i]);
+		free(pc->categories[i]);
+	}
+	fclose(fptr);
+	fptr = NULL;
 	return pc;
 }
 
@@ -623,6 +656,9 @@ void read_csv(void) {
 	}
 	fclose(fptr);
 	fptr = NULL;
+
+	struct Categories *pc = list_categories();
+	free(pc);
 }
 
 int move_temp_to_main(FILE* tempfile, FILE* mainfile) {
