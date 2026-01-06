@@ -240,7 +240,7 @@ FILE *open_temp_csv() {
 	return tmpfptr;
 }
 
-struct Categories *list_categories() {
+struct Categories *list_categories(int month, int year) {
 	FILE *fptr = open_csv("r");
 	char *line;
 	char *token;
@@ -254,9 +254,13 @@ struct Categories *list_categories() {
 	 * this needs to only show categories based on month and year. The char *
 	 * array needs to check for duplicate entries as well. */
 	while ((line = fgets(buff, sizeof(buff), fptr)) != NULL) {
+		if (month != atoi(strsep(&line, ","))) {
+			goto DUPLICATE;
+		}
 		(void)strsep(&line, ",");
-		(void)strsep(&line, ",");
-		(void)strsep(&line, ",");
+		if (year != atoi(strsep(&line, ","))) {
+			goto DUPLICATE;
+		}
 
 		token = strsep(&line, ",");
 		
@@ -632,6 +636,9 @@ void read_csv(void) {
 	monthsarr = NULL;
 	rewind(fptr);
 
+	struct Categories *pc = list_categories(usermonth, useryear);
+	free(pc);
+
 	/* Read the header and throw it away */
 	(void)fgets(linebuff, sizeof(linebuff), fptr);
 
@@ -956,8 +963,6 @@ int main(int argc, char **argv) {
 	}
 	fclose(fptr);
 
-	struct Categories *pc = list_categories();
-	free(pc);
 
 	while (1) {
 		get_selection();
