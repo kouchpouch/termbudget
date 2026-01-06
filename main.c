@@ -249,6 +249,10 @@ struct Categories *list_categories() {
 	pc->count = 0;
 
 	(void)fgets(buff, sizeof(buff), fptr); // Read header, throw it away
+
+	/* This will list all categories in the entire CSV. To further optimize
+	 * this needs to only show categories based on month and year. The char *
+	 * array needs to check for duplicate entries as well. */
 	while ((line = fgets(buff, sizeof(buff), fptr)) != NULL) {
 		(void)strsep(&line, ",");
 		(void)strsep(&line, ",");
@@ -257,6 +261,15 @@ struct Categories *list_categories() {
 		token = strsep(&line, ",");
 		
 		if (token == NULL) break;
+		token[strcspn(token, "\n")] = '\0'; // Remove Null Terminator
+
+		if (pc->count != 0) { // Duplicate Check
+			for (int i = 0; i < pc->count; i++) {
+				if (strcmp(pc->categories[i], token) == 0) {
+					goto DUPLICATE;
+				}
+			}
+		}
 
 		struct Categories *temp = 
 			realloc(pc, sizeof(struct Categories) + ((pc->count + 1) * sizeof(char *)));
@@ -267,18 +280,21 @@ struct Categories *list_categories() {
 			pc = temp;
 		}
 
-		token[strcspn(token, "\n")] = '\0'; // Remove Null Terminator
-
 		pc->categories[pc->count] = strdup(token);
 
 		pc->count++;
 
+DUPLICATE:
 		memset(buff, 0, sizeof(buff)); // Reset the Buffer
 	}
+
+	puts("Categories:");
 	for (int i = 0; i < pc->count; i++) {
-		printf("FROM ARRAY: %s\n", pc->categories[i]);
+		printf("%s ", pc->categories[i]);
 		free(pc->categories[i]);
 	}
+	printf("\n");
+
 	fclose(fptr);
 	fptr = NULL;
 	return pc;
@@ -656,9 +672,6 @@ void read_csv(void) {
 	}
 	fclose(fptr);
 	fptr = NULL;
-
-	struct Categories *pc = list_categories();
-	free(pc);
 }
 
 int move_temp_to_main(FILE* tempfile, FILE* mainfile) {
@@ -942,6 +955,9 @@ int main(int argc, char **argv) {
 		fputs("month,day,year,category,description,transtype,value\n", fptr);
 	}
 	fclose(fptr);
+
+	struct Categories *pc = list_categories();
+	free(pc);
 
 	while (1) {
 		get_selection();

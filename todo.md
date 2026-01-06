@@ -6,7 +6,7 @@
             - ( ) Add categories
             - ( ) Delete categories
             - ( ) Allocate monthly budget by category
-            - (*) List Categories #Somewhat implemented
+            - (*) List Categories
         - (*) Ability to edit a specific field
         - ( ) Command line arguments?
     - (*) Get rid of strtok and use strsep
