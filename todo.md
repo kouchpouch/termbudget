@@ -3,7 +3,7 @@
     - Features: 
         - ( ) Categories
             - ( ) View transactions based on category
-            - ( ) Add categories
+            - (*) Add categories
             - ( ) Delete categories
             - ( ) Allocate monthly budget by category
             - (*) List Categories
