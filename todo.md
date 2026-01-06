@@ -1,7 +1,12 @@
 ### Todo
     - (*) Break out user input into separate functions
     - Features: 
-        - ( ) Add categories
+        - ( ) Categories
+            - ( ) View transactions based on category
+            - ( ) Add categories
+            - ( ) Delete categories
+            - ( ) Allocate monthly budget by category
+            - (*) List Categories #Somewhat implemented
         - (*) Ability to edit a specific field
         - ( ) Command line arguments?
     - (*) Get rid of strtok and use strsep
