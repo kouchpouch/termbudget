@@ -44,6 +44,7 @@ struct Categories {
 	char *categories[];
 };
 
+struct Categories *list_categories(int month, int year);
 struct csvindex *index_csv();
 int move_temp_to_main(FILE* tempfile, FILE* mainfile);
 int delete_csv_record(int linetodelete);
@@ -184,7 +185,7 @@ int input_transaction_type() {
 	while((t = input_n_digits(2, 2)) == -1 || (t != 1 && t != 2)) {
 		puts("Invalid");
 	}
-	return t - 1; // -1 To convert human readable to CSV format
+	return t - 1; // sub 1 to convert human readable to CSV format
 }
 
 float input_amount() {
@@ -216,6 +217,50 @@ char *input_str_retry(char *msg) {
 	return str;
 }
 
+/* Returns a malloc'd char * */
+char *input_category(int month, int year) {
+	char *str;
+	bool cat_exists = false;
+	struct Categories *pc = list_categories(month, year);
+
+	if (pc->count > 0) {
+		puts("Categories:");
+		for (int i = 0; i < pc->count; i++) {
+			printf("%s ", pc->categories[i]);
+		}
+		printf("\n");
+	} else {
+		puts("No categories exist for this month");
+	}
+
+/* This label is so ghetto */
+RETRY:
+	cat_exists = false;
+	str = input_str_retry("Enter Category:");
+
+	for (int i = 0; i < pc->count; i++) {
+		if (strcmp(str, pc->categories[i]) == 0) {
+			cat_exists = true;
+			break;
+		}
+	}
+
+	if (cat_exists != true) {
+		puts("That category doesn't exist for this month, create it? [y/n]");
+		if (confirm_input() != 1) {
+			free(str);
+			str = NULL;
+			goto RETRY;
+		}
+	}
+
+	for (int i = 0; i < pc->count; i++) {
+		free(pc->categories[i]);
+	}
+	free(pc);
+	return str;
+}
+
 //---------------------------------------------------------------------------//
 //--------------------------USER INPUT ABOVE---------------------------------//
 //---------------------------------------------------------------------------//
@@ -240,6 +285,14 @@ FILE *open_temp_csv() {
 	return tmpfptr;
 }
 
+/* Reads the header of the file until a newline is found */
+void seek_beyond_header(FILE *fptr) {
+	char c = 0;	
+	while (c != '\n') {
+		c = getc(fptr);
+	}
+}
+
 struct Categories *list_categories(int month, int year) {
 	FILE *fptr = open_csv("r");
 	char *line;
@@ -248,16 +301,15 @@ struct Categories *list_categories(int month, int year) {
 	struct Categories *pc = malloc(sizeof(struct Categories));
 	pc->count = 0;
 
-	(void)fgets(buff, sizeof(buff), fptr); // Read header, throw it away
+	seek_beyond_header(fptr);
 
-	/* This will list all categories in the entire CSV. To further optimize
-	 * this needs to only show categories based on month and year. The char *
-	 * array needs to check for duplicate entries as well. */
 	while ((line = fgets(buff, sizeof(buff), fptr)) != NULL) {
 		if (month != atoi(strsep(&line, ","))) {
 			goto DUPLICATE;
 		}
-		(void)strsep(&line, ",");
+
+		strsep(&line, ","); // Skip the day
+		
 		if (year != atoi(strsep(&line, ","))) {
 			goto DUPLICATE;
 		}
@@ -265,7 +317,7 @@ struct Categories *list_categories(int month, int year) {
 		token = strsep(&line, ",");
 		
 		if (token == NULL) break;
-		token[strcspn(token, "\n")] = '\0'; // Remove Null Terminator
+		token[strcspn(token, "\n")] = '\0';
 
 		if (pc->count != 0) { // Duplicate Check
 			for (int i = 0; i < pc->count; i++) {
@@ -275,8 +327,8 @@ struct Categories *list_categories(int month, int year) {
 			}
 		}
 
-		struct Categories *temp = 
-			realloc(pc, sizeof(struct Categories) + ((pc->count + 1) * sizeof(char *)));
+		struct Categories *temp = realloc(pc, sizeof(struct Categories) + 
+									((pc->count + 1) * sizeof(char *)));
 
 		if (temp == NULL) {
 			exit(1);
@@ -291,13 +343,6 @@ struct Categories *list_categories(int month, int year) {
 DUPLICATE:
 		memset(buff, 0, sizeof(buff)); // Reset the Buffer
 	}
-
-	puts("Categories:");
-	for (int i = 0; i < pc->count; i++) {
-		printf("%s ", pc->categories[i]);
-		free(pc->categories[i]);
-	}
-	printf("\n");
 
 	fclose(fptr);
 	fptr = NULL;
@@ -351,20 +396,26 @@ void add_transaction() {
 	year = input_year();
 	month = input_month();
 	day = input_day(month, year);
-	categorystr = input_str_retry("Category:");
+	categorystr = input_category(month, year);
+	if (categorystr == NULL) goto CLEANUP;
+//	categorystr = input_str_retry("Category:"); // Old way, to be removed
 	descstr = input_str_retry("Description:");
 	transaction = input_transaction_type();
 	amount = input_amount();
 
 	puts("Verify Data is Correct:");
 	printf(
-		"%d,%d,%d,%s,%s,%d,%.2f\n", 
+		"Date-->  %d/%d/%d\n"
+		"Cat.-->  %s\n"
+		"Desc-->  %s\n"
+		"Type-->  %s\n"
+		"Amt.-->  $%.2f\n",
 		month,
 		day,
 		year,
 		categorystr,
 		descstr,
-		transaction,
+		transaction == 0 ? "Expense" : "Income",
 		amount
 	);
 	printf("Y/N:  ");
@@ -405,7 +456,8 @@ CLEANUP:
 }
 
 struct csvindex *index_csv() {
-	struct csvindex *pcsvindex = malloc(sizeof(struct csvindex) + 0 * sizeof(int));
+	struct csvindex *pcsvindex = 
+		malloc(sizeof(struct csvindex) + 0 * sizeof(int));
 	if (pcsvindex == NULL) {
 		puts("Failed to allocate memory");
 		exit(1);
@@ -449,8 +501,7 @@ struct csvindex *index_csv() {
 		pcsvindex->offsets[i] = ftell(fptr);
 	}
 
-// Uncomment to see every single line's offset
-//
+//  Every line offset list
 //	for (int i = 0; i < pcsvindex->lines; i++) {
 //		printf("Offset is %d at line %d\n", pcsvindex->offsets[i], i+1);
 //	}
@@ -501,7 +552,7 @@ int *list_records_by_year(FILE *fptr) {
 	int year;
 	int i = 0;
 
-	(void)fgets(buff, buffsize, fptr); // Read the header and throwaway
+	seek_beyond_header(fptr);
 	str = fgets(buff, buffsize, fptr); // Read first year into index 0
 	if (str == NULL) {
 		puts("Failed to read line");
@@ -555,7 +606,7 @@ int *list_records_by_month(FILE *fptr, int matchyear) {
 	int month;
 	int i = 0;
 
-	(void)fgets(buff, buffsize, fptr); // Read the header and throwaway
+	seek_beyond_header(fptr);
 
 	while((str = fgets(buff, buffsize, fptr)) != NULL) {
 		month = atoi(strsep(&str, ","));
@@ -636,15 +687,10 @@ void read_csv(void) {
 	monthsarr = NULL;
 	rewind(fptr);
 
-	struct Categories *pc = list_categories(usermonth, useryear);
-	free(pc);
-
-	/* Read the header and throw it away */
-	(void)fgets(linebuff, sizeof(linebuff), fptr);
+	seek_beyond_header(fptr);
 
 	while (1) {
 		linenum++;
-		memset(linebuff, 0, LINE_BUFFER);
 		if (fgets(linebuff, sizeof(linebuff), fptr) == NULL) {
 			break;
 		}
@@ -733,7 +779,7 @@ int edit_csv_record(int linetoreplace, struct Linedata *ld, int field) {
 			add_csv_record(sort_csv(ld->month, ld->day, ld->year, 2000), ld);
 			return 0;
 		case 2:
-			ld->category = input_str_retry("Enter Category");
+			ld->category = input_category(ld->month, ld->year);
 			break;
 		case 3:
 			ld->desc = input_str_retry("Enter Description");	
@@ -869,7 +915,7 @@ void edit_transaction() {
 	
 	int fieldtoedit;
 	do {
-		puts("Enter field to change or press \"0\" to delete this transaction");
+		puts("Enter field to edit or press \"0\" to delete this transaction");
 		fieldtoedit = input_n_digits(2, 2); // Only input 1 digit
 	} while (fieldtoedit > 5 || fieldtoedit < 0);
 
