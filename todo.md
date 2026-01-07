@@ -24,6 +24,13 @@
     - (*) Update   " "
     - (*) Delete   " "
     - ( ) ncurses <-- The big one
+        - (*) Welcome Menu
+        - ( ) Read
+        - ( ) Edit
+        - ( ) Confirm windows
+        - ( ) Categories
+        - ( ) Overview
+        - ( ) Scroll through dates
     - (*) Basic Bar Graph Trends
 
 #### Bugs
