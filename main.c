@@ -5,6 +5,7 @@
 #include <limits.h>
 #include <assert.h>
 #include <ctype.h>
+#include <math.h>
 #include "helper.h"
 #include "sorter.h"
 
@@ -717,9 +718,44 @@ void read_csv(void) {
 		}
 	}
 	if (month_record_exists) {
-		printf("Income: %.2f\n", income);
-		printf("Expense: %.2f\n", expenses);
-		printf("Total: %.2f\n", income - expenses);
+		/* Let's make a simple bar graph showing the income vs expense */
+		char income_bar[10];
+		char expense_bar[10];
+
+		for (int i = 0; i < sizeof(income_bar); i++) {
+			income_bar[i] = '#';
+			expense_bar[i] = '#';
+		}
+
+		if (income > expenses) {
+			float diff = income / expenses;
+			diff = roundf(diff);
+			for (int i = 0; i < sizeof(expense_bar); i++) {
+				i < (sizeof(expense_bar) - diff) ? 
+				(expense_bar[i] = '#') : (expense_bar[i] = '-');
+			}
+		} else {
+			float diff = expenses / income;
+			diff = roundf(diff);
+			for (int i = 0; i < sizeof(income_bar); i++) {
+				i < (sizeof(income_bar) - diff) ? 
+				(income_bar[i] = '#') : (income_bar[i] = '-');
+			}
+		}
+
+		printf("Income:  $%.2f [", income);
+		for (int i = 0; i < sizeof(income_bar); i++) {
+			printf("%c", income_bar[i]);
+		}
+		printf("]\n");
+
+		printf("Expense: $%.2f [", expenses);
+		for (int i = 0; i < sizeof(expense_bar); i++) {
+			printf("%c", expense_bar[i]);
+		}
+		printf("]\n");
+
+		printf("Total:   $%.2f\n", income - expenses);
 	} else {
 		printf("No records match the entered date\n");
 	}

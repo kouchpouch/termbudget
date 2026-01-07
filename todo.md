@@ -23,7 +23,8 @@
     - (*) View     " "
     - (*) Update   " "
     - (*) Delete   " "
-    - ( ) Basic Bar Graph Trends
+    - ( ) ncurses <-- The big one
+    - (*) Basic Bar Graph Trends
 
 #### Bugs
     - (*) A line number is able to be selected (line 1) and it will edit the
