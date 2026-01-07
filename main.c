@@ -728,17 +728,17 @@ void read_csv(void) {
 		}
 
 		if (income > expenses) {
-			float diff = income / expenses;
-			diff = roundf(diff);
+			float diff = expenses / income;
+			diff = roundf(diff * 10);
 			for (int i = 0; i < sizeof(expense_bar); i++) {
 				i < (sizeof(expense_bar) - diff) ? 
 				(expense_bar[i] = '#') : (expense_bar[i] = '-');
 			}
 		} else {
-			float diff = expenses / income;
-			diff = roundf(diff);
+			float diff = income / expenses;
+			diff = roundf(diff * 10);
 			for (int i = 0; i < sizeof(income_bar); i++) {
-				i < (sizeof(income_bar) - diff) ? 
+				i < diff ? 
 				(income_bar[i] = '#') : (income_bar[i] = '-');
 			}
 		}
