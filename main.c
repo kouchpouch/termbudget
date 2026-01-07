@@ -5,7 +5,7 @@
 #include <limits.h>
 #include <assert.h>
 #include <ctype.h>
-#include <math.h>
+#include <ncurses.h>
 #include "helper.h"
 #include "sorter.h"
 
@@ -21,7 +21,10 @@
 #define MAX_LEN_YEAR 5 // With \0
 #define MIN_LEN_DAYMON MAX_LEN_DAYMON - 1
 
-const bool debug = true;
+#define MIN_COL 40
+#define MIN_ROW 20
+
+const bool debug = false;
 
 struct Linedata {
 	int month;
@@ -729,16 +732,16 @@ void read_csv(void) {
 
 		if (income > expenses) {
 			float diff = expenses / income;
-			diff = roundf(diff * 10);
+			diff *= 10;
 			for (int i = 0; i < sizeof(expense_bar); i++) {
-				i < (sizeof(expense_bar) - diff) ? 
+				i < (int)diff ? 
 				(expense_bar[i] = '#') : (expense_bar[i] = '-');
 			}
 		} else {
 			float diff = income / expenses;
-			diff = roundf(diff * 10);
+			diff *= 10;
 			for (int i = 0; i < sizeof(income_bar); i++) {
-				i < diff ? 
+				i < (int)diff ? 
 				(income_bar[i] = '#') : (income_bar[i] = '-');
 			}
 		}
@@ -895,7 +898,7 @@ void edit_transaction() {
 
 	read_csv();
 	struct csvindex *pcsvindex = index_csv();
-	printf("LINES: %d\n", pcsvindex->lines);
+
 	do {
 		puts("Enter a line number");
 		humantarget = input_n_digits(sizeof(long long) + 1, 2);
@@ -988,7 +991,96 @@ void edit_transaction() {
 	fptr = NULL;
 }
 
+int test_terminal_size(int max_y, int max_x) {
+	if (max_y < MIN_ROW || max_x < MIN_COL) {
+		return -1;
+	}
+	return 0;
+}
+
+void nc_print_footer() {
+	initscr(); noecho(); cbreak(); keypad(stdscr, true);
+	int max_y, max_x, cur;
+	getmaxyx(stdscr, max_y, max_x);
+	if (test_terminal_size(max_y, max_x) < 0) {
+		endwin();
+		puts("Screen too small");
+		exit_curses(0);
+		exit(0);
+	}
+
+	cur = 0;
+	curs_set(0);
+
+	char welcome[] = "Welcome to termBudget";
+	char welcome2[] = "Made by TN";
+
+	mvprintw(max_y/2, max_x/2 - strlen(welcome)/2, "%s", welcome);
+	mvprintw(max_y/2 + 1, max_x/2 - strlen(welcome2)/2, "%s", welcome2);
+
+	char add_key[] = "F1 ";
+	char add_text[] = "Add";
+	char edit_key[] = " F2 ";
+	char edit_text[] = "Edit";
+	char read_key[] = " F3 ";
+	char read_text[] = "Read";
+	char quit_key[] = " F4 ";
+	char quit_text[] = "Quit";
+
+	mvprintw(max_y - 1, cur, "%s", add_key);
+	attron(A_REVERSE);
+	mvprintw(max_y - 1, cur += strlen(add_key), "%s", add_text);
+	attroff(A_REVERSE);
+	mvprintw(max_y - 1, cur += strlen(add_text), "%s", edit_key);
+	attron(A_REVERSE);
+	mvprintw(max_y - 1, cur += strlen(edit_key), "%s", edit_text);
+	attroff(A_REVERSE);
+	mvprintw(max_y - 1, cur += strlen(edit_text), "%s", read_key);
+	attron(A_REVERSE);
+	mvprintw(max_y - 1, cur += strlen(read_key), "%s", read_text);
+	attroff(A_REVERSE);
+	mvprintw(max_y - 1, cur += strlen(read_text), "%s", quit_key);
+	attron(A_REVERSE);
+	mvprintw(max_y - 1, cur += strlen(quit_key), "%s", quit_text);
+	attroff(A_REVERSE);
+
+	move(0,0);
+	refresh();
+	int c = 0;
+	refresh();
+	c = getch();
+	switch (c) {
+		case (KEY_F(1)): // Add
+			clear();
+			endwin();
+			add_transaction();
+			break;
+		case (KEY_F(2)): // Edit
+			clear();
+			endwin();
+			edit_transaction();
+			break;
+		case (KEY_F(3)): // Read
+			clear();
+			endwin();
+			read_csv();
+			break;
+		case (KEY_F(4)): // Quit
+			clear();
+			endwin();
+			exit(0);
+			break;
+		default:
+			clear();
+			endwin();
+			break;
+	}
+}
+
 void get_selection() {
+	
+	nc_print_footer();
+
 	int choice;
 	printf("Make a selection:\n");
 	printf("a - Add Transaction\n");
@@ -1045,9 +1137,9 @@ int main(int argc, char **argv) {
 	}
 	fclose(fptr);
 
-
 	while (1) {
-		get_selection();
+		nc_print_footer();
 		getchar();
 	}
+	exit_curses(0);
 }
