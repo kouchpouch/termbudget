@@ -21,6 +21,7 @@
 #define MAX_LEN_DAYMON 3 // With \0
 #define MAX_LEN_YEAR 5 // With \0
 #define MIN_LEN_DAYMON MAX_LEN_DAYMON - 1
+#define CURRENT_YEAR 2026
 
 const bool debug = false;
 
@@ -478,12 +479,12 @@ struct csvindex *index_csv() {
 		pcsvindex->lines++;
 	}
 
-	printf("%d Lines\n", pcsvindex->lines); 
+//	printf("%d Lines\n", pcsvindex->lines); 
 	// Now we know the # of lines,
 	// realloc the struct to hold the offset data
-	if (debug == true) {
-		printf("NUMBER OF LINES: %d\n", pcsvindex->lines);
-	}
+//	if (debug == true) {
+//		printf("NUMBER OF LINES: %d\n", pcsvindex->lines);
+//	}
 	struct csvindex *tmp = realloc(pcsvindex, sizeof(*pcsvindex) + 
 						       (pcsvindex->lines * sizeof(int)));
 	if (tmp == NULL) {
@@ -635,7 +636,7 @@ int *list_records_by_month(FILE *fptr, int matchyear) {
 	return months;
 }
 
-void old_read_csv(void) {
+[[deprecated("Moved to read_data_to_screen()")]] void legacy_read_csv(void) {
 	int useryear;
 	int usermonth;
 	float income = 0;
@@ -665,6 +666,7 @@ void old_read_csv(void) {
 			i++;
 		}
 	}
+
 	i = 0;
 	free(yearsarr);
 	yearsarr = NULL;
@@ -766,79 +768,129 @@ void old_read_csv(void) {
 	fptr = NULL;
 }
 
-void read_csv(void) {
+void print_overview(int income, int expense) {
+	/* Create a new window on the side to display the overview with
+	 * graphs */
+}
 
-	/* Set up new window and print the footer */
-	WINDOW *wptr_read = newwin(0, 0, 0, 0);
-	int max_y, max_x, cur_row;
-	getmaxyx(wptr_read, max_y, max_x);
-	nc_print_footer(wptr_read);
-	wmove(wptr_read, 0, 0);
-	cur_row = 0;
+int nc_read_select_year(WINDOW *wptr, FILE *fptr) {
+	keypad(wptr, true);	
+
+	int *years_arr = list_records_by_year(fptr);
+	int selected_year = 0;
+	int print_y = 1;
+	int print_x = 2; // Offset by 2 to the right for styling
+	int max_y, max_x;
+	getmaxyx(wptr, max_y, max_x);
+
+	box(wptr, 0, 0);
+
+	wrefresh(wptr);
+
+	wmove(wptr, print_y, print_x);
+
+	int scr_idx = 0;
+	int i = 0;
+	int flag = -1;
+	while (years_arr[i] != 0) {
+		if (years_arr[i] == CURRENT_YEAR) {
+			flag = i;
+		}
+		wprintw(wptr, "%d ", years_arr[i]);
+		wrefresh(wptr);
+		i++; // i stores the number of years with records
+	}
+
+	/* Initially highlight the current year and move cursor to it */
+	int init_rv_x = print_x;
+	if (flag > 0) {
+		init_rv_x += (4 * flag) + 1;
+		scr_idx = flag;
+	}
+	
+	mvwchgat(wptr, print_y, init_rv_x, 4, A_REVERSE, 0, NULL);
+
+	wrefresh(wptr);
+
+	int c = 0;
+	int temp_y, temp_x;
+	getyx(wptr, temp_y, temp_x);
+
+	while (c != '\r' && c != '\n' && c != KEY_F(4)) {
+		c = wgetch(wptr);
+		getyx(wptr, temp_y, temp_x);
+		switch (c) {
+			case ('h'):
+			case (KEY_LEFT):
+				if (temp_x - 5 >= print_x) {
+					mvwchgat(wptr, print_y, temp_x, 4, A_NORMAL, 0, NULL);
+					mvwchgat(wptr, print_y, temp_x - 5, 4, A_REVERSE, 0, NULL);
+					wrefresh(wptr);
+					scr_idx--;
+				}
+				break;
+			case ('l'):
+			case (KEY_RIGHT):
+				if (temp_x + 5 <= (i * 4) + 1) {
+					mvwchgat(wptr, print_y, temp_x, 4, A_NORMAL, 0, NULL);
+					mvwchgat(wptr, print_y, temp_x + 5, 4, A_REVERSE, 0, NULL);
+					wrefresh(wptr);
+					scr_idx++;
+				}
+				break;
+			case (KEY_RESIZE):
+			//	FIX Right now I have no idea how to handle this
+				break;
+			case ('\n'):
+			case ('\r'):
+				selected_year = years_arr[scr_idx];
+				break;
+			default: 
+				break;
+		}
+	}
+
+	wrefresh(wptr);
+
+	free(years_arr);
+	years_arr = NULL;
+
+	return selected_year;
+}
+
+int nc_read_select_month(WINDOW *wptr, FILE* fptr) {
+
+
+}
+
+void read_data_to_screen(void) {
+	/* LINES - 1 to still display the footer under wptr_read */
+	WINDOW *wptr_read = newwin(LINES - 1, 0, 0, 0);
 	curs_set(0);
-	wrefresh(wptr_read);
 
-	int useryear;
+	keypad(wptr_read, true);
+
 	int usermonth;
 	float income = 0;
 	float expenses = 0;
 	int linenum = 0;
-	int i = 0;
 	char linebuff[LINE_BUFFER] = {0};
 	FILE *fptr = open_csv("r");
-	int *yearsarr;
 	bool month_record_exists = false;
 	bool year_record_exists = false;
 
 	struct Linedata linedata_, *ld = &linedata_;
 
-	yearsarr = list_records_by_year(fptr);
+	struct csvindex *pidx = index_csv();
+	free(pidx);
+	pidx = NULL;
 
-	wprintw(wptr_read, "Years:\n");
-	while (yearsarr[i] != 0) {
-		wprintw(wptr_read, "%d\n", yearsarr[i]);
-		wrefresh(wptr_read);
-		i++;
-	}
-
-	i = 0;
+	/* Prints the years at the top of the window */
+	int selected_year = nc_read_select_year(wptr_read, fptr);
 
 	rewind(fptr);
 
-//	while (year_record_exists == false) {
-//		if (i > 0) puts("No records match that year");
-//		i = 0;
-//		useryear = input_year();
-//		while (yearsarr[i] != 0) {
-//			if (useryear == yearsarr[i]) {
-//				year_record_exists = true;
-//				break;
-//			}
-//			i++;
-//		}
-//	}
-//	i = 0;
-
-	free(yearsarr);
-	yearsarr = NULL;
-	rewind(fptr);
-
-	int *monthsarr = list_records_by_month(fptr, useryear);
-
-	i = 0;
-
-//	while (month_record_exists == false) {
-//		if (i > 0) puts("No records match that month");
-//		i = 0;
-//		usermonth = input_month();
-//		while (monthsarr[i] != 0) {
-//			if (usermonth == monthsarr[i]) {
-//				month_record_exists = true;
-//				break;
-//			}
-//			i++;
-//		}
-//	}
+	int *monthsarr = list_records_by_month(fptr, selected_year);
 
 	free(monthsarr);
 	monthsarr = NULL;
@@ -846,37 +898,37 @@ void read_csv(void) {
 
 	seek_beyond_header(fptr);
 
-	while (1) {
-		linenum++;
-
-		if (fgets(linebuff, sizeof(linebuff), fptr) == NULL) {
-			break;
-		}
-
-		ld = tokenize_str(ld, linebuff);
-		ld->linenum = linenum;
-		if (ld->month == usermonth && ld->year == useryear) {
-			month_record_exists = true;
-			mvprintw(cur_row, 0,
-				"%d.) %d/%d/%d Category: %s Description: %s, %s, $%.2f\n",
-				ld->linenum, 
-				ld->month, 
-				ld->day, 
-				ld->year, 
-				ld->category, 
-				ld->desc, 
-				ld->transtype == 0 ? "Expense" : "Income", 
-				ld->amount
-			 );
-			cur_row++;
-
-			if(ld->transtype == 1) {
-				income+=ld->amount;
-			} else if (ld->transtype == 0) {
-				expenses+=ld->amount;
-			}
-		}
-	}
+//	while (1) {
+//		linenum++;
+//
+//		if (fgets(linebuff, sizeof(linebuff), fptr) == NULL) {
+//			break;
+//		}
+//
+//		ld = tokenize_str(ld, linebuff);
+//		ld->linenum = linenum;
+//		if (ld->month == usermonth && ld->year == selected_year) {
+//			month_record_exists = true;
+//			mvprintw(print_row, 0,
+//				"%d.) %d/%d/%d Category: %s Description: %s, %s, $%.2f\n",
+//				ld->linenum, 
+//				ld->month, 
+//				ld->day, 
+//				ld->year, 
+//				ld->category, 
+//				ld->desc, 
+//				ld->transtype == 0 ? "Expense" : "Income", 
+//				ld->amount
+//			 );
+//			print_row++;
+//
+//			if(ld->transtype == 1) {
+//				income+=ld->amount;
+//			} else if (ld->transtype == 0) {
+//				expenses+=ld->amount;
+//			}
+//		}
+//	}
 	
 	wrefresh(wptr_read);
 
@@ -922,8 +974,6 @@ void read_csv(void) {
 	} else {
 		printf("No records match the entered date\n");
 	}
-	wrefresh(wptr_read);
-	wgetch(wptr_read);
 	wclear(wptr_read);
 	wrefresh(wptr_read);
 	delwin(wptr_read);
@@ -1062,7 +1112,7 @@ void edit_transaction() {
 	FILE* fptr = open_csv("r+");
 	assert(ftell(fptr) == 0);
 
-	read_csv();
+//	legacy_read_csv();
 	
 	struct csvindex *pcsvindex = index_csv();
 
@@ -1164,10 +1214,9 @@ void nc_get_selection() {
 	nc_print_footer(stdscr);
 	refresh();
 
-	int c;
+	int c = 0;
 	while (c != KEY_F(4)) {
 		nc_print_welcome(stdscr);
-		nc_print_footer(stdscr);
 		refresh();
 		c = getch();
 		switch (c) {
@@ -1179,9 +1228,8 @@ void nc_get_selection() {
 				clear();
 				edit_transaction();
 				break;
-			case (KEY_F(3)): // Read
-				clear();
-				read_csv();
+			case (KEY_F(3)):
+				read_data_to_screen();
 				break;
 			case (KEY_F(4)): // Quit
 				clear();
@@ -1229,7 +1277,7 @@ void get_selection() {
 			break;
 		case 'R':
 			printf("-*-READ CSV-*-\n");
-			read_csv();
+//			legacy_read_csv();
 			break;
 		case 'Q':
 			printf("Quiting\n");
