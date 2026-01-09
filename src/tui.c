@@ -9,8 +9,18 @@ int test_terminal_size(int max_y, int max_x) {
 	return 0;
 }
 
+void nc_exit_window(WINDOW *wptr) {
+	wclear(wptr);
+	wrefresh(wptr);
+	delwin(wptr);
+}
+
 WINDOW *nc_new_win() {
 	WINDOW *wptr = initscr(); 
+	if (wptr == NULL) {
+		return NULL;
+	}
+
 	noecho(); cbreak(); keypad(stdscr, true);
 
 	return wptr;
