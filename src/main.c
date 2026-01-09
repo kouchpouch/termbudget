@@ -626,13 +626,14 @@ int *list_records_by_month(FILE *fptr, int matchyear) {
 			break;
 		}
 	}
-	puts("Months With Records:");
-	for (int i = 0; i < 12; i++) {
-		if (months[i] != 0) {
-			printf("%d ", months[i]);
-		}
-	}
-	printf("\n");
+	//	legacy CLI code
+//	puts("Months With Records:");
+//	for (int i = 0; i < 12; i++) {
+//		if (months[i] != 0) {
+//			printf("%d ", months[i]);
+//		}
+//	}
+//	printf("\n");
 	return months;
 }
 
@@ -775,6 +776,7 @@ void print_overview(int income, int expense) {
 
 int nc_read_select_year(WINDOW *wptr, FILE *fptr) {
 	keypad(wptr, true);	
+	rewind(fptr);
 
 	int *years_arr = list_records_by_year(fptr);
 	int selected_year = 0;
@@ -858,19 +860,95 @@ int nc_read_select_year(WINDOW *wptr, FILE *fptr) {
 	return selected_year;
 }
 
-int nc_read_select_month(WINDOW *wptr, FILE* fptr) {
+int nc_read_select_month(WINDOW *wptr, FILE* fptr, int year) {
 
+	rewind(fptr);
+	int *months_arr = list_records_by_month(fptr, year);
+	int selected_month;
 
+	int print_y = 2; // Print below years
+	int print_x = 2;
+
+	int temp_y = 0;
+	int temp_x = 0;
+	
+	int scr_idx = 0;
+	int cur_idx = 0;
+
+	wmove(wptr, print_y, print_x);
+	for (int i = 0; i < 12; i++) {
+		getyx(wptr, temp_y, temp_x);
+		if (months_arr[i] != 0) {
+			wmove(wptr, temp_y, print_x);
+			wprintw(wptr, "%01d\n", months_arr[i]);
+			scr_idx++;
+		}
+	}
+
+	wmove(wptr, print_y, print_x);
+	wchgat(wptr, 3, A_REVERSE, 0, NULL);
+	box(wptr, 0, 0);
+	wrefresh(wptr);
+
+	int c = 0;
+	while (c != '\r' && c != '\n' && c != KEY_F(4)) {
+		c = wgetch(wptr);
+		getyx(wptr, temp_y, temp_x);
+		switch (c) {
+			case ('j'):
+			case (KEY_DOWN):
+				if (temp_y - print_y + 1 < scr_idx) {
+					mvwchgat(wptr, temp_y, print_x, 3, A_NORMAL, 0, NULL);
+					mvwchgat(wptr, temp_y + 1, print_x, 3, A_REVERSE, 0, NULL);
+					wrefresh(wptr);
+					cur_idx++;
+				}
+				break;
+			case ('k'):
+			case (KEY_UP):
+				if (temp_y - 1 >= print_y) {
+					mvwchgat(wptr, temp_y, print_x, 3, A_NORMAL, 0, NULL);
+					mvwchgat(wptr, temp_y - 1, print_x, 3, A_REVERSE, 0, NULL);
+					wrefresh(wptr);
+					cur_idx--;
+				}
+				break;
+			case (KEY_RESIZE):
+			//	FIX Right now I have no idea how to handle this
+				break;
+			case ('\n'):
+			case ('\r'):
+				selected_month = months_arr[cur_idx];
+				mvwprintw(wptr, 20, 20, "%d", selected_month);
+				wrefresh(wptr);
+				break;
+			default: 
+				break;
+		}
+	}
+
+	box(wptr, 0, 0);
+	wrefresh(wptr);
+
+//	wgetch(wptr); // Just to hang the terminal
+
+	free(months_arr);
+	months_arr = NULL;
+
+	return selected_month;
 }
 
 void read_data_to_screen(void) {
 	/* LINES - 1 to still display the footer under wptr_read */
+
 	WINDOW *wptr_read = newwin(LINES - 1, 0, 0, 0);
+	int max_y, max_x;
+	getmaxyx(wptr_read, max_y, max_x);
 	curs_set(0);
 
 	keypad(wptr_read, true);
 
-	int usermonth;
+	int selected_month;
 	float income = 0;
 	float expenses = 0;
 	int linenum = 0;
@@ -878,6 +956,7 @@ void read_data_to_screen(void) {
 	FILE *fptr = open_csv("r");
 	bool month_record_exists = false;
 	bool year_record_exists = false;
+	int print_y = 1;
 
 	struct Linedata linedata_, *ld = &linedata_;
 
@@ -890,90 +969,95 @@ void read_data_to_screen(void) {
 
 	rewind(fptr);
 
-	int *monthsarr = list_records_by_month(fptr, selected_year);
+	selected_month = nc_read_select_month(wptr_read, fptr, selected_year);
 
-	free(monthsarr);
-	monthsarr = NULL;
 	rewind(fptr);
 
 	seek_beyond_header(fptr);
 
-//	while (1) {
-//		linenum++;
-//
-//		if (fgets(linebuff, sizeof(linebuff), fptr) == NULL) {
-//			break;
-//		}
-//
-//		ld = tokenize_str(ld, linebuff);
-//		ld->linenum = linenum;
-//		if (ld->month == usermonth && ld->year == selected_year) {
-//			month_record_exists = true;
-//			mvprintw(print_row, 0,
-//				"%d.) %d/%d/%d Category: %s Description: %s, %s, $%.2f\n",
-//				ld->linenum, 
-//				ld->month, 
-//				ld->day, 
-//				ld->year, 
-//				ld->category, 
-//				ld->desc, 
-//				ld->transtype == 0 ? "Expense" : "Income", 
-//				ld->amount
-//			 );
-//			print_row++;
-//
-//			if(ld->transtype == 1) {
-//				income+=ld->amount;
-//			} else if (ld->transtype == 0) {
-//				expenses+=ld->amount;
-//			}
-//		}
-//	}
+	wclear(wptr_read);
+
+	while (1) {
+		linenum++;
+
+		if (fgets(linebuff, sizeof(linebuff), fptr) == NULL) {
+			break;
+		}
+
+		ld = tokenize_str(ld, linebuff);
+		ld->linenum = linenum;
+		if (ld->month == selected_month && ld->year == selected_year) {
+			month_record_exists = true;
+			if (print_y + 1 < max_y) {
+				mvwprintw(wptr_read, print_y, 2,
+					"%d.) %d/%d/%d Category: %s Description: %s, %s, $%.2f\n",
+					ld->linenum, 
+					ld->month, 
+					ld->day, 
+					ld->year, 
+					ld->category, 
+					ld->desc, 
+					ld->transtype == 0 ? "Expense" : "Income", 
+					ld->amount
+				 );
+				print_y++;
+			}
+			if(ld->transtype == 1) {
+				income+=ld->amount;
+			} else if (ld->transtype == 0) {
+				expenses+=ld->amount;
+			}
+		}
+	}
 	
+	box(wptr_read, 0, 0);
 	wrefresh(wptr_read);
 
-	if (month_record_exists) {
-		/* Let's make a simple bar graph showing the income vs expense */
-		char income_bar[10];
-		char expense_bar[10];
+//	if (month_record_exists) {
+//		/* Let's make a simple bar graph showing the income vs expense */
+//		char income_bar[10];
+//		char expense_bar[10];
+//
+//		for (int i = 0; i < sizeof(income_bar); i++) {
+//			income_bar[i] = '#';
+//			expense_bar[i] = '#';
+//		}
+//
+//		if (income > expenses) {
+//			float diff = expenses / income;
+//			diff *= 10;
+//			for (int i = 0; i < sizeof(expense_bar); i++) {
+//				i < (int)diff ? 
+//				(expense_bar[i] = '#') : (expense_bar[i] = '-');
+//			}
+//		} else {
+//			float diff = income / expenses;
+//			diff *= 10;
+//			for (int i = 0; i < sizeof(income_bar); i++) {
+//				i < (int)diff ? 
+//				(income_bar[i] = '#') : (income_bar[i] = '-');
+//			}
+//		}
+//
+//		printf("Income:  $%.2f [", income);
+//		for (int i = 0; i < sizeof(income_bar); i++) {
+//			printf("%c", income_bar[i]);
+//		}
+//		printf("]\n");
+//
+//		printf("Expense: $%.2f [", expenses);
+//		for (int i = 0; i < sizeof(expense_bar); i++) {
+//			printf("%c", expense_bar[i]);
+//		}
+//		printf("]\n");
+//
+//		printf("Total:   $%.2f\n", income - expenses);
+//	} else {
+//		printf("No records match the entered date\n");
+//	}
 
-		for (int i = 0; i < sizeof(income_bar); i++) {
-			income_bar[i] = '#';
-			expense_bar[i] = '#';
-		}
-
-		if (income > expenses) {
-			float diff = expenses / income;
-			diff *= 10;
-			for (int i = 0; i < sizeof(expense_bar); i++) {
-				i < (int)diff ? 
-				(expense_bar[i] = '#') : (expense_bar[i] = '-');
-			}
-		} else {
-			float diff = income / expenses;
-			diff *= 10;
-			for (int i = 0; i < sizeof(income_bar); i++) {
-				i < (int)diff ? 
-				(income_bar[i] = '#') : (income_bar[i] = '-');
-			}
-		}
-
-		printf("Income:  $%.2f [", income);
-		for (int i = 0; i < sizeof(income_bar); i++) {
-			printf("%c", income_bar[i]);
-		}
-		printf("]\n");
-
-		printf("Expense: $%.2f [", expenses);
-		for (int i = 0; i < sizeof(expense_bar); i++) {
-			printf("%c", expense_bar[i]);
-		}
-		printf("]\n");
-
-		printf("Total:   $%.2f\n", income - expenses);
-	} else {
-		printf("No records match the entered date\n");
-	}
+	wrefresh(wptr_read);
+	wgetch(wptr_read); // Just to hang the terminal
 	wclear(wptr_read);
 	wrefresh(wptr_read);
 	delwin(wptr_read);
