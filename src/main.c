@@ -24,6 +24,20 @@
 #define CURRENT_YEAR 2026 // FIX This is to not be hard coded
 
 const bool debug = false;
+const char *months[] = {
+	"JAN", 
+	"FEB", 
+	"MAR", 
+	"APR",
+	"MAY",
+	"JUN",
+	"JUL",
+	"AUG",
+	"SEP",
+	"OCT",
+	"NOV",
+	"DEC"
+};
 
 struct Linedata {
 	int month;
@@ -37,9 +51,9 @@ struct Linedata {
 	int offset;
 };
 
-struct csvindex {
+struct Dynamic_ints {
 	int lines;
-	int offsets[];
+	int data[];
 };
 
 struct Categories {
@@ -48,7 +62,7 @@ struct Categories {
 };
 
 struct Categories *list_categories(int month, int year);
-struct csvindex *index_csv();
+struct Dynamic_ints *index_csv();
 int move_temp_to_main(FILE* tempfile, FILE* mainfile);
 int delete_csv_record(int linetodelete);
 
@@ -387,7 +401,7 @@ void add_csv_record(int linetoadd, struct Linedata *ld) {
 
 void add_transaction() {
 	struct Linedata userlinedata_, *uld = &userlinedata_;
-	struct csvindex *pcsvindex = index_csv();
+	struct Dynamic_ints *pcsvindex = index_csv();
 	int year, month, day, resultline, transaction;
 	char *categorystr;
 	char *descstr;
@@ -458,9 +472,9 @@ CLEANUP:
 	free(descstr);
 }
 
-struct csvindex *index_csv() {
-	struct csvindex *pcsvindex = 
-		malloc(sizeof(struct csvindex) + 0 * sizeof(int));
+struct Dynamic_ints *index_csv() {
+	struct Dynamic_ints *pcsvindex = 
+		malloc(sizeof(struct Dynamic_ints) + 0 * sizeof(int));
 	if (pcsvindex == NULL) {
 		puts("Failed to allocate memory");
 		exit(1);
@@ -485,7 +499,7 @@ struct csvindex *index_csv() {
 //	if (debug == true) {
 //		printf("NUMBER OF LINES: %d\n", pcsvindex->lines);
 //	}
-	struct csvindex *tmp = realloc(pcsvindex, sizeof(*pcsvindex) + 
+	struct Dynamic_ints *tmp = realloc(pcsvindex, sizeof(*pcsvindex) + 
 						       (pcsvindex->lines * sizeof(int)));
 	if (tmp == NULL) {
 		puts("Failed to allocate memory");
@@ -501,12 +515,12 @@ struct csvindex *index_csv() {
 		if (test == NULL) {
 			break;
 		}
-		pcsvindex->offsets[i] = ftell(fptr);
+		pcsvindex->data[i] = ftell(fptr);
 	}
 
 //  Every line offset list
 //	for (int i = 0; i < pcsvindex->lines; i++) {
-//		printf("Offset is %d at line %d\n", pcsvindex->offsets[i], i+1);
+//		printf("Offset is %d at line %d\n", pcsvindex->data[i], i+1);
 //	}
 
 	fclose(fptr);
@@ -847,6 +861,10 @@ int nc_read_select_year(WINDOW *wptr, FILE *fptr) {
 			case ('\r'):
 				selected_year = years_arr[scr_idx];
 				break;
+			case (KEY_F(4)):
+				nc_exit_window(wptr);
+				free(years_arr);
+				return -1;
 			default: 
 				break;
 		}
@@ -864,7 +882,7 @@ int nc_read_select_month(WINDOW *wptr, FILE* fptr, int year) {
 
 	rewind(fptr);
 	int *months_arr = list_records_by_month(fptr, year);
-	int selected_month;
+	int selected_month = 0;
 
 	int print_y = 2; // Print below years
 	int print_x = 2;
@@ -880,7 +898,7 @@ int nc_read_select_month(WINDOW *wptr, FILE* fptr, int year) {
 		getyx(wptr, temp_y, temp_x);
 		if (months_arr[i] != 0) {
 			wmove(wptr, temp_y, print_x);
-			wprintw(wptr, "%01d\n", months_arr[i]);
+			wprintw(wptr, "%s\n", months[months_arr[i] - 1]);
 			scr_idx++;
 		}
 	}
@@ -919,16 +937,17 @@ int nc_read_select_month(WINDOW *wptr, FILE* fptr, int year) {
 			case ('\n'):
 			case ('\r'):
 				selected_month = months_arr[cur_idx];
-				mvwprintw(wptr, 20, 20, "%d", selected_month);
 				wrefresh(wptr);
 				break;
+			case (KEY_F(4)):
+				nc_exit_window(wptr);
+				free(months_arr);
+				months_arr = NULL;
+				return -1;
 			default: 
 				break;
 		}
 	}
-
-	box(wptr, 0, 0);
-	wrefresh(wptr);
 
 //	wgetch(wptr); // Just to hang the terminal
 
@@ -936,6 +955,74 @@ int nc_read_select_month(WINDOW *wptr, FILE* fptr, int year) {
 	months_arr = NULL;
 
 	return selected_month;
+}
+
+struct Dynamic_ints *get_matching_line_nums(FILE *fptr, int month, int year) {
+	// Initial alloc of 64 integers
+	int realloc_increment = 64;
+	struct Dynamic_ints *lines = 
+		malloc(sizeof(struct Dynamic_ints) + (realloc_increment * sizeof(int)));
+	if (lines == NULL) {
+		exit(1);
+	}
+
+	assert(ftell(fptr) == 0);
+
+	lines->lines = 0;
+
+	int linenumber = 0;
+	int line_month, line_year;
+	int realloc_counter = 0;
+	char linebuff[LINE_BUFFER];
+	char *str;
+
+	seek_beyond_header(fptr);
+
+	while (1) {
+		linenumber++;
+		str = fgets(linebuff, sizeof(linebuff), fptr);
+		if (str == NULL) {
+			break;
+		}
+		line_month = atoi(strsep(&str, ","));
+		(void)atoi(strsep(&str, ","));
+		line_year = atoi(strsep(&str, ","));
+		if (year == line_year && month == line_month) {
+			if (realloc_counter == realloc_increment - 1) {
+				realloc_counter = 0;
+				void *temp = realloc(lines, sizeof(struct Dynamic_ints) + 
+					((lines->lines) + realloc_increment) * sizeof(int));
+				if (temp == NULL) {
+					free(lines);
+					exit(1);
+				}
+				lines = temp;
+			}
+			lines->data[lines->lines] = linenumber;
+			lines->lines++;	
+			realloc_counter++;
+		}
+	}
+
+	// Shrink back down if oversized alloc
+	if (lines->lines % realloc_increment != 0) {	
+		void *temp = realloc(lines, sizeof(struct Dynamic_ints) + 
+					   (lines->lines * sizeof(int)));
+		if (temp == NULL) {
+			free(lines);
+			exit(1);
+		}
+		lines = temp;
+	}
+
+	if (lines->lines > 0) {
+		return lines;
+	} else {
+		free(lines);
+		lines = NULL;
+		return NULL;
+	}
+	return NULL;
 }
 
 void read_data_to_screen(void) {
@@ -948,7 +1035,6 @@ void read_data_to_screen(void) {
 
 	keypad(wptr_read, true);
 
-	int selected_month;
 	float income = 0;
 	float expenses = 0;
 	int linenum = 0;
@@ -960,18 +1046,34 @@ void read_data_to_screen(void) {
 
 	struct Linedata linedata_, *ld = &linedata_;
 
-	struct csvindex *pidx = index_csv();
+	struct Dynamic_ints *pidx = index_csv();
 	free(pidx);
 	pidx = NULL;
 
-	/* Prints the years at the top of the window */
 	int selected_year = nc_read_select_year(wptr_read, fptr);
+	if (selected_year < 0) {
+		fclose(fptr);
+		return;
+	}
 
 	rewind(fptr);
 
-	selected_month = nc_read_select_month(wptr_read, fptr, selected_year);
+	int selected_month = nc_read_select_month(wptr_read, fptr, selected_year);
+	if (selected_month < 0) {
+		fclose(fptr);	
+		return;
+	}
 
 	rewind(fptr);
+
+	struct Dynamic_ints *plines = 
+		get_matching_line_nums(fptr, selected_month, selected_year);
+
+	wgetch(wptr_read);
+
+	rewind(fptr);
+
+	free(plines);
 
 	seek_beyond_header(fptr);
 
@@ -1011,6 +1113,8 @@ void read_data_to_screen(void) {
 	}
 	
 	box(wptr_read, 0, 0);
+	mvwprintw(wptr_read, 0, 2, "%d %s", 
+		   selected_year, months[selected_month - 1]);
 	wrefresh(wptr_read);
 
 //	if (month_record_exists) {
@@ -1198,7 +1302,7 @@ void edit_transaction() {
 
 //	legacy_read_csv();
 	
-	struct csvindex *pcsvindex = index_csv();
+	struct Dynamic_ints *pcsvindex = index_csv();
 
 	do {
 		puts("Enter a line number");
@@ -1209,13 +1313,13 @@ void edit_transaction() {
 
 	if (debug == true) {
 		printf("TARGET: %d\n", target);
-		printf("TARGET OFFSET: %d\n", pcsvindex->offsets[target]);
+		printf("TARGET OFFSET: %d\n", pcsvindex->data[target]);
 	}
 
-	fseek(fptr, pcsvindex->offsets[target], SEEK_SET);
+	fseek(fptr, pcsvindex->data[target], SEEK_SET);
 
 	if (debug == true) {
-		printf("COMMANDED SEEK OFFSET: %d\n", pcsvindex->offsets[target]);
+		printf("COMMANDED SEEK OFFSET: %d\n", pcsvindex->data[target]);
 	}
 	
 	char linebuff[LINE_BUFFER];
@@ -1292,37 +1396,35 @@ void edit_transaction() {
 	fptr = NULL;
 }
 
-void nc_get_selection() {
-	stdscr = nc_new_win();
-	nc_print_welcome(stdscr);
-	nc_print_footer(stdscr);
-	refresh();
+int nc_get_selection(WINDOW* wptr) {
+	nc_print_welcome(wptr);
+	nc_print_footer(wptr);
+	wrefresh(wptr);
 
 	int c = 0;
 	while (c != KEY_F(4)) {
-		nc_print_welcome(stdscr);
-		refresh();
+		nc_print_welcome(wptr);
+		wrefresh(wptr);
 		c = getch();
 		switch (c) {
 			case (KEY_F(1)): // Add
-				clear();
+				wclear(wptr);
 				add_transaction();
 				break;
 			case (KEY_F(2)): // Edit
-				clear();
+				wclear(wptr);
 				edit_transaction();
 				break;
 			case (KEY_F(3)):
 				read_data_to_screen();
 				break;
 			case (KEY_F(4)): // Quit
-				clear();
-				endwin();
-				exit(0);
-				break;
+				wclear(wptr);
+				return 1;
 		}
 	}
 	endwin();
+	return 0;
 }
 
 void get_selection() {
@@ -1371,7 +1473,6 @@ void get_selection() {
 			printf("\n");
 			get_selection();
 	}
-
 	return;
 }
 
@@ -1384,12 +1485,16 @@ int main(int argc, char **argv) {
 	
 	// Make a non-ncurses command-line option to let the user use termBudget
 	// how they want to
+	stdscr = nc_new_win();
 
 	fclose(fptr);
 
-	while (1) {
-		nc_get_selection();
+	int flag = 0;
+
+	while (flag == 0) {
+		flag = nc_get_selection(stdscr);
 	}
 
+	endwin();
 	exit_curses(0);
 }
