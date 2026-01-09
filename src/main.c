@@ -19,9 +19,9 @@
 #define STDIN_SMALL_BUFF 8
 #define AMOUNT_BUFFER 16
 #define MAX_LEN_DAYMON 3 // With \0
-#define MAX_LEN_YEAR 5 // With \0
+#define MAX_LEN_YEAR 5 // With \0 This is kind of ugly, no?
 #define MIN_LEN_DAYMON MAX_LEN_DAYMON - 1
-#define CURRENT_YEAR 2026
+#define CURRENT_YEAR 2026 // FIX This is to not be hard coded
 
 const bool debug = false;
 
@@ -1381,6 +1381,9 @@ int main(int argc, char **argv) {
 	if (ftell(fptr) == 0) {
 		fputs("month,day,year,category,description,transtype,value\n", fptr);
 	}
+	
+	// Make a non-ncurses command-line option to let the user use termBudget
+	// how they want to
 
 	fclose(fptr);
 

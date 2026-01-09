@@ -17,6 +17,8 @@
     - (*) In the read function, implement a better warning for accessing a 
             date range that doesn't contain any data.
     - (*) Display transaction type as a string instead of a bare number
+    - ( ) Show selected month and year at the top of the screen after
+            selection on read
 
 #### Main Feature Set
     - (*) Create a transaction
@@ -25,7 +27,9 @@
     - (*) Delete   " "
     - ( ) ncurses <-- The big one
         - (*) Welcome Menu
-        - ( ) Read
+        - (*) Read
+            - ( ) Add ability to scroll through records if they are too
+                    big to fit on the screen
         - ( ) Edit
         - ( ) Confirm windows
         - ( ) Categories
