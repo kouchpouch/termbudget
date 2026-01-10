@@ -30,6 +30,7 @@
         - (*) Read
             - ( ) Add ability to scroll through records if they are too
                     big to fit on the screen
+            - ( ) Columns for fields for easier reading
         - ( ) Edit
         - ( ) Confirm windows
         - ( ) Categories
