@@ -1193,40 +1193,6 @@ void read_data_to_screen(void) {
 
 	wclear(wptr_read);
 
-//	while (1) {
-//		linenum++;
-//
-//		if (fgets(linebuff, sizeof(linebuff), fptr) == NULL) {
-//			break;
-//		}
-//
-//		ld = tokenize_str(ld, linebuff);
-//		ld->linenum = linenum;
-//		if (ld->month == selected_month && ld->year == selected_year) {
-//			month_record_exists = true;
-//			if (print_y + 1 < max_y) {
-//				mvwprintw(wptr_read, print_y, 2,
-//					"%d.) %d/%d/%d Category: %s Description: %s, %s, $%.2f\n",
-//					ld->linenum, 
-//					ld->month, 
-//					ld->day, 
-//					ld->year, 
-//					ld->category, 
-//					ld->desc, 
-//					ld->transtype == 0 ? "Expense" : "Income", 
-//					ld->amount
-//				 );
-//				print_y++;
-//			}
-//			if(ld->transtype == 1) {
-//				income+=ld->amount;
-//			} else if (ld->transtype == 0) {
-//				expenses+=ld->amount;
-//			}
-//		}
-//	}
-	
-
 //	if (month_record_exists) {
 //		/* Let's make a simple bar graph showing the income vs expense */
 //		char income_bar[10];
