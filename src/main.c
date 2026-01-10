@@ -51,7 +51,7 @@ struct Linedata {
 	int offset;
 };
 
-struct Dynamic_ints {
+struct DynamicInts {
 	int lines;
 	int data[];
 };
@@ -62,7 +62,7 @@ struct Categories {
 };
 
 struct Categories *list_categories(int month, int year);
-struct Dynamic_ints *index_csv();
+struct DynamicInts *index_csv();
 int move_temp_to_main(FILE* tempfile, FILE* mainfile);
 int delete_csv_record(int linetodelete);
 
@@ -401,7 +401,7 @@ void add_csv_record(int linetoadd, struct Linedata *ld) {
 
 void add_transaction() {
 	struct Linedata userlinedata_, *uld = &userlinedata_;
-	struct Dynamic_ints *pcsvindex = index_csv();
+	struct DynamicInts *pcsvindex = index_csv();
 	int year, month, day, resultline, transaction;
 	char *categorystr;
 	char *descstr;
@@ -472,9 +472,9 @@ CLEANUP:
 	free(descstr);
 }
 
-struct Dynamic_ints *index_csv() {
-	struct Dynamic_ints *pcsvindex = 
-		malloc(sizeof(struct Dynamic_ints) + 0 * sizeof(int));
+struct DynamicInts *index_csv() {
+	struct DynamicInts *pcsvindex = 
+		malloc(sizeof(struct DynamicInts) + 0 * sizeof(int));
 	if (pcsvindex == NULL) {
 		puts("Failed to allocate memory");
 		exit(1);
@@ -499,7 +499,7 @@ struct Dynamic_ints *index_csv() {
 //	if (debug == true) {
 //		printf("NUMBER OF LINES: %d\n", pcsvindex->lines);
 //	}
-	struct Dynamic_ints *tmp = realloc(pcsvindex, sizeof(*pcsvindex) + 
+	struct DynamicInts *tmp = realloc(pcsvindex, sizeof(*pcsvindex) + 
 						       (pcsvindex->lines * sizeof(int)));
 	if (tmp == NULL) {
 		puts("Failed to allocate memory");
@@ -789,8 +789,9 @@ void print_overview(int income, int expense) {
 }
 
 int nc_read_select_year(WINDOW *wptr, FILE *fptr) {
-	keypad(wptr, true);	
 	rewind(fptr);
+
+	keypad(wptr, true);	
 
 	int *years_arr = list_records_by_year(fptr);
 	int selected_year = 0;
@@ -879,8 +880,8 @@ int nc_read_select_year(WINDOW *wptr, FILE *fptr) {
 }
 
 int nc_read_select_month(WINDOW *wptr, FILE* fptr, int year) {
-
 	rewind(fptr);
+
 	int *months_arr = list_records_by_month(fptr, year);
 	int selected_month = 0;
 
@@ -957,11 +958,12 @@ int nc_read_select_month(WINDOW *wptr, FILE* fptr, int year) {
 	return selected_month;
 }
 
-struct Dynamic_ints *get_matching_line_nums(FILE *fptr, int month, int year) {
+struct DynamicInts *get_matching_line_nums(FILE *fptr, int month, int year) {
+	rewind(fptr);
 	// Initial alloc of 64 integers
 	int realloc_increment = 64;
-	struct Dynamic_ints *lines = 
-		malloc(sizeof(struct Dynamic_ints) + (realloc_increment * sizeof(int)));
+	struct DynamicInts *lines = 
+		malloc(sizeof(struct DynamicInts) + (realloc_increment * sizeof(int)));
 	if (lines == NULL) {
 		exit(1);
 	}
@@ -979,18 +981,18 @@ struct Dynamic_ints *get_matching_line_nums(FILE *fptr, int month, int year) {
 	seek_beyond_header(fptr);
 
 	while (1) {
-		linenumber++;
 		str = fgets(linebuff, sizeof(linebuff), fptr);
 		if (str == NULL) {
 			break;
 		}
+
 		line_month = atoi(strsep(&str, ","));
 		(void)atoi(strsep(&str, ","));
 		line_year = atoi(strsep(&str, ","));
 		if (year == line_year && month == line_month) {
 			if (realloc_counter == realloc_increment - 1) {
 				realloc_counter = 0;
-				void *temp = realloc(lines, sizeof(struct Dynamic_ints) + 
+				void *temp = realloc(lines, sizeof(struct DynamicInts) + 
 					((lines->lines) + realloc_increment) * sizeof(int));
 				if (temp == NULL) {
 					free(lines);
@@ -1002,11 +1004,12 @@ struct Dynamic_ints *get_matching_line_nums(FILE *fptr, int month, int year) {
 			lines->lines++;	
 			realloc_counter++;
 		}
+		linenumber++;
 	}
 
 	// Shrink back down if oversized alloc
 	if (lines->lines % realloc_increment != 0) {	
-		void *temp = realloc(lines, sizeof(struct Dynamic_ints) + 
+		void *temp = realloc(lines, sizeof(struct DynamicInts) + 
 					   (lines->lines * sizeof(int)));
 		if (temp == NULL) {
 			free(lines);
@@ -1025,97 +1028,134 @@ struct Dynamic_ints *get_matching_line_nums(FILE *fptr, int month, int year) {
 	return NULL;
 }
 
+WINDOW *create_lines_sub_window(int max_y, int max_x, int y_off, int x_off) {
+	WINDOW *wptr = newwin(max_y - y_off * 2, max_x - x_off * 2, y_off, x_off);
+	keypad(wptr, true);
+	return wptr;
+}
+
+void print_data_to_sub_window(WINDOW *wptr, FILE *fptr, 
+	struct DynamicInts *pidx, struct DynamicInts *plines) {
+	int max_y, max_x;
+	getmaxyx(wptr, max_y, max_x);
+	int i = 0;
+	int j = 0;
+	char *line_str;
+	char linebuffer[LINE_BUFFER];
+
+	/* Print enough lines to fill the window but not more */
+
+	while (i < max_y && j < plines->lines) {
+		fseek(fptr, pidx->data[plines->data[j]], SEEK_SET);
+		j++;
+		i++;
+		line_str = fgets(linebuffer, sizeof(linebuffer), fptr);
+		wprintw(wptr, "%s", line_str);
+	}
+
+	wrefresh(wptr);
+
+	int c = 0;
+	while (c != KEY_F(4)) {
+		c = wgetch(wptr);
+		switch(c) {
+			case('k'):
+			case(KEY_DOWN):
+				break;
+			case('j'):
+			case(KEY_UP):
+				break;
+			case(KEY_F(4)):
+				break;
+		}
+	}
+}
+
 void read_data_to_screen(void) {
 	/* LINES - 1 to still display the footer under wptr_read */
 
+	struct DynamicInts *pidx = index_csv();
+
 	WINDOW *wptr_read = newwin(LINES - 1, 0, 0, 0);
-	int max_y, max_x;
-	getmaxyx(wptr_read, max_y, max_x);
+	keypad(wptr_read, true);
 	curs_set(0);
 
-	keypad(wptr_read, true);
+	int max_y, max_x;
+	getmaxyx(wptr_read, max_y, max_x);
 
 	float income = 0;
 	float expenses = 0;
 	int linenum = 0;
 	char linebuff[LINE_BUFFER] = {0};
 	FILE *fptr = open_csv("r");
-	bool month_record_exists = false;
-	bool year_record_exists = false;
-	int print_y = 1;
 
 	struct Linedata linedata_, *ld = &linedata_;
 
-	struct Dynamic_ints *pidx = index_csv();
-	free(pidx);
-	pidx = NULL;
-
-	int selected_year = nc_read_select_year(wptr_read, fptr);
-	if (selected_year < 0) {
+	int sel_year = nc_read_select_year(wptr_read, fptr);
+	if (sel_year < 0) {
 		fclose(fptr);
 		return;
 	}
 
-	rewind(fptr);
-
-	int selected_month = nc_read_select_month(wptr_read, fptr, selected_year);
-	if (selected_month < 0) {
+	int sel_month = nc_read_select_month(wptr_read, fptr, sel_year);
+	if (sel_month < 0) {
 		fclose(fptr);	
 		return;
 	}
 
+	struct DynamicInts *plines = 
+		get_matching_line_nums(fptr, sel_month, sel_year);
+	if (plines == NULL) {
+		fclose(fptr);
+		return;
+	}
+
+	box(wptr_read, 0, 0);
+	mvwprintw(wptr_read, 0, 2, "%d %s", 
+		   sel_year, months[sel_month - 1]);
+	wrefresh(wptr_read);
+
+	WINDOW *wptr_lines = create_lines_sub_window(max_y, max_x, 1, 2);
+
+	print_data_to_sub_window(wptr_lines, fptr, pidx, plines);
+
 	rewind(fptr);
-
-	struct Dynamic_ints *plines = 
-		get_matching_line_nums(fptr, selected_month, selected_year);
-
-	wgetch(wptr_read);
-
-	rewind(fptr);
-
-	free(plines);
-
-	seek_beyond_header(fptr);
 
 	wclear(wptr_read);
 
-	while (1) {
-		linenum++;
-
-		if (fgets(linebuff, sizeof(linebuff), fptr) == NULL) {
-			break;
-		}
-
-		ld = tokenize_str(ld, linebuff);
-		ld->linenum = linenum;
-		if (ld->month == selected_month && ld->year == selected_year) {
-			month_record_exists = true;
-			if (print_y + 1 < max_y) {
-				mvwprintw(wptr_read, print_y, 2,
-					"%d.) %d/%d/%d Category: %s Description: %s, %s, $%.2f\n",
-					ld->linenum, 
-					ld->month, 
-					ld->day, 
-					ld->year, 
-					ld->category, 
-					ld->desc, 
-					ld->transtype == 0 ? "Expense" : "Income", 
-					ld->amount
-				 );
-				print_y++;
-			}
-			if(ld->transtype == 1) {
-				income+=ld->amount;
-			} else if (ld->transtype == 0) {
-				expenses+=ld->amount;
-			}
-		}
-	}
+//	while (1) {
+//		linenum++;
+//
+//		if (fgets(linebuff, sizeof(linebuff), fptr) == NULL) {
+//			break;
+//		}
+//
+//		ld = tokenize_str(ld, linebuff);
+//		ld->linenum = linenum;
+//		if (ld->month == selected_month && ld->year == selected_year) {
+//			month_record_exists = true;
+//			if (print_y + 1 < max_y) {
+//				mvwprintw(wptr_read, print_y, 2,
+//					"%d.) %d/%d/%d Category: %s Description: %s, %s, $%.2f\n",
+//					ld->linenum, 
+//					ld->month, 
+//					ld->day, 
+//					ld->year, 
+//					ld->category, 
+//					ld->desc, 
+//					ld->transtype == 0 ? "Expense" : "Income", 
+//					ld->amount
+//				 );
+//				print_y++;
+//			}
+//			if(ld->transtype == 1) {
+//				income+=ld->amount;
+//			} else if (ld->transtype == 0) {
+//				expenses+=ld->amount;
+//			}
+//		}
+//	}
 	
-	box(wptr_read, 0, 0);
-	mvwprintw(wptr_read, 0, 2, "%d %s", 
-		   selected_year, months[selected_month - 1]);
-	wrefresh(wptr_read);
 
 //	if (month_record_exists) {
 //		/* Let's make a simple bar graph showing the income vs expense */
@@ -1160,14 +1200,19 @@ void read_data_to_screen(void) {
 //		printf("No records match the entered date\n");
 //	}
 
-	wrefresh(wptr_read);
+	free(pidx);
+	pidx = NULL;
+	free(plines);
+	plines = NULL;
+
 	wgetch(wptr_read); // Just to hang the terminal
 	wclear(wptr_read);
 	wrefresh(wptr_read);
 	delwin(wptr_read);
-	refresh();
+	delwin(wptr_lines);
 	fclose(fptr);
 	fptr = NULL;
+	refresh();
 }
 
 int move_temp_to_main(FILE* tempfile, FILE* mainfile) {
@@ -1302,7 +1347,7 @@ void edit_transaction() {
 
 //	legacy_read_csv();
 	
-	struct Dynamic_ints *pcsvindex = index_csv();
+	struct DynamicInts *pcsvindex = index_csv();
 
 	do {
 		puts("Enter a line number");
