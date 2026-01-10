@@ -19,6 +19,7 @@
     - (*) Display transaction type as a string instead of a bare number
     - ( ) Show selected month and year at the top of the screen after
             selection on read
+    - ( ) Remove all reallocarray() functions for portability
 
 #### Main Feature Set
     - (*) Create a transaction
