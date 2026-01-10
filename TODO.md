@@ -34,6 +34,8 @@
         - ( ) Edit
         - ( ) Confirm windows
         - ( ) Categories
+            - ( ) When adding a transaction, select a category or add new
+                    in an NCURSES menu.
         - ( ) Overview
         - ( ) Scroll through dates
     - (*) Basic Bar Graph Trends
