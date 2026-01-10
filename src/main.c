@@ -1053,13 +1053,15 @@ void calculate_columns(int max_x, int *n) {
 	 *
 	 */
 
-	int cols_without_strings = 30;
-	int minimum_cols = 52;
+	int cols_without_strings = 13 + 10 + 11;
+	int minimum_cols = cols_without_strings + 22;
 
 	if (max_x < minimum_cols) {
 		*n = 0;	
-	} else {
+	} else if ((max_x - cols_without_strings) / 2 < 64) {
 		*n = (max_x - cols_without_strings) / 2;
+	} else {
+		*n = 64;
 	}
 }
 
@@ -1071,8 +1073,8 @@ void print_column_headers(WINDOW *wptr, int x_off) {
 	calculate_columns(max_x, string_cols);
 
 	int cur = x_off;
-	int date_off = 11;
-	int type_off  = 8;
+	int date_off = 13;
+	int type_off  = 10;
 
 	mvwprintw(wptr, 1, cur, "DATE");
 	mvwprintw(wptr, 1, cur += date_off, "CATEGORY");
@@ -1106,11 +1108,11 @@ void print_data_to_sub_window(WINDOW *wptr, FILE *fptr,
 		line_str = fgets(linebuffer, sizeof(linebuffer), fptr);
 		ld = tokenize_str(ld, line_str);
 		mvwprintw(wptr, i, cur, "%d/%d/%d", ld->month, ld->day, ld->year);
-		mvwprintw(wptr, i, cur += 11, "%s", ld->category);
+		mvwprintw(wptr, i, cur += 13, "%s", ld->category);
 		mvwprintw(wptr, i, cur += *po, "%s", ld->desc);
 		mvwprintw(wptr, i, cur += *po, "%s", 
 			ld->transtype == 0 ? "Expense" : "Income");
-		mvwprintw(wptr, i, cur + 8, "%.2f", ld->amount);
+		mvwprintw(wptr, i, cur + 10, "$%.2f", ld->amount);
 		j++;
 		i++;
 	}
