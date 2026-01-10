@@ -17,7 +17,7 @@
 #define LINE_BUFFER 200
 #define STDIN_LARGE_BUFF 64
 #define STDIN_SMALL_BUFF 8
-#define AMOUNT_BUFFER 16
+#define AMOUNT_BUFFER 11
 #define MAX_LEN_DAYMON 3 // With \0
 #define MAX_LEN_YEAR 5 // With \0 This is kind of ugly, no?
 #define MIN_LEN_DAYMON MAX_LEN_DAYMON - 1
@@ -1029,9 +1029,56 @@ struct DynamicInts *get_matching_line_nums(FILE *fptr, int month, int year) {
 }
 
 WINDOW *create_lines_sub_window(int max_y, int max_x, int y_off, int x_off) {
-	WINDOW *wptr = newwin(max_y - y_off * 2, max_x - x_off * 2, y_off, x_off);
+	WINDOW *wptr = newwin(max_y - y_off * 2, max_x - x_off * 2, y_off + 1, x_off);
 	keypad(wptr, true);
 	return wptr;
+}
+
+void calculate_columns(int max_x, int *n) {
+	/* 
+	 * E.G. DATE: 12/31/2025 
+	 * 			  ^.........^ == 11
+	 * E.G. CATEGORY and DESCRIPTION dynamically calculated here
+	 * E.G. TRANSACTION TYPE: EXPENSE  INCOME
+	 * 						  ^......^ ^.....^ == 8, 7 will use 8
+	 * E.G. AMOUNT: Max 9 digits plus decimal point, plus space, 11
+	 *
+	 * 11 + 8 + 11 = 30
+	 *
+	 * Thinking about taking 30 + 11 for each string as an absolute
+	 * minimum. So 52 wide minimum for the subwindow.
+	 * Anything bigger and we'll display more
+	 *
+	 */
+
+	int cols_without_strings = 30;
+	int minimum_cols = 52;
+
+	if (max_x < minimum_cols) {
+		*n = 0;	
+	} else {
+		*n = (max_x - cols_without_strings) / 2;
+	}
+}
+
+void print_column_headers(WINDOW *wptr, int x_off) {
+	int a = 0;
+	int *string_cols = &a;
+	int max_x = getmaxx(wptr);
+	max_x -= x_off;
+	calculate_columns(max_x, string_cols);
+
+	int cur = x_off;
+	int date_off = 11;
+	int type_off  = 8;
+
+	mvwprintw(wptr, 1, cur, "DATE");
+	mvwprintw(wptr, 1, cur += date_off, "CATEGORY");
+	mvwprintw(wptr, 1, cur += *string_cols, "DESCRIPTION");
+	mvwprintw(wptr, 1, cur += *string_cols, "TYPE");
+	mvwprintw(wptr, 1, cur += type_off, "AMOUNT");
+
+	wrefresh(wptr);
 }
 
 void print_data_to_sub_window(WINDOW *wptr, FILE *fptr, 
@@ -1110,6 +1157,8 @@ void read_data_to_screen(void) {
 		return;
 	}
 
+	wclear(wptr_read);
+	print_column_headers(wptr_read, 2);
 	box(wptr_read, 0, 0);
 	mvwprintw(wptr_read, 0, 2, "%d %s", 
 		   sel_year, months[sel_month - 1]);
