@@ -545,9 +545,11 @@ struct Linedata *tokenize_str(struct Linedata *pLd, char *str) {
 				pLd->year = atoi(ptoken);
 				break;
 			case 3:
+				ptoken[strcspn(ptoken, "\n")] = '\0';
 				pLd->category = ptoken;
 				break;
 			case 4:
+				ptoken[strcspn(ptoken, "\n")] = '\0';
 				pLd->desc = ptoken;
 				break;
 			case 5:
@@ -1083,6 +1085,7 @@ void print_column_headers(WINDOW *wptr, int x_off) {
 
 void print_data_to_sub_window(WINDOW *wptr, FILE *fptr, 
 	struct DynamicInts *pidx, struct DynamicInts *plines) {
+	struct Linedata linedata_, *ld = &linedata_;
 	int max_y, max_x;
 	getmaxyx(wptr, max_y, max_x);
 	int i = 0;
@@ -1090,14 +1093,26 @@ void print_data_to_sub_window(WINDOW *wptr, FILE *fptr,
 	char *line_str;
 	char linebuffer[LINE_BUFFER];
 
+	int offset = 0;
+	int *po = &offset;
+	int cur = 0;
+	calculate_columns(max_x + 2, po);
+
 	/* Print enough lines to fill the window but not more */
 
 	while (i < max_y && j < plines->lines) {
+		cur = 0;
 		fseek(fptr, pidx->data[plines->data[j]], SEEK_SET);
+		line_str = fgets(linebuffer, sizeof(linebuffer), fptr);
+		ld = tokenize_str(ld, line_str);
+		mvwprintw(wptr, i, cur, "%d/%d/%d", ld->month, ld->day, ld->year);
+		mvwprintw(wptr, i, cur += 11, "%s", ld->category);
+		mvwprintw(wptr, i, cur += *po, "%s", ld->desc);
+		mvwprintw(wptr, i, cur += *po, "%s", 
+			ld->transtype == 0 ? "Expense" : "Income");
+		mvwprintw(wptr, i, cur + 8, "%.2f", ld->amount);
 		j++;
 		i++;
-		line_str = fgets(linebuffer, sizeof(linebuffer), fptr);
-		wprintw(wptr, "%s", line_str);
 	}
 
 	wrefresh(wptr);
@@ -1158,16 +1173,20 @@ void read_data_to_screen(void) {
 	}
 
 	wclear(wptr_read);
+
 	print_column_headers(wptr_read, 2);
+
 	box(wptr_read, 0, 0);
 	mvwprintw(wptr_read, 0, 2, "%d %s", 
 		   sel_year, months[sel_month - 1]);
 	wrefresh(wptr_read);
 
-	WINDOW *wptr_lines = create_lines_sub_window(max_y, max_x, 1, 2);
+	WINDOW *wptr_lines = create_lines_sub_window(max_y - 1, max_x, 1, 2);
 
 	print_data_to_sub_window(wptr_lines, fptr, pidx, plines);
 
+	box(wptr_read, 0, 0);
+	wrefresh(wptr_read);
 	rewind(fptr);
 
 	wclear(wptr_read);
