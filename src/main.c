@@ -970,8 +970,6 @@ struct DynamicInts *get_matching_line_nums(FILE *fptr, int month, int year) {
 		exit(1);
 	}
 
-	assert(ftell(fptr) == 0);
-
 	lines->lines = 0;
 
 	int linenumber = 0;
@@ -1037,12 +1035,18 @@ WINDOW *create_lines_sub_window(int max_y, int max_x, int y_off, int x_off) {
 }
 
 void calculate_columns(int max_x, int *n) {
+
 	/* 
+	 * Maybe pass a struct to this to get all of the offsets
+	 * in a cleaner way
+	 *
 	 * E.G. DATE: 12/31/2025 
-	 * 			  ^.........^ == 11
+	 *            ^...........^ == 13
 	 * E.G. CATEGORY and DESCRIPTION dynamically calculated here
+	 *
 	 * E.G. TRANSACTION TYPE: EXPENSE  INCOME
-	 * 						  ^......^ ^.....^ == 8, 7 will use 8
+	 *                        ^......^ ^.....^ == 8, 7 will use 10 w/ space
+	 *
 	 * E.G. AMOUNT: Max 9 digits plus decimal point, plus space, 11
 	 *
 	 * 11 + 8 + 11 = 30
@@ -1050,7 +1054,6 @@ void calculate_columns(int max_x, int *n) {
 	 * Thinking about taking 30 + 11 for each string as an absolute
 	 * minimum. So 52 wide minimum for the subwindow.
 	 * Anything bigger and we'll display more
-	 *
 	 */
 
 	int cols_without_strings = 13 + 10 + 11;
@@ -1067,10 +1070,9 @@ void calculate_columns(int max_x, int *n) {
 
 void print_column_headers(WINDOW *wptr, int x_off) {
 	int a = 0;
-	int *string_cols = &a;
 	int max_x = getmaxx(wptr);
 	max_x -= x_off;
-	calculate_columns(max_x, string_cols);
+	calculate_columns(max_x, &a);
 
 	int cur = x_off;
 	int date_off = 13;
@@ -1078,8 +1080,8 @@ void print_column_headers(WINDOW *wptr, int x_off) {
 
 	mvwprintw(wptr, 1, cur, "DATE");
 	mvwprintw(wptr, 1, cur += date_off, "CATEGORY");
-	mvwprintw(wptr, 1, cur += *string_cols, "DESCRIPTION");
-	mvwprintw(wptr, 1, cur += *string_cols, "TYPE");
+	mvwprintw(wptr, 1, cur += a / 2, "DESCRIPTION");
+	mvwprintw(wptr, 1, cur += a + (a / 2), "TYPE");
 	mvwprintw(wptr, 1, cur += type_off, "AMOUNT");
 
 	wrefresh(wptr);
@@ -1096,9 +1098,8 @@ void print_data_to_sub_window(WINDOW *wptr, FILE *fptr,
 	char linebuffer[LINE_BUFFER];
 
 	int offset = 0;
-	int *po = &offset;
 	int cur = 0;
-	calculate_columns(max_x + 2, po);
+	calculate_columns(max_x + 2, &offset);
 
 	/* Print enough lines to fill the window but not more */
 
@@ -1109,8 +1110,8 @@ void print_data_to_sub_window(WINDOW *wptr, FILE *fptr,
 		ld = tokenize_str(ld, line_str);
 		mvwprintw(wptr, i, cur, "%d/%d/%d", ld->month, ld->day, ld->year);
 		mvwprintw(wptr, i, cur += 13, "%s", ld->category);
-		mvwprintw(wptr, i, cur += *po, "%s", ld->desc);
-		mvwprintw(wptr, i, cur += *po, "%s", 
+		mvwprintw(wptr, i, cur += offset / 2, "%s", ld->desc);
+		mvwprintw(wptr, i, cur += offset + (offset / 2), "%s", 
 			ld->transtype == 0 ? "Expense" : "Income");
 		mvwprintw(wptr, i, cur + 10, "$%.2f", ld->amount);
 		j++;
