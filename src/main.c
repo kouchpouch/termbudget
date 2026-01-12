@@ -331,13 +331,13 @@ struct Categories *list_categories(int month, int year) {
 
 	while ((line = fgets(buff, sizeof(buff), fptr)) != NULL) {
 		if (month != atoi(strsep(&line, ","))) {
-			goto DUPLICATE;
+			continue;
 		}
 
 		strsep(&line, ","); // Skip the day
 		
 		if (year != atoi(strsep(&line, ","))) {
-			goto DUPLICATE;
+			continue;
 		}
 
 		token = strsep(&line, ",");
@@ -348,7 +348,7 @@ struct Categories *list_categories(int month, int year) {
 		if (pc->count != 0) { // Duplicate Check
 			for (int i = 0; i < pc->count; i++) {
 				if (strcmp(pc->categories[i], token) == 0) {
-					goto DUPLICATE;
+					continue;
 				}
 			}
 		}
@@ -365,9 +365,6 @@ struct Categories *list_categories(int month, int year) {
 		pc->categories[pc->count] = strdup(token);
 
 		pc->count++;
-
-DUPLICATE:
-		memset(buff, 0, sizeof(buff)); // Reset the Buffer
 	}
 
 	fclose(fptr);
@@ -424,7 +421,6 @@ void add_transaction() {
 	day = input_day(month, year);
 	categorystr = input_category(month, year);
 	if (categorystr == NULL) goto CLEANUP;
-//	categorystr = input_str_retry("Category:"); // Old way, to be removed
 	descstr = input_str_retry("Description:");
 	transaction = input_transaction_type();
 	amount = input_amount();
@@ -459,7 +455,6 @@ void add_transaction() {
 	} else if (result == 0) {
 		if (debug == true) puts("FALSE");
 		goto CLEANUP;
-		// Free heap and exit back to get_selection()
 	} else {
 		puts("Invalid answer");
 		goto CLEANUP;
@@ -508,6 +503,7 @@ struct DynamicInts *index_csv() {
 //	if (debug == true) {
 //		printf("NUMBER OF LINES: %d\n", pcsvindex->lines);
 //	}
+
 	struct DynamicInts *tmp = realloc(pcsvindex, sizeof(*pcsvindex) + 
 						       (pcsvindex->lines * sizeof(int)));
 	if (tmp == NULL) {
@@ -613,13 +609,9 @@ int *list_records_by_year(FILE *fptr) {
 		exit(1);
 	}
 	years = tmp;
+	/* Place a zero at the end of the array to mark the end */
 	years[i + 1] = 0; 
-	// Place a zero at the end of the array so we can loop
-	// through and not go past the end
-//	puts("Years With Records:");
-//	for (int j = 0; j < i + 1; j++) {
-//		printf("%d ", years[j]);
-//	}
+
 	printf("\n");
 	return years;
 }
@@ -1134,7 +1126,7 @@ void print_data_to_sub_window(WINDOW *wptr, FILE *fptr,
 	int cur_y = 0; // Keep track of cursor position in window
 	wmove(wptr, 0, 0);
 	mvwchgat(wptr, select, 0, -1, A_REVERSE, 0, NULL); 
-	curs_set(1); // for debugging
+	if (debug == true) curs_set(1);
 	wrefresh(wptr);
 
 	int c = 0;
@@ -1172,7 +1164,7 @@ void print_data_to_sub_window(WINDOW *wptr, FILE *fptr,
 				break;
 
 			case('k'):
-			case(KEY_UP): // Scroll up
+			case(KEY_UP):
 				if (select - 1 >= 0) {
 					mvwchgat(wptr, cur_y, 0, -1, A_NORMAL, 0, NULL); 
 					cur_y--;
