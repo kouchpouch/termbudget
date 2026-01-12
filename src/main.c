@@ -227,8 +227,10 @@ float input_amount() {
 	return amount;
 }
 
-/* Takes a user's input and displays msg, on failure to read the user's
- * input the user's input is read again. The newline character is removed */
+/* 
+ * Takes a user's input and displays msg, on failure to read the user's
+ * input the user's input is read again. The newline character is removed 
+ */
 char *input_str_retry(char *msg) {
 	puts(msg);
 	int len;
@@ -857,7 +859,7 @@ int nc_read_select_year(WINDOW *wptr, FILE *fptr) {
 				}
 				break;
 			case (KEY_RESIZE):
-			//	FIX Right now I have no idea how to handle this
+				// FIX Right now I have no idea how to handle this
 				break;
 			case ('\n'):
 			case ('\r'):
@@ -886,7 +888,7 @@ int nc_read_select_month(WINDOW *wptr, FILE* fptr, int year) {
 	int *months_arr = list_records_by_month(fptr, year);
 	int selected_month = 0;
 
-	int print_y = 2; // Print below years
+	int print_y = 2;
 	int print_x = 2;
 
 	int temp_y = 0;
@@ -951,8 +953,6 @@ int nc_read_select_month(WINDOW *wptr, FILE* fptr, int year) {
 		}
 	}
 
-//	wgetch(wptr); // Just to hang the terminal
-
 	free(months_arr);
 	months_arr = NULL;
 
@@ -961,7 +961,7 @@ int nc_read_select_month(WINDOW *wptr, FILE* fptr, int year) {
 
 struct DynamicInts *get_matching_line_nums(FILE *fptr, int month, int year) {
 	rewind(fptr);
-	// Initial alloc of 64 integers
+	/* Initial alloc of 64 integers */
 	int realloc_increment = 64;
 	struct DynamicInts *lines = 
 		malloc(sizeof(struct DynamicInts) + (realloc_increment * sizeof(int)));
@@ -1006,7 +1006,7 @@ struct DynamicInts *get_matching_line_nums(FILE *fptr, int month, int year) {
 		linenumber++;
 	}
 
-	// Shrink back down if oversized alloc
+	/* Shrink back down if oversized alloc */
 	if (lines->lines % realloc_increment != 0) {	
 		void *temp = realloc(lines, sizeof(struct DynamicInts) + 
 					   (lines->lines * sizeof(int)));
@@ -1087,6 +1087,20 @@ void print_column_headers(WINDOW *wptr, int x_off) {
 	wrefresh(wptr);
 }
 
+/* 
+ * Prints record from ld, formatting in columns from cw, to a window pointed
+ * to by wptr, at a Y-coordinate of y
+ */
+void print_record(WINDOW *wptr, struct ColumnWidth *cw, struct Linedata *ld, int y) {
+	int cur = 0;
+	mvwprintw(wptr, y, cur, "%d/%d/%d", ld->month, ld->day, ld->year);
+	mvwprintw(wptr, y, cur += cw->date, "%s", ld->category);
+	mvwprintw(wptr, y, cur += cw->catg, "%s", ld->desc);
+	mvwprintw(wptr, y, cur += cw->desc, "%s", 
+		ld->transtype == 0 ? "Expense" : "Income");
+	mvwprintw(wptr, y, cur += cw->trns, "$%.2f", ld->amount);
+}
+
 void print_data_to_sub_window(WINDOW *wptr, FILE *fptr, 
 	struct DynamicInts *pidx, struct DynamicInts *plines) {
 
@@ -1100,21 +1114,14 @@ void print_data_to_sub_window(WINDOW *wptr, FILE *fptr,
 	char *line_str;
 	char linebuffer[LINE_BUFFER];
 
-	int cur = 0;
 	calculate_columns(cw);
 
 	/* Print enough lines to fill the window but not more */
 	while (i < max_y && j < plines->lines) {
-		cur = 0;
 		fseek(fptr, pidx->data[plines->data[j]], SEEK_SET);
 		line_str = fgets(linebuffer, sizeof(linebuffer), fptr);
 		ld = tokenize_str(ld, line_str);
-		mvwprintw(wptr, i, cur, "%d/%d/%d", ld->month, ld->day, ld->year);
-		mvwprintw(wptr, i, cur += cw->date, "%s", ld->category);
-		mvwprintw(wptr, i, cur += cw->catg, "%s", ld->desc);
-		mvwprintw(wptr, i, cur += cw->desc, "%s", 
-			ld->transtype == 0 ? "Expense" : "Income");
-		mvwprintw(wptr, i, cur += cw->trns, "$%.2f", ld->amount);
+		print_record(wptr, cw, ld, i);
 		j++;
 		i++;
 	}
@@ -1144,19 +1151,14 @@ void print_data_to_sub_window(WINDOW *wptr, FILE *fptr,
 					/* Handle case where there's more records than the window
 					 * can display at once */
 					if (j < plines->lines && cur_y == max_y) {
-						wmove(wptr, 0, 0);
-						wdeleteln(wptr);
-						wmove(wptr, max_y - 1, 0);
-						cur = 0;
 						fseek(fptr, pidx->data[plines->data[select]], SEEK_SET);
 						line_str = fgets(linebuffer, sizeof(linebuffer), fptr);
 						ld = tokenize_str(ld, line_str);
-						mvwprintw(wptr, max_y - 1, cur, "%d/%d/%d", ld->month, ld->day, ld->year);
-						mvwprintw(wptr, max_y - 1, cur += cw->date, "%s", ld->category);
-						mvwprintw(wptr, max_y - 1, cur += cw->catg, "%s", ld->desc);
-						mvwprintw(wptr, max_y - 1, cur += cw->desc, "%s", 
-							ld->transtype == 0 ? "Expense" : "Income");
-						mvwprintw(wptr, max_y - 1, cur += cw->trns, "$%.2f", ld->amount);
+
+						wmove(wptr, 0, 0);
+						wdeleteln(wptr);
+						wmove(wptr, max_y - 1, 0);
+						print_record(wptr, cw, ld, max_y - 1);
 						cur_y = getcury(wptr);
 					}
 					mvwchgat(wptr, cur_y, 0, -1, A_REVERSE, 0, NULL); 
@@ -1172,18 +1174,13 @@ void print_data_to_sub_window(WINDOW *wptr, FILE *fptr,
 
 					if (cur_y < 0) cur_y = -1;
 					if (j < plines->lines && cur_y == -1 && select >= 0) {
-						cur = 0;
-						wmove(wptr, 0, 0);
-						winsertln(wptr);
 						fseek(fptr, pidx->data[plines->data[select]], SEEK_SET);
 						line_str = fgets(linebuffer, sizeof(linebuffer), fptr);
 						ld = tokenize_str(ld, line_str);
-						mvwprintw(wptr, 0, cur, "%d/%d/%d", ld->month, ld->day, ld->year);
-						mvwprintw(wptr, 0, cur += cw->date, "%s", ld->category);
-						mvwprintw(wptr, 0, cur += cw->catg, "%s", ld->desc);
-						mvwprintw(wptr, 0, cur += cw->desc, "%s", 
-							ld->transtype == 0 ? "Expense" : "Income");
-						mvwprintw(wptr, 0, cur += cw->trns, "$%.2f", ld->amount);
+
+						wmove(wptr, 0, 0);
+						winsertln(wptr);
+						print_record(wptr, cw, ld, 0);
 						cur_y = getcury(wptr);
 					}
 					mvwchgat(wptr, cur_y, 0, -1, A_REVERSE, 0, NULL); 
@@ -1346,14 +1343,19 @@ int edit_csv_record(int linetoreplace, struct Linedata *ld, int field) {
 		puts("Cannot delete line 0");
 		return -1;
 	}
-	linetoreplace += 1; // Count up by 1 to skip the header on line 1. So
-	// when the user enters 1 the program will edit line 2.
+
+	/* Count up by 1 to skip the header on line 1. So when the user enters 1
+	 * the program will edit line 2
+	 */
+	linetoreplace += 1;
 	FILE *fptr = open_csv("r");
 	FILE *tmpfptr = open_temp_csv();
 
-	/* LINE_BUFFER * 2 to account for any line that may be longer
+	/* 
+	 * LINE_BUFFER * 2 to account for any line that may be longer
 	 * due to a manual CSV entry, which shouldn't happen, but this will
-	 * protect us in case it does */
+	 * protect us in case it does 
+	 */
 	char buff[LINE_BUFFER * 2];
 	char *line;
 	int linenum = 0;
