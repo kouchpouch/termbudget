@@ -22,8 +22,10 @@
 #define MAX_LEN_YEAR 5 // With \0 This is kind of ugly, no?
 #define MIN_LEN_DAYMON MAX_LEN_DAYMON - 1
 #define CURRENT_YEAR 2026 // FIX This is to not be hard coded
+#define MIN_COLUMNS 59 // See calculate_columns() for how this is derived
 
-const bool debug = false;
+static bool debug;
+
 const char *months[] = {
 	"JAN", 
 	"FEB", 
@@ -39,7 +41,7 @@ const char *months[] = {
 	"DEC"
 };
 
-struct Linedata {
+struct LineData {
 	int month;
 	int day;
 	int year;
@@ -61,14 +63,14 @@ struct Categories {
 	char *categories[];
 };
 
-struct ColumnWidth {
-	int max_x;
-	int date;
-	int catg;
-	int desc;
-	int trns;
-	int amnt;
-};
+//struct ColumnWidth {
+//	int max_x;
+//	int date;
+//	int catg;
+//	int desc;
+//	int trns;
+//	int amnt;
+//};
 
 struct Categories *list_categories(int month, int year);
 struct DynamicInts *index_csv();
@@ -314,10 +316,17 @@ FILE *open_temp_csv() {
 }
 
 /* Reads the header of the file until a newline is found */
-void seek_beyond_header(FILE *fptr) {
-	char c = 0;	
-	while (c != '\n') {
+int seek_beyond_header(FILE *fptr) {
+	int i = 0;
+	char c = getc(fptr);
+	while (c != '\n' && c != EOF) {
 		c = getc(fptr);
+		i++;
+	}
+	if (i == 0) {
+		return -1;
+	} else {
+		return 0;
 	}
 }
 
@@ -329,7 +338,9 @@ struct Categories *list_categories(int month, int year) {
 	struct Categories *pc = malloc(sizeof(struct Categories));
 	pc->count = 0;
 
-	seek_beyond_header(fptr);
+	if (seek_beyond_header(fptr) == -1) {
+		puts("Failed to read header");
+	}
 
 	while ((line = fgets(buff, sizeof(buff), fptr)) != NULL) {
 		if (month != atoi(strsep(&line, ","))) {
@@ -375,7 +386,7 @@ struct Categories *list_categories(int month, int year) {
 }
 
 /* Adds a record to the CSV on line linetoadd */
-void add_csv_record(int linetoadd, struct Linedata *ld) {
+void add_csv_record(int linetoadd, struct LineData *ld) {
 	FILE *fptr = open_csv("r");
 	FILE *tmpfptr = open_temp_csv();
 
@@ -408,7 +419,7 @@ void add_csv_record(int linetoadd, struct Linedata *ld) {
 }
 
 void add_transaction() {
-	struct Linedata userlinedata_, *uld = &userlinedata_;
+	struct LineData userlinedata_, *uld = &userlinedata_;
 	struct DynamicInts *pcsvindex = index_csv();
 	int year, month, day, resultline, transaction;
 	char *categorystr;
@@ -535,7 +546,7 @@ struct DynamicInts *index_csv() {
 	return pcsvindex;
 }
 
-struct Linedata *tokenize_str(struct Linedata *pLd, char *str) {
+struct LineData *tokenize_str(struct LineData *pLd, char *str) {
 	char **psavestr = &str;
 	char *ptoken;
 	for (int i = 0; i < CSV_FIELDS; i++) {
@@ -577,12 +588,16 @@ int *list_records_by_year(FILE *fptr) {
 	int year;
 	int i = 0;
 
-	seek_beyond_header(fptr);
+	if (seek_beyond_header(fptr) == -1) {
+		puts("Failed to read header");
+		free(years);
+		return NULL;
+	}
+
 	str = fgets(buff, sizeof(buff), fptr); // Read first year into index 0
 	if (str == NULL) {
-		puts("Failed to read line");
 		free(years);
-		exit(1);
+		return NULL;
 	}
 	(void)strsep(&str, ","); // month
 	(void)strsep(&str, ","); // day, throwaway
@@ -628,7 +643,9 @@ int *list_records_by_month(FILE *fptr, int matchyear) {
 	int month;
 	int i = 0;
 
-	seek_beyond_header(fptr);
+	if (seek_beyond_header(fptr) == -1) {
+		puts("Failed to read header");
+	}
 
 	while((str = fgets(buff, sizeof(buff), fptr)) != NULL) {
 		month = atoi(strsep(&str, ","));
@@ -669,7 +686,7 @@ int *list_records_by_month(FILE *fptr, int matchyear) {
 	bool month_record_exists = false;
 	bool year_record_exists = false;
 
-	struct Linedata linedata_, *ld = &linedata_;
+	struct LineData linedata_, *ld = &linedata_;
 
 	yearsarr = list_records_by_year(fptr);
 	rewind(fptr);
@@ -711,7 +728,9 @@ int *list_records_by_month(FILE *fptr, int matchyear) {
 	monthsarr = NULL;
 	rewind(fptr);
 
-	seek_beyond_header(fptr);
+	if (seek_beyond_header(fptr) == -1) {
+		puts("Failed to read header");
+	}
 
 	while (1) {
 		linenum++;
@@ -799,6 +818,9 @@ int nc_read_select_year(WINDOW *wptr, FILE *fptr) {
 	keypad(wptr, true);	
 
 	int *years_arr = list_records_by_year(fptr);
+	if (years_arr == NULL) {
+		return -1;
+	}
 	int selected_year = 0;
 	int print_y = 1;
 	int print_x = 2; // Offset by 2 to the right for styling
@@ -979,7 +1001,9 @@ struct DynamicInts *get_matching_line_nums(FILE *fptr, int month, int year) {
 	char linebuff[LINE_BUFFER];
 	char *str;
 
-	seek_beyond_header(fptr);
+	if (seek_beyond_header(fptr) == -1) {
+		puts("Failed to read header");
+	}
 
 	while (1) {
 		str = fgets(linebuff, sizeof(linebuff), fptr);
@@ -1035,95 +1059,96 @@ WINDOW *create_lines_sub_window(int max_y, int max_x, int y_off, int x_off) {
 	return wptr;
 }
 
-/* 
- * Calculate column offsets for ncurses formatting, sets date width into date,
- * category width into catg, description width into desc, transaction type
- * width into trns, and amount into amnt.
+/*
+ * Creates a sub window inside of wptr to display a line-by-line format of
+ * the selected record at index i of pidx->data. Following the format style
+ * from edit_transaction()
  */
-void calculate_columns(struct ColumnWidth *cw) {
+void detail_sub_window(WINDOW *wptr, char *line, int n) {
+	int y, x;
+	getmaxyx(wptr, y, x); // Use this to calculate the subwindow dimensions
+	// At least MIN_COLUMNS
 
-	/* DATE: 12/31/2025___
-	 *       ^...........^ == 13 */
-	cw->date = 13; 
-
-	/* TRANSACTION TYPE: EXPENSE___
-	 *                   ^........^  == 10 */
-	cw->trns = 10;
-
-	/* AMOUNT: Max 9 digits plus decimal point, plus 1 space, 11 */
-	cw->amnt = 11;
-
-	int static_columns = cw->date + cw->trns + cw->amnt;
-
-	/* 11 'n 14 derived from the length of "CATEGORY" and "DESCRIPTION" + 3 */
-	int minimum_cols = static_columns + 11 + 14;
-
-	if (cw->max_x < minimum_cols) {
-		cw->catg = 0;	
-		cw->desc = 0;	
-	} else if ((cw->max_x - static_columns) / 2 < 64) {
-		cw->catg = (cw->max_x - static_columns) / 4;
-		cw->desc = (cw->max_x - static_columns) / 2 + cw->catg;
+	int x_offset = 2;
+	int win_y = 12;
+	int win_x = 0;
+	if (x >= MIN_COLUMNS) {
+		win_x = MIN_COLUMNS + 10;
 	} else {
-		cw->desc = 64;
-		cw->catg = 64;
+		win_x = x;
 	}
-}
-
-void print_column_headers(WINDOW *wptr, int x_off) {
-	struct ColumnWidth column_width, *cw = &column_width;
-	cw->max_x = getmaxx(wptr);
-	cw->max_x -= x_off;
 	
-	calculate_columns(cw);
+	WINDOW *wptr_detail = newwin(win_y, win_x, y / 2 - (win_y / 2), x / 2 - (win_x / 2));
+	box(wptr_detail, 0, 0);
+	wrefresh(wptr_detail);
 
-	int cur = x_off;
+	struct LineData linedata_, *ld = &linedata_;
+	ld = tokenize_str(ld, line);
 
-	mvwprintw(wptr, 1, cur, "DATE");
-	mvwprintw(wptr, 1, cur += cw->date, "CATEGORY");
-	mvwprintw(wptr, 1, cur += cw->catg, "DESCRIPTION");
-	mvwprintw(wptr, 1, cur += cw->desc, "TYPE");
-	mvwprintw(wptr, 1, cur += cw->trns, "AMOUNT");
-	mvwchgat(wptr, 1, x_off, cw->max_x - 2, A_REVERSE, 0, NULL);
+	mvwprintw(wptr_detail, 1, 2, "Date--> %d/%d/%d", ld->month, ld->day, ld->year);
+	mvwprintw(wptr_detail, 2, 2, "Cat.--> %s", ld->category);
+	mvwprintw(wptr_detail, 3, 2, "Desc--> %s", ld->desc);
+	mvwprintw(wptr_detail, 4, 2, "Type--> %s", ld->transtype == 0 ? "Expense" : "Income");
+	mvwprintw(wptr_detail, 5, 2, "Amt.--> %.2f", ld->amount);
 
-	wrefresh(wptr);
+	if (debug == true && n >= 0) {
+		mvwprintw(wptr_detail, 0, 2, "Line Number: %d", n);	
+	}
+	
+	nc_exit_window_key(wptr_detail);
 }
 
 /* 
  * Prints record from ld, formatting in columns from cw, to a window pointed
  * to by wptr, at a Y-coordinate of y
  */
-void print_record(WINDOW *wptr, struct ColumnWidth *cw, struct Linedata *ld, int y) {
+void print_record(WINDOW *wptr, struct ColumnWidth *cw, struct LineData *ld, int y) {
 	int x = 0;
 	mvwprintw(wptr, y, x, "%d/%d/%d", ld->month, ld->day, ld->year);
 	mvwprintw(wptr, y, x += cw->date, "%s", ld->category);
 	mvwprintw(wptr, y, x += cw->catg, "%s", ld->desc);
-	mvwprintw(wptr, y, x += cw->desc, "%s", 
-		ld->transtype == 0 ? "Expense" : "Income");
+	mvwprintw(wptr, y, x += cw->desc, "%s", ld->transtype == 0 ? "Expense" : "Income");
 	mvwprintw(wptr, y, x += cw->trns, "$%.2f", ld->amount);
 }
 
-void print_data_to_sub_window(WINDOW *wptr, FILE *fptr, struct DynamicInts *pidx, 
-							  struct DynamicInts *plines) {
+/*
+ * After the detail sub window is closed, there is a gap of invisible lines
+ * where the window was. This loops through each line and changes it attr
+ * back to A_NORMAL and then re-reverse-video's the original line. Cursor
+ * position is NOT changed.
+ */
+void refresh_on_detail_close(WINDOW *wptr, int n) {
+	int temp_y, temp_x;
+	getyx(wptr, temp_y, temp_x);
+	wmove(wptr, 0, 0);
+	for (int i = 0; i < n; i++) {
+		mvwchgat(wptr, i, 0, -1, A_NORMAL, 0, NULL);
+	}
+	wmove(wptr, temp_y, temp_x);
+	wchgat(wptr, -1, A_REVERSE, 0, NULL); 
+}
+
+int print_all_records_in_range(WINDOW *wptr, FILE *fptr, 
+			struct DynamicInts *pidx, struct DynamicInts *plines) {
 	struct ColumnWidth column_width, *cw = &column_width;
-	struct Linedata linedata_, *ld = &linedata_;
+	struct LineData linedata_, *ld = &linedata_;
 	int max_y, max_x;
 	getmaxyx(wptr, max_y, max_x);
-	cw->max_x = max_x + 2;
-	int i = 0;
-	int j = 0;
+	cw->max_x = max_x + 2; // 2 Offset
+	int displayed_lines = 0;
 	char *line_str;
-	char linebuffer[LINE_BUFFER];
+	char linebuff[LINE_BUFFER];
 
 	calculate_columns(cw);
 
 	/* Print enough lines to fill the window but not more */
-	while (i < max_y && j < plines->lines) {
-		fseek(fptr, pidx->data[plines->data[j]], SEEK_SET);
-		line_str = fgets(linebuffer, sizeof(linebuffer), fptr);
+	int i = 0;
+	while (i < max_y && displayed_lines < plines->lines) {
+		fseek(fptr, pidx->data[plines->data[displayed_lines]], SEEK_SET);
+		line_str = fgets(linebuff, sizeof(linebuff), fptr);
 		ld = tokenize_str(ld, line_str);
 		print_record(wptr, cw, ld, i);
-		j++;
+		displayed_lines++;
 		i++;
 	}
 
@@ -1137,6 +1162,7 @@ void print_data_to_sub_window(WINDOW *wptr, FILE *fptr, struct DynamicInts *pidx
 	if (debug == true) curs_set(1);
 	wrefresh(wptr);
 
+	int temp_y, temp_x;
 	int c = 0;
 	while (c != KEY_F(4) && c != '\n' && c != '\r') {
 		wrefresh(wptr);
@@ -1151,9 +1177,9 @@ void print_data_to_sub_window(WINDOW *wptr, FILE *fptr, struct DynamicInts *pidx
 
 					/* Handle case where there's more records than the window
 					 * can display at once */
-					if (j < plines->lines && cur_y == max_y) {
+					if (displayed_lines < plines->lines && cur_y == max_y) {
 						fseek(fptr, pidx->data[plines->data[select]], SEEK_SET);
-						line_str = fgets(linebuffer, sizeof(linebuffer), fptr);
+						line_str = fgets(linebuff, sizeof(linebuff), fptr);
 						ld = tokenize_str(ld, line_str);
 
 						wmove(wptr, 0, 0);
@@ -1174,11 +1200,10 @@ void print_data_to_sub_window(WINDOW *wptr, FILE *fptr, struct DynamicInts *pidx
 					select--;
 
 					if (cur_y < 0) cur_y = -1;
-					if (j < plines->lines && cur_y == -1 && select >= 0) {
+					if (displayed_lines < plines->lines && cur_y == -1 && select >= 0) {
 						fseek(fptr, pidx->data[plines->data[select]], SEEK_SET);
-						line_str = fgets(linebuffer, sizeof(linebuffer), fptr);
+						line_str = fgets(linebuff, sizeof(linebuff), fptr);
 						ld = tokenize_str(ld, line_str);
-
 						wmove(wptr, 0, 0);
 						winsertln(wptr);
 						print_record(wptr, cw, ld, 0);
@@ -1190,11 +1215,17 @@ void print_data_to_sub_window(WINDOW *wptr, FILE *fptr, struct DynamicInts *pidx
 
 			case('\n'):
 			case('\r'):
+				fseek(fptr, pidx->data[plines->data[select]], SEEK_SET);
+				char *line = fgets(linebuff, sizeof(linebuff), fptr);
+				detail_sub_window(wptr, line, plines->data[select]);
+				refresh_on_detail_close(wptr, displayed_lines);
+				c = 0;
 				break;
 			case(KEY_F(4)):
 				break;
 		}
 	}
+	return -1; // No selection was made
 }
 
 void read_data_to_screen(void) {
@@ -1215,10 +1246,13 @@ void read_data_to_screen(void) {
 	char linebuff[LINE_BUFFER] = {0};
 	FILE *fptr = open_csv("r");
 
-	struct Linedata linedata_, *ld = &linedata_;
+	struct LineData linedata_, *ld = &linedata_;
 
 	int sel_year = nc_read_select_year(wptr_read, fptr);
-	if (sel_year < 0) {
+	if (sel_year == -1) {
+		char *msg = "No records exist, add (F1) to get started";
+		mvwprintw(wptr_read, max_y / 2, max_x / 2- (strlen(msg) / 2), "%s", msg);
+		nc_exit_window_key(wptr_read);
 		fclose(fptr);
 		return;
 	}
@@ -1247,11 +1281,13 @@ void read_data_to_screen(void) {
 
 	WINDOW *wptr_lines = create_lines_sub_window(max_y - 1, max_x, 1, 2);
 
-	print_data_to_sub_window(wptr_lines, fptr, pidx, plines);
+	int line_idx = print_all_records_in_range(wptr_lines, fptr, pidx, plines);
 
-	box(wptr_read, 0, 0);
+//	box(wptr_read, 0, 0);
 	wrefresh(wptr_read);
+	wrefresh(wptr_lines);
 	rewind(fptr);
+	wgetch(wptr_lines);
 
 	wclear(wptr_read);
 
@@ -1303,11 +1339,8 @@ void read_data_to_screen(void) {
 	free(plines);
 	plines = NULL;
 
-	wgetch(wptr_read); // Just to hang the terminal
-	wclear(wptr_read);
-	wrefresh(wptr_read);
-	delwin(wptr_read);
-	delwin(wptr_lines);
+	nc_exit_window_key(wptr_read);
+	nc_exit_window(wptr_lines);
 	fclose(fptr);
 	fptr = NULL;
 	refresh();
@@ -1337,7 +1370,7 @@ int move_temp_to_main(FILE* tempfile, FILE* mainfile) {
 	return 0;
 }
 
-int edit_csv_record(int linetoreplace, struct Linedata *ld, int field) {
+int edit_csv_record(int linetoreplace, struct LineData *ld, int field) {
 	if (linetoreplace == 0) {
 		puts("Cannot delete line 0");
 		return -1;
@@ -1443,7 +1476,7 @@ int delete_csv_record(int linetodelete) {
 void edit_transaction() {
 	int target;
 	int humantarget;
-	struct Linedata linedata, *ld = &linedata;
+	struct LineData linedata, *ld = &linedata;
 
 	FILE* fptr = open_csv("r+");
 	assert(ftell(fptr) == 0);
@@ -1479,7 +1512,7 @@ void edit_transaction() {
 
 	ld = tokenize_str(ld, linebuff);
 
-	struct Linedata *pLd = malloc(sizeof(*ld));
+	struct LineData *pLd = malloc(sizeof(*ld));
 	if (pLd == NULL) {
 		puts("Failed to allocate memory");
 		free(pcsvindex);
@@ -1630,10 +1663,18 @@ int main(int argc, char **argv) {
 	if (ftell(fptr) == 0) {
 		fputs("month,day,year,category,description,transtype,value\n", fptr);
 	}
+
+	debug = false;
+
+	if (argc > 0) {
+		for (int i = 0; i < argc; i++) {
+			if (strcmp(argv[i], "d") == 0) {
+				debug = true;
+			}
+		}
+	}
 	
-	// Make a non-ncurses command-line option to let the user use termBudget
-	// how they want to
-	stdscr = nc_new_win();
+	stdscr = nc_init_stdscr();
 
 	fclose(fptr);
 
