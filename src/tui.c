@@ -9,20 +9,75 @@ int test_terminal_size(int max_y, int max_x) {
 	return 0;
 }
 
+void nc_exit_window_key(WINDOW *wptr) {
+	wrefresh(wptr);
+	wgetch(wptr);
+	wclear(wptr);
+	wrefresh(wptr);
+	delwin(wptr);
+}
+
 void nc_exit_window(WINDOW *wptr) {
 	wclear(wptr);
 	wrefresh(wptr);
 	delwin(wptr);
 }
 
-WINDOW *nc_new_win() {
+void calculate_columns(struct ColumnWidth *cw) {
+
+	/* DATE: 12/31/2025___
+	 *       ^...........^ == 13 */
+	cw->date = 13; 
+
+	/* TRANSACTION TYPE: EXPENSE___
+	 *                   ^........^  == 10 */
+	cw->trns = 10;
+
+	/* AMOUNT: Max 9 digits plus decimal point, plus 1 space, 11 */
+	cw->amnt = 11;
+
+	int static_columns = cw->date + cw->trns + cw->amnt;
+
+	/* 11 'n 14 derived from the length of "CATEGORY" and "DESCRIPTION" + 3 */
+	int minimum_cols = static_columns + 11 + 14;
+
+	if (cw->max_x < minimum_cols) {
+		cw->catg = 0;	
+		cw->desc = 0;	
+	} else if ((cw->max_x - static_columns) / 2 < 64) {
+		cw->catg = (cw->max_x - static_columns) / 4;
+		cw->desc = (cw->max_x - static_columns) / 2 + cw->catg;
+	} else {
+		cw->desc = 64;
+		cw->catg = 64;
+	}
+}
+
+void print_column_headers(WINDOW *wptr, int x_off) {
+	struct ColumnWidth column_width, *cw = &column_width;
+	cw->max_x = getmaxx(wptr);
+	cw->max_x -= x_off;
+	
+	calculate_columns(cw);
+
+	int cur = x_off;
+
+	mvwprintw(wptr, 1, cur, "DATE");
+	mvwprintw(wptr, 1, cur += cw->date, "CATEGORY");
+	mvwprintw(wptr, 1, cur += cw->catg, "DESCRIPTION");
+	mvwprintw(wptr, 1, cur += cw->desc, "TYPE");
+	mvwprintw(wptr, 1, cur += cw->trns, "AMOUNT");
+	mvwchgat(wptr, 1, x_off, cw->max_x - 2, A_REVERSE, 0, NULL);
+
+	wrefresh(wptr);
+}
+
+WINDOW *nc_init_stdscr() {
 	WINDOW *wptr = initscr(); 
 	if (wptr == NULL) {
 		return NULL;
 	}
-
 	noecho(); cbreak(); keypad(stdscr, true);
-
 	return wptr;
 }
 
