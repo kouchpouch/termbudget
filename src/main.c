@@ -61,6 +61,15 @@ struct Categories {
 	char *categories[];
 };
 
+struct ColumnWidth {
+	int max_x;
+	int date;
+	int catg;
+	int desc;
+	int trns;
+	int amnt;
+};
+
 struct Categories *list_categories(int month, int year);
 struct DynamicInts *index_csv();
 int move_temp_to_main(FILE* tempfile, FILE* mainfile);
@@ -565,14 +574,13 @@ struct Linedata *tokenize_str(struct Linedata *pLd, char *str) {
 
 int *list_records_by_year(FILE *fptr) {
 	char buff[LINE_BUFFER];
-	int buffsize = sizeof(buff);
 	char *str;
 	int *years = calloc(1, sizeof(int));
 	int year;
 	int i = 0;
 
 	seek_beyond_header(fptr);
-	str = fgets(buff, buffsize, fptr); // Read first year into index 0
+	str = fgets(buff, sizeof(buff), fptr); // Read first year into index 0
 	if (str == NULL) {
 		puts("Failed to read line");
 		free(years);
@@ -582,7 +590,7 @@ int *list_records_by_year(FILE *fptr) {
 	(void)strsep(&str, ","); // day, throwaway
 	years[i] = atoi(strsep(&str, ",")); // year
 
-	while((str = fgets(buff, buffsize, fptr)) != NULL) {
+	while((str = fgets(buff, sizeof(buff), fptr)) != NULL) {
 		(void)strsep(&str, ","); // month
 		(void)strsep(&str, ","); // day, throwaway
 		year = atoi(strsep(&str, ",")); // year
@@ -618,7 +626,6 @@ int *list_records_by_year(FILE *fptr) {
 
 int *list_records_by_month(FILE *fptr, int matchyear) {
 	char buff[LINE_BUFFER];
-	int buffsize = sizeof(buff);
 	char *str;
 	int *months = calloc(12, sizeof(int));
 	int year;
@@ -627,7 +634,7 @@ int *list_records_by_month(FILE *fptr, int matchyear) {
 
 	seek_beyond_header(fptr);
 
-	while((str = fgets(buff, buffsize, fptr)) != NULL) {
+	while((str = fgets(buff, sizeof(buff), fptr)) != NULL) {
 		month = atoi(strsep(&str, ","));
 		strsep(&str, ",");
 		year = atoi(strsep(&str, ","));
@@ -1034,103 +1041,169 @@ WINDOW *create_lines_sub_window(int max_y, int max_x, int y_off, int x_off) {
 	return wptr;
 }
 
-void calculate_columns(int max_x, int *n) {
+/* 
+ * Calculate column offsets for ncurses formatting, sets date width into date,
+ * category width into catg, description width into desc, transaction type
+ * width into trns, and amount into amnt.
+ */
+void calculate_columns(struct ColumnWidth *cw) {
 
-	/* 
-	 * Maybe pass a struct to this to get all of the offsets
-	 * in a cleaner way
-	 *
-	 * E.G. DATE: 12/31/2025 
-	 *            ^...........^ == 13
-	 * E.G. CATEGORY and DESCRIPTION dynamically calculated here
-	 *
-	 * E.G. TRANSACTION TYPE: EXPENSE  INCOME
-	 *                        ^......^ ^.....^ == 8, 7 will use 10 w/ space
-	 *
-	 * E.G. AMOUNT: Max 9 digits plus decimal point, plus space, 11
-	 *
-	 * 11 + 8 + 11 = 30
-	 *
-	 * Thinking about taking 30 + 11 for each string as an absolute
-	 * minimum. So 52 wide minimum for the subwindow.
-	 * Anything bigger and we'll display more
-	 */
+	/* DATE: 12/31/2025___
+	 *       ^...........^ == 13 */
+	cw->date = 13; 
 
-	int cols_without_strings = 13 + 10 + 11;
-	int minimum_cols = cols_without_strings + 22;
+	/* TRANSACTION TYPE: EXPENSE___
+	 *                   ^........^  == 10 */
+	cw->trns = 10;
 
-	if (max_x < minimum_cols) {
-		*n = 0;	
-	} else if ((max_x - cols_without_strings) / 2 < 64) {
-		*n = (max_x - cols_without_strings) / 2;
+	/* AMOUNT: Max 9 digits plus decimal point, plus 1 space, 11 */
+	cw->amnt = 11;
+
+	int static_columns = cw->date + cw->trns + cw->amnt;
+
+	/* 11 'n 14 derived from the length of "CATEGORY" and "DESCRIPTION" + 3 */
+	int minimum_cols = static_columns + 11 + 14;
+
+	if (cw->max_x < minimum_cols) {
+		cw->catg = 0;	
+		cw->desc = 0;	
+	} else if ((cw->max_x - static_columns) / 2 < 64) {
+		cw->catg = (cw->max_x - static_columns) / 4;
+		cw->desc = (cw->max_x - static_columns) / 2 + cw->catg;
 	} else {
-		*n = 64;
+		cw->desc = 64;
+		cw->catg = 64;
 	}
 }
 
 void print_column_headers(WINDOW *wptr, int x_off) {
-	int a = 0;
-	int max_x = getmaxx(wptr);
-	max_x -= x_off;
-	calculate_columns(max_x, &a);
+	struct ColumnWidth column_width, *cw = &column_width;
+	cw->max_x = getmaxx(wptr);
+	cw->max_x -= x_off;
+	
+	calculate_columns(cw);
 
 	int cur = x_off;
-	int date_off = 13;
-	int type_off  = 10;
 
 	mvwprintw(wptr, 1, cur, "DATE");
-	mvwprintw(wptr, 1, cur += date_off, "CATEGORY");
-	mvwprintw(wptr, 1, cur += a / 2, "DESCRIPTION");
-	mvwprintw(wptr, 1, cur += a + (a / 2), "TYPE");
-	mvwprintw(wptr, 1, cur += type_off, "AMOUNT");
+	mvwprintw(wptr, 1, cur += cw->date, "CATEGORY");
+	mvwprintw(wptr, 1, cur += cw->catg, "DESCRIPTION");
+	mvwprintw(wptr, 1, cur += cw->desc, "TYPE");
+	mvwprintw(wptr, 1, cur += cw->trns, "AMOUNT");
+	mvwchgat(wptr, 1, x_off, cw->max_x - 2, A_REVERSE, 0, NULL);
 
 	wrefresh(wptr);
 }
 
 void print_data_to_sub_window(WINDOW *wptr, FILE *fptr, 
 	struct DynamicInts *pidx, struct DynamicInts *plines) {
+
+	struct ColumnWidth column_width, *cw = &column_width;
 	struct Linedata linedata_, *ld = &linedata_;
 	int max_y, max_x;
 	getmaxyx(wptr, max_y, max_x);
+	cw->max_x = max_x + 2;
 	int i = 0;
 	int j = 0;
 	char *line_str;
 	char linebuffer[LINE_BUFFER];
 
-	int offset = 0;
 	int cur = 0;
-	calculate_columns(max_x + 2, &offset);
+	calculate_columns(cw);
 
 	/* Print enough lines to fill the window but not more */
-
 	while (i < max_y && j < plines->lines) {
 		cur = 0;
 		fseek(fptr, pidx->data[plines->data[j]], SEEK_SET);
 		line_str = fgets(linebuffer, sizeof(linebuffer), fptr);
 		ld = tokenize_str(ld, line_str);
 		mvwprintw(wptr, i, cur, "%d/%d/%d", ld->month, ld->day, ld->year);
-		mvwprintw(wptr, i, cur += 13, "%s", ld->category);
-		mvwprintw(wptr, i, cur += offset / 2, "%s", ld->desc);
-		mvwprintw(wptr, i, cur += offset + (offset / 2), "%s", 
+		mvwprintw(wptr, i, cur += cw->date, "%s", ld->category);
+		mvwprintw(wptr, i, cur += cw->catg, "%s", ld->desc);
+		mvwprintw(wptr, i, cur += cw->desc, "%s", 
 			ld->transtype == 0 ? "Expense" : "Income");
-		mvwprintw(wptr, i, cur + 10, "$%.2f", ld->amount);
+		mvwprintw(wptr, i, cur += cw->trns, "$%.2f", ld->amount);
 		j++;
 		i++;
 	}
 
 	wrefresh(wptr);
 
+	/* Move cursor to first line of data and set that line to reverse video */
+	int select = 0; // To keep track of selection for indexing
+	int cur_y = 0; // Keep track of cursor position in window
+	wmove(wptr, 0, 0);
+	mvwchgat(wptr, select, 0, -1, A_REVERSE, 0, NULL); 
+	curs_set(1); // for debugging
+	wrefresh(wptr);
+
 	int c = 0;
 	while (c != KEY_F(4)) {
+		wrefresh(wptr);
 		c = wgetch(wptr);
 		switch(c) {
-			case('k'):
-			case(KEY_DOWN):
-				break;
 			case('j'):
-			case(KEY_UP):
+			case(KEY_DOWN):
+				if (select + 1 < plines->lines) {
+					mvwchgat(wptr, cur_y, 0, -1, A_NORMAL, 0, NULL); 
+					cur_y++;
+					select++;
+
+					/* Handle case where there's more records than the window
+					 * can display at once */
+					if (j < plines->lines && cur_y == max_y) {
+						wmove(wptr, 0, 0);
+						wdeleteln(wptr);
+						wmove(wptr, max_y - 1, 0);
+						cur = 0;
+						fseek(fptr, pidx->data[plines->data[select]], SEEK_SET);
+						line_str = fgets(linebuffer, sizeof(linebuffer), fptr);
+						ld = tokenize_str(ld, line_str);
+						mvwprintw(wptr, max_y - 1, cur, "%d/%d/%d", ld->month, ld->day, ld->year);
+						mvwprintw(wptr, max_y - 1, cur += cw->date, "%s", ld->category);
+						mvwprintw(wptr, max_y - 1, cur += cw->catg, "%s", ld->desc);
+						mvwprintw(wptr, max_y - 1, cur += cw->desc, "%s", 
+							ld->transtype == 0 ? "Expense" : "Income");
+						mvwprintw(wptr, max_y - 1, cur += cw->trns, "$%.2f", ld->amount);
+						cur_y = getcury(wptr);
+					}
+					mvwchgat(wptr, cur_y, 0, -1, A_REVERSE, 0, NULL); 
+				}
+				break;
+
+			case('k'):
+			case(KEY_UP): // Scroll up
+				if (select - 1 >= 0) {
+					mvwchgat(wptr, cur_y, 0, -1, A_NORMAL, 0, NULL); 
+					cur_y--;
+					select--;
+
+					if (cur_y < 0) cur_y = -1;
+					if (j < plines->lines && cur_y == -1 && select >= 0) {
+						cur = 0;
+						wmove(wptr, 0, 0);
+						winsertln(wptr);
+						fseek(fptr, pidx->data[plines->data[select]], SEEK_SET);
+						line_str = fgets(linebuffer, sizeof(linebuffer), fptr);
+						ld = tokenize_str(ld, line_str);
+						mvwprintw(wptr, 0, cur, "%d/%d/%d", ld->month, ld->day, ld->year);
+						mvwprintw(wptr, 0, cur += cw->date, "%s", ld->category);
+						mvwprintw(wptr, 0, cur += cw->catg, "%s", ld->desc);
+						mvwprintw(wptr, 0, cur += cw->desc, "%s", 
+							ld->transtype == 0 ? "Expense" : "Income");
+						mvwprintw(wptr, 0, cur += cw->trns, "$%.2f", ld->amount);
+						cur_y = getcury(wptr);
+					}
+					mvwchgat(wptr, cur_y, 0, -1, A_REVERSE, 0, NULL); 
+				}
+				break;
+
+			case('\n'):
+			case('\r'):
+				wprintw(wptr, "INDEX: %d", select);
 				break;
 			case(KEY_F(4)):
+
 				break;
 		}
 	}
