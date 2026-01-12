@@ -17,9 +17,14 @@
     - (*) In the read function, implement a better warning for accessing a 
             date range that doesn't contain any data.
     - (*) Display transaction type as a string instead of a bare number
-    - ( ) Show selected month and year at the top of the screen after
+    - (*) Show selected month and year at the top of the screen after
             selection on read
     - (*) Remove all reallocarray() functions for portability
+    - ( ) Suggested to me that the user should be able to see all months,
+            regardless if there's a record in that date range or not. Maybe
+            throw an asterisk on the month if it contains records/vice versa
+    - ( ) After main feature set is done and working, refactor to make main.c
+            have a clearer control flow purpose
 
 #### Main Feature Set
     - (*) Create a transaction
@@ -39,6 +44,7 @@
                     in an NCURSES menu.
         - ( ) Overview
         - (*) Scroll through dates
+        - ( ) Resizing
     - (*) Basic Bar Graph Trends
 
 #### Bugs
@@ -51,3 +57,5 @@
             match and is not greater than the target month. If the months in
             the CSV are all less than the target, the record will be 
             erroneously be added out of chronological order.
+    - (*) Edge case where trying to access read via the TUI, fgets fails to
+            read the line (because it doesn't exist).
