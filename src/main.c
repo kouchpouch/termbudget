@@ -594,7 +594,8 @@ int *list_records_by_year(FILE *fptr) {
 		year = atoi(strsep(&str, ",")); // year
 		if (year != years[i]) {
 			i++;
-			int *tmp = reallocarray(years, i + 1, sizeof(int));
+			int *tmp = realloc(years, (i + 1) * sizeof(int));
+//			int *tmp = reallocarray(years, i + 1, sizeof(int));
 			if (tmp == NULL) {
 				free(years);
 				puts("Failed to reallocate memory");
@@ -604,7 +605,8 @@ int *list_records_by_year(FILE *fptr) {
 			years[i] = year;
 		}
 	}
-	int *tmp = reallocarray(years, i + 2, sizeof(int));
+	int *tmp = realloc(years, (i + 2) * sizeof(int));
+//	int *tmp = reallocarray(years, i + 2, sizeof(int));
 	if (tmp == NULL) {
 		free(years);
 		puts("Failed to reallocate memory");
@@ -1092,18 +1094,17 @@ void print_column_headers(WINDOW *wptr, int x_off) {
  * to by wptr, at a Y-coordinate of y
  */
 void print_record(WINDOW *wptr, struct ColumnWidth *cw, struct Linedata *ld, int y) {
-	int cur = 0;
-	mvwprintw(wptr, y, cur, "%d/%d/%d", ld->month, ld->day, ld->year);
-	mvwprintw(wptr, y, cur += cw->date, "%s", ld->category);
-	mvwprintw(wptr, y, cur += cw->catg, "%s", ld->desc);
-	mvwprintw(wptr, y, cur += cw->desc, "%s", 
+	int x = 0;
+	mvwprintw(wptr, y, x, "%d/%d/%d", ld->month, ld->day, ld->year);
+	mvwprintw(wptr, y, x += cw->date, "%s", ld->category);
+	mvwprintw(wptr, y, x += cw->catg, "%s", ld->desc);
+	mvwprintw(wptr, y, x += cw->desc, "%s", 
 		ld->transtype == 0 ? "Expense" : "Income");
-	mvwprintw(wptr, y, cur += cw->trns, "$%.2f", ld->amount);
+	mvwprintw(wptr, y, x += cw->trns, "$%.2f", ld->amount);
 }
 
-void print_data_to_sub_window(WINDOW *wptr, FILE *fptr, 
-	struct DynamicInts *pidx, struct DynamicInts *plines) {
-
+void print_data_to_sub_window(WINDOW *wptr, FILE *fptr, struct DynamicInts *pidx, 
+							  struct DynamicInts *plines) {
 	struct ColumnWidth column_width, *cw = &column_width;
 	struct Linedata linedata_, *ld = &linedata_;
 	int max_y, max_x;
@@ -1137,7 +1138,7 @@ void print_data_to_sub_window(WINDOW *wptr, FILE *fptr,
 	wrefresh(wptr);
 
 	int c = 0;
-	while (c != KEY_F(4)) {
+	while (c != KEY_F(4) && c != '\n' && c != '\r') {
 		wrefresh(wptr);
 		c = wgetch(wptr);
 		switch(c) {
@@ -1189,10 +1190,8 @@ void print_data_to_sub_window(WINDOW *wptr, FILE *fptr,
 
 			case('\n'):
 			case('\r'):
-				wprintw(wptr, "INDEX: %d", select);
 				break;
 			case(KEY_F(4)):
-
 				break;
 		}
 	}
