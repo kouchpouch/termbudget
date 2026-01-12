@@ -19,7 +19,7 @@
     - (*) Display transaction type as a string instead of a bare number
     - ( ) Show selected month and year at the top of the screen after
             selection on read
-    - ( ) Remove all reallocarray() functions for portability
+    - (*) Remove all reallocarray() functions for portability
 
 #### Main Feature Set
     - (*) Create a transaction
@@ -29,16 +29,16 @@
     - ( ) ncurses <-- The big one
         - (*) Welcome Menu
         - (*) Read
-            - ( ) Add ability to scroll through records if they are too
+            - (*) Add ability to scroll through records if they are too
                     big to fit on the screen
-            - ( ) Columns for fields for easier reading
+            - (*) Columns for fields for easier reading
         - ( ) Edit
         - ( ) Confirm windows
         - ( ) Categories
             - ( ) When adding a transaction, select a category or add new
                     in an NCURSES menu.
         - ( ) Overview
-        - ( ) Scroll through dates
+        - (*) Scroll through dates
     - (*) Basic Bar Graph Trends
 
 #### Bugs
