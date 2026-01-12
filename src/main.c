@@ -1644,5 +1644,5 @@ int main(int argc, char **argv) {
 	}
 
 	endwin();
-	exit_curses(0);
+	//exit_curses(0);
 }
