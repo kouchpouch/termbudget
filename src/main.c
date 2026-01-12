@@ -22,7 +22,6 @@
 #define MAX_LEN_YEAR 5 // With \0 This is kind of ugly, no?
 #define MIN_LEN_DAYMON MAX_LEN_DAYMON - 1
 #define CURRENT_YEAR 2026 // FIX This is to not be hard coded
-#define MIN_COLUMNS 59 // See calculate_columns() for how this is derived
 
 static bool debug;
 static bool cli_mode;
@@ -84,9 +83,7 @@ char *user_input(size_t buffersize) {
 
 	if (fgets(buffer, buffersize, stdin) == NULL) {
 		printf("Invalid Input\n");
-		free(buffer);
-		buffer = NULL;
-		return buffer;
+		goto FAIL;
 	}
 	int length = strnlen(buffer, buffersize);
 
@@ -96,23 +93,22 @@ char *user_input(size_t buffersize) {
 		while (c != '\n') {
 			c = getchar();
 		}
-		free(buffer);
-		buffer = NULL;
-		return buffer;
+		goto FAIL;
 	}
 	if (length < minchar) {
 		puts("Input is too short");
-		free(buffer);
-		buffer = NULL;
-		return buffer;
+		goto FAIL;
 	}
 	if (strstr(buffer, ",")) {
 		puts("No commas allowed, we're using a CSV, after all!");
-		free(buffer);
-		buffer = NULL;
-		return buffer;
+		goto FAIL;
 	}
 	return buffer; // Must be free'd
+
+FAIL:
+	free(buffer);
+	buffer = NULL;
+	return buffer;
 }
 
 int input_n_digits(int max_len, int min_len) {
@@ -181,7 +177,9 @@ int input_month() {
 
 int input_year() {
 	int year;
-	puts("Enter Year");
+	if (cli_mode == true) {
+		puts("Enter Year");
+	}
 	while((year = input_n_digits(MAX_LEN_YEAR, MAX_LEN_YEAR)) == -1);
 	return year;
 }
@@ -1098,6 +1096,10 @@ WINDOW *create_lines_sub_window(int max_y, int max_x, int y_off, int x_off) {
 	return wptr;
 }
 
+int nc_input_year() {
+
+	return year;
+}
 
 /* 
  * Prints record from ld, formatting in columns from cw, to a window pointed
@@ -1121,31 +1123,55 @@ void print_record_vert(WINDOW *wptr, struct LineData *ld, int x_off) {
 	mvwprintw(wptr, 5, x_off, "Amt.--> %.2f", ld->amount);
 }
 
-void nc_select_field_to_edit(WINDOW* wptr) {
-	curs_set(1);
-	wmove(wptr, 0, 0);
-	int select = 0;
+int nc_select_field_to_edit(WINDOW* wptr) {
+	mvwchgat(wptr, 1, 0, -1, A_REVERSE, 0, NULL);
+	keypad(wptr, true);
+	char title[] = "Select Field to Edit";
+	int select = 1;
 	int c = 0;
-	c = wgetch(wptr);
+
+	box(wptr, 0, 0);
+	mvwprintw(wptr, 0, getmaxx(wptr) / 2 - (int)strlen(title) / 2, "%s", title);
+	wrefresh(wptr);
+	while(c != KEY_F(4) && c != '\n' && c != '\r') {
+		box(wptr, 0, 0);
+		mvwprintw(wptr, 0, getmaxx(wptr) / 2 - (int)strlen(title) / 2, "%s", title);
+		wrefresh(wptr);
+		c = wgetch(wptr);
+
+		switch(c) {
+			case('j'):
+			case(KEY_DOWN):
+				if (select + 1 <= 6) {
+					mvwchgat(wptr, select, 0, -1, A_NORMAL, 0, NULL);
+					select++;
+					mvwchgat(wptr, select, 0, -1, A_REVERSE, 0, NULL);
+				}
+				break;
+			case('k'):
+			case(KEY_UP):
+				if (select - 1 > 0) {
+					mvwchgat(wptr, select, 0, -1, A_NORMAL, 0, NULL);
+					select--;
+					mvwchgat(wptr, select, 0, -1, A_REVERSE, 0, NULL);
+				}
+				break;
+			case('\n'):
+			case('\r'):
+				return select;
+			case('q'):
+			case(KEY_F(4)):
+				break;
+		}
+	}
+	return 0;
 }
 
 void nc_edit_transaction(int linenum) {
 	struct LineData linedata, *ld = &linedata;
 	struct DynamicInts *pidx = index_csv();
 
-	int max_y, max_x;
-	getmaxyx(stdscr, max_y, max_x);
-	int win_y, win_x;
-	
-	win_y = 8;
-
-	if (max_x >= MIN_COLUMNS + 20) {
-		win_x = MIN_COLUMNS + 20;
-	} else {
-		win_x = max_x;
-	}
-
-	WINDOW *wptr_edit = newwin(win_y, win_x, (max_y / 2) - win_y / 2, (max_x / 2) - win_x / 2);
+	WINDOW *wptr_edit = create_input_subwindow();
 	FILE* fptr = open_csv("r+");
 	char linebuff[LINE_BUFFER];
 
@@ -1174,39 +1200,36 @@ void nc_edit_transaction(int linenum) {
 
 	box(wptr_edit, 0, 0);
 	wrefresh(wptr_edit);
-	wgetch(wptr_edit);
+
+	int field_to_edit = nc_select_field_to_edit(wptr_edit);
+
+	nc_exit_window(wptr_edit);
 	
-//	int fieldtoedit;
-//	do {
-//		puts("Enter field to edit or press \"0\" to delete this transaction");
-//		fieldtoedit = input_n_digits(2, 2); // Only input 1 digit
-//	} while (fieldtoedit > 5 || fieldtoedit < 0);
-//
-//	switch(fieldtoedit) {
+//	switch(field_to_edit) {
 //		case 0:
-//			if (delete_csv_record(humantarget) == 0) {
+//			if (delete_csv_record(linenum) == 0) {
 //				puts("Successfully Deleted Transaction");
 //			}
 //			break;
 //		case 1:
-//			edit_csv_record(humantarget, pLd, 1);
+//			edit_csv_record(linenum, pLd, 1);
 //			break;
 //		case 2:
-//			edit_csv_record(humantarget, pLd, 2);
+//			edit_csv_record(linenum, pLd, 2);
 //			break;
 //		case 3:
-//			edit_csv_record(humantarget, pLd, 3);
+//			edit_csv_record(linenum, pLd, 3);
 //			break;
 //		case 4:
-//			edit_csv_record(humantarget, pLd, 4);
+//			edit_csv_record(linenum, pLd, 4);
 //			break;
 //		case 5:
-//			edit_csv_record(humantarget, pLd, 5);
+//			edit_csv_record(linenum, pLd, 5);
 //			break;
 //		default:
 //			return;
 //	}
-//
+
 	free(pLd);
 	pLd = NULL;
 	free(pidx);
@@ -1220,33 +1243,15 @@ void nc_edit_transaction(int linenum) {
  * the selected record at index i of pidx->data. Following the format style
  * from edit_transaction()
  */
-void detail_sub_window(WINDOW *wptr, char *line, int n) {
-	int y, x;
-	getmaxyx(wptr, y, x); // Use this to calculate the subwindow dimensions
-	// At least MIN_COLUMNS
-
-	int x_offset = 2;
-	int win_y = 12;
-	int win_x = 0;
-	if (x >= MIN_COLUMNS + 10) {
-		win_x = MIN_COLUMNS + 10;
-	} else {
-		win_x = x;
-	}
-	
-	WINDOW *wptr_detail = newwin(win_y, win_x, y / 2 - (win_y / 2), x / 2 - (win_x / 2));
+void detail_sub_window(char *line) {
+	WINDOW *wptr_detail = create_input_subwindow();
+	char *title = "Details";
 	box(wptr_detail, 0, 0);
-	wrefresh(wptr_detail);
+	mvwprintw(wptr_detail, 0, getmaxx(wptr_detail) / 2 - (int)strlen(title) / 2, "%s", title);
 
 	struct LineData linedata_, *ld = &linedata_;
 	ld = tokenize_str(ld, line);
-
 	print_record_vert(wptr_detail, ld, 2);
-
-	if (debug == true && n >= 0) {
-		mvwprintw(wptr_detail, 0, 2, "Line Number: %d", n);	
-	}
-	
 	nc_exit_window_key(wptr_detail);
 }
 
@@ -1360,7 +1365,7 @@ void read_loop(WINDOW *wptr, FILE *fptr, struct SelectedRecord *sr,
 			case('\r'):
 				fseek(fptr, pidx->data[plines->data[select]], SEEK_SET);
 				char *line = fgets(linebuff, sizeof(linebuff), fptr);
-				detail_sub_window(wptr, line, plines->data[select]);
+				detail_sub_window(line);
 				refresh_on_detail_close(wptr, displayed_lines);
 				c = 0;
 				break;
