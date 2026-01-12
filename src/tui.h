@@ -43,7 +43,6 @@ extern void nc_print_footer(WINDOW *wptr);
 /* Initializes the stdscr */
 extern WINDOW *nc_init_stdscr();
 
-
 extern int test_terminal_size(int max_y, int max_x);
 
 #endif
