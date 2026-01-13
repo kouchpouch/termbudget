@@ -40,6 +40,14 @@ extern void nc_print_welcome(WINDOW *wptr);
 /* Prints the footer with menu options */
 extern void nc_print_footer(WINDOW *wptr);
 
+/* Moves cursor in wptr to y-coord y for a string len
+ * of len */
+extern int mvwxctr(WINDOW *wptr, int y, int len);
+
+/* Prints str centered on the X axis of wptr and y-coord
+ * of y */
+extern int mvwxcprintw(WINDOW *wptr, int y, char *str);
+
 /* Creates a subwindow for user input with dimensions based on stdscr */
 extern WINDOW *create_input_subwindow();
 
