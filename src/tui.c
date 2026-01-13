@@ -1,9 +1,11 @@
 #include <ncurses.h>
 #include <string.h>
+#include <string.h>
+#include <stdlib.h>
 #include "tui.h"
 
 int test_terminal_size(int max_y, int max_x) {
-	if (max_y < MIN_ROW || max_x < MIN_COL) {
+	if (max_y < MIN_ROW || max_x < MIN_COLUMNS) {
 			return -1;
 		}
 	return 0;
@@ -70,6 +72,23 @@ void print_column_headers(WINDOW *wptr, int x_off) {
 	mvwchgat(wptr, 1, x_off, cw->max_x - 2, A_REVERSE, 0, NULL);
 
 	wrefresh(wptr);
+}
+
+WINDOW *create_input_subwindow() {
+	int max_y, max_x;
+	getmaxyx(stdscr, max_y, max_x);
+	int win_y, win_x;
+	
+	win_y = 8;
+
+	if (max_x >= MIN_COLUMNS + 20) {
+		win_x = MIN_COLUMNS + 20;
+	} else {
+		win_x = max_x;
+	}
+
+	WINDOW *wptr = newwin(win_y, win_x, (max_y / 2) - win_y / 2, (max_x / 2) - win_x / 2);
+	return wptr;
 }
 
 WINDOW *nc_init_stdscr() {
