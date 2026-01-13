@@ -74,6 +74,17 @@ void print_column_headers(WINDOW *wptr, int x_off) {
 	wrefresh(wptr);
 }
 
+int mvwxctr(WINDOW *wptr, int y, int len) {
+	int ret = wmove(wptr, y, getmaxx(wptr) / 2 - len / 2);
+	return ret;
+}
+
+int mvwxcprintw(WINDOW *wptr, int y, char *str) {
+	if (mvwxctr(wptr, y, strlen(str)) < 0) return -1;
+	int ret = wprintw(wptr, "%s", str);
+	return ret;
+}
+
 WINDOW *create_input_subwindow() {
 	int max_y, max_x;
 	getmaxyx(stdscr, max_y, max_x);
@@ -88,6 +99,7 @@ WINDOW *create_input_subwindow() {
 	}
 
 	WINDOW *wptr = newwin(win_y, win_x, (max_y / 2) - win_y / 2, (max_x / 2) - win_x / 2);
+	box(wptr, 0, 0);
 	return wptr;
 }
 
@@ -108,8 +120,8 @@ void nc_print_welcome(WINDOW *wptr) {
 	char welcome[] = "Welcome to termBudget";
 	char welcome2[] = "Made by TN";
 
-	mvwprintw(wptr, max_y/2, max_x/2 - strlen(welcome)/2, "%s", welcome);
-	mvwprintw(wptr, max_y/2 + 1, max_x/2 - strlen(welcome2)/2, "%s", welcome2);
+	mvwxcprintw(wptr, max_y/2, "Welcome to termBudget");
+	mvwxcprintw(wptr, max_y/2 + 1, "Made by TN");
 }
 
 void nc_print_footer(WINDOW *wptr) {
