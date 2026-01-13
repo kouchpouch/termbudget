@@ -85,7 +85,16 @@ int mvwxcprintw(WINDOW *wptr, int y, char *str) {
 	return ret;
 }
 
-WINDOW *create_input_subwindow() {
+WINDOW *create_lines_subwindow(int max_y, int max_x, int y_off, int x_off) {
+	WINDOW *wptr = newwin(max_y - y_off * 2, max_x - x_off * 2, y_off + 1, x_off);
+	if (wptr == NULL) {
+		perror("Failed to create ncurses window");
+	}
+	keypad(wptr, true);
+	return wptr;
+}
+
+WINDOW *create_input_subwindow(void) {
 	int max_y, max_x;
 	getmaxyx(stdscr, max_y, max_x);
 	int win_y, win_x;
@@ -99,11 +108,17 @@ WINDOW *create_input_subwindow() {
 	}
 
 	WINDOW *wptr = newwin(win_y, win_x, (max_y / 2) - win_y / 2, (max_x / 2) - win_x / 2);
+
+	if (wptr == NULL) {
+		perror("Failed to create ncurses window");
+		return NULL;
+	}
+
 	box(wptr, 0, 0);
 	return wptr;
 }
 
-WINDOW *nc_init_stdscr() {
+WINDOW *nc_init_stdscr(void) {
 	WINDOW *wptr = initscr(); 
 	if (wptr == NULL) {
 		return NULL;

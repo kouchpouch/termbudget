@@ -48,11 +48,14 @@ extern int mvwxctr(WINDOW *wptr, int y, int len);
  * of y */
 extern int mvwxcprintw(WINDOW *wptr, int y, char *str);
 
+/* Creates the subwindow for the read function */
+extern WINDOW *create_lines_subwindow(int max_y, int max_x, int y_off, int x_off);
+
 /* Creates a subwindow for user input with dimensions based on stdscr */
-extern WINDOW *create_input_subwindow();
+extern WINDOW *create_input_subwindow(void);
 
 /* Initializes the stdscr */
-extern WINDOW *nc_init_stdscr();
+extern WINDOW *nc_init_stdscr(void);
 
 extern int test_terminal_size(int max_y, int max_x);
 
