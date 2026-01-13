@@ -21,6 +21,7 @@
 #define MIN_INPUT_CHAR 2
 #define MAX_LEN_DAYMON 3 // With \0
 #define MAX_LEN_YEAR 5 // With \0 This is kind of ugly, no?
+#define MIN_LEN_YEAR 5 // With \0 This is kind of ugly, no?
 #define MIN_LEN_DAYMON MAX_LEN_DAYMON - 1
 #define CURRENT_YEAR 2026 // FIX This is to not be hard coded
 
@@ -77,15 +78,16 @@ int delete_csv_record(int linetodelete);
 char *user_input(size_t buffersize) {
 	int minchar = 2;
 	char *buffer = (char *)malloc(buffersize);
+
 	if (buffer == NULL) {
 		puts("Failed to allocate memory");
 		return buffer;
 	}
-
 	if (fgets(buffer, buffersize, stdin) == NULL) {
 		printf("Invalid Input\n");
 		goto FAIL;
 	}
+
 	int length = strnlen(buffer, buffersize);
 
 	if (buffer[length - 1] != '\n') {
@@ -112,6 +114,102 @@ FAIL:
 	return buffer;
 }
 
+char *nc_user_input(size_t buffersize, WINDOW *wptr) {
+	int max_y, max_x;
+	getmaxyx(wptr, max_y, max_x);
+	
+	int center = max_x / 2 - (buffersize - 1) / 2;
+
+	/* Print a line of underscores to accept the user input */
+	for (int i = 0; i < buffersize - 1; i++) {
+		mvwprintw(wptr, max_y - 4, center + i, "%c", '_');
+	}
+
+	keypad(wptr, true);
+	wmove(wptr, max_y - 3, center);
+	wclrtobot(wptr);
+	wmove(wptr, max_y - 4, center);
+	box(wptr, 0, 0);
+	echo();
+	curs_set(1);
+	wrefresh(wptr);
+
+	char temp[buffersize];
+	wgetnstr(wptr, temp, buffersize - 1);
+
+	noecho();
+
+	char *buffer = (char *)malloc(buffersize);
+	if (buffer == NULL) {
+		return buffer;
+	}
+
+	strncpy(buffer, temp, buffersize);
+
+	int length = strnlen(buffer, buffersize);
+
+	if (buffer[length] != '\0') {
+		mvwxcprintw(wptr, max_y - 3, "Input is too long");
+		int c = 0;
+		while (c != '\n') {
+			c = getchar();
+		}
+		goto FAIL;
+	}
+
+	if (length < MIN_INPUT_CHAR) {
+		mvwxcprintw(wptr, max_y - 3, "Input is too short");
+		goto FAIL;
+	}
+
+	if (strstr(buffer, ",")) {
+		mvwxcprintw(wptr, max_y - 3, "No commas allowed");
+		goto FAIL;
+	}
+
+	curs_set(0);
+	return buffer; // Must be free'd
+
+FAIL:
+	curs_set(0);
+	free(buffer);
+	buffer = NULL;
+	return buffer;
+}
+
+int nc_input_n_digits(WINDOW *wptr, int max_len, int min_len) {
+	int max_y, max_x;
+	getmaxyx(wptr, max_y, max_x);
+
+	char *str = nc_user_input(max_len, wptr);
+
+	while (str == NULL) {
+		str = nc_user_input(max_len, wptr);
+	}
+
+	if ((int)strlen(str) < min_len) {
+		mvwxcprintw(wptr, max_y - 2, "Input is too short");
+		goto FAIL;
+	}
+
+	for (int i = 0; i < (int)strlen(str); i++) {
+		if (!isdigit(*(str + i)) && (*(str + i) != '\n' || *(str + i) != '\0')) {
+			mvwxcprintw(wptr, max_y - 2, "Invalid character, must be digits");
+			goto FAIL;
+		}
+	}
+
+	int digits = atoi(str);
+	free(str);
+	str = NULL;
+	return digits;
+
+FAIL:
+	free(str);
+	str = NULL;
+	return -1;
+}
+
 int input_n_digits(int max_len, int min_len) {
 	size_t bytesize = ((sizeof(char) * max_len) + 1);
 	char *str = user_input(bytesize);
@@ -132,6 +230,7 @@ int input_n_digits(int max_len, int min_len) {
 			goto FAIL;
 		}
 	}
+
 	int digits = atoi(str);
 	free(str);
 	str = NULL;
@@ -1096,83 +1195,36 @@ WINDOW *create_lines_sub_window(int max_y, int max_x, int y_off, int x_off) {
 	return wptr;
 }
 
-char *nc_user_input(size_t buffersize, WINDOW *wptr) {
-	int max_y, max_x;
-	getmaxyx(wptr, max_y, max_x);
-	
-	int center = max_x / 2 - (buffersize - 1) / 2;
-	/* Print a line of underscores to accept the user input */
-	for (int i = 0; i < buffersize - 1; i++) {
-		mvwprintw(wptr, max_y - 2, center + i, "%c", '_');
-	}
+int nc_input_month() {
+	WINDOW *wptr_input = create_input_subwindow();
+	mvwxcprintw(wptr_input, 2, "Enter Month");
+	wrefresh(wptr_input);
 
-	keypad(wptr, true);
-	wmove(wptr, max_y - 4, center);
-	echo();
-	curs_set(1);
+	int month;
+	month = nc_input_n_digits(wptr_input, MAX_LEN_DAYMON, 1);
+	while(month <= 0 || month > 12) {
+		mvwxcprintw(wptr_input, getmaxy(wptr_input) - 2, "Not a valid month");
+		month = nc_input_n_digits(wptr_input, MAX_LEN_DAYMON, 1);
+	} 
 
-	char *too_short = "Input is too short";
-	char *too_long = "Input is too long, try again";
+	nc_exit_window_key(wptr_input);
 
-	char temp[buffersize];
-	wgetnstr(wptr, temp, buffersize - 1);
-
-	char *buffer = (char *)malloc(buffersize);
-	if (buffer == NULL) {
-		puts("Failed to allocate memory");
-		return buffer;
-	}
-
-	strncpy(buffer, temp, buffersize);
-
-	int length = strnlen(buffer, buffersize);
-
-	if (buffer[length] != '\0') {
-		mvwprintw(wptr, max_y - 3, max_x / 2 - (int)strlen(too_long) / 2, "%s", too_long);
-		int c = 0;
-		while (c != '\n') {
-			c = getchar();
-		}
-		goto FAIL;
-	}
-
-	if (length < MIN_INPUT_CHAR) {
-		mvwprintw(wptr, max_y - 3, max_x / 2 - (int)strlen(too_short) / 2, "%s", too_short);
-		goto FAIL;
-	}
-
-	if (strstr(buffer, ",")) {
-		puts("No commas allowed, we're using a CSV, after all!");
-		goto FAIL;
-	}
-
-	return buffer; // Must be free'd
-
-FAIL:
-	free(buffer);
-	buffer = NULL;
-	return buffer;
+	return 0;
 }
 
 int nc_input_year() {
 	WINDOW *wptr_input = create_input_subwindow();
-	char *title = "Enter Year";
-	mvwprintw(wptr_input, 2, getmaxx(wptr_input) / 2 - (int)strlen(title) / 2, "%s", title);
-	wclear(wptr_input);
+	mvwxcprintw(wptr_input, 2, "Enter Year");
 	wrefresh(wptr_input);
-	char *str = nc_user_input(MAX_LEN_YEAR, wptr_input);
-	if (str == NULL) {
-		wprintw(wptr_input, "%s", "IT'S NULL!!!!!");
-		wrefresh(wptr_input);
-		nc_exit_window_key(wptr_input);
-	} else {
-		wprintw(wptr_input, "%s", "It's alright");
-		wprintw(wptr_input, "%s", str);
-		wrefresh(wptr_input);
-		nc_exit_window_key(wptr_input);
-	}
-	free(str);
-	return 0;
+
+	int year;
+	do {
+		year = nc_input_n_digits(wptr_input, MAX_LEN_YEAR, 4);
+	} while (year < 0);
+
+	nc_exit_window(wptr_input);
+
+	return year;
 }
 
 /* 
@@ -1200,16 +1252,15 @@ void print_record_vert(WINDOW *wptr, struct LineData *ld, int x_off) {
 int nc_select_field_to_edit(WINDOW* wptr) {
 	mvwchgat(wptr, 1, 0, -1, A_REVERSE, 0, NULL);
 	keypad(wptr, true);
-	char title[] = "Select Field to Edit";
 	int select = 1;
 	int c = 0;
 
 	box(wptr, 0, 0);
-	mvwprintw(wptr, 0, getmaxx(wptr) / 2 - (int)strlen(title) / 2, "%s", title);
+	mvwxcprintw(wptr, 0, "Select Field to Edit");
 	wrefresh(wptr);
 	while(c != KEY_F(4) && c != '\n' && c != '\r') {
 		box(wptr, 0, 0);
-		mvwprintw(wptr, 0, getmaxx(wptr) / 2 - (int)strlen(title) / 2, "%s", title);
+		mvwxcprintw(wptr, 0, "Select Field to Edit");
 		wrefresh(wptr);
 		c = wgetch(wptr);
 
@@ -1325,8 +1376,7 @@ void detail_sub_window(char *line) {
 	WINDOW *wptr_detail = create_input_subwindow();
 	char *title = "Details";
 	box(wptr_detail, 0, 0);
-	mvwprintw(wptr_detail, 0, getmaxx(wptr_detail) / 2 - (int)strlen(title) / 2, "%s", title);
-
+	mvwxcprintw(wptr_detail, 0, "Details");
 	struct LineData linedata_, *ld = &linedata_;
 	ld = tokenize_str(ld, line);
 	print_record_vert(wptr_detail, ld, 2);
@@ -1493,8 +1543,8 @@ void nc_read_setup(void) {
 	wptr_lines = create_lines_sub_window(max_y - 1, max_x, 1, 2);
 	int sel_year = nc_read_select_year(wptr_read, fptr);
 	if (sel_year == -1) {
-		char *msg = "No records exist, add (F1) to get started";
-		mvwprintw(wptr_read, max_y / 2, max_x / 2- (strlen(msg) / 2), "%s", msg);
+		mvwxcprintw(wptr_read, max_y / 2, 
+			  "No records exist, add (F1) to get started");
 		nc_exit_window_key(wptr_read);
 		fclose(fptr);
 		return;
