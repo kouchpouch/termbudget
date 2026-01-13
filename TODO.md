@@ -8,7 +8,7 @@
             - ( ) Allocate monthly budget by category
             - (*) List Categories
         - (*) Ability to edit a specific field
-        - ( ) Command line arguments?
+        - (*) Command line arguments?
     - (*) Get rid of strtok and use strsep
     - ( ) Create some unit tests for input validation
     - (*) Sorting The CSV By Date
@@ -25,6 +25,8 @@
             throw an asterisk on the month if it contains records/vice versa
     - ( ) After main feature set is done and working, refactor to make main.c
             have a clearer control flow purpose
+    - ( ) Implement visual truncation when there are not enough columns to
+            display all the field data
 
 #### Main Feature Set
     - (*) Create a transaction
