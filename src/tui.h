@@ -2,7 +2,7 @@
 #define TUI_H
 #include <ncurses.h>
 
-#define MIN_COL 40
+#define MIN_COLUMNS 59
 #define MIN_ROW 20
 
 struct ColumnWidth {
@@ -39,6 +39,9 @@ extern void nc_print_welcome(WINDOW *wptr);
 
 /* Prints the footer with menu options */
 extern void nc_print_footer(WINDOW *wptr);
+
+/* Creates a subwindow for user input with dimensions based on stdscr */
+extern WINDOW *create_input_subwindow();
 
 /* Initializes the stdscr */
 extern WINDOW *nc_init_stdscr();
