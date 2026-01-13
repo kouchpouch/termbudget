@@ -113,15 +113,9 @@ WINDOW *nc_init_stdscr() {
 }
 
 void nc_print_welcome(WINDOW *wptr) {
-	int max_y, max_x;
-	getmaxyx(wptr, max_y, max_x);
 	curs_set(0);
-
-	char welcome[] = "Welcome to termBudget";
-	char welcome2[] = "Made by TN";
-
-	mvwxcprintw(wptr, max_y/2, "Welcome to termBudget");
-	mvwxcprintw(wptr, max_y/2 + 1, "Made by TN");
+	mvwxcprintw(wptr, getmaxy(wptr) / 2, "Welcome to termBudget");
+	mvwxcprintw(wptr, getmaxy(wptr) / 2 + 1, "Made by TN");
 }
 
 void nc_print_footer(WINDOW *wptr) {
