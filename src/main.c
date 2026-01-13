@@ -14,15 +14,17 @@
 #define CSV_BAK_DIR "./data.csv.bak"
 #define CSV_FIELDS 7
 #define TEMP_FILE_DIR "./tmp.txt"
+#define MIN_INPUT_CHAR 2
 #define LINE_BUFFER 200
 #define STDIN_LARGE_BUFF 64
 #define STDIN_SMALL_BUFF 8
-#define AMOUNT_BUFFER 11
-#define MIN_INPUT_CHAR 2
-#define MAX_LEN_DAYMON 3 // With \0
-#define MAX_LEN_YEAR 5 // With \0 This is kind of ugly, no?
-#define MIN_LEN_YEAR 5 // With \0 This is kind of ugly, no?
-#define MIN_LEN_DAYMON MAX_LEN_DAYMON - 1
+
+#define MAX_LEN_AMOUNT 11
+#define MAX_LEN_DAY_MON 2
+#define MIN_LEN_DAY_MON 1
+#define MAX_LEN_YEAR 4
+#define MIN_LEN_YEAR 4
+
 #define CURRENT_YEAR 2026 // FIX This is to not be hard coded
 
 static bool debug;
@@ -75,8 +77,8 @@ struct DynamicInts *index_csv();
 int move_temp_to_main(FILE* tempfile, FILE* mainfile);
 int delete_csv_record(int linetodelete);
 
-char *user_input(size_t buffersize) {
-	int minchar = 2;
+char *user_input(int n) {
+	size_t buffersize = n + 1;
 	char *buffer = (char *)malloc(buffersize);
 
 	if (buffer == NULL) {
@@ -90,7 +92,7 @@ char *user_input(size_t buffersize) {
 
 	int length = strnlen(buffer, buffersize);
 
-	if (buffer[length - 1] != '\n') {
+	if (buffer[length - 1] != '\n' && buffer[length - 1] != '\0') {
 		printf("Input is too long, try again\n");
 		int c = 0;
 		while (c != '\n') {
@@ -98,7 +100,7 @@ char *user_input(size_t buffersize) {
 		}
 		goto FAIL;
 	}
-	if (length < minchar) {
+	if (length < MIN_INPUT_CHAR) {
 		puts("Input is too short");
 		goto FAIL;
 	}
@@ -114,14 +116,16 @@ FAIL:
 	return buffer;
 }
 
-char *nc_user_input(size_t buffersize, WINDOW *wptr) {
+char *nc_user_input(int n, WINDOW *wptr) {
 	int max_y, max_x;
 	getmaxyx(wptr, max_y, max_x);
+
+	int buffersize = n + 1;
 	
-	int center = max_x / 2 - (buffersize - 1) / 2;
+	int center = max_x / 2 - n / 2;
 
 	/* Print a line of underscores to accept the user input */
-	for (int i = 0; i < buffersize - 1; i++) {
+	for (int i = 0; i < n; i++) {
 		mvwprintw(wptr, max_y - 4, center + i, "%c", '_');
 	}
 
@@ -132,7 +136,7 @@ char *nc_user_input(size_t buffersize, WINDOW *wptr) {
 	wrefresh(wptr);
 
 	char temp[buffersize];
-	wgetnstr(wptr, temp, buffersize - 1);
+	wgetnstr(wptr, temp, n);
 
 	noecho();
 
@@ -154,7 +158,7 @@ char *nc_user_input(size_t buffersize, WINDOW *wptr) {
 		goto FAIL;
 	}
 
-	if (length < MIN_INPUT_CHAR) {
+	if (length < 1) {
 		mvwxcprintw(wptr, max_y - 3, "Input is too short");
 		goto FAIL;
 	}
@@ -174,6 +178,36 @@ FAIL:
 	return buffer;
 }
 
+int input_n_digits(int max_len, int min_len) {
+	char *str = user_input(max_len + 1);
+
+	while (str == NULL) {
+		str = user_input(max_len + 1);
+	}
+
+	if ((int)strlen(str) <= min_len) {
+		puts("Input is too short");
+		free(str);
+		str = NULL;
+		return -1;
+	}
+
+	for (int i = 0; i < (int)strlen(str); i++) {
+		if (!isdigit(*(str + i)) && *(str + i) != '\n') {
+			printf("Invalid character \"%c\", must be digit\n", *(str + i));
+			free(str);
+			str = NULL;
+			return -1;
+		}
+	}
+
+	int digits = atoi(str);
+	free(str);
+	str = NULL;
+
+	return digits;
+}
+
 int nc_input_n_digits(WINDOW *wptr, int max_len, int min_len) {
 	char *str = nc_user_input(max_len, wptr);
 
@@ -189,6 +223,7 @@ int nc_input_n_digits(WINDOW *wptr, int max_len, int min_len) {
 		mvwxcprintw(wptr, getmaxy(wptr) - 2, "Input is too short");
 		wrefresh(wptr);
 		free(str);
+		str = NULL;
 		return -1;
 	}
 
@@ -198,45 +233,18 @@ int nc_input_n_digits(WINDOW *wptr, int max_len, int min_len) {
 			   "Invalid character, must be digits");
 			wrefresh(wptr);
 			free(str);
+			str = NULL;
 			return -1;
 		}
 	}
 
 	wrefresh(wptr);
 
-	return atoi(str);
-}
-
-int input_n_digits(int max_len, int min_len) {
-	size_t bytesize = ((sizeof(char) * max_len) + 1);
-	char *str = user_input(bytesize);
-
-	while (str == NULL) {
-		puts("Invalid Entry");
-		str = user_input(bytesize);
-	}
-
-	if ((int)strlen(str) < min_len) {
-		puts("Input is too short");
-		goto FAIL;
-	}
-
-	for (int i = 0; i < (int)strlen(str); i++) {
-		if (!isdigit(*(str + i)) && *(str + i) != '\n') {
-			printf("Invalid character \"%c\", must be digit\n", *(str + i));
-			goto FAIL;
-		}
-	}
-
 	int digits = atoi(str);
 	free(str);
 	str = NULL;
-	return digits;
 
-FAIL:
-	free(str);
-	str = NULL;
-	return -1;
+	return digits;
 }
 
 int confirm_input() {
@@ -246,7 +254,6 @@ int confirm_input() {
 	}
 
 	char c_confirm = (char)upper(confirm);
-
 	free(confirm);
 	confirm = NULL;
 
@@ -264,7 +271,7 @@ int confirm_input() {
 int input_month() {
 	int month;
 	puts("Enter Month");
-	while((month = input_n_digits(MAX_LEN_DAYMON, MIN_LEN_DAYMON)) == -1
+	while((month = input_n_digits(MAX_LEN_DAY_MON, MIN_LEN_DAY_MON)) == -1
 		|| month <= 0
 		|| month > 12) {
 		puts("Enter a Vaid Month");
@@ -277,7 +284,7 @@ int input_year() {
 	if (cli_mode == true) {
 		puts("Enter Year");
 	}
-	while((year = input_n_digits(MAX_LEN_YEAR, MAX_LEN_YEAR)) == -1);
+	while((year = input_n_digits(MAX_LEN_YEAR, MIN_LEN_YEAR)) == -1);
 	return year;
 }
 
@@ -285,7 +292,7 @@ int input_day(int month, int year) {
 	int day;
 	puts("Enter Day");
 
-	while((day = input_n_digits(MAX_LEN_DAYMON, MIN_LEN_DAYMON)) == -1 ||
+	while((day = input_n_digits(MAX_LEN_DAY_MON, MIN_LEN_DAY_MON)) == -1 ||
 			dayexists(day, month, year) == false) {
 		if (dayexists(day, month, year) == false) { 
 			puts("Invalid Day");
@@ -302,7 +309,7 @@ int input_transaction_type() {
 	puts("1. Expense");
 	puts("2. Income");
 
-	while((t = input_n_digits(2, 2)) == -1 || (t != 1 && t != 2)) {
+	while((t = input_n_digits(1, 1)) == -1 || (t != 1 && t != 2)) {
 		puts("Invalid");
 	}
 	return t - 1; // sub 1 to convert human readable to CSV format
@@ -310,10 +317,10 @@ int input_transaction_type() {
 
 float input_amount() {
 	puts("$ Amount:");
-	char *str = user_input(AMOUNT_BUFFER);
+	char *str = user_input(MAX_LEN_AMOUNT);
 	while (str == NULL) {
 		puts("Invalid");
-		str = user_input(AMOUNT_BUFFER);
+		str = user_input(MAX_LEN_AMOUNT);
 	}
 	float amount = atof(str);
 	free(str);
@@ -383,6 +390,57 @@ RETRY:
 	return str;
 }
 
+int nc_input_month(void) {
+	WINDOW *wptr_input = create_input_subwindow();
+	mvwxcprintw(wptr_input, 2, "Enter Month");
+	wrefresh(wptr_input);
+
+	int month;
+	month = nc_input_n_digits(wptr_input, MAX_LEN_DAY_MON, 1);
+	while(month <= 0 || month > 12) {
+		mvwxcprintw(wptr_input, getmaxy(wptr_input) - 2, "Not a valid month");
+		month = nc_input_n_digits(wptr_input, MAX_LEN_DAY_MON, 1);
+	} 
+
+	nc_exit_window(wptr_input);
+
+	return month;
+}
+
+int nc_input_year(void) {
+	WINDOW *wptr_input = create_input_subwindow();
+	mvwxcprintw(wptr_input, 2, "Enter Year");
+	wrefresh(wptr_input);
+
+	int year;
+	do {
+		year = nc_input_n_digits(wptr_input, MAX_LEN_YEAR, MIN_LEN_YEAR);
+	} while (year < 0);
+
+	nc_exit_window(wptr_input);
+
+	return year;
+}
+
+int nc_input_day(int month, int year) {
+	WINDOW *wptr_input = create_input_subwindow();
+	mvwxcprintw(wptr_input, 2, "Enter Day");
+	wrefresh(wptr_input);
+
+	int day = nc_input_n_digits(wptr_input, MAX_LEN_DAY_MON, MIN_LEN_DAY_MON);
+	while(day == -1 || dayexists(day, month, year) == false) {
+		if (dayexists(day, month, year) == false) { 
+			mvwxcprintw(wptr_input, getmaxy(wptr_input) - 2, "Not a valid day");
+			wrefresh(wptr_input);
+		}
+		day = nc_input_n_digits(wptr_input, MAX_LEN_DAY_MON, MIN_LEN_DAY_MON);
+	}
+
+	nc_exit_window(wptr_input);
+
+	return day;
+}
+
 //---------------------------------------------------------------------------//
 //--------------------------USER INPUT ABOVE---------------------------------//
 //---------------------------------------------------------------------------//
@@ -397,7 +455,6 @@ FILE *open_csv(char *mode) {
 	}
 }
 
-/* Temp csv will always open with mode w+ */
 FILE *open_temp_csv() {
 	FILE *tmpfptr = fopen("tmp.txt", "w+");
 	if (tmpfptr == NULL) {
@@ -636,6 +693,81 @@ struct DynamicInts *index_csv() {
 	fclose(fptr);
 	fptr = NULL;
 	return pcsvindex;
+}
+
+int edit_csv_record(int linetoreplace, struct LineData *ld, int field) {
+	if (linetoreplace == 0) {
+		puts("Cannot delete line 0");
+		return -1;
+	}
+
+	linetoreplace += 1;
+	FILE *fptr = open_csv("r");
+	FILE *tmpfptr = open_temp_csv();
+
+	char buff[LINE_BUFFER * 2];
+	char *line;
+	int linenum = 0;
+
+	switch(field) {
+		case 1:
+			if (cli_mode) {
+				ld->year = input_year();
+				ld->month = input_month();
+				ld->day = input_day(ld->month, ld->year);
+			} else {
+				ld->year = nc_input_year();
+				ld->month = nc_input_month();
+				ld->day = nc_input_day(ld->month, ld->year);
+			}
+			fclose(fptr);
+			fclose(tmpfptr);
+			delete_csv_record(linetoreplace - 1);
+			add_csv_record(sort_csv(ld->month, ld->day, ld->year, 2000), ld);
+			return 0;
+		case 2:
+			ld->category = input_category(ld->month, ld->year);
+			break;
+		case 3:
+			ld->desc = input_str_retry("Enter Description");	
+			break;
+		case 4:
+			ld->transtype = input_transaction_type();
+			break;
+		case 5:
+			ld->amount = input_amount();
+			break;
+		default:
+			puts("Not a valid choice, exiting");
+			fclose(fptr);
+			fclose(tmpfptr);
+			return -1;
+	}
+
+	do {
+		line = fgets(buff, sizeof(buff), fptr);
+		if (line == NULL) break;
+		linenum++;	
+		if (linenum != linetoreplace) {
+			fputs(line, tmpfptr);
+		} else if (linenum == linetoreplace) {
+			fprintf(tmpfptr, "%d,%d,%d,%s,%s,%d,%.2f\n",
+			ld->month, 
+			ld->day, 
+			ld->year, 
+			ld->category, 
+			ld->desc, 
+			ld->transtype, 
+			ld->amount
+		   );
+		}
+	} while(line != NULL);
+	if (move_temp_to_main(tmpfptr, fptr) == 0) {
+		puts("Edit Complete");
+	}
+	if (field == 2) free(ld->category);
+	if (field == 3) free(ld->desc);
+	return 0;
 }
 
 struct LineData *tokenize_str(struct LineData *pLd, char *str) {
@@ -957,14 +1089,10 @@ int nc_read_select_year(WINDOW *wptr, FILE *fptr) {
 	}
 	int selected_year = 0;
 	int print_y = 1;
-	int print_x = 2; // Offset by 2 to the right for styling
-//	int max_y, max_x;
-//	getmaxyx(wptr, max_y, max_x);
+	int print_x = 2;
 
 	box(wptr, 0, 0);
-
 	wrefresh(wptr);
-
 	wmove(wptr, print_y, print_x);
 
 	int scr_idx = 0;
@@ -1186,43 +1314,6 @@ struct DynamicInts *get_matching_line_nums(FILE *fptr, int month, int year) {
 	return NULL;
 }
 
-WINDOW *create_lines_sub_window(int max_y, int max_x, int y_off, int x_off) {
-	WINDOW *wptr = newwin(max_y - y_off * 2, max_x - x_off * 2, y_off + 1, x_off);
-	keypad(wptr, true);
-	return wptr;
-}
-
-int nc_input_month() {
-	WINDOW *wptr_input = create_input_subwindow();
-	mvwxcprintw(wptr_input, 2, "Enter Month");
-	wrefresh(wptr_input);
-
-	int month;
-	month = nc_input_n_digits(wptr_input, MAX_LEN_DAYMON, 1);
-	while(month <= 0 || month > 12) {
-		mvwxcprintw(wptr_input, getmaxy(wptr_input) - 2, "Not a valid month");
-		month = nc_input_n_digits(wptr_input, MAX_LEN_DAYMON, 1);
-	} 
-
-	nc_exit_window(wptr_input);
-
-	return month;
-}
-
-int nc_input_year() {
-	WINDOW *wptr_input = create_input_subwindow();
-	mvwxcprintw(wptr_input, 2, "Enter Year");
-	wrefresh(wptr_input);
-
-	int year;
-	do {
-		year = nc_input_n_digits(wptr_input, MAX_LEN_YEAR, 4);
-	} while (year < 0);
-
-	nc_exit_window(wptr_input);
-
-	return year;
-}
 
 /* 
  * Prints record from ld, formatting in columns from cw, to a window pointed
@@ -1295,10 +1386,11 @@ void nc_edit_transaction(int linenum) {
 
 	WINDOW *wptr_edit = create_input_subwindow();
 	FILE* fptr = open_csv("r+");
-	char linebuff[LINE_BUFFER];
-
 	fseek(fptr, pidx->data[linenum], SEEK_SET);
+
+	char linebuff[LINE_BUFFER];
 	char *line = fgets(linebuff, sizeof(linebuff), fptr);
+
 	if (line == NULL) {
 		exit(1);
 	}
@@ -1306,8 +1398,9 @@ void nc_edit_transaction(int linenum) {
 	ld = tokenize_str(ld, line);
 
 	struct LineData *pLd = malloc(sizeof(*ld));
+
 	if (pLd == NULL) {
-		puts("Failed to allocate memory");
+		perror("Failed to allocate memory");
 		free(pidx);
 		fclose(fptr);
 		fptr = NULL;
@@ -1327,16 +1420,11 @@ void nc_edit_transaction(int linenum) {
 
 	fclose(fptr);
 
-	if (field_to_edit == 1) {
-		int year = nc_input_year();
-		int month = nc_input_month();
-	}
-	
 	switch(field_to_edit) {
 		case 0:
 			break;
 		case 1:
-			mvwxcprintw(wptr_edit, 6, "Line 1");
+			edit_csv_record(linenum + 1, pLd, 1);
 			break;
 		case 2:
 			mvwxcprintw(wptr_edit, 6, "Line 2");
@@ -1372,7 +1460,7 @@ void nc_edit_transaction(int linenum) {
  * the selected record at index i of pidx->data. Following the format style
  * from edit_transaction()
  */
-void detail_sub_window(char *line) {
+void show_detail_subwindow(char *line) {
 	WINDOW *wptr_detail = create_input_subwindow();
 	box(wptr_detail, 0, 0);
 	mvwxcprintw(wptr_detail, 0, "Details");
@@ -1403,10 +1491,13 @@ void refresh_on_detail_close(WINDOW *wptr, int n) {
  * Main read loop. Populates variables in the struct pointed to by sr
  * if a record is highlighted and the user selects add or edit
  */
-void read_loop(WINDOW *wptr_parent, WINDOW *wptr, FILE *fptr, 
-			struct SelectedRecord *sr,
-			struct DynamicInts *pidx, 
-			struct DynamicInts *plines) {
+void nc_read_loop(
+	WINDOW *wptr_parent, 
+	WINDOW *wptr, 
+	FILE *fptr, 
+	struct SelectedRecord *sr,
+	struct DynamicInts *pidx, 
+	struct DynamicInts *plines) {
 
 	struct ColumnWidth column_width, *cw = &column_width;
 	struct LineData linedata_, *ld = &linedata_;
@@ -1495,7 +1586,7 @@ void read_loop(WINDOW *wptr_parent, WINDOW *wptr, FILE *fptr,
 			case('\r'):
 				fseek(fptr, pidx->data[plines->data[select]], SEEK_SET);
 				char *line = fgets(linebuff, sizeof(linebuff), fptr);
-				detail_sub_window(line);
+				show_detail_subwindow(line);
 				refresh_on_detail_close(wptr, displayed_lines);
 				box(wptr_parent, 0, 0);
 				wrefresh(wptr_parent);
@@ -1536,6 +1627,11 @@ void nc_read_setup(void) {
 	FILE *fptr = open_csv("r");
 
 	WINDOW *wptr_read = newwin(LINES - 1, 0, 0, 0);
+	if (wptr_read == NULL) {
+		perror("Failed to create ncurses window");
+		fclose(fptr);
+		return;
+	}
 
 	int flag = 0;
 	int max_y, max_x;
@@ -1544,7 +1640,7 @@ void nc_read_setup(void) {
 	WINDOW *wptr_lines;
 	struct DynamicInts *plines;
 
-	wptr_lines = create_lines_sub_window(max_y - 1, max_x, 1, 2);
+	wptr_lines = create_lines_subwindow(max_y - 1, max_x, 1, 2);
 	int sel_year = nc_read_select_year(wptr_read, fptr);
 	if (sel_year == -1) {
 		mvwxcprintw(wptr_read, max_y / 2, 
@@ -1578,7 +1674,7 @@ void nc_read_setup(void) {
 	mvwprintw(wptr_read, 0, 2, "%d %s", sel_year, months[sel_month - 1]);
 	wrefresh(wptr_read);
 
-	read_loop(wptr_read, wptr_lines, fptr, sr, pidx, plines);
+	nc_read_loop(wptr_read, wptr_lines, fptr, sr, pidx, plines);
 
 	wclear(wptr_read);
 	wclear(wptr_lines);
@@ -1627,84 +1723,6 @@ int move_temp_to_main(FILE* tempfile, FILE* mainfile) {
 		puts("Failed to move temporary file");	
 		return -1;
 	}
-	return 0;
-}
-
-int edit_csv_record(int linetoreplace, struct LineData *ld, int field) {
-	if (linetoreplace == 0) {
-		puts("Cannot delete line 0");
-		return -1;
-	}
-
-	/* 
-	 * Count up by 1 to skip the header on line 1. So when the user enters 1
-	 * the program will edit line 2
-	 */
-	linetoreplace += 1;
-	FILE *fptr = open_csv("r");
-	FILE *tmpfptr = open_temp_csv();
-
-	/* 
-	 * LINE_BUFFER * 2 to account for any line that may be longer
-	 * due to a manual CSV entry, which shouldn't happen, but this will
-	 * protect us in case it does 
-	 */
-	char buff[LINE_BUFFER * 2];
-	char *line;
-	int linenum = 0;
-
-	switch(field) {
-		case 1:
-			ld->year = input_year();
-			ld->month = input_month();
-			ld->day = input_day(ld->month, ld->year);
-			fclose(fptr);
-			fclose(tmpfptr);
-			delete_csv_record(linetoreplace - 1);
-			add_csv_record(sort_csv(ld->month, ld->day, ld->year, 2000), ld);
-			return 0;
-		case 2:
-			ld->category = input_category(ld->month, ld->year);
-			break;
-		case 3:
-			ld->desc = input_str_retry("Enter Description");	
-			break;
-		case 4:
-			ld->transtype = input_transaction_type();
-			break;
-		case 5:
-			ld->amount = input_amount();
-			break;
-		default:
-			puts("Not a valid choice, exiting");
-			fclose(fptr);
-			fclose(tmpfptr);
-			return -1;
-	}
-
-	do {
-		line = fgets(buff, sizeof(buff), fptr);
-		if (line == NULL) break;
-		linenum++;	
-		if (linenum != linetoreplace) {
-			fputs(line, tmpfptr);
-		} else if (linenum == linetoreplace) {
-			fprintf(tmpfptr, "%d,%d,%d,%s,%s,%d,%.2f\n",
-			ld->month, 
-			ld->day, 
-			ld->year, 
-			ld->category, 
-			ld->desc, 
-			ld->transtype, 
-			ld->amount
-		   );
-		}
-	} while(line != NULL);
-	if (move_temp_to_main(tmpfptr, fptr) == 0) {
-		puts("Edit Complete");
-	}
-	if (field == 2) free(ld->category);
-	if (field == 3) free(ld->desc);
 	return 0;
 }
 
@@ -1802,7 +1820,7 @@ void edit_transaction() {
 	int fieldtoedit;
 	do {
 		puts("Enter field to edit or press \"0\" to delete this transaction");
-		fieldtoedit = input_n_digits(2, 2); // Only input 1 digit
+		fieldtoedit = input_n_digits(1, 1); // Only input 1 digit
 	} while (fieldtoedit > 5 || fieldtoedit < 0);
 
 	switch(fieldtoedit) {
