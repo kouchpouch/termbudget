@@ -126,10 +126,7 @@ char *nc_user_input(size_t buffersize, WINDOW *wptr) {
 	}
 
 	keypad(wptr, true);
-	wmove(wptr, max_y - 3, center);
-	wclrtobot(wptr);
 	wmove(wptr, max_y - 4, center);
-	box(wptr, 0, 0);
 	echo();
 	curs_set(1);
 	wrefresh(wptr);
@@ -178,36 +175,36 @@ FAIL:
 }
 
 int nc_input_n_digits(WINDOW *wptr, int max_len, int min_len) {
-	int max_y, max_x;
-	getmaxyx(wptr, max_y, max_x);
-
 	char *str = nc_user_input(max_len, wptr);
 
 	while (str == NULL) {
 		str = nc_user_input(max_len, wptr);
+		if (debug == true) {
+			mvwxcprintw(wptr, getmaxy(wptr),
+			   "nc_user_input() failed");
+		}
 	}
 
 	if ((int)strlen(str) < min_len) {
-		mvwxcprintw(wptr, max_y - 2, "Input is too short");
-		goto FAIL;
+		mvwxcprintw(wptr, getmaxy(wptr) - 2, "Input is too short");
+		wrefresh(wptr);
+		free(str);
+		return -1;
 	}
 
 	for (int i = 0; i < (int)strlen(str); i++) {
 		if (!isdigit(*(str + i)) && (*(str + i) != '\n' || *(str + i) != '\0')) {
-			mvwxcprintw(wptr, max_y - 2, "Invalid character, must be digits");
-			goto FAIL;
+			mvwxcprintw(wptr, getmaxy(wptr) - 2, 
+			   "Invalid character, must be digits");
+			wrefresh(wptr);
+			free(str);
+			return -1;
 		}
 	}
 
-	int digits = atoi(str);
-	free(str);
-	str = NULL;
-	return digits;
+	wrefresh(wptr);
 
-FAIL:
-	free(str);
-	str = NULL;
-	return -1;
+	return atoi(str);
 }
 
 int input_n_digits(int max_len, int min_len) {
@@ -1207,9 +1204,9 @@ int nc_input_month() {
 		month = nc_input_n_digits(wptr_input, MAX_LEN_DAYMON, 1);
 	} 
 
-	nc_exit_window_key(wptr_input);
+	nc_exit_window(wptr_input);
 
-	return 0;
+	return month;
 }
 
 int nc_input_year() {
@@ -1328,43 +1325,46 @@ void nc_edit_transaction(int linenum) {
 
 	int field_to_edit = nc_select_field_to_edit(wptr_edit);
 
-	nc_exit_window(wptr_edit);
+	fclose(fptr);
 
 	if (field_to_edit == 1) {
-		nc_input_year();
+		int year = nc_input_year();
+		int month = nc_input_month();
 	}
 	
-//	switch(field_to_edit) {
-//		case 0:
-//			if (delete_csv_record(linenum) == 0) {
-//				puts("Successfully Deleted Transaction");
-//			}
-//			break;
-//		case 1:
-//			edit_csv_record(linenum, pLd, 1);
-//			break;
-//		case 2:
-//			edit_csv_record(linenum, pLd, 2);
-//			break;
-//		case 3:
-//			edit_csv_record(linenum, pLd, 3);
-//			break;
-//		case 4:
-//			edit_csv_record(linenum, pLd, 4);
-//			break;
-//		case 5:
-//			edit_csv_record(linenum, pLd, 5);
-//			break;
-//		default:
-//			return;
-//	}
+	switch(field_to_edit) {
+		case 0:
+			break;
+		case 1:
+			mvwxcprintw(wptr_edit, 6, "Line 1");
+			break;
+		case 2:
+			mvwxcprintw(wptr_edit, 6, "Line 2");
+			//edit_csv_record(linenum, pLd, 1);
+			break;
+		case 3:
+			mvwxcprintw(wptr_edit, 6, "Line 3");
+			break;
+		case 4:
+			mvwxcprintw(wptr_edit, 6, "Line 4");
+			break;
+		case 5:
+			mvwxcprintw(wptr_edit, 6, "Line 5");
+			break;
+		case 6:
+			if (delete_csv_record(linenum + 1) == 0) {
+				mvwxcprintw(wptr_edit, 6, "Successfully Deleted");
+			}
+			break;
+		default:
+			return;
+	}
 
+	nc_exit_window(wptr_edit);
 	free(pLd);
 	pLd = NULL;
 	free(pidx);
 	pidx = NULL;
-	fclose(fptr);
-	fptr = NULL;
 }
 
 /*
@@ -1374,7 +1374,6 @@ void nc_edit_transaction(int linenum) {
  */
 void detail_sub_window(char *line) {
 	WINDOW *wptr_detail = create_input_subwindow();
-	char *title = "Details";
 	box(wptr_detail, 0, 0);
 	mvwxcprintw(wptr_detail, 0, "Details");
 	struct LineData linedata_, *ld = &linedata_;
@@ -1404,8 +1403,11 @@ void refresh_on_detail_close(WINDOW *wptr, int n) {
  * Main read loop. Populates variables in the struct pointed to by sr
  * if a record is highlighted and the user selects add or edit
  */
-void read_loop(WINDOW *wptr, FILE *fptr, struct SelectedRecord *sr,
-			struct DynamicInts *pidx, struct DynamicInts *plines) {
+void read_loop(WINDOW *wptr_parent, WINDOW *wptr, FILE *fptr, 
+			struct SelectedRecord *sr,
+			struct DynamicInts *pidx, 
+			struct DynamicInts *plines) {
+
 	struct ColumnWidth column_width, *cw = &column_width;
 	struct LineData linedata_, *ld = &linedata_;
 	int max_y, max_x;
@@ -1495,6 +1497,8 @@ void read_loop(WINDOW *wptr, FILE *fptr, struct SelectedRecord *sr,
 				char *line = fgets(linebuff, sizeof(linebuff), fptr);
 				detail_sub_window(line);
 				refresh_on_detail_close(wptr, displayed_lines);
+				box(wptr_parent, 0, 0);
+				wrefresh(wptr_parent);
 				c = 0;
 				break;
 			case('a'):
@@ -1574,7 +1578,7 @@ void nc_read_setup(void) {
 	mvwprintw(wptr_read, 0, 2, "%d %s", sel_year, months[sel_month - 1]);
 	wrefresh(wptr_read);
 
-	read_loop(wptr_lines, fptr, sr, pidx, plines);
+	read_loop(wptr_read, wptr_lines, fptr, sr, pidx, plines);
 
 	wclear(wptr_read);
 	wclear(wptr_lines);
