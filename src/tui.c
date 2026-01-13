@@ -25,6 +25,13 @@ void nc_exit_window(WINDOW *wptr) {
 	delwin(wptr);
 }
 
+void clear_input_error_message(WINDOW *wptr) {
+	wmove(wptr, getmaxy(wptr) - 4, 0);
+	wclrtobot(wptr);
+	box(wptr, 0, 0);
+	wrefresh(wptr);
+}
+
 void calculate_columns(struct ColumnWidth *cw) {
 
 	/* DATE: 12/31/2025___

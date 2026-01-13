@@ -396,11 +396,8 @@ int nc_input_month(void) {
 	int month;
 	month = nc_input_n_digits(wptr_input, MAX_LEN_DAY_MON, 1);
 	while(month <= 0 || month > 12) {
-		wmove(wptr_input, getmaxy(wptr_input) - 4, 0);
-		wclrtobot(wptr_input);
+		clear_input_error_message(wptr_input);
 		mvwxcprintw(wptr_input, getmaxy(wptr_input) - 2, "Invalid Month");
-		box(wptr_input, 0, 0);
-		wrefresh(wptr_input);
 		month = nc_input_n_digits(wptr_input, MAX_LEN_DAY_MON, 1);
 	} 
 
@@ -431,10 +428,7 @@ int nc_input_day(int month, int year) {
 
 	int day = nc_input_n_digits(wptr_input, MAX_LEN_DAY_MON, MIN_LEN_DAY_MON);
 	while(day == -1 || dayexists(day, month, year) == false) {
-		wmove(wptr_input, getmaxy(wptr_input) - 4, 0);
-		wclrtobot(wptr_input);
-		box(wptr_input, 0, 0);
-		wrefresh(wptr_input);
+		clear_input_error_message(wptr_input);
 		if (dayexists(day, month, year) == false) { 
 			mvwxcprintw(wptr_input, getmaxy(wptr_input) - 2, "Not a valid day");
 			wrefresh(wptr_input);

@@ -34,6 +34,11 @@ extern void nc_exit_window_key(WINDOW *wptr);
 /* Exits window wptr */
 extern void nc_exit_window(WINDOW *wptr);
 
+/* Removes and refreshes wptr to remove error message.
+ * For use with input subwindows. Dimensions are hard coded to be 4 above
+ * the maximum y coordinate */
+extern void clear_input_error_message(WINDOW *wptr);
+
 /* Prints the welcome splash screen */
 extern void nc_print_welcome(WINDOW *wptr);
 
