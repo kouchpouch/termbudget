@@ -18,6 +18,7 @@
 #define STDIN_LARGE_BUFF 64
 #define STDIN_SMALL_BUFF 8
 #define AMOUNT_BUFFER 11
+#define MIN_INPUT_CHAR 2
 #define MAX_LEN_DAYMON 3 // With \0
 #define MAX_LEN_YEAR 5 // With \0 This is kind of ugly, no?
 #define MIN_LEN_DAYMON MAX_LEN_DAYMON - 1
@@ -925,9 +926,8 @@ int nc_read_select_year(WINDOW *wptr, FILE *fptr) {
 				selected_year = years_arr[scr_idx];
 				break;
 			case (KEY_F(4)):
-				nc_exit_window(wptr);
 				free(years_arr);
-				return -1;
+				return 0;
 			default: 
 				break;
 		}
@@ -1096,9 +1096,83 @@ WINDOW *create_lines_sub_window(int max_y, int max_x, int y_off, int x_off) {
 	return wptr;
 }
 
-int nc_input_year() {
+char *nc_user_input(size_t buffersize, WINDOW *wptr) {
+	int max_y, max_x;
+	getmaxyx(wptr, max_y, max_x);
+	
+	int center = max_x / 2 - (buffersize - 1) / 2;
+	/* Print a line of underscores to accept the user input */
+	for (int i = 0; i < buffersize - 1; i++) {
+		mvwprintw(wptr, max_y - 2, center + i, "%c", '_');
+	}
 
-	return year;
+	keypad(wptr, true);
+	wmove(wptr, max_y - 4, center);
+	echo();
+	curs_set(1);
+
+	char *too_short = "Input is too short";
+	char *too_long = "Input is too long, try again";
+
+	char temp[buffersize];
+	wgetnstr(wptr, temp, buffersize - 1);
+
+	char *buffer = (char *)malloc(buffersize);
+	if (buffer == NULL) {
+		puts("Failed to allocate memory");
+		return buffer;
+	}
+
+	strncpy(buffer, temp, buffersize);
+
+	int length = strnlen(buffer, buffersize);
+
+	if (buffer[length] != '\0') {
+		mvwprintw(wptr, max_y - 3, max_x / 2 - (int)strlen(too_long) / 2, "%s", too_long);
+		int c = 0;
+		while (c != '\n') {
+			c = getchar();
+		}
+		goto FAIL;
+	}
+
+	if (length < MIN_INPUT_CHAR) {
+		mvwprintw(wptr, max_y - 3, max_x / 2 - (int)strlen(too_short) / 2, "%s", too_short);
+		goto FAIL;
+	}
+
+	if (strstr(buffer, ",")) {
+		puts("No commas allowed, we're using a CSV, after all!");
+		goto FAIL;
+	}
+
+	return buffer; // Must be free'd
+
+FAIL:
+	free(buffer);
+	buffer = NULL;
+	return buffer;
+}
+
+int nc_input_year() {
+	WINDOW *wptr_input = create_input_subwindow();
+	char *title = "Enter Year";
+	mvwprintw(wptr_input, 2, getmaxx(wptr_input) / 2 - (int)strlen(title) / 2, "%s", title);
+	wclear(wptr_input);
+	wrefresh(wptr_input);
+	char *str = nc_user_input(MAX_LEN_YEAR, wptr_input);
+	if (str == NULL) {
+		wprintw(wptr_input, "%s", "IT'S NULL!!!!!");
+		wrefresh(wptr_input);
+		nc_exit_window_key(wptr_input);
+	} else {
+		wprintw(wptr_input, "%s", "It's alright");
+		wprintw(wptr_input, "%s", str);
+		wrefresh(wptr_input);
+		nc_exit_window_key(wptr_input);
+	}
+	free(str);
+	return 0;
 }
 
 /* 
@@ -1204,6 +1278,10 @@ void nc_edit_transaction(int linenum) {
 	int field_to_edit = nc_select_field_to_edit(wptr_edit);
 
 	nc_exit_window(wptr_edit);
+
+	if (field_to_edit == 1) {
+		nc_input_year();
+	}
 	
 //	switch(field_to_edit) {
 //		case 0:
@@ -1418,6 +1496,10 @@ void nc_read_setup(void) {
 		char *msg = "No records exist, add (F1) to get started";
 		mvwprintw(wptr_read, max_y / 2, max_x / 2- (strlen(msg) / 2), "%s", msg);
 		nc_exit_window_key(wptr_read);
+		fclose(fptr);
+		return;
+	} else if (sel_year == 0) {
+		nc_exit_window(wptr_read);
 		fclose(fptr);
 		return;
 	}
