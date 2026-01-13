@@ -150,7 +150,7 @@ char *nc_user_input(int n, WINDOW *wptr) {
 	int length = strnlen(buffer, buffersize);
 
 	if (buffer[length] != '\0') {
-		mvwxcprintw(wptr, max_y - 3, "Input is too long");
+		mvwxcprintw(wptr, max_y - 2, "Input is too long");
 		int c = 0;
 		while (c != '\n') {
 			c = getchar();
@@ -159,12 +159,12 @@ char *nc_user_input(int n, WINDOW *wptr) {
 	}
 
 	if (length < 1) {
-		mvwxcprintw(wptr, max_y - 3, "Input is too short");
+		mvwxcprintw(wptr, max_y - 2, "Input is too short");
 		goto FAIL;
 	}
 
 	if (strstr(buffer, ",")) {
-		mvwxcprintw(wptr, max_y - 3, "No commas allowed");
+		mvwxcprintw(wptr, max_y - 2, "No commas allowed");
 		goto FAIL;
 	}
 
@@ -210,12 +210,10 @@ int input_n_digits(int max_len, int min_len) {
 
 int nc_input_n_digits(WINDOW *wptr, int max_len, int min_len) {
 	char *str = nc_user_input(max_len, wptr);
-
 	while (str == NULL) {
 		str = nc_user_input(max_len, wptr);
 		if (debug == true) {
-			mvwxcprintw(wptr, getmaxy(wptr),
-			   "nc_user_input() failed");
+			mvwxcprintw(wptr, getmaxy(wptr), "nc_user_input() failed");
 		}
 	}
 
@@ -398,7 +396,11 @@ int nc_input_month(void) {
 	int month;
 	month = nc_input_n_digits(wptr_input, MAX_LEN_DAY_MON, 1);
 	while(month <= 0 || month > 12) {
-		mvwxcprintw(wptr_input, getmaxy(wptr_input) - 2, "Not a valid month");
+		wmove(wptr_input, getmaxy(wptr_input) - 4, 0);
+		wclrtobot(wptr_input);
+		mvwxcprintw(wptr_input, getmaxy(wptr_input) - 2, "Invalid Month");
+		box(wptr_input, 0, 0);
+		wrefresh(wptr_input);
 		month = nc_input_n_digits(wptr_input, MAX_LEN_DAY_MON, 1);
 	} 
 
@@ -429,6 +431,10 @@ int nc_input_day(int month, int year) {
 
 	int day = nc_input_n_digits(wptr_input, MAX_LEN_DAY_MON, MIN_LEN_DAY_MON);
 	while(day == -1 || dayexists(day, month, year) == false) {
+		wmove(wptr_input, getmaxy(wptr_input) - 4, 0);
+		wclrtobot(wptr_input);
+		box(wptr_input, 0, 0);
+		wrefresh(wptr_input);
 		if (dayexists(day, month, year) == false) { 
 			mvwxcprintw(wptr_input, getmaxy(wptr_input) - 2, "Not a valid day");
 			wrefresh(wptr_input);
@@ -639,14 +645,14 @@ CLEANUP:
 }
 
 struct DynamicInts *index_csv() {
-	struct DynamicInts *pcsvindex = 
+	struct DynamicInts *pidx = 
 		malloc(sizeof(struct DynamicInts) + 0 * sizeof(int));
-	if (pcsvindex == NULL) {
+	if (pidx == NULL) {
 		puts("Failed to allocate memory");
 		exit(1);
 	}
 
-	pcsvindex->lines = 0;
+	pidx->lines = 0;
 	FILE *fptr = open_csv("r");
 	assert(ftell(fptr) == 0);
 	char charbuff[LINE_BUFFER];
@@ -656,43 +662,36 @@ struct DynamicInts *index_csv() {
 		if (test == NULL) {
 			break;
 		}
-		pcsvindex->lines++;
+		pidx->lines++;
 	}
 
-//	printf("%d Lines\n", pcsvindex->lines); 
-	// Now we know the # of lines,
-	// realloc the struct to hold the offset data
-//	if (debug == true) {
-//		printf("NUMBER OF LINES: %d\n", pcsvindex->lines);
-//	}
+	struct DynamicInts *tmp = realloc(pidx, sizeof(*pidx) + (pidx->lines * sizeof(int)));
 
-	struct DynamicInts *tmp = realloc(pcsvindex, sizeof(*pcsvindex) + 
-						       (pcsvindex->lines * sizeof(int)));
 	if (tmp == NULL) {
 		puts("Failed to allocate memory");
 		exit(1);
 	}
-	pcsvindex = tmp;
+	pidx = tmp;
 
 	rewind(fptr);
 	assert(ftell(fptr) == 0);
 
-	for (int i = 0; i < pcsvindex->lines; i++) {
+	for (int i = 0; i < pidx->lines; i++) {
 		char* test = fgets(charbuff, sizeof(charbuff), fptr);
 		if (test == NULL) {
 			break;
 		}
-		pcsvindex->data[i] = ftell(fptr);
+		pidx->data[i] = ftell(fptr);
 	}
 
 //  Every line offset list
-//	for (int i = 0; i < pcsvindex->lines; i++) {
-//		printf("Offset is %d at line %d\n", pcsvindex->data[i], i+1);
+//	for (int i = 0; i < pidx->lines; i++) {
+//		printf("Offset is %d at line %d\n", pidx->data[i], i+1);
 //	}
 
 	fclose(fptr);
 	fptr = NULL;
-	return pcsvindex;
+	return pidx;
 }
 
 int edit_csv_record(int linetoreplace, struct LineData *ld, int field) {
@@ -834,7 +833,6 @@ int *list_records_by_year(FILE *fptr) {
 		if (year != years[i]) {
 			i++;
 			int *tmp = realloc(years, (i + 1) * sizeof(int));
-//			int *tmp = reallocarray(years, i + 1, sizeof(int));
 			if (tmp == NULL) {
 				free(years);
 				puts("Failed to reallocate memory");
@@ -845,7 +843,6 @@ int *list_records_by_year(FILE *fptr) {
 		}
 	}
 	int *tmp = realloc(years, (i + 2) * sizeof(int));
-//	int *tmp = reallocarray(years, i + 2, sizeof(int));
 	if (tmp == NULL) {
 		free(years);
 		puts("Failed to reallocate memory");
@@ -1319,13 +1316,27 @@ struct DynamicInts *get_matching_line_nums(FILE *fptr, int month, int year) {
  * Prints record from ld, formatting in columns from cw, to a window pointed
  * to by wptr, at a Y-coordinate of y
  */
-void print_record_hr(WINDOW *wptr, struct ColumnWidth *cw, struct LineData *ld, int y) {
+void print_record_hr(
+	WINDOW *wptr, 
+	struct ColumnWidth *cw, 
+	struct LineData *ld, 
+	int y) {
+
 	int x = 0;
-	mvwprintw(wptr, y, x, "%d/%d/%d", ld->month, ld->day, ld->year);
-	mvwprintw(wptr, y, x += cw->date, "%s", ld->category);
-	mvwprintw(wptr, y, x += cw->catg, "%s", ld->desc);
-	mvwprintw(wptr, y, x += cw->desc, "%s", ld->transtype == 0 ? "Expense" : "Income");
-	mvwprintw(wptr, y, x += cw->trns, "$%.2f", ld->amount);
+	wmove(wptr, y, x);
+	wprintw(wptr, "%d/%d/%d", ld->month, ld->day, ld->year);
+
+	wmove(wptr, y, x += cw->date);
+	wprintw(wptr, "%s", ld->category);
+
+	wmove(wptr, y, x += cw->catg);
+	wprintw(wptr, "%s", ld->desc);
+
+	wmove(wptr, y, x += cw->desc);
+	wprintw(wptr, "%s", ld->transtype == 0 ? "Expense" : "Income");
+
+	wmove(wptr, y, x += cw->trns);
+	wprintw(wptr, "$%.2f", ld->amount);
 }
 
 /* Prints record from ld, in vertical format, 5 rows. */
@@ -1453,6 +1464,7 @@ void nc_edit_transaction(int linenum) {
 	pLd = NULL;
 	free(pidx);
 	pidx = NULL;
+
 }
 
 /*
@@ -1613,7 +1625,7 @@ void nc_read_loop(
 	return; // no selection
 }
 
-void nc_read_setup(void) {
+void nc_read_setup(int sel_year, int sel_month) {
 	/* 
 	 * Make this into a "main loop" for the read selection.
 	 * be able to select a date, view some records and go back to the date
@@ -1641,27 +1653,30 @@ void nc_read_setup(void) {
 	struct DynamicInts *plines;
 
 	wptr_lines = create_lines_subwindow(max_y - 1, max_x, 1, 2);
-	int sel_year = nc_read_select_year(wptr_read, fptr);
+	if (!sel_year) sel_year = nc_read_select_year(wptr_read, fptr);
 	if (sel_year == -1) {
 		mvwxcprintw(wptr_read, max_y / 2, 
 			  "No records exist, add (F1) to get started");
 		nc_exit_window_key(wptr_read);
 		fclose(fptr);
 		return;
-	} else if (sel_year == 0) {
+	} else if (sel_year == 0) { // User exit
+		free(pidx);
 		nc_exit_window(wptr_read);
 		fclose(fptr);
 		return;
 	}
 
-	int sel_month = nc_read_select_month(wptr_read, fptr, sel_year);
+	if (!sel_month) sel_month = nc_read_select_month(wptr_read, fptr, sel_year);
 	if (sel_month < 0) {
+		free(pidx);
 		fclose(fptr);	
 		return;
 	}
 
 	plines = get_matching_line_nums(fptr, sel_month, sel_year);
 	if (plines == NULL) {
+		free(pidx);
 		fclose(fptr);
 		return;
 	}
@@ -1690,11 +1705,13 @@ void nc_read_setup(void) {
 
 	switch(sr->flag) {
 		case(0):
+			nc_read_setup(0, 0);
 			break; // 0 is no selection
 		case(1):
 			break;
 		case(2):
 			nc_edit_transaction(sr->index);
+			nc_read_setup(sel_year, sel_month);
 			break;
 		default:
 			break;
@@ -1876,7 +1893,7 @@ int nc_get_selection(WINDOW* wptr) {
 				edit_transaction();
 				break;
 			case (KEY_F(3)):
-				nc_read_setup();
+				nc_read_setup(0, 0);
 				break;
 			case (KEY_F(4)): // Quit
 				wclear(wptr);
