@@ -44,8 +44,8 @@ void calculate_columns(struct ColumnWidth *cw) {
 		cw->date = 6;
 		cw->trns = 5;
 		int small_scr = cw->date + cw->trns + cw->amnt;
-		cw->catg = (cw->max_x - small_scr) / 4;
-		cw->desc = (cw->max_x - small_scr) / 2 + cw->catg;
+		cw->catg = (cw->max_x - small_scr) / 3;
+		cw->desc = (cw->max_x - small_scr) / 3 + cw->catg;
 	} else if ((cw->max_x - static_columns) / 2 < 64) {
 		cw->catg = (cw->max_x - static_columns) / 3;
 		cw->desc = (cw->max_x - static_columns) / 3 + cw->catg;
@@ -131,12 +131,12 @@ void nc_message(char *str) {
 }
 
 WINDOW *nc_init_stdscr(void) {
-	WINDOW *wptr = initscr(); 
-	if (wptr == NULL) {
+	stdscr = initscr(); 
+	if (stdscr == NULL) {
 		return NULL;
 	}
 	noecho(); cbreak(); keypad(stdscr, true);
-	return wptr;
+	return stdscr;
 }
 
 void nc_print_welcome(WINDOW *wptr) {
