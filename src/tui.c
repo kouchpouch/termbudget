@@ -146,8 +146,8 @@ void nc_print_welcome(WINDOW *wptr) {
 }
 
 void nc_print_footer(WINDOW *wptr) {
-	int max_y, max_x, cur;
-	getmaxyx(wptr, max_y, max_x);
+	int max_y, cur;
+	max_y = getmaxy(wptr);
 
 	cur = 0;
 	curs_set(0);
