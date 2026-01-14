@@ -27,7 +27,12 @@
             have a clearer control flow purpose
     - (*) Implement visual truncation when there are not enough columns to
             display all the field data
-
+    - ( ) Move to integer/fixed point arithmetic for financial calculations
+    - (*) Use realloc in sorter.c (sort_csv()) instead of having a fixed
+            number of lines to index
+    - ( ) Add ability to escape the menu when accepting a user input
+    - ( ) Add page up/page down/end/home keys for navigating lists
+    - ( ) Add sort by feature
 #### Main Feature Set
     - (*) Create a transaction
     - (*) View     " "
@@ -39,11 +44,16 @@
             - (*) Add ability to scroll through records if they are too
                     big to fit on the screen
             - (*) Columns for fields for easier reading
-        - ( ) Edit
+        - (*) Add Transaction
+        - (*) Edit
             - (*) Date
+            - (*) Category
+            - (*) Description
+            - (*) Transaction Type
+            - (*) Amount
         - (*) Confirm windows
-        - ( ) Categories
-            - ( ) When adding a transaction, select a category or add new
+        - (*) Categories
+            - (*) When adding a transaction, select a category or add new
                     in an NCURSES menu.
         - ( ) Overview
         - (*) Scroll through dates
@@ -62,3 +72,5 @@
             erroneously be added out of chronological order.
     - (*) Edge case where trying to access read via the TUI, fgets fails to
             read the line (because it doesn't exist).
+    - (*) If editing a record's date causing no more records to exist for that
+            year and month, the TUI doesn't refresh properly.
