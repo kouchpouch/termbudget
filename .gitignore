@@ -1,5 +1,5 @@
 a.out
 data.csv
-data.csv.bak
+data.csv.*
 termbudget
 *.bak

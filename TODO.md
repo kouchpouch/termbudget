@@ -74,3 +74,5 @@
             read the line (because it doesn't exist).
     - (*) If editing a record's date causing no more records to exist for that
             year and month, the TUI doesn't refresh properly.
+    - (*) Sorter function can't handle adding a record between two years which
+            doesn't already exist.
