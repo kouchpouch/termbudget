@@ -25,7 +25,7 @@
             throw an asterisk on the month if it contains records/vice versa
     - ( ) After main feature set is done and working, refactor to make main.c
             have a clearer control flow purpose
-    - ( ) Implement visual truncation when there are not enough columns to
+    - (*) Implement visual truncation when there are not enough columns to
             display all the field data
 
 #### Main Feature Set
@@ -40,7 +40,8 @@
                     big to fit on the screen
             - (*) Columns for fields for easier reading
         - ( ) Edit
-        - ( ) Confirm windows
+            - (*) Date
+        - (*) Confirm windows
         - ( ) Categories
             - ( ) When adding a transaction, select a category or add new
                     in an NCURSES menu.
