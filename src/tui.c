@@ -125,6 +125,13 @@ WINDOW *create_input_subwindow(void) {
 	return wptr;
 }
 
+void nc_message(char *str) {
+	WINDOW *wptr_msg = create_input_subwindow();
+	mvwxcprintw(wptr_msg, 3, str);
+	wrefresh(wptr_msg);
+	nc_exit_window_key(wptr_msg);
+}
+
 WINDOW *nc_init_stdscr(void) {
 	WINDOW *wptr = initscr(); 
 	if (wptr == NULL) {

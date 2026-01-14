@@ -59,6 +59,9 @@ extern WINDOW *create_lines_subwindow(int max_y, int max_x, int y_off, int x_off
 /* Creates a subwindow for user input with dimensions based on stdscr */
 extern WINDOW *create_input_subwindow(void);
 
+/* Show a message str in an input subwindow which exits on key press */
+extern void nc_message(char *str);
+
 /* Initializes the stdscr */
 extern WINDOW *nc_init_stdscr(void);
 
