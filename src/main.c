@@ -18,6 +18,8 @@
 #define LINE_BUFFER 200
 #define STDIN_LARGE_BUFF 64
 #define STDIN_SMALL_BUFF 8
+#define REALLOC_THRESHOLD 64
+#define INPUT_MSG_Y_OFFSET 2
 
 #define MAX_LEN_AMOUNT 11
 #define MAX_LEN_DAY_MON 2
@@ -72,6 +74,7 @@ struct SelectedRecord {
 	int index;
 };
 
+int nc_confirm_record(struct LineData *ld);
 void print_record_hr(WINDOW *wptr, struct ColumnWidth *cw, struct LineData *ld, int y);
 void print_record_vert(WINDOW *wptr, struct LineData *ld, int x_off);
 struct Categories *list_categories(int month, int year);
@@ -247,7 +250,7 @@ int nc_input_n_digits(WINDOW *wptr, int max_len, int min_len) {
 	return digits;
 }
 
-int confirm_input() {
+int confirm_input(void) {
 	char *confirm = user_input(STDIN_SMALL_BUFF);
 	if (confirm == NULL) {
 		return -1;
@@ -268,10 +271,10 @@ int confirm_input() {
 	return -1;
 }
 
-int nc_confirm_input() {
+int nc_confirm_input(void) {
 	WINDOW *wptr_input = create_input_subwindow();
-	mvwxcprintw(wptr_input, 2, "Confirm");
-	mvwxcprintw(wptr_input, 3, "(Y/N)");
+	mvwxcprintw(wptr_input, INPUT_MSG_Y_OFFSET, "Confirm");
+	mvwxcprintw(wptr_input, INPUT_MSG_Y_OFFSET + 2, "(Y/N)");
 	wrefresh(wptr_input);
 
 	char confirm = wgetch(wptr_input);
@@ -288,7 +291,7 @@ int nc_confirm_input() {
 	return -1;
 }
 
-int input_month() {
+int input_month(void) {
 	int month;
 	puts("Enter Month");
 	while((month = input_n_digits(MAX_LEN_DAY_MON, MIN_LEN_DAY_MON)) == -1
@@ -299,7 +302,7 @@ int input_month() {
 	return month;
 }
 
-int input_year() {
+int input_year(void) {
 	int year;
 	if (cli_mode == true) {
 		puts("Enter Year");
@@ -321,7 +324,7 @@ int input_day(int month, int year) {
 	return day;
 }
 
-int input_transaction_type() {
+int input_transaction_type(void) {
 	int t;
 
 	/* 0 is an expense and 1 is income in the CSV */
@@ -335,7 +338,7 @@ int input_transaction_type() {
 	return t - 1; // sub 1 to convert human readable to CSV format
 }
 
-float input_amount() {
+float input_amount(void) {
 	puts("$ Amount:");
 	char *str = user_input(MAX_LEN_AMOUNT);
 	while (str == NULL) {
@@ -412,7 +415,7 @@ RETRY:
 
 int nc_input_month(void) {
 	WINDOW *wptr_input = create_input_subwindow();
-	mvwxcprintw(wptr_input, 2, "Enter Month");
+	mvwxcprintw(wptr_input, INPUT_MSG_Y_OFFSET, "Enter Month");
 	wrefresh(wptr_input);
 
 	int month;
@@ -430,14 +433,13 @@ int nc_input_month(void) {
 
 int nc_input_year(void) {
 	WINDOW *wptr_input = create_input_subwindow();
-	mvwxcprintw(wptr_input, 2, "Enter Year");
+	mvwxcprintw(wptr_input, INPUT_MSG_Y_OFFSET, "Enter Year");
 	wrefresh(wptr_input);
 
 	int year;
 	do {
 		year = nc_input_n_digits(wptr_input, MAX_LEN_YEAR, MIN_LEN_YEAR);
-	} while (year < 0);
-
+	} while(year < 0);
 
 	nc_exit_window(wptr_input);
 
@@ -446,7 +448,7 @@ int nc_input_year(void) {
 
 int nc_input_day(int month, int year) {
 	WINDOW *wptr_input = create_input_subwindow();
-	mvwxcprintw(wptr_input, 2, "Enter Day");
+	mvwxcprintw(wptr_input, INPUT_MSG_Y_OFFSET, "Enter Day");
 	wrefresh(wptr_input);
 
 	int day = nc_input_n_digits(wptr_input, MAX_LEN_DAY_MON, MIN_LEN_DAY_MON);
@@ -464,7 +466,19 @@ int nc_input_day(int month, int year) {
 	return day;
 }
 
-char *nc_input_category(int month, int year) {
+char *nc_input_string(char *msg) {
+	WINDOW *wptr_input = create_input_subwindow();
+	mvwxcprintw(wptr_input, INPUT_MSG_Y_OFFSET, msg);
+	char *str;
+	do {
+		str = nc_user_input(STDIN_LARGE_BUFF, wptr_input);
+	} while(str == NULL);
+	wrefresh(wptr_input);
+	nc_exit_window(wptr_input);
+	return str;
+}
+
+char *nc_select_category(int month, int year) {
 	struct Categories *pc = list_categories(month, year);
 	int new_win_y = pc->count + 2;
 	int new_win_x = getmaxx(stdscr) >= 64 ? 64 : getmaxx(stdscr);
@@ -473,10 +487,11 @@ char *nc_input_category(int month, int year) {
 	WINDOW *wptr_input = newwin(new_win_y, new_win_x, new_begin_y, new_begin_x);
 	box(wptr_input, 0, 0);
 	mvwxcprintw(wptr_input, 0, "Select Category");
+	mvwxcprintw(wptr_input, getmaxy(wptr_input) - 1, "Press 'c' to Create a Category");
 	wrefresh(wptr_input);
 
 	int linenum = 1;
-	if (pc->count > MIN_ROWS) {
+	if (pc->count > MIN_ROWS) { // FIX Add scrolling to this one too
 		mvwxcprintw(wptr_input, 1, "Not enough rows");
 	} else {
 		for (int i = 0; i < pc->count; i++) {
@@ -486,12 +501,15 @@ char *nc_input_category(int month, int year) {
 	}
 
 	int x_off = 2;
-	int dist_to_highlight = new_win_x - (x_off * 2);
+	int nx = new_win_x - (x_off * 2);
 	mvwchgat(wptr_input, 1, x_off, new_win_x - (x_off * 2), A_REVERSE, 0, NULL);
 
 	int cur = 1;
 	int select = -1;
 	int c = 0;
+
+	char *manual_entry;
+	keypad(wptr_input, true);
 
 	while (c != '\n' && c != '\r') {
 		wrefresh(wptr_input);
@@ -500,19 +518,30 @@ char *nc_input_category(int month, int year) {
 			case('j'):
 			case(KEY_DOWN):
 				if (cur + 1 <= pc->count) {
-					mvwchgat(wptr_input, cur, x_off, dist_to_highlight, A_NORMAL, 0, NULL);
+					mvwchgat(wptr_input, cur, x_off, nx, A_NORMAL, 0, NULL);
 					cur++;
-					mvwchgat(wptr_input, cur, x_off, dist_to_highlight, A_REVERSE, 0, NULL);
+					mvwchgat(wptr_input, cur, x_off, nx, A_REVERSE, 0, NULL);
 				}
 				break;
 			case('k'):
 			case(KEY_UP):
 				if (cur - 1 >= 1) {
-					mvwchgat(wptr_input, cur, x_off, dist_to_highlight, A_NORMAL, 0, NULL);
+					mvwchgat(wptr_input, cur, x_off, nx, A_NORMAL, 0, NULL);
 					cur--;
-					mvwchgat(wptr_input, cur, x_off, dist_to_highlight, A_REVERSE, 0, NULL);
+					mvwchgat(wptr_input, cur, x_off, nx, A_REVERSE, 0, NULL);
 				}
 				break;
+			case('c'):
+				for (int i = 0; i < pc->count; i++) {
+					free(pc->categories[i]);
+				}
+				free(pc);
+				nc_exit_window(wptr_input);
+				manual_entry = nc_input_string("Enter Category");
+				if (manual_entry == NULL) {
+					return NULL;
+				}
+				return manual_entry;
 			case('\n'):
 			case('\r'):
 			case(KEY_ENTER):
@@ -546,6 +575,48 @@ CLEANUP:
 	return NULL;
 }
 
+int nc_input_transaction_type(void) {
+	WINDOW *wptr_input = create_input_subwindow();
+	mvwxcprintw(wptr_input, INPUT_MSG_Y_OFFSET, "Choose Expense/Income");
+	mvwxcprintw(wptr_input, INPUT_MSG_Y_OFFSET + 2, "(1)Expense (2)Income");
+	keypad(wptr_input, true);
+	int t = 0;
+
+	while(t != '1' && t != '2') {
+		t = wgetch(wptr_input);	
+		if (t == 'q' || t == KEY_F(4)) {
+			return -1;
+		}
+	}
+
+	nc_exit_window(wptr_input);
+
+	/* Have these statements here to explictly return a 0 or 1 without
+	 * having to do an integer/char conversion */
+	if (t == '1') return 0;
+	if (t == '2') return 1;
+	
+	return -1;
+}
+
+float nc_input_amount(void) {
+	WINDOW *wptr_input = create_input_subwindow();
+	mvwxcprintw(wptr_input, INPUT_MSG_Y_OFFSET, "Enter Amount");
+	keypad(wptr_input, true);
+
+	char *str = nc_user_input(MAX_LEN_AMOUNT, wptr_input);
+	while (str == NULL) {
+		str = nc_user_input(MAX_LEN_AMOUNT, wptr_input);
+	}
+
+	nc_exit_window(wptr_input);
+
+	float amount = atof(str);
+	free(str);
+
+	return amount;
+}
+
 //---------------------------------------------------------------------------//
 //--------------------------USER INPUT ABOVE---------------------------------//
 //---------------------------------------------------------------------------//
@@ -560,7 +631,7 @@ FILE *open_csv(char *mode) {
 	}
 }
 
-FILE *open_temp_csv() {
+FILE *open_temp_csv(void) {
 	FILE *tmpfptr = fopen("tmp.txt", "w+");
 	if (tmpfptr == NULL) {
 		puts("Failed to open file");
@@ -673,15 +744,54 @@ void add_csv_record(int linetoadd, struct LineData *ld) {
 	}
 }
 
-void add_transaction() {
+/* Optional parameters int month, year. If add transaction is selected while
+ * on the read screen these will be auto-filled. */
+void nc_add_transaction(int year, int month) {
 	struct LineData userlinedata_, *uld = &userlinedata_;
-	struct DynamicInts *pcsvindex = index_csv();
+	struct DynamicInts *pidx = index_csv();
+
+	FILE *fptr = open_csv("r+");
+	fseek(fptr, 0L, SEEK_END);
+
+	year > 0 ? (uld->year = year) : (uld->year = nc_input_year());
+	month > 0 ? (uld->month = month) : (uld->month = nc_input_month());
+	uld->day = nc_input_day(uld->month, uld->year);
+	uld->category = nc_select_category(uld->month, uld->year);
+	uld->desc = nc_input_string("Enter Description");
+	uld->transtype = nc_input_transaction_type();
+	uld->amount = nc_input_amount();
+
+	int result = nc_confirm_record(uld);
+
+	if (result == 0) {
+		goto CLEANUP;
+	}
+
+	int resultline = sort_csv(uld->month, uld->day, uld->year);
+
+	if (resultline < 0) {
+		goto CLEANUP;
+	}
+
+	add_csv_record(resultline, uld);
+
+CLEANUP:
+	if (debug == true) puts("CLEANUP");
+	free(pidx);
+	free(uld->category);
+	free(uld->desc);
+	fclose(fptr);
+}
+
+void add_transaction(void) {
+	struct LineData userlinedata_, *uld = &userlinedata_;
+	struct DynamicInts *pidx = index_csv();
 	int year, month, day, resultline, transaction;
 	char *categorystr;
 	char *descstr;
 	float amount;
 
-	FILE* fptr = open_csv("r+");
+	FILE *fptr = open_csv("r+");
 	fseek(fptr, 0L, SEEK_END);
 
 	year = input_year();
@@ -728,7 +838,7 @@ void add_transaction() {
 		goto CLEANUP;
 	}
 
-	resultline = sort_csv(uld->month, uld->day, uld->year, pcsvindex->lines);
+	resultline = sort_csv(uld->month, uld->day, uld->year);
 	if (resultline < 0) {
 		puts("Failed to find where to add this record");
 		goto CLEANUP;
@@ -738,13 +848,13 @@ void add_transaction() {
 
 CLEANUP:
 	if (debug == true) puts("CLEANUP");
-	free(pcsvindex);
+	free(pidx);
 	fclose(fptr);
 	free(categorystr);
 	free(descstr);
 }
 
-struct DynamicInts *index_csv() {
+struct DynamicInts *index_csv(void) {
 	struct DynamicInts *pidx = 
 		malloc(sizeof(struct DynamicInts) + 0 * sizeof(int));
 	if (pidx == NULL) {
@@ -830,8 +940,6 @@ int edit_csv_record(int linetoreplace, struct LineData *ld, int field) {
 	}
 
 	linetoreplace += 1;
-	FILE *fptr = open_csv("r");
-	FILE *tmpfptr = open_temp_csv();
 
 	char buff[LINE_BUFFER * 2];
 	char *line;
@@ -847,44 +955,66 @@ int edit_csv_record(int linetoreplace, struct LineData *ld, int field) {
 				ld->year = nc_input_year();
 				ld->month = nc_input_month();
 				ld->day = nc_input_day(ld->month, ld->year);
+				if (nc_confirm_record(ld) <= 0) {
+					goto FAIL;
+				}
 			}
-			fclose(fptr);
-			fclose(tmpfptr);
+
+			/* Have to add and delete here because the record will be placed
+			 * in a new position when the date changes */
 			delete_csv_record(linetoreplace - 1);
-			add_csv_record(sort_csv(ld->month, ld->day, ld->year, 2000), ld);
+			add_csv_record(sort_csv(ld->month, ld->day, ld->year), ld);
 			return 0;
+
 		case 2:
 			if (cli_mode) {
 				ld->category = input_category(ld->month, ld->year);
 			} else {
-				ld->category = nc_input_category(ld->month, ld->year);
+				ld->category = nc_select_category(ld->month, ld->year);
 				if (ld->category == NULL) {
-					fclose(fptr);
-					fclose(tmpfptr);
-					return -1;
-				}
-				if (nc_confirm_record(ld) <= 0) {
-					fclose(fptr);
-					fclose(tmpfptr);
-					return -1;
+					goto FAIL;
 				}
 			}
 			break;
 		case 3:
-			ld->desc = input_str_retry("Enter Description");	
+			if (cli_mode) {
+				ld->desc = input_str_retry("Enter Description");	
+			} else {
+				ld->desc = nc_input_string("Enter Description");
+			}
 			break;
 		case 4:
-			ld->transtype = input_transaction_type();
+			if (cli_mode) {
+				ld->transtype = input_transaction_type();
+			} else {
+				ld->transtype = nc_input_transaction_type();
+				if (ld->transtype == -1) {
+					goto FAIL;
+				}
+			}
 			break;
 		case 5:
-			ld->amount = input_amount();
+			if (cli_mode) {
+				ld->amount = input_amount();
+			} else {
+				ld->amount = nc_input_amount();
+			}
 			break;
 		default:
 			puts("Not a valid choice, exiting");
-			fclose(fptr);
-			fclose(tmpfptr);
 			return -1;
 	}
+
+	if (!cli_mode) {
+		if (nc_confirm_record(ld) <= 0) {
+			if (field == 2) free(ld->category);
+			if (field == 3) free(ld->desc);
+			goto FAIL;
+		}
+	}
+
+	FILE *fptr = open_csv("r");
+	FILE *tmpfptr = open_temp_csv();
 
 	do {
 		line = fgets(buff, sizeof(buff), fptr);
@@ -904,12 +1034,18 @@ int edit_csv_record(int linetoreplace, struct LineData *ld, int field) {
 		   );
 		}
 	} while(line != NULL);
+
+	/* move_temp_to_main() closes the file pointers */
 	if (move_temp_to_main(tmpfptr, fptr) == 0) {
 		puts("Edit Complete");
 	}
+
 	if (field == 2) free(ld->category);
 	if (field == 3) free(ld->desc);
 	return 0;
+
+FAIL:
+	return -1;
 }
 
 struct LineData *tokenize_str(struct LineData *pLd, char *str) {
@@ -1360,7 +1496,7 @@ int nc_read_select_month(WINDOW *wptr, FILE* fptr, int year) {
 				}
 				break;
 			case (KEY_RESIZE):
-			//	FIX Right now I have no idea how to handle this
+				// FIX Right now I have no idea how to handle this
 				break;
 			case ('\n'):
 			case ('\r'):
@@ -1385,10 +1521,8 @@ int nc_read_select_month(WINDOW *wptr, FILE* fptr, int year) {
 
 struct DynamicInts *get_matching_line_nums(FILE *fptr, int month, int year) {
 	rewind(fptr);
-	/* Initial alloc of 64 integers */
-	int realloc_increment = 64;
 	struct DynamicInts *lines = 
-		malloc(sizeof(struct DynamicInts) + (realloc_increment * sizeof(int)));
+		malloc(sizeof(struct DynamicInts) + (REALLOC_THRESHOLD * sizeof(int)));
 	if (lines == NULL) {
 		exit(1);
 	}
@@ -1417,10 +1551,10 @@ struct DynamicInts *get_matching_line_nums(FILE *fptr, int month, int year) {
 		(void)atoi(strsep(&str, ","));
 		line_year = atoi(strsep(&str, ","));
 		if (year == line_year && month == line_month) {
-			if (realloc_counter == realloc_increment - 1) {
+			if (realloc_counter == REALLOC_THRESHOLD - 1) {
 				realloc_counter = 0;
 				void *temp = realloc(lines, sizeof(struct DynamicInts) + 
-					((lines->lines) + realloc_increment) * sizeof(int));
+					((lines->lines) + REALLOC_THRESHOLD) * sizeof(int));
 				if (temp == NULL) {
 					free(lines);
 					exit(1);
@@ -1435,7 +1569,7 @@ struct DynamicInts *get_matching_line_nums(FILE *fptr, int month, int year) {
 	}
 
 	/* Shrink back down if oversized alloc */
-	if (lines->lines % realloc_increment != 0) {	
+	if (lines->lines % REALLOC_THRESHOLD != 0) {	
 		void *temp = realloc(lines, sizeof(struct DynamicInts) + 
 					   (lines->lines * sizeof(int)));
 		if (temp == NULL) {
@@ -1609,13 +1743,13 @@ void nc_edit_transaction(int linenum) {
 			edit_csv_record(linenum + 1, pLd, 2);
 			break;
 		case 3:
-			//edit_csv_record(linenum, pLd, 3);
+			edit_csv_record(linenum + 1, pLd, 3);
 			break;
 		case 4:
-			//edit_csv_record(linenum, pLd, 4);
+			edit_csv_record(linenum + 1, pLd, 4);
 			break;
 		case 5:
-			//edit_csv_record(linenum, pLd, 5);
+			edit_csv_record(linenum + 1, pLd, 5);
 			break;
 		case 6:
 			if (nc_confirm_input() == 1) {
@@ -1768,7 +1902,9 @@ void nc_read_loop(
 				char *line = fgets(linebuff, sizeof(linebuff), fptr);
 				show_detail_subwindow(line);
 				refresh_on_detail_close(wptr, displayed_lines);
-				box(wptr_parent, 0, 0);
+				mvwvline(wptr_parent, 1, 0, 0, getmaxy(wptr_parent) - 2);
+				mvwvline(wptr_parent, 1, getmaxx(wptr_parent) - 1, 0, getmaxy(wptr_parent) - 2);
+//				box(wptr_parent, 0, 0);
 				wrefresh(wptr_parent);
 				c = 0;
 				break;
@@ -1799,12 +1935,6 @@ void nc_read_loop(
 }
 
 void nc_read_setup(int sel_year, int sel_month) {
-	/* 
-	 * Make this into a "main loop" for the read selection.
-	 * be able to select a date, view some records and go back to the date
-	 * selection.
-	 */
-
 	/* LINES - 1 to still display the footer under wptr_read */
 
 	struct DynamicInts *pidx = index_csv();
@@ -1826,6 +1956,7 @@ void nc_read_setup(int sel_year, int sel_month) {
 	struct DynamicInts *plines;
 
 	wptr_lines = create_lines_subwindow(max_y - 1, max_x, 1, x_off);
+	wrefresh(wptr_lines);
 	if (!sel_year) sel_year = nc_read_select_year(wptr_read, fptr);
 	if (sel_year == -1) {
 		mvwxcprintw(wptr_read, max_y / 2, 
@@ -1874,13 +2005,14 @@ void nc_read_setup(int sel_year, int sel_month) {
 	fptr = NULL;
 	nc_exit_window(wptr_lines);
 	nc_exit_window(wptr_read);
-	refresh();
 
 	switch(sr->flag) {
-		case(0):
+		case(0): // 0 is no selection
 			nc_read_setup(0, 0);
-			break; // 0 is no selection
+			break;
 		case(1):
+			nc_add_transaction(sel_year, sel_month);
+			nc_read_setup(sel_year, sel_month);
 			break;
 		case(2):
 			nc_edit_transaction(sr->index);
@@ -1944,7 +2076,7 @@ int delete_csv_record(int linetodelete) {
 	return 0;
 }
 
-void edit_transaction() {
+void edit_transaction(void) {
 	int target;
 	int humantarget;
 	struct LineData linedata, *ld = &linedata;
@@ -2056,18 +2188,19 @@ int nc_get_selection(WINDOW* wptr) {
 	int c = 0;
 	while (c != KEY_F(4)) {
 		nc_print_welcome(wptr);
+		nc_print_footer(wptr);
 		wrefresh(wptr);
 		c = getch();
 		switch (c) {
 			case (KEY_F(1)): // Add
 				wclear(wptr);
-				add_transaction();
+				nc_add_transaction(0, 0);
 				break;
 			case (KEY_F(2)): // Edit
 				wclear(wptr);
-				edit_transaction();
 				break;
 			case (KEY_F(3)):
+				wclear(wptr);
 				nc_read_setup(0, 0);
 				break;
 			case (KEY_F(4)): // Quit
@@ -2075,11 +2208,11 @@ int nc_get_selection(WINDOW* wptr) {
 				return 1;
 		}
 	}
-	delwin(wptr);
+	endwin();
 	return 0;
 }
 
-void get_selection() {
+void get_selection(void) {
 	int choice;
 	printf("Make a selection:\n");
 	printf("a - Add Transaction\n");
