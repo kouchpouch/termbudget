@@ -5,12 +5,24 @@
 #include <limits.h>
 #include "sorter.h"
 
+#define REALLOC_THRESHOLD 64
+
+int get_total_csv_lines() {
+	FILE *fptr = fopen("data.csv", "r");
+	int lines = 0;
+	char buff[256];
+	while (fgets(buff, sizeof(buff), fptr) != NULL) {
+		lines++;
+	}
+	return lines;
+}
+
 /* We assume that the CSV is sorted by date already. Because every operation
  * to edit or add a transaction will go through the sorting function to
  * determine where to insert the record. */
 
 /* Returns a line number to insert a record sorted by year, month, day */
-int sort_csv(int month, int day, int year, int maxlines) {
+int sort_csv(int month, int day, int year) {
 	FILE *fptr = fopen("data.csv", "r");
 	if (fptr == NULL) exit(1);
 
@@ -25,7 +37,10 @@ int sort_csv(int month, int day, int year, int maxlines) {
 	bool yearmatch = false;
 	bool monthmatch = false;
 	bool lessermonthsfound = false;
-	int *arr = calloc(maxlines, sizeof(int));
+
+	int realloc_counter = 0;
+	/* Initial alloc of 64 integers */
+	int *arr = calloc(REALLOC_THRESHOLD, sizeof(int));
 	int idx = 0;
 
 	(void)fgets(buff, buffsize, fptr); // Header, throwaway
@@ -49,6 +64,14 @@ int sort_csv(int month, int day, int year, int maxlines) {
 
 		if (yeartoken == year) {
 			/* If the year matches, descend into the month field */
+			realloc_counter++;
+			if (realloc_counter >= REALLOC_THRESHOLD) {
+				int *tmp = realloc(arr, ((idx + REALLOC_THRESHOLD) * sizeof(int)));
+				if (tmp == NULL) {
+					free(arr);
+				}
+				arr = tmp;
+			}
 			arr[idx] = line;
 
 			/* Fill the array with line numbers to use in the event that no
