@@ -5,7 +5,7 @@
 #include "tui.h"
 
 int test_terminal_size(int max_y, int max_x) {
-	if (max_y < MIN_ROW || max_x < MIN_COLUMNS) {
+	if (max_y < MIN_ROWS || max_x < MIN_COLUMNS) {
 			return -1;
 		}
 	return 0;
@@ -34,28 +34,21 @@ void clear_input_error_message(WINDOW *wptr) {
 
 void calculate_columns(struct ColumnWidth *cw) {
 
-	/* DATE: 12/31/2025___
-	 *       ^...........^ == 13 */
-	cw->date = 13; 
-
-	/* TRANSACTION TYPE: EXPENSE___
-	 *                   ^........^  == 10 */
-	cw->trns = 10;
-
-	/* AMOUNT: Max 9 digits plus decimal point, plus 1 space, 11 */
-	cw->amnt = 11;
+	cw->date = DATE_X;
+	cw->trns = TRNS_X;
+	cw->amnt = AMNT_X;
 
 	int static_columns = cw->date + cw->trns + cw->amnt;
 
-	/* 11 'n 14 derived from the length of "CATEGORY" and "DESCRIPTION" + 3 */
-	int minimum_cols = static_columns + 11 + 14;
-
-	if (cw->max_x < minimum_cols) {
-		cw->catg = 0;	
-		cw->desc = 0;	
+	if (cw->max_x < MIN_COLUMNS) {
+		cw->date = 6;
+		cw->trns = 5;
+		int small_scr = cw->date + cw->trns + cw->amnt;
+		cw->catg = (cw->max_x - small_scr) / 4;
+		cw->desc = (cw->max_x - small_scr) / 2 + cw->catg;
 	} else if ((cw->max_x - static_columns) / 2 < 64) {
-		cw->catg = (cw->max_x - static_columns) / 4;
-		cw->desc = (cw->max_x - static_columns) / 2 + cw->catg;
+		cw->catg = (cw->max_x - static_columns) / 3;
+		cw->desc = (cw->max_x - static_columns) / 3 + cw->catg;
 	} else {
 		cw->desc = 64;
 		cw->catg = 64;
@@ -72,7 +65,12 @@ void print_column_headers(WINDOW *wptr, int x_off) {
 	int cur = x_off;
 
 	mvwprintw(wptr, 1, cur, "DATE");
-	mvwprintw(wptr, 1, cur += cw->date, "CATEGORY");
+
+	if (cw->catg <= CATG_X) {
+		mvwprintw(wptr, 1, cur += cw->date, "CAT.");
+	} else {
+		mvwprintw(wptr, 1, cur += cw->date, "CATEGORY");
+	}
 	mvwprintw(wptr, 1, cur += cw->catg, "DESCRIPTION");
 	mvwprintw(wptr, 1, cur += cw->desc, "TYPE");
 	mvwprintw(wptr, 1, cur += cw->trns, "AMOUNT");

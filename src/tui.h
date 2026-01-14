@@ -2,8 +2,28 @@
 #define TUI_H
 #include <ncurses.h>
 
-#define MIN_COLUMNS 59
-#define MIN_ROW 20
+/* Minimum length to display the full names of each field
+ * on the X axis */
+
+/* DATE: 12/31/2025___
+ *       ^...........^ == 13 */
+#define DATE_X 13
+
+/* TRANSACTION TYPE: EXPENSE___
+ *                   ^........^  == 10 */
+#define TRNS_X 10
+
+/* AMOUNT: Max 9 digits plus decimal point, plus 1 space, 11 */
+#define AMNT_X 11
+
+/* 11 'n 14 derived from the length of "CATEGORY" and 
+ * "DESCRIPTION" + 3 */
+#define CATG_X 11
+#define DESC_X 14
+
+#define MIN_COLUMNS (DATE_X + TRNS_X + AMNT_X + CATG_X + DESC_X)
+#define MIN_ROWS 20
+
 
 struct ColumnWidth {
 	int max_x;

@@ -436,6 +436,7 @@ int nc_input_year(void) {
 		year = nc_input_n_digits(wptr_input, MAX_LEN_YEAR, MIN_LEN_YEAR);
 	} while (year < 0);
 
+
 	nc_exit_window(wptr_input);
 
 	return year;
@@ -1435,14 +1436,22 @@ void print_record_hr(
 	struct LineData *ld, 
 	int y) {
 
-	char *etc = ".. ";
+	char *etc = ". ";
 	int x = 0;
 	wmove(wptr, y, x);
-	wprintw(wptr, "%d/%d/%d", ld->month, ld->day, ld->year);
+	if (getmaxx(wptr) < MIN_COLUMNS) {
+		wprintw(wptr, "%d/%d", ld->month, ld->day);
+	} else {
+		wprintw(wptr, "%d/%d/%d", ld->month, ld->day, ld->year);
+	}
 
 	wmove(wptr, y, x += cw->date);
 	if ((int)strlen(ld->category) > cw->catg - (int)strlen(etc)) {
-		wprintw(wptr, "%.*s%s", cw->catg - (int)strlen(etc), ld->category, etc);
+		if (getmaxx(wptr) < MIN_COLUMNS) {
+			wprintw(wptr, "%.*s%s", cw->catg - (int)strlen(etc), ld->category, etc);
+		} else {
+			wprintw(wptr, "%.*s%s", cw->catg - (int)strlen(etc), ld->category, etc);
+		}
 	} else {
 		wprintw(wptr, "%s", ld->category);
 	}
@@ -1455,7 +1464,11 @@ void print_record_hr(
 	}
 
 	wmove(wptr, y, x += cw->desc);
-	wprintw(wptr, "%s", ld->transtype == 0 ? "Expense" : "Income");
+	if (getmaxx(wptr) < MIN_COLUMNS) {
+		wprintw(wptr, "%s", ld->transtype == 0 ? "-" : "+");
+	} else {
+		wprintw(wptr, "%s", ld->transtype == 0 ? "Expense" : "Income");
+	}
 
 	wmove(wptr, y, x += cw->trns);
 	wprintw(wptr, "$%.2f", ld->amount);
