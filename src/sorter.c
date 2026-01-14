@@ -37,6 +37,7 @@ int sort_csv(int month, int day, int year) {
 	bool yearmatch = false;
 	bool monthmatch = false;
 	bool lessermonthsfound = false;
+	bool yearlessthanmin = false;
 
 	int realloc_counter = 0;
 	/* Initial alloc of 64 integers */
@@ -54,18 +55,21 @@ int sort_csv(int month, int day, int year) {
 		if (yeartoken < minyear) {
 			minyear = yeartoken;
 		}
+		if (year < minyear) {
+			yearlessthanmin = true;	
+		} else {
+			yearlessthanmin = false;
+		}
+
 		if (yeartoken > maxyear) {
 			maxyear = yeartoken;
 		}
-
-		/* If the year is not found in the CSV, yearmatch will remain false
-		 * and the result line will be overwritten to either the end of the 
-		 * file or the beginning of the file. */
 
 		if (yeartoken == year) {
 			/* If the year matches, descend into the month field */
 			realloc_counter++;
 			if (realloc_counter >= REALLOC_THRESHOLD) {
+				realloc_counter = 0;
 				int *tmp = realloc(arr, ((idx + REALLOC_THRESHOLD) * sizeof(int)));
 				if (tmp == NULL) {
 					free(arr);
@@ -115,10 +119,15 @@ int sort_csv(int month, int day, int year) {
 		str = fgets(buff, buffsize, fptr);
 	}
 
-	if (yearmatch == false) { 
-		// No match was found for year, so the year must
-		// not exist in the CSV. Either the record will be placed at the 
-		// beginning or the end of the CSV
+	if (yearmatch == false && yearlessthanmin == false) { 
+		if (year < maxyear) {
+			free(arr);
+			fclose(fptr);
+			return line - 1;
+		} else if (year > maxyear) {
+			result_line = line;
+		}
+	} else if (yearmatch == false) {
 		year > maxyear ? (result_line = line) : (result_line = 1);
 	}
 	if (yearmatch == true && monthmatch == false && lessermonthsfound == true) {

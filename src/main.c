@@ -74,6 +74,7 @@ struct SelectedRecord {
 	int index;
 };
 
+void nc_read_setup(int sel_year, int sel_month);
 int nc_confirm_record(struct LineData *ld);
 void print_record_hr(WINDOW *wptr, struct ColumnWidth *cw, struct LineData *ld, int y);
 void print_record_vert(WINDOW *wptr, struct LineData *ld, int x_off);
@@ -490,6 +491,10 @@ char *nc_select_category(int month, int year) {
 	mvwxcprintw(wptr_input, getmaxy(wptr_input) - 1, "Press 'c' to Create a Category");
 	wrefresh(wptr_input);
 
+	if (pc->count == 0) {
+		goto MANUAL;
+	}
+
 	int linenum = 1;
 	if (pc->count > MIN_ROWS) { // FIX Add scrolling to this one too
 		mvwxcprintw(wptr_input, 1, "Not enough rows");
@@ -532,6 +537,7 @@ char *nc_select_category(int month, int year) {
 				}
 				break;
 			case('c'):
+			MANUAL:
 				for (int i = 0; i < pc->count; i++) {
 					free(pc->categories[i]);
 				}
@@ -770,6 +776,11 @@ void nc_add_transaction(int year, int month) {
 	int resultline = sort_csv(uld->month, uld->day, uld->year);
 
 	if (resultline < 0) {
+		if (debug == true) {
+			printw("Something has gone horribly wrong");
+			refresh();
+			getch();	
+		}
 		goto CLEANUP;
 	}
 
@@ -781,6 +792,7 @@ CLEANUP:
 	free(uld->category);
 	free(uld->desc);
 	fclose(fptr);
+	nc_read_setup(uld->year, uld->month);
 }
 
 void add_transaction(void) {
@@ -1386,7 +1398,7 @@ int nc_read_select_year(WINDOW *wptr, FILE *fptr) {
 	/* Initially highlight the current year and move cursor to it */
 	int init_rv_x = print_x;
 	if (flag > 0) {
-		init_rv_x += (4 * flag) + 1;
+		init_rv_x += (4 * flag) + flag;
 		scr_idx = flag;
 	}
 	
@@ -1411,7 +1423,7 @@ int nc_read_select_year(WINDOW *wptr, FILE *fptr) {
 				break;
 			case ('l'):
 			case (KEY_RIGHT):
-				if (temp_x + 5 <= (i * 4) + 1) {
+				if (temp_x + 5 <= (i * 4) + i) {
 					mvwchgat(wptr, print_y, temp_x, 4, A_NORMAL, 0, NULL);
 					mvwchgat(wptr, print_y, temp_x + 5, 4, A_REVERSE, 0, NULL);
 					wrefresh(wptr);
@@ -2012,7 +2024,6 @@ void nc_read_setup(int sel_year, int sel_month) {
 			break;
 		case(1):
 			nc_add_transaction(sel_year, sel_month);
-			nc_read_setup(sel_year, sel_month);
 			break;
 		case(2):
 			nc_edit_transaction(sr->index);
