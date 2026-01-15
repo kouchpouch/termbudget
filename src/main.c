@@ -639,7 +639,7 @@ float nc_input_amount(void) {
 FILE *open_csv(char *mode) {
 	FILE *fptr = fopen(CSV_DIR, mode);
 	if (fptr == NULL) {
-		puts("Failed to open file");
+		perror("Failed to open file");
 		exit(1);
 	} else {
 		return fptr;
@@ -649,7 +649,7 @@ FILE *open_csv(char *mode) {
 FILE *open_temp_csv(void) {
 	FILE *tmpfptr = fopen("tmp.txt", "w+");
 	if (tmpfptr == NULL) {
-		puts("Failed to open file");
+		perror("Failed to open file");
 		exit(1);
 	}
 	return tmpfptr;
@@ -705,13 +705,13 @@ struct Categories *list_categories(int month, int year) {
 	FILE *fptr = open_csv("r");
 	char *line;
 	char *token;
-	char buff[LINE_BUFFER];
+	char linebuff[LINE_BUFFER];
 	struct Categories *pc = malloc(sizeof(struct Categories));
 	pc->count = 0;
 
 	seek_beyond_header(fptr);
 
-	while ((line = fgets(buff, sizeof(buff), fptr)) != NULL) {
+	while ((line = fgets(linebuff, sizeof(linebuff), fptr)) != NULL) {
 		if (month != atoi(strsep(&line, ","))) {
 			goto DUPLICATE;
 		}
@@ -749,7 +749,7 @@ struct Categories *list_categories(int month, int year) {
 		pc->count++;
 
 DUPLICATE:
-		memset(buff, 0, sizeof(buff)); // Reset the Buffer
+		memset(linebuff, 0, sizeof(linebuff)); // Reset the Buffer
 	}
 
 	fclose(fptr);
@@ -757,17 +757,81 @@ DUPLICATE:
 	return pc; // Struct and each index of categories must be free'd
 }
 
+/* Returns an array of integers representing the byte offsets of records
+ * sorted by category */
+DynInts *sort_by_category(FILE *fptr, DynInts *pidx, DynInts *plines, int yr, int mo) {
+	int realloc_counter = 0;
+	DynInts *prsc = malloc(sizeof(DynInts) + (sizeof(int) * REALLOC_THRESHOLD));
+	prsc->lines = 0;
+	rewind(fptr);
+	struct Categories *pc = list_categories(mo, yr);
+	char linebuff[LINE_BUFFER];
+	char *line;
+	char *token;
+
+	for (int i = 0; i < pc->count; i++) { // Loop through each category
+		for (int j = 0; j < plines->lines; j++) { // Loop through each record
+
+			if (realloc_counter >= REALLOC_THRESHOLD - 1) {
+				realloc_counter = 0;
+				DynInts *tmp = 
+					realloc(prsc, sizeof(*prsc) + ((prsc->lines + REALLOC_THRESHOLD) * sizeof(char *)));
+				if (tmp == NULL) {
+					free(prsc);
+					return NULL;
+				}
+				prsc = tmp;
+			}
+
+			fseek(fptr, pidx->data[plines->data[j]], SEEK_SET);
+			line = fgets(linebuff, sizeof(linebuff), fptr);
+			if (line == NULL) {
+				free(prsc);
+				return NULL;
+			}
+
+			/* Throwaway all these date fields */
+			for (int k = 0; k < 3; k++) {
+				(void)strsep(&line, ",");
+			}
+
+			token = strsep(&line, ",");
+			
+			if (token == NULL) {
+				free(prsc);
+				return NULL;
+			}
+
+			if (strcmp(token, pc->categories[i]) == 0) {
+				prsc->data[prsc->lines] = pidx->data[plines->data[j]];
+				prsc->lines++;
+				realloc_counter++;
+			}
+		}
+		prsc->data[prsc->lines] = 0;
+		prsc->lines++;
+		realloc_counter++;
+	}
+
+	for (int i = 0; i < pc->count; i++) {
+		free(pc->categories[i]);
+	}
+	free(pc);
+
+	return prsc;
+}
+
 /* Adds a record to the CSV on line linetoadd */
 void add_csv_record(int linetoadd, struct LineData *ld) {
 	FILE *fptr = open_csv("r");
 	FILE *tmpfptr = open_temp_csv();
 
-	char buff[LINE_BUFFER];
+	char linebuff[LINE_BUFFER];
 	char *line;
 	int linenum = 0;
 
 	do {
-		line = fgets(buff, sizeof(buff), fptr);
+		line = fgets(linebuff, sizeof(linebuff), fptr);
 		if (line == NULL) break;
 		linenum++;	
 		if (linenum != linetoadd) {
@@ -895,10 +959,10 @@ DynInts *index_csv(void) {
 	pidx->lines = 0;
 	FILE *fptr = open_csv("r");
 	assert(ftell(fptr) == 0);
-	char charbuff[LINE_BUFFER];
+	char linebuff[LINE_BUFFER];
 
 	while (1) {
-		char* test = fgets(charbuff, sizeof(charbuff), fptr);
+		char* test = fgets(linebuff, sizeof(linebuff), fptr);
 		if (test == NULL) {
 			break;
 		}
@@ -917,7 +981,7 @@ DynInts *index_csv(void) {
 	assert(ftell(fptr) == 0);
 
 	for (int i = 0; i < pidx->lines; i++) {
-		char* test = fgets(charbuff, sizeof(charbuff), fptr);
+		char* test = fgets(linebuff, sizeof(linebuff), fptr);
 		if (test == NULL) {
 			break;
 		}
@@ -971,7 +1035,7 @@ int edit_csv_record(int linetoreplace, struct LineData *ld, int field) {
 
 	linetoreplace += 1;
 
-	char buff[LINE_BUFFER * 2];
+	char linebuff[LINE_BUFFER * 2];
 	char *line;
 	int linenum = 0;
 
@@ -1047,7 +1111,7 @@ int edit_csv_record(int linetoreplace, struct LineData *ld, int field) {
 	FILE *tmpfptr = open_temp_csv();
 
 	do {
-		line = fgets(buff, sizeof(buff), fptr);
+		line = fgets(linebuff, sizeof(linebuff), fptr);
 		if (line == NULL) break;
 		linenum++;	
 		if (linenum != linetoreplace) {
@@ -1114,7 +1178,7 @@ struct LineData *tokenize_str(struct LineData *pLd, char *str) {
 }
 
 int *list_records_by_year(FILE *fptr) {
-	char buff[LINE_BUFFER];
+	char linebuff[LINE_BUFFER];
 	char *str;
 	int *years = calloc(1, sizeof(int));
 	int year;
@@ -1126,7 +1190,7 @@ int *list_records_by_year(FILE *fptr) {
 		return NULL;
 	}
 
-	str = fgets(buff, sizeof(buff), fptr); // Read first year into index 0
+	str = fgets(linebuff, sizeof(linebuff), fptr); // Read first year into index 0
 	if (str == NULL) {
 		free(years);
 		return NULL;
@@ -1135,7 +1199,7 @@ int *list_records_by_year(FILE *fptr) {
 	(void)strsep(&str, ","); // day, throwaway
 	years[i] = atoi(strsep(&str, ",")); // year
 
-	while((str = fgets(buff, sizeof(buff), fptr)) != NULL) {
+	while((str = fgets(linebuff, sizeof(linebuff), fptr)) != NULL) {
 		(void)strsep(&str, ","); // month
 		(void)strsep(&str, ","); // day, throwaway
 		year = atoi(strsep(&str, ",")); // year
@@ -1166,7 +1230,7 @@ int *list_records_by_year(FILE *fptr) {
 }
 
 int *list_records_by_month(FILE *fptr, int matchyear) {
-	char buff[LINE_BUFFER];
+	char linebuff[LINE_BUFFER];
 	char *str;
 	int *months = calloc(12, sizeof(int));
 	int year;
@@ -1177,7 +1241,7 @@ int *list_records_by_month(FILE *fptr, int matchyear) {
 		puts("Failed to read header");
 	}
 
-	while((str = fgets(buff, sizeof(buff), fptr)) != NULL) {
+	while((str = fgets(linebuff, sizeof(linebuff), fptr)) != NULL) {
 		month = atoi(strsep(&str, ","));
 		strsep(&str, ",");
 		year = atoi(strsep(&str, ","));
@@ -1392,8 +1456,8 @@ int nc_read_select_year(WINDOW *wptr, FILE *fptr) {
 				}
 				break;
 			case (KEY_RESIZE):
-				// FIX Right now I have no idea how to handle this
-				break;
+				free(years_arr);
+				return RESIZE;
 			case ('\n'):
 			case ('\r'):
 				selected_year = years_arr[scr_idx];
@@ -1756,7 +1820,7 @@ void show_detail_subwindow(char *line) {
 	WINDOW *wptr_detail = create_input_subwindow();
 	box(wptr_detail, 0, 0);
 	mvwxcprintw(wptr_detail, 0, "Details");
-	struct LineData linedata_, *ld = &linedata_;
+	LineData linedata_, *ld = &linedata_;
 	ld = tokenize_str(ld, line);
 	nc_print_record_vert(wptr_detail, ld, BOX_OFFSET);
 	nc_exit_window_key(wptr_detail);
@@ -1782,13 +1846,14 @@ void refresh_on_detail_close(WINDOW *wptr, WINDOW *wptr_parent, int n) {
 	wrefresh(wptr_parent);
 }
 
-void nc_scroll_prev(long b, FILE *fptr, WINDOW* wptr, LineData *ld, ColumnWidth *cw) {
+void nc_scroll_prev(long b, FILE *fptr, WINDOW* wptr, ColumnWidth *cw) {
 	fseek(fptr, b, SEEK_SET);
 	char linebuff[LINE_BUFFER];
 	char *line_str = fgets(linebuff, sizeof(linebuff), fptr);
 	if (line_str == NULL) {
 		return;
 	}
+	LineData linedata_, *ld = &linedata_;
 	ld = tokenize_str(ld, line_str);
 
 	wmove(wptr, 0, 0);
@@ -1796,7 +1861,7 @@ void nc_scroll_prev(long b, FILE *fptr, WINDOW* wptr, LineData *ld, ColumnWidth 
 	nc_print_record_hr(wptr, cw, ld, 0);
 }
 
-void nc_scroll_next(long b, FILE *fptr, WINDOW *wptr, LineData *ld, ColumnWidth *cw) {
+void nc_scroll_next(long b, FILE *fptr, WINDOW *wptr, ColumnWidth *cw) {
 	fseek(fptr, b, SEEK_SET);
 	char linebuff[LINE_BUFFER];
 	char *line_str;
@@ -1804,6 +1869,7 @@ void nc_scroll_next(long b, FILE *fptr, WINDOW *wptr, LineData *ld, ColumnWidth 
 	if (line_str == NULL) {
 		return;
 	}
+	LineData linedata_, *ld = &linedata_;
 	ld = tokenize_str(ld, line_str);
 
 	wmove(wptr, 0, 0);
@@ -1812,9 +1878,36 @@ void nc_scroll_next(long b, FILE *fptr, WINDOW *wptr, LineData *ld, ColumnWidth 
 	nc_print_record_hr(wptr, cw, ld, getmaxy(wptr) - 1);
 }
 
+void TEST_nc_print_records_by_category(WINDOW *wptr, FILE*fptr, DynInts *prsc) {
+	ColumnWidth column_width, *cw = &column_width;
+	LineData linedata, *ld = &linedata;
+	char linebuffer[LINE_BUFFER];
+	char *line;
+
+	int cur = 0;
+	cw->max_x = getmaxx(wptr) - BOX_OFFSET;
+	calculate_columns(cw);
+	int j = 0;
+	for (int i = 0; i < prsc->lines - j; i++) {
+		if (prsc->data[i] == 0) {
+			j++;
+			continue;
+		}
+		fseek(fptr, prsc->data[i], SEEK_SET);
+		line = fgets(linebuffer, sizeof(linebuffer), fptr);	
+		if (line == NULL) {
+			break;
+		}
+		ld = tokenize_str(ld, line);
+		nc_print_record_hr(wptr, cw, ld, cur);
+		cur++;
+	}
+	wgetch(wptr);
+}
+
 /*
  * Main read loop. Populates variables in the struct pointed to by sr
- * if a record is highlighted and the user selects add or edit
+ * on a MenuKeys press
  */
 void nc_read_loop(
 	WINDOW *wptr_parent, 
@@ -1879,7 +1972,7 @@ void nc_read_loop(
 					select++;
 
 					if (displayed_lines < plines->lines && cur_y == max_y) {
-						nc_scroll_next(pidx->data[plines->data[select]], fptr, wptr, ld, cw);
+						nc_scroll_next(pidx->data[plines->data[select]], fptr, wptr, cw);
 						cur_y = getcury(wptr);
 					}
 					mvwchgat(wptr, cur_y, 0, -1, A_REVERSE, 0, NULL); 
@@ -1896,7 +1989,7 @@ void nc_read_loop(
 					if (cur_y < 0) cur_y = -1;
 					
 					if (displayed_lines < plines->lines && cur_y == -1 && select >= 0) {
-						nc_scroll_prev(pidx->data[plines->data[select]], fptr, wptr, ld, cw);
+						nc_scroll_prev(pidx->data[plines->data[select]], fptr, wptr, cw);
 						cur_y = getcury(wptr);
 					}
 					mvwchgat(wptr, cur_y, 0, -1, A_REVERSE, 0, NULL); 
@@ -1920,7 +2013,7 @@ void nc_read_loop(
 						select++;
 
 						if (displayed_lines < plines->lines && cur_y == max_y) {
-							nc_scroll_next(pidx->data[plines->data[select]], fptr, wptr, ld, cw);
+							nc_scroll_next(pidx->data[plines->data[select]], fptr, wptr, cw);
 							cur_y = getcury(wptr);
 						}
 						mvwchgat(wptr, cur_y, 0, -1, A_REVERSE, 0, NULL); 
@@ -1940,7 +2033,7 @@ void nc_read_loop(
 						if (cur_y < 0) cur_y = -1;
 						
 						if (displayed_lines < plines->lines && cur_y == -1 && select >= 0) {
-							nc_scroll_prev(pidx->data[plines->data[select]], fptr, wptr, ld, cw);
+							nc_scroll_prev(pidx->data[plines->data[select]], fptr, wptr, cw);
 							cur_y = getcury(wptr);
 						}
 						mvwchgat(wptr, cur_y, 0, -1, A_REVERSE, 0, NULL); 
@@ -1957,7 +2050,7 @@ void nc_read_loop(
 					select++;
 
 					if (displayed_lines < plines->lines && cur_y == max_y) {
-						nc_scroll_next(pidx->data[plines->data[select]], fptr, wptr, ld, cw);
+						nc_scroll_next(pidx->data[plines->data[select]], fptr, wptr, cw);
 						cur_y = getcury(wptr);
 					}
 					mvwchgat(wptr, cur_y, 0, -1, A_REVERSE, 0, NULL); 
@@ -1973,7 +2066,7 @@ void nc_read_loop(
 					if (cur_y < 0) cur_y = -1;
 					
 					if (displayed_lines < plines->lines && cur_y == -1 && select >= 0) {
-						nc_scroll_prev(pidx->data[plines->data[select]], fptr, wptr, ld, cw);
+						nc_scroll_prev(pidx->data[plines->data[select]], fptr, wptr, cw);
 						cur_y = getcury(wptr);
 					}
 					mvwchgat(wptr, cur_y, 0, -1, A_REVERSE, 0, NULL); 
@@ -2007,14 +2100,20 @@ void nc_read_loop(
 	}
 	sr->flag = NO_SELECT;
 	sr->index = 0;
-	return; // no selection
+	return;
 }
 
 void nc_read_setup(int sel_year, int sel_month) {
 	/* LINES - 1 to still display the footer under wptr_read */
+	nc_print_footer(stdscr);
+	if (debug == true) {
+		nc_print_debug_flag(stdscr);
+	}
+	refresh();
 
 	DynInts *pidx = index_csv();
 	SelectedRecord selectedrecord_ , *sr = &selectedrecord_;
+	sr->flag = -1;
 	FILE *fptr = open_csv("r");
 
 	WINDOW *wptr_read = newwin(LINES - 1, 0, 0, 0);
@@ -2031,21 +2130,20 @@ void nc_read_setup(int sel_year, int sel_month) {
 	WINDOW *wptr_lines;
 	DynInts *plines;
 
-	wptr_lines = create_lines_subwindow(max_y - 1, max_x, 1, x_off);
+	wptr_lines = create_lines_subwindow(max_y - 1, max_x, 1, BOX_OFFSET);
 	wrefresh(wptr_lines);
 
 	if (!sel_year) sel_year = nc_read_select_year(wptr_read, fptr);
-	if (sel_year == -1) {
+	if (sel_year == 0) {
+		goto SELECT_DATE_FAIL;
+	} else if (sel_year == RESIZE) {
+		sr->flag = 0;
+		goto SELECT_DATE_FAIL;
+	} else if (sel_year == -1) {
 		mvwxcprintw(wptr_read, max_y / 2, 
 			  "No records exist, add (F1) to get started");
-		nc_exit_window_key(wptr_read);
-		fclose(fptr);
-		return;
-	} else if (sel_year == 0) { // User exit
-		free(pidx);
-		nc_exit_window(wptr_read);
-		fclose(fptr);
-		return;
+		wgetch(wptr_read);
+		goto SELECT_DATE_FAIL;
 	}
 
 	if (!sel_month) sel_month = nc_read_select_month(wptr_read, fptr, sel_year);
@@ -2062,12 +2160,16 @@ void nc_read_setup(int sel_year, int sel_month) {
 		return;
 	}
 
-	wclear(wptr_read);
+	/* THIS IS A TEST */
+	print_column_headers(wptr_read, x_off);
+	mvwxcprintw(wptr_lines, 0, "THIS IS A TEST THIS IS A TEST THIS IS A TEST");
+	DynInts *prsc = sort_by_category(fptr, pidx, plines, sel_year, sel_month);
+	TEST_nc_print_records_by_category(wptr_lines, fptr, prsc);
+	wclear(wptr_lines);
+	free(prsc);
+	/* END TEST */
 
 	print_column_headers(wptr_read, x_off);
-
-	nc_print_footer(stdscr);
-	refresh();
 	box(wptr_read, 0, 0);
 	mvwprintw(wptr_read, 0, x_off, "%d %s", sel_year, months[sel_month - 1]);
 	wrefresh(wptr_read);
@@ -2076,10 +2178,14 @@ void nc_read_setup(int sel_year, int sel_month) {
 
 	wclear(wptr_read);
 	wclear(wptr_lines);
-	free(pidx);
-	pidx = NULL;
+
 	free(plines);
 	plines = NULL;
+
+SELECT_DATE_FAIL:
+	free(pidx);
+	pidx = NULL;
+
 	fclose(fptr);
 	fptr = NULL;
 
@@ -2147,11 +2253,11 @@ int delete_csv_record(int linetodelete) {
 		puts("Failed to open file");
 		return -1;
 	}
-	char buff[LINE_BUFFER * 2];
+	char linebuff[LINE_BUFFER * 2];
 	char *line;
 	int linenum = 0;
 	do {
-		line = fgets(buff, sizeof(buff), fptr);
+		line = fgets(linebuff, sizeof(linebuff), fptr);
 		if (line == NULL) break;
 		if (linenum != linetodelete) {
 			fputs(line, tmpfptr);
@@ -2265,6 +2371,9 @@ int nc_main_menu(WINDOW* wptr) {
 	while (c != KEY_F(4)) {
 		nc_print_welcome(wptr);
 		nc_print_footer(wptr);
+		if (debug == true) {
+			nc_print_debug_flag(wptr);
+		}
 		wrefresh(wptr);
 		c = getch();
 		switch (c) {
