@@ -76,8 +76,8 @@ struct SelectedRecord {
 
 void nc_read_setup(int sel_year, int sel_month);
 int nc_confirm_record(struct LineData *ld);
-void print_record_hr(WINDOW *wptr, struct ColumnWidth *cw, struct LineData *ld, int y);
-void print_record_vert(WINDOW *wptr, struct LineData *ld, int x_off);
+void nc_print_record_hr(WINDOW *wptr, struct ColumnWidth *cw, struct LineData *ld, int y);
+void nc_print_record_vert(WINDOW *wptr, struct LineData *ld, int x_off);
 struct Categories *list_categories(int month, int year);
 struct DynamicInts *index_csv();
 int move_temp_to_main(FILE* tempfile, FILE* mainfile);
@@ -661,6 +661,37 @@ int seek_beyond_header(FILE *fptr) {
 	}
 }
 
+void print_record_vert(struct LineData *ld) {
+	printf(
+		"1.) Date-->  %d/%d/%d\n"
+		"2.) Cat.-->  %s\n"
+		"3.) Desc-->  %s\n"
+		"4.) Type-->  %s\n"
+		"5.) Amt.-->  $%.2f\n",
+		ld->month, 
+		ld->day, 
+		ld->year, 
+		ld->category, 
+		ld->desc, 
+		ld->transtype == 0 ? "Expense" : "Income", 
+		ld->amount
+	);
+}
+
+void print_record_hr(struct LineData *ld) {
+	printf(
+		"%d.) %d/%d/%d Category: %s Description: %s, %s, $%.2f\n",
+		ld->linenum, 
+		ld->month, 
+		ld->day, 
+		ld->year, 
+		ld->category, 
+		ld->desc, 
+		ld->transtype == 0 ? "Expense" : "Income", 
+		ld->amount
+	 );
+}
+
 struct Categories *list_categories(int month, int year) {
 	FILE *fptr = open_csv("r");
 	char *line;
@@ -798,50 +829,26 @@ CLEANUP:
 void add_transaction(void) {
 	struct LineData userlinedata_, *uld = &userlinedata_;
 	struct DynamicInts *pidx = index_csv();
-	int year, month, day, resultline, transaction;
-	char *categorystr;
-	char *descstr;
-	float amount;
 
 	FILE *fptr = open_csv("r+");
 	fseek(fptr, 0L, SEEK_END);
 
-	year = input_year();
-	month = input_month();
-	day = input_day(month, year);
-	categorystr = input_category(month, year);
-	if (categorystr == NULL) goto CLEANUP;
-	descstr = input_str_retry("Description:");
-	transaction = input_transaction_type();
-	amount = input_amount();
+	uld->year = input_year();
+	uld->month = input_month();
+	uld->day = input_day(uld->month, uld->year);
+	uld->category = input_category(uld->month, uld->year);
+	if (uld->category == NULL) goto CLEANUP;
+	uld->desc = input_str_retry("Description:");
+	uld->transtype = input_transaction_type();
+	uld->amount = input_amount();
 
 	puts("Verify Data is Correct:");
-	printf(
-		"Date-->  %d/%d/%d\n"
-		"Cat.-->  %s\n"
-		"Desc-->  %s\n"
-		"Type-->  %s\n"
-		"Amt.-->  $%.2f\n",
-		month,
-		day,
-		year,
-		categorystr,
-		descstr,
-		transaction == 0 ? "Expense" : "Income",
-		amount
-	);
+	print_record_vert(uld);
 	printf("Y/N:  ");
 
 	int result = confirm_input();
 	if (result == 1) {
 		if (debug == true) puts("TRUE");
-		uld->month = month;
-		uld->day = day;
-		uld->year = year;
-		uld->category = categorystr;
-		uld->desc = descstr;
-		uld->transtype = transaction;
-		uld->amount = amount;
 	} else if (result == 0) {
 		if (debug == true) puts("FALSE");
 		goto CLEANUP;
@@ -850,20 +857,22 @@ void add_transaction(void) {
 		goto CLEANUP;
 	}
 
-	resultline = sort_csv(uld->month, uld->day, uld->year);
+	int resultline = sort_csv(uld->month, uld->day, uld->year);
 	if (resultline < 0) {
 		puts("Failed to find where to add this record");
 		goto CLEANUP;
 	}
-	printf("Result line: %d\n", resultline);
+
+	if (debug == true) printf("Result line: %d\n", resultline);
+
 	add_csv_record(resultline, uld);
 
 CLEANUP:
 	if (debug == true) puts("CLEANUP");
 	free(pidx);
 	fclose(fptr);
-	free(categorystr);
-	free(descstr);
+	free(uld->category);
+	free(uld->desc);
 }
 
 struct DynamicInts *index_csv(void) {
@@ -919,7 +928,7 @@ struct DynamicInts *index_csv(void) {
 int nc_confirm_record(struct LineData *ld) {
 	WINDOW *wptr = create_input_subwindow();
 	mvwxcprintw(wptr, 0, "Confirm Record");
-	print_record_vert(wptr, ld, 2);
+	nc_print_record_vert(wptr, ld, 2);
 	mvwxcprintw(wptr, getmaxy(wptr) - 2, "(Y)es  /  (N)o");
 	wrefresh(wptr);
 
@@ -1174,22 +1183,60 @@ int *list_records_by_month(FILE *fptr, int matchyear) {
 			break;
 		}
 	}
-	//	legacy CLI code
-//	puts("Months With Records:");
-//	for (int i = 0; i < 12; i++) {
-//		if (months[i] != 0) {
-//			printf("%d ", months[i]);
-//		}
-//	}
-//	printf("\n");
+
 	return months;
+}
+
+void nc_print_bar_graph(int income, int expense) {
+	;
+}
+
+/* Prints a 2 bar graphs showing the difference between income and expense */
+void print_bar_graph(float expense, float income) {
+	char income_bar[10];
+	char expense_bar[10];
+
+	for (int i = 0; i < sizeof(income_bar); i++) {
+		income_bar[i] = '#';
+		expense_bar[i] = '#';
+	}
+
+	if (income > expense) {
+		float diff = expense / income;
+		diff *= 10;
+		for (int i = 0; i < sizeof(expense_bar); i++) {
+			i < (int)diff ? 
+			(expense_bar[i] = '#') : (expense_bar[i] = '-');
+		}
+	} else {
+		float diff = income / expense;
+		diff *= 10;
+		for (int i = 0; i < sizeof(income_bar); i++) {
+			i < (int)diff ? 
+			(income_bar[i] = '#') : (income_bar[i] = '-');
+		}
+	}
+
+	printf("Income:  $%.2f [", income);
+	for (int i = 0; i < sizeof(income_bar); i++) {
+		printf("%c", income_bar[i]);
+	}
+	printf("]\n");
+
+	printf("Expense: $%.2f [", expense);
+	for (int i = 0; i < sizeof(expense_bar); i++) {
+		printf("%c", expense_bar[i]);
+	}
+	printf("]\n");
+
+	printf("Total:   $%.2f\n", income - expense);
 }
 
 void legacy_read_csv(void) {
 	int useryear;
 	int usermonth;
 	float income = 0;
-	float expenses = 0;
+	float expense = 0;
 	int linenum = 0;
 	int i = 0;
 	char linebuff[LINE_BUFFER] = {0};
@@ -1253,117 +1300,22 @@ void legacy_read_csv(void) {
 		ld->linenum = linenum;
 		if (ld->month == usermonth && ld->year == useryear) {
 			month_record_exists = true;
-			printf(
-				"%d.) %d/%d/%d Category: %s Description: %s, %s, $%.2f\n",
-				ld->linenum, 
-				ld->month, 
-				ld->day, 
-				ld->year, 
-				ld->category, 
-				ld->desc, 
-				ld->transtype == 0 ? "Expense" : "Income", 
-				ld->amount
-			 );
+			print_record_hr(ld);
 			if(ld->transtype == 1) {
 				income+=ld->amount;
 			} else if (ld->transtype == 0) {
-				expenses+=ld->amount;
+				expense+=ld->amount;
 			}
 		}
 	}
 
 	if (month_record_exists) {
-
-		/* Let's make a simple bar graph showing the income vs expense */
-		char income_bar[10];
-		char expense_bar[10];
-
-		for (int i = 0; i < sizeof(income_bar); i++) {
-			income_bar[i] = '#';
-			expense_bar[i] = '#';
-		}
-
-		if (income > expenses) {
-			float diff = expenses / income;
-			diff *= 10;
-			for (int i = 0; i < sizeof(expense_bar); i++) {
-				i < (int)diff ? 
-				(expense_bar[i] = '#') : (expense_bar[i] = '-');
-			}
-		} else {
-			float diff = income / expenses;
-			diff *= 10;
-			for (int i = 0; i < sizeof(income_bar); i++) {
-				i < (int)diff ? 
-				(income_bar[i] = '#') : (income_bar[i] = '-');
-			}
-		}
-
-		printf("Income:  $%.2f [", income);
-		for (int i = 0; i < sizeof(income_bar); i++) {
-			printf("%c", income_bar[i]);
-		}
-		printf("]\n");
-
-		printf("Expense: $%.2f [", expenses);
-		for (int i = 0; i < sizeof(expense_bar); i++) {
-			printf("%c", expense_bar[i]);
-		}
-		printf("]\n");
-
-		printf("Total:   $%.2f\n", income - expenses);
+		print_bar_graph(expense, income);
 	} else {
 		printf("No records match the entered date\n");
 	}
 	fclose(fptr);
 	fptr = NULL;
-}
-
-void print_overview(int income, int expense) {
-	/* Create a new window on the side to display the overview with
-	 * graphs */
-//	if (month_record_exists) {
-//		/* Let's make a simple bar graph showing the income vs expense */
-//		char income_bar[10];
-//		char expense_bar[10];
-//
-//		for (int i = 0; i < sizeof(income_bar); i++) {
-//			income_bar[i] = '#';
-//			expense_bar[i] = '#';
-//		}
-//
-//		if (income > expenses) {
-//			float diff = expenses / income;
-//			diff *= 10;
-//			for (int i = 0; i < sizeof(expense_bar); i++) {
-//				i < (int)diff ? 
-//				(expense_bar[i] = '#') : (expense_bar[i] = '-');
-//			}
-//		} else {
-//			float diff = income / expenses;
-//			diff *= 10;
-//			for (int i = 0; i < sizeof(income_bar); i++) {
-//				i < (int)diff ? 
-//				(income_bar[i] = '#') : (income_bar[i] = '-');
-//			}
-//		}
-//
-//		printf("Income:  $%.2f [", income);
-//		for (int i = 0; i < sizeof(income_bar); i++) {
-//			printf("%c", income_bar[i]);
-//		}
-//		printf("]\n");
-//
-//		printf("Expense: $%.2f [", expenses);
-//		for (int i = 0; i < sizeof(expense_bar); i++) {
-//			printf("%c", expense_bar[i]);
-//		}
-//		printf("]\n");
-//
-//		printf("Total:   $%.2f\n", income - expenses);
-//	} else {
-//		printf("No records match the entered date\n");
-//	}
 }
 
 int nc_read_select_year(WINDOW *wptr, FILE *fptr) {
@@ -1607,7 +1559,7 @@ struct DynamicInts *get_matching_line_nums(FILE *fptr, int month, int year) {
  * to by wptr, at a Y-coordinate of y. Truncates desc and category strings
  * if the window is too small.
  */
-void print_record_hr(
+void nc_print_record_hr(
 	WINDOW *wptr, 
 	struct ColumnWidth *cw, 
 	struct LineData *ld, 
@@ -1652,7 +1604,7 @@ void print_record_hr(
 }
 
 /* Prints record from ld, in vertical format, 5 rows. */
-void print_record_vert(WINDOW *wptr, struct LineData *ld, int x_off) {
+void nc_print_record_vert(WINDOW *wptr, struct LineData *ld, int x_off) {
 	mvwprintw(wptr, 1, x_off, "Date--> %d/%d/%d", ld->month, ld->day, ld->year);
 	mvwprintw(wptr, 2, x_off, "Cat.--> %s", ld->category);
 	mvwprintw(wptr, 3, x_off, "Desc--> %s", ld->desc);
@@ -1732,7 +1684,7 @@ void nc_edit_transaction(int linenum) {
 
 	memcpy(pLd, ld, sizeof(*ld));
 
-	print_record_vert(wptr_edit, ld, 2);
+	nc_print_record_vert(wptr_edit, ld, 2);
 
 	mvwprintw(wptr_edit, 6, 2, "%s", "Delete");
 
@@ -1780,6 +1732,12 @@ void nc_edit_transaction(int linenum) {
 	pidx = NULL;
 }
 
+void nc_print_debug_line(WINDOW *wptr, int line) {
+	mvwhline(wptr, getmaxy(wptr) - 1, 1, 0, getmaxx(wptr) - 2);
+	mvwprintw(wptr, getmaxy(wptr) - 1, getmaxx(wptr) - 20, "CSV LINE: %d", line);
+	wrefresh(wptr);
+}
+
 /*
  * Creates a sub window inside of wptr to display a line-by-line format of
  * the selected record at index i of pidx->data. Following the format style
@@ -1791,7 +1749,7 @@ void show_detail_subwindow(char *line) {
 	mvwxcprintw(wptr_detail, 0, "Details");
 	struct LineData linedata_, *ld = &linedata_;
 	ld = tokenize_str(ld, line);
-	print_record_vert(wptr_detail, ld, 2);
+	nc_print_record_vert(wptr_detail, ld, 2);
 	nc_exit_window_key(wptr_detail);
 }
 
@@ -1835,13 +1793,20 @@ void nc_read_loop(
 
 	calculate_columns(cw);
 
-	/* Print enough lines to fill the window but not more */
+	/* 
+	 * Print enough lines to fill the window but not more
+	 * pidx->data[plines->data[displayed_lines]] is the byte offset of
+	 * the line in the CSV file.
+	 *
+	 * plines->data is the CSV line starting at 0 on the first line that is
+	 * not the header.
+	 */
 	int i = 0;
 	while (i < max_y && displayed_lines < plines->lines) {
 		fseek(fptr, pidx->data[plines->data[displayed_lines]], SEEK_SET);
 		line_str = fgets(linebuff, sizeof(linebuff), fptr);
 		ld = tokenize_str(ld, line_str);
-		print_record_hr(wptr, cw, ld, i);
+		nc_print_record_hr(wptr, cw, ld, i);
 		displayed_lines++;
 		i++;
 	}
@@ -1861,6 +1826,9 @@ void nc_read_loop(
 	int c = 0;
 	while (c != KEY_F(4) && c != '\n' && c != '\r') {
 		wrefresh(wptr);
+		if (debug == true) {
+			nc_print_debug_line(wptr_parent, (plines->data[select]));
+		}
 		c = wgetch(wptr);
 		switch(c) {
 			case('j'):
@@ -1880,7 +1848,7 @@ void nc_read_loop(
 						wmove(wptr, 0, 0);
 						wdeleteln(wptr);
 						wmove(wptr, max_y - 1, 0);
-						print_record_hr(wptr, cw, ld, max_y - 1);
+						nc_print_record_hr(wptr, cw, ld, max_y - 1);
 						cur_y = getcury(wptr);
 					}
 					mvwchgat(wptr, cur_y, 0, -1, A_REVERSE, 0, NULL); 
@@ -1899,9 +1867,10 @@ void nc_read_loop(
 						fseek(fptr, pidx->data[plines->data[select]], SEEK_SET);
 						line_str = fgets(linebuff, sizeof(linebuff), fptr);
 						ld = tokenize_str(ld, line_str);
+
 						wmove(wptr, 0, 0);
 						winsertln(wptr);
-						print_record_hr(wptr, cw, ld, 0);
+						nc_print_record_hr(wptr, cw, ld, 0);
 						cur_y = getcury(wptr);
 					}
 					mvwchgat(wptr, cur_y, 0, -1, A_REVERSE, 0, NULL); 
@@ -2137,20 +2106,7 @@ void edit_transaction(void) {
 
 	memcpy(pLd, ld, sizeof(*ld));
 
-	printf(
-		"1.) Date-->  %d/%d/%d\n"
-		"2.) Cat.-->  %s\n"
-		"3.) Desc-->  %s\n"
-		"4.) Type-->  %s\n"
-		"5.) Amt.-->  $%.2f\n",
-		ld->month, 
-		ld->day, 
-		ld->year, 
-		ld->category, 
-		ld->desc, 
-		ld->transtype == 0 ? "Expense" : "Income", 
-		ld->amount
-	);
+	print_record_vert(ld);
 	
 	int fieldtoedit;
 	do {
@@ -2191,9 +2147,12 @@ void edit_transaction(void) {
 	fptr = NULL;
 }
 
-int nc_get_selection(WINDOW* wptr) {
+int nc_main_menu(WINDOW* wptr) {
 	nc_print_welcome(wptr);
 	nc_print_footer(wptr);
+	if (debug == true) {
+		nc_print_debug_flag(wptr);
+	}
 	wrefresh(wptr);
 
 	int c = 0;
@@ -2223,7 +2182,7 @@ int nc_get_selection(WINDOW* wptr) {
 	return 0;
 }
 
-void get_selection(void) {
+void main_menu(void) {
 	int choice;
 	printf("Make a selection:\n");
 	printf("a - Add Transaction\n");
@@ -2235,14 +2194,14 @@ void get_selection(void) {
 	char *userstr = user_input(STDIN_SMALL_BUFF); // Must be free'd
 	
 	while (userstr == NULL) {
-		get_selection();
+		main_menu();
 	}
 
 	if ((choice = upper(userstr)) == 0) {
 		puts("Invalid character");
 		free(userstr);
 		userstr = NULL;
-		get_selection();
+		main_menu();
 	}
 	
 	free(userstr);
@@ -2267,7 +2226,7 @@ void get_selection(void) {
 		default:
 			puts("Invalid character");
 			printf("\n");
-			get_selection();
+			main_menu();
 	}
 	return;
 }
@@ -2299,11 +2258,11 @@ int main(int argc, char **argv) {
 		stdscr = nc_init_stdscr();
 		int flag = 0;
 		while (flag == 0) {
-			flag = nc_get_selection(stdscr);
+			flag = nc_main_menu(stdscr);
 		}
 	} else {
 		while (1) {
-			get_selection();
+			main_menu();
 		}
 	}
 	endwin();
