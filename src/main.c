@@ -1768,7 +1768,7 @@ void show_detail_subwindow(char *line) {
  * back to A_NORMAL and then re-reverse-video's the original line. Cursor
  * position is NOT changed.
  */
-void refresh_on_detail_close(WINDOW *wptr, int n) {
+void refresh_on_detail_close(WINDOW *wptr, WINDOW *wptr_parent, int n) {
 	int temp_y, temp_x;
 	getyx(wptr, temp_y, temp_x);
 	wmove(wptr, 0, 0);
@@ -1777,6 +1777,9 @@ void refresh_on_detail_close(WINDOW *wptr, int n) {
 	}
 	wmove(wptr, temp_y, temp_x);
 	wchgat(wptr, -1, A_REVERSE, 0, NULL); 
+	mvwvline(wptr_parent, 1, 0, 0, getmaxy(wptr_parent) - 2);
+	mvwvline(wptr_parent, 1, getmaxx(wptr_parent) - 1, 0, getmaxy(wptr_parent) - 2);
+	wrefresh(wptr_parent);
 }
 
 void nc_scroll_prev(long b, FILE *fptr, WINDOW* wptr, LineData *ld, ColumnWidth *cw) {
@@ -1822,7 +1825,7 @@ void nc_read_loop(
 	DynInts *plines) {
 
 	ColumnWidth column_width, *cw = &column_width;
-	struct LineData linedata_, *ld = &linedata_;
+	LineData linedata_, *ld = &linedata_;
 	int max_y, max_x;
 	getmaxyx(wptr, max_y, max_x);
 	cw->max_x = max_x + 2; // 2 Offset
@@ -1905,15 +1908,50 @@ void nc_read_loop(
 				fseek(fptr, pidx->data[plines->data[select]], SEEK_SET);
 				char *line = fgets(linebuff, sizeof(linebuff), fptr);
 				show_detail_subwindow(line);
-				refresh_on_detail_close(wptr, displayed_lines);
-				mvwvline(wptr_parent, 1, 0, 0, getmaxy(wptr_parent) - 2);
-				mvwvline(wptr_parent, 1, getmaxx(wptr_parent) - 1, 0, getmaxy(wptr_parent) - 2);
-				wrefresh(wptr_parent);
+				refresh_on_detail_close(wptr, wptr_parent, displayed_lines);
 				c = 0;
 				break;
-			case(KEY_NPAGE):
+
+			case(KEY_NPAGE): // PAGE DOWN
+				for(int i = 0; i < 10; i++) {
+					if (select + 1 < plines->lines) {
+						mvwchgat(wptr, cur_y, 0, -1, A_NORMAL, 0, NULL); 
+						cur_y++;
+						select++;
+
+						if (displayed_lines < plines->lines && cur_y == max_y) {
+							nc_scroll_next(pidx->data[plines->data[select]], fptr, wptr, ld, cw);
+							cur_y = getcury(wptr);
+						}
+						mvwchgat(wptr, cur_y, 0, -1, A_REVERSE, 0, NULL); 
+					} else {
+						break;
+					}
+				}
+				break;
+
+			case(KEY_PPAGE): // PAGE UP
 				for (int i = 0; i < 10; i++) {
-				if (select + 1 < plines->lines) {
+					if (select - 1 >= 0) {
+						mvwchgat(wptr, cur_y, 0, -1, A_NORMAL, 0, NULL); 
+						cur_y--;
+						select--;
+
+						if (cur_y < 0) cur_y = -1;
+						
+						if (displayed_lines < plines->lines && cur_y == -1 && select >= 0) {
+							nc_scroll_prev(pidx->data[plines->data[select]], fptr, wptr, ld, cw);
+							cur_y = getcury(wptr);
+						}
+						mvwchgat(wptr, cur_y, 0, -1, A_REVERSE, 0, NULL); 
+					} else {
+						break;
+					}
+				}
+				break;
+
+			case(KEY_END):
+				while(select + 1 < plines->lines) {
 					mvwchgat(wptr, cur_y, 0, -1, A_NORMAL, 0, NULL); 
 					cur_y++;
 					select++;
@@ -1924,11 +1962,10 @@ void nc_read_loop(
 					}
 					mvwchgat(wptr, cur_y, 0, -1, A_REVERSE, 0, NULL); 
 				}
-				}
 				break;
-			case(KEY_PPAGE):
-				for (int i = 0; i < 10; i++) {
-				if (select - 1 >= 0) {
+
+			case(KEY_HOME):
+				while(select - 1 >= 0) {
 					mvwchgat(wptr, cur_y, 0, -1, A_NORMAL, 0, NULL); 
 					cur_y--;
 					select--;
@@ -1941,8 +1978,8 @@ void nc_read_loop(
 					}
 					mvwchgat(wptr, cur_y, 0, -1, A_REVERSE, 0, NULL); 
 				}
-				}
 				break;
+
 			case('a'):
 			case(KEY_F(1)):
 				sr->flag = ADD;
