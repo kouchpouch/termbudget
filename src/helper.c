@@ -1,4 +1,5 @@
 #include <limits.h>
+#include <stdio.h>
 #include <stdbool.h>
 #include "helper.h"
 
@@ -18,15 +19,10 @@ int upper(char* ltr) {
 		return 0;
 	}
 
-	if (*ltr >= MIN_LOWER_ASCII && 
-		*ltr <= MAX_LOWER_ASCII)
-	{
+	if (*ltr >= MIN_LOWER_ASCII && *ltr <= MAX_LOWER_ASCII) {
 		return *ltr - 32; // To uppercase
 	} 
-	else if (*ltr >= MIN_UPPER_ASCII && 
-			 *ltr <= MAX_UPPER_ASCII &&
-			 *ltr < SCHAR_MAX)
-	{
+	else if (*ltr >= MIN_UPPER_ASCII && *ltr <= MAX_UPPER_ASCII && *ltr < SCHAR_MAX) {
 		return *ltr; // Already uppercase
 	} 
 	else {
@@ -42,14 +38,11 @@ int lower(char* ltr) {
 		return 0;
 	}
 
-	if (*ltr >= MIN_LOWER_ASCII && 
-		*ltr <= MAX_LOWER_ASCII)
+	if (*ltr >= MIN_LOWER_ASCII && *ltr <= MAX_LOWER_ASCII)
 	{
 		return *ltr; // Already lowercase
 	} 
-	else if (*ltr >= MIN_UPPER_ASCII && 
-			 *ltr <= MAX_UPPER_ASCII &&
-			 *ltr > SCHAR_MAX - 32)
+	else if (*ltr >= MIN_UPPER_ASCII && *ltr <= MAX_UPPER_ASCII && *ltr > SCHAR_MAX - 32)
 	{
 		return *ltr + 32; // To lowercase
 	} 
