@@ -4,10 +4,12 @@
 #include <stdlib.h>
 #include "tui.h"
 
-int test_terminal_size(int max_y, int max_x) {
-	if (max_y < MIN_ROWS || max_x < MIN_COLUMNS) {
-			return -1;
-		}
+int test_terminal_size(void) {
+	if (getmaxy(stdscr) < MIN_ROWS || getmaxx(stdscr) < MIN_COLUMNS) {
+		mvprintw(0, 0, "Terminal is too small");
+		refresh();
+		return -1;
+	}
 	return 0;
 }
 
@@ -104,7 +106,7 @@ WINDOW *create_input_subwindow(void) {
 	getmaxyx(stdscr, max_y, max_x);
 	int win_y, win_x;
 	
-	win_y = 8;
+	win_y = INPUT_WIN_ROWS;
 
 	if (max_x >= MIN_COLUMNS + 20) {
 		win_x = MIN_COLUMNS + 20;
@@ -135,6 +137,14 @@ WINDOW *nc_init_stdscr(void) {
 	if (stdscr == NULL) {
 		return NULL;
 	}
+	if (!has_colors()) {
+		printw("This terminal does not support colors, press any key to quit");
+		getch();
+		endwin();
+		exit(1);
+	}
+	start_color();
+	use_default_colors();
 	noecho(); cbreak(); keypad(stdscr, true);
 	return stdscr;
 }
@@ -148,7 +158,10 @@ void nc_print_welcome(WINDOW *wptr) {
 void nc_print_debug_flag(WINDOW *wptr) {
 	char debug_text[] = "DEBUG";
 	wmove(wptr, getmaxy(wptr) - 1, getmaxx(wptr) - (int)strlen(debug_text) - 1);
+	init_pair(1, COLOR_RED, -1);
+	wattron(wptr, COLOR_PAIR(1));
 	wprintw(wptr, "%s", debug_text);
+	wattroff(wptr, COLOR_PAIR(1));
 }
 
 void nc_print_footer(WINDOW *wptr) {

@@ -13,8 +13,10 @@
  *                   ^........^  == 10 */
 #define TRNS_X 10
 
-/* AMOUNT: Max 9 digits plus decimal point, plus 1 space, 11 */
-#define AMNT_X 11
+/* AMOUNT: Max 7 digits + 2 decimal precision + the literal point '.' +
+ * currency symbol + a space. Result = 12.
+ * E.G. $1234567.10_ */
+#define AMNT_X 12
 
 /* 11 'n 14 derived from the length of "CATEGORY" and 
  * "DESCRIPTION" + 3 */
@@ -23,6 +25,8 @@
 
 #define MIN_COLUMNS (DATE_X + TRNS_X + AMNT_X + CATG_X + DESC_X)
 #define MIN_ROWS 20
+#define INPUT_WIN_ROWS 8
+#define BOX_OFFSET 2
 
 
 struct ColumnWidth {
@@ -33,6 +37,9 @@ struct ColumnWidth {
 	int trns;
 	int amnt;
 };
+
+/* Tests that the stdscr is big enough to handle this program */
+extern int test_terminal_size(void);
 
 /* 
  * Calculate column offsets for ncurses formatting, sets date width into date,
@@ -78,8 +85,6 @@ extern void nc_message(char *str);
 
 /* Initializes the stdscr */
 extern WINDOW *nc_init_stdscr(void);
-
-extern int test_terminal_size(int max_y, int max_x);
 
 /* Prints the welcome splash screen */
 extern void nc_print_welcome(WINDOW *wptr);
