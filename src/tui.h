@@ -28,7 +28,6 @@
 #define INPUT_WIN_ROWS 8
 #define BOX_OFFSET 2
 
-
 typedef struct ColumnWidth {
 	int max_x;
 	int date;
