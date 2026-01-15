@@ -59,12 +59,6 @@ extern void nc_exit_window(WINDOW *wptr);
  * the maximum y coordinate */
 extern void clear_input_error_message(WINDOW *wptr);
 
-/* Prints the welcome splash screen */
-extern void nc_print_welcome(WINDOW *wptr);
-
-/* Prints the footer with menu options */
-extern void nc_print_footer(WINDOW *wptr);
-
 /* Moves cursor in wptr to y-coord y for a string len
  * of len */
 extern int mvwxctr(WINDOW *wptr, int y, int len);
@@ -86,5 +80,14 @@ extern void nc_message(char *str);
 extern WINDOW *nc_init_stdscr(void);
 
 extern int test_terminal_size(int max_y, int max_x);
+
+/* Prints the welcome splash screen */
+extern void nc_print_welcome(WINDOW *wptr);
+
+/* Prints the string "DEBUG" on the bottom right of wptr */
+extern void nc_print_debug_flag(WINDOW *wptr);
+
+/* Prints the footer with menu options */
+extern void nc_print_footer(WINDOW *wptr);
 
 #endif

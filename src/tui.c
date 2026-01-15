@@ -145,6 +145,12 @@ void nc_print_welcome(WINDOW *wptr) {
 	mvwxcprintw(wptr, getmaxy(wptr) / 2 + 1, "Made by TN");
 }
 
+void nc_print_debug_flag(WINDOW *wptr) {
+	char debug_text[] = "DEBUG";
+	wmove(wptr, getmaxy(wptr) - 1, getmaxx(wptr) - (int)strlen(debug_text) - 1);
+	wprintw(wptr, "%s", debug_text);
+}
+
 void nc_print_footer(WINDOW *wptr) {
 	int max_y, cur;
 	max_y = getmaxy(wptr);
