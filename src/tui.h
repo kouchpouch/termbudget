@@ -29,14 +29,14 @@
 #define BOX_OFFSET 2
 
 
-struct ColumnWidth {
+typedef struct ColumnWidth {
 	int max_x;
 	int date;
 	int catg;
 	int desc;
 	int trns;
 	int amnt;
-};
+} ColumnWidth;
 
 /* Tests that the stdscr is big enough to handle this program */
 extern int test_terminal_size(void);

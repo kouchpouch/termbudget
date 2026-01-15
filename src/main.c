@@ -56,7 +56,7 @@ const char *months[] = {
 	"DEC"
 };
 
-struct LineData {
+typedef struct LineData {
 	int month;
 	int day;
 	int year;
@@ -66,29 +66,29 @@ struct LineData {
 	float amount;
 	int linenum;
 	int offset;
-};
+} LineData;
 
-struct DynamicInts {
+typedef struct DynamicInts {
 	int lines;
 	int data[];
-};
+} DynInts;
 
 struct Categories {
 	int count;
 	char *categories[];
 };
 
-struct SelectedRecord {
+typedef struct SelectedRecord {
 	int flag;
 	int index;
-};
+} SelectedRecord;
 
 void nc_read_setup(int sel_year, int sel_month);
 int nc_confirm_record(struct LineData *ld);
-void nc_print_record_hr(WINDOW *wptr, struct ColumnWidth *cw, struct LineData *ld, int y);
+void nc_print_record_hr(WINDOW *wptr, ColumnWidth *cw, struct LineData *ld, int y);
 void nc_print_record_vert(WINDOW *wptr, struct LineData *ld, int x_off);
 struct Categories *list_categories(int month, int year);
-struct DynamicInts *index_csv();
+DynInts *index_csv();
 int move_temp_to_main(FILE* tempfile, FILE* mainfile);
 int delete_csv_record(int linetodelete);
 
@@ -794,7 +794,7 @@ void add_csv_record(int linetoadd, struct LineData *ld) {
  * on the read screen these will be auto-filled. */
 void nc_add_transaction(int year, int month) {
 	struct LineData userlinedata_, *uld = &userlinedata_;
-	struct DynamicInts *pidx = index_csv();
+	DynInts *pidx = index_csv();
 
 	FILE *fptr = open_csv("r+");
 	fseek(fptr, 0L, SEEK_END);
@@ -837,7 +837,7 @@ CLEANUP:
 
 void add_transaction(void) {
 	struct LineData userlinedata_, *uld = &userlinedata_;
-	struct DynamicInts *pidx = index_csv();
+	DynInts *pidx = index_csv();
 
 	FILE *fptr = open_csv("r+");
 	fseek(fptr, 0L, SEEK_END);
@@ -884,9 +884,9 @@ CLEANUP:
 	free(uld->desc);
 }
 
-struct DynamicInts *index_csv(void) {
-	struct DynamicInts *pidx = 
-		malloc(sizeof(struct DynamicInts) + 0 * sizeof(int));
+DynInts *index_csv(void) {
+	DynInts *pidx = 
+		malloc(sizeof(DynInts) + 0 * sizeof(int));
 	if (pidx == NULL) {
 		puts("Failed to allocate memory");
 		exit(1);
@@ -905,7 +905,7 @@ struct DynamicInts *index_csv(void) {
 		pidx->lines++;
 	}
 
-	struct DynamicInts *tmp = realloc(pidx, sizeof(*pidx) + (pidx->lines * sizeof(int)));
+	DynInts *tmp = realloc(pidx, sizeof(*pidx) + (pidx->lines * sizeof(int)));
 
 	if (tmp == NULL) {
 		puts("Failed to allocate memory");
@@ -1492,10 +1492,10 @@ int nc_read_select_month(WINDOW *wptr, FILE* fptr, int year) {
 	return selected_month;
 }
 
-struct DynamicInts *get_matching_line_nums(FILE *fptr, int month, int year) {
+DynInts *get_matching_line_nums(FILE *fptr, int month, int year) {
 	rewind(fptr);
-	struct DynamicInts *lines = 
-		malloc(sizeof(struct DynamicInts) + (REALLOC_THRESHOLD * sizeof(int)));
+	DynInts *lines = 
+		malloc(sizeof(DynInts) + (REALLOC_THRESHOLD * sizeof(int)));
 	if (lines == NULL) {
 		exit(1);
 	}
@@ -1526,7 +1526,7 @@ struct DynamicInts *get_matching_line_nums(FILE *fptr, int month, int year) {
 		if (year == line_year && month == line_month) {
 			if (realloc_counter == REALLOC_THRESHOLD - 1) {
 				realloc_counter = 0;
-				void *temp = realloc(lines, sizeof(struct DynamicInts) + 
+				void *temp = realloc(lines, sizeof(DynInts) + 
 					((lines->lines) + REALLOC_THRESHOLD) * sizeof(int));
 				if (temp == NULL) {
 					free(lines);
@@ -1543,7 +1543,7 @@ struct DynamicInts *get_matching_line_nums(FILE *fptr, int month, int year) {
 
 	/* Shrink back down if oversized alloc */
 	if (lines->lines % REALLOC_THRESHOLD != 0) {	
-		void *temp = realloc(lines, sizeof(struct DynamicInts) + 
+		void *temp = realloc(lines, sizeof(DynInts) + 
 					   (lines->lines * sizeof(int)));
 		if (temp == NULL) {
 			free(lines);
@@ -1570,7 +1570,7 @@ struct DynamicInts *get_matching_line_nums(FILE *fptr, int month, int year) {
  */
 void nc_print_record_hr(
 	WINDOW *wptr, 
-	struct ColumnWidth *cw, 
+	ColumnWidth *cw, 
 	struct LineData *ld, 
 	int y) {
 
@@ -1666,7 +1666,7 @@ int nc_select_field_to_edit(WINDOW* wptr) {
 
 void nc_edit_transaction(int linenum) {
 	struct LineData linedata, *ld = &linedata;
-	struct DynamicInts *pidx = index_csv();
+	DynInts *pidx = index_csv();
 
 	WINDOW *wptr_edit = create_input_subwindow();
 	FILE* fptr = open_csv("r+");
@@ -1779,6 +1779,36 @@ void refresh_on_detail_close(WINDOW *wptr, int n) {
 	wchgat(wptr, -1, A_REVERSE, 0, NULL); 
 }
 
+void nc_scroll_prev(long b, FILE *fptr, WINDOW* wptr, LineData *ld, ColumnWidth *cw) {
+	fseek(fptr, b, SEEK_SET);
+	char linebuff[LINE_BUFFER];
+	char *line_str = fgets(linebuff, sizeof(linebuff), fptr);
+	if (line_str == NULL) {
+		return;
+	}
+	ld = tokenize_str(ld, line_str);
+
+	wmove(wptr, 0, 0);
+	winsertln(wptr);
+	nc_print_record_hr(wptr, cw, ld, 0);
+}
+
+void nc_scroll_next(long b, FILE *fptr, WINDOW *wptr, LineData *ld, ColumnWidth *cw) {
+	fseek(fptr, b, SEEK_SET);
+	char linebuff[LINE_BUFFER];
+	char *line_str;
+	line_str = fgets(linebuff, sizeof(linebuff), fptr);
+	if (line_str == NULL) {
+		return;
+	}
+	ld = tokenize_str(ld, line_str);
+
+	wmove(wptr, 0, 0);
+	wdeleteln(wptr);
+	wmove(wptr, getmaxy(wptr) - 1, 0);
+	nc_print_record_hr(wptr, cw, ld, getmaxy(wptr) - 1);
+}
+
 /*
  * Main read loop. Populates variables in the struct pointed to by sr
  * if a record is highlighted and the user selects add or edit
@@ -1787,11 +1817,11 @@ void nc_read_loop(
 	WINDOW *wptr_parent, 
 	WINDOW *wptr, 
 	FILE *fptr, 
-	struct SelectedRecord *sr,
-	struct DynamicInts *pidx, 
-	struct DynamicInts *plines) {
+	SelectedRecord *sr,
+	DynInts *pidx, 
+	DynInts *plines) {
 
-	struct ColumnWidth column_width, *cw = &column_width;
+	ColumnWidth column_width, *cw = &column_width;
 	struct LineData linedata_, *ld = &linedata_;
 	int max_y, max_x;
 	getmaxyx(wptr, max_y, max_x);
@@ -1830,8 +1860,6 @@ void nc_read_loop(
 	if (debug == true) curs_set(1);
 	wrefresh(wptr);
 
-	//int temp_y, temp_x;
-
 	int c = 0;
 	while (c != KEY_F(4) && c != '\n' && c != '\r') {
 		wrefresh(wptr);
@@ -1847,16 +1875,8 @@ void nc_read_loop(
 					cur_y++;
 					select++;
 
-					/* Scroll down */
 					if (displayed_lines < plines->lines && cur_y == max_y) {
-						fseek(fptr, pidx->data[plines->data[select]], SEEK_SET);
-						line_str = fgets(linebuff, sizeof(linebuff), fptr);
-						ld = tokenize_str(ld, line_str);
-
-						wmove(wptr, 0, 0);
-						wdeleteln(wptr);
-						wmove(wptr, max_y - 1, 0);
-						nc_print_record_hr(wptr, cw, ld, max_y - 1);
+						nc_scroll_next(pidx->data[plines->data[select]], fptr, wptr, ld, cw);
 						cur_y = getcury(wptr);
 					}
 					mvwchgat(wptr, cur_y, 0, -1, A_REVERSE, 0, NULL); 
@@ -1872,15 +1892,8 @@ void nc_read_loop(
 
 					if (cur_y < 0) cur_y = -1;
 					
-					/* Scroll up */
 					if (displayed_lines < plines->lines && cur_y == -1 && select >= 0) {
-						fseek(fptr, pidx->data[plines->data[select]], SEEK_SET);
-						line_str = fgets(linebuff, sizeof(linebuff), fptr);
-						ld = tokenize_str(ld, line_str);
-
-						wmove(wptr, 0, 0);
-						winsertln(wptr);
-						nc_print_record_hr(wptr, cw, ld, 0);
+						nc_scroll_prev(pidx->data[plines->data[select]], fptr, wptr, ld, cw);
 						cur_y = getcury(wptr);
 					}
 					mvwchgat(wptr, cur_y, 0, -1, A_REVERSE, 0, NULL); 
@@ -1895,7 +1908,6 @@ void nc_read_loop(
 				refresh_on_detail_close(wptr, displayed_lines);
 				mvwvline(wptr_parent, 1, 0, 0, getmaxy(wptr_parent) - 2);
 				mvwvline(wptr_parent, 1, getmaxx(wptr_parent) - 1, 0, getmaxy(wptr_parent) - 2);
-//				box(wptr_parent, 0, 0);
 				wrefresh(wptr_parent);
 				c = 0;
 				break;
@@ -1906,16 +1918,8 @@ void nc_read_loop(
 					cur_y++;
 					select++;
 
-					/* Scroll down */
 					if (displayed_lines < plines->lines && cur_y == max_y) {
-						fseek(fptr, pidx->data[plines->data[select]], SEEK_SET);
-						line_str = fgets(linebuff, sizeof(linebuff), fptr);
-						ld = tokenize_str(ld, line_str);
-
-						wmove(wptr, 0, 0);
-						wdeleteln(wptr);
-						wmove(wptr, max_y - 1, 0);
-						nc_print_record_hr(wptr, cw, ld, max_y - 1);
+						nc_scroll_next(pidx->data[plines->data[select]], fptr, wptr, ld, cw);
 						cur_y = getcury(wptr);
 					}
 					mvwchgat(wptr, cur_y, 0, -1, A_REVERSE, 0, NULL); 
@@ -1931,15 +1935,8 @@ void nc_read_loop(
 
 					if (cur_y < 0) cur_y = -1;
 					
-					/* Scroll up */
 					if (displayed_lines < plines->lines && cur_y == -1 && select >= 0) {
-						fseek(fptr, pidx->data[plines->data[select]], SEEK_SET);
-						line_str = fgets(linebuff, sizeof(linebuff), fptr);
-						ld = tokenize_str(ld, line_str);
-
-						wmove(wptr, 0, 0);
-						winsertln(wptr);
-						nc_print_record_hr(wptr, cw, ld, 0);
+						nc_scroll_prev(pidx->data[plines->data[select]], fptr, wptr, ld, cw);
 						cur_y = getcury(wptr);
 					}
 					mvwchgat(wptr, cur_y, 0, -1, A_REVERSE, 0, NULL); 
@@ -1979,8 +1976,8 @@ void nc_read_loop(
 void nc_read_setup(int sel_year, int sel_month) {
 	/* LINES - 1 to still display the footer under wptr_read */
 
-	struct DynamicInts *pidx = index_csv();
-	struct SelectedRecord selectedrecord_ , *sr = &selectedrecord_;
+	DynInts *pidx = index_csv();
+	SelectedRecord selectedrecord_ , *sr = &selectedrecord_;
 	FILE *fptr = open_csv("r");
 
 	WINDOW *wptr_read = newwin(LINES - 1, 0, 0, 0);
@@ -1995,10 +1992,11 @@ void nc_read_setup(int sel_year, int sel_month) {
 	getmaxyx(wptr_read, max_y, max_x);
 
 	WINDOW *wptr_lines;
-	struct DynamicInts *plines;
+	DynInts *plines;
 
 	wptr_lines = create_lines_subwindow(max_y - 1, max_x, 1, x_off);
 	wrefresh(wptr_lines);
+
 	if (!sel_year) sel_year = nc_read_select_year(wptr_read, fptr);
 	if (sel_year == -1) {
 		mvwxcprintw(wptr_read, max_y / 2, 
@@ -2047,6 +2045,7 @@ void nc_read_setup(int sel_year, int sel_month) {
 	plines = NULL;
 	fclose(fptr);
 	fptr = NULL;
+
 	nc_exit_window(wptr_lines);
 	nc_exit_window(wptr_read);
 
@@ -2136,7 +2135,7 @@ void edit_transaction(void) {
 
 	legacy_read_csv();
 	
-	struct DynamicInts *pcsvindex = index_csv();
+	DynInts *pcsvindex = index_csv();
 
 	do {
 		puts("Enter a line number");
