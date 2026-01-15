@@ -21,7 +21,7 @@
 #define REALLOC_THRESHOLD 64
 #define INPUT_MSG_Y_OFFSET 2
 
-#define MAX_LEN_AMOUNT 11
+#define MAX_LEN_AMOUNT 9
 #define MAX_LEN_DAY_MON 2
 #define MIN_LEN_DAY_MON 1
 #define MAX_LEN_YEAR 4
@@ -29,8 +29,17 @@
 
 #define CURRENT_YEAR 2026 // FIX This is to not be hard coded
 
-static bool debug;
-static bool cli_mode;
+bool debug;
+bool cli_mode;
+
+enum MenuKeys {
+	NO_SELECT = 0,
+	ADD = 1,
+	EDIT = 2,
+	READ = 3,
+	QUIT = 4,
+	RESIZE = 5
+} menukeys;
 
 const char *months[] = {
 	"JAN", 
@@ -156,7 +165,7 @@ char *nc_user_input(int n, WINDOW *wptr) {
 	int length = strnlen(buffer, buffersize);
 
 	if (buffer[length] != '\0') {
-		mvwxcprintw(wptr, max_y - 2, "Input is too long");
+		mvwxcprintw(wptr, max_y - BOX_OFFSET, "Input is too long");
 		int c = 0;
 		while (c != '\n') {
 			c = getchar();
@@ -165,12 +174,12 @@ char *nc_user_input(int n, WINDOW *wptr) {
 	}
 
 	if (length < 1) {
-		mvwxcprintw(wptr, max_y - 2, "Input is too short");
+		mvwxcprintw(wptr, max_y - BOX_OFFSET, "Input is too short");
 		goto FAIL;
 	}
 
 	if (strstr(buffer, ",")) {
-		mvwxcprintw(wptr, max_y - 2, "No commas allowed");
+		mvwxcprintw(wptr, max_y - BOX_OFFSET, "No commas allowed");
 		goto FAIL;
 	}
 
@@ -224,7 +233,7 @@ int nc_input_n_digits(WINDOW *wptr, int max_len, int min_len) {
 	}
 
 	if ((int)strlen(str) < min_len) {
-		mvwxcprintw(wptr, getmaxy(wptr) - 2, "Input is too short");
+		mvwxcprintw(wptr, getmaxy(wptr) - BOX_OFFSET, "Input is too short");
 		wrefresh(wptr);
 		free(str);
 		str = NULL;
@@ -233,7 +242,7 @@ int nc_input_n_digits(WINDOW *wptr, int max_len, int min_len) {
 
 	for (int i = 0; i < (int)strlen(str); i++) {
 		if (!isdigit(*(str + i)) && (*(str + i) != '\n' || *(str + i) != '\0')) {
-			mvwxcprintw(wptr, getmaxy(wptr) - 2, 
+			mvwxcprintw(wptr, getmaxy(wptr) - BOX_OFFSET, 
 			   "Invalid character, must be digits");
 			wrefresh(wptr);
 			free(str);
@@ -423,7 +432,7 @@ int nc_input_month(void) {
 	month = nc_input_n_digits(wptr_input, MAX_LEN_DAY_MON, 1);
 	while(month <= 0 || month > 12) {
 		clear_input_error_message(wptr_input);
-		mvwxcprintw(wptr_input, getmaxy(wptr_input) - 2, "Invalid Month");
+		mvwxcprintw(wptr_input, getmaxy(wptr_input) - BOX_OFFSET, "Invalid Month");
 		month = nc_input_n_digits(wptr_input, MAX_LEN_DAY_MON, 1);
 	} 
 
@@ -456,7 +465,7 @@ int nc_input_day(int month, int year) {
 	while(day == -1 || dayexists(day, month, year) == false) {
 		clear_input_error_message(wptr_input);
 		if (dayexists(day, month, year) == false) { 
-			mvwxcprintw(wptr_input, getmaxy(wptr_input) - 2, "Not a valid day");
+			mvwxcprintw(wptr_input, getmaxy(wptr_input) - BOX_OFFSET, "Not a valid day");
 			wrefresh(wptr_input);
 		}
 		day = nc_input_n_digits(wptr_input, MAX_LEN_DAY_MON, MIN_LEN_DAY_MON);
@@ -928,8 +937,8 @@ struct DynamicInts *index_csv(void) {
 int nc_confirm_record(struct LineData *ld) {
 	WINDOW *wptr = create_input_subwindow();
 	mvwxcprintw(wptr, 0, "Confirm Record");
-	nc_print_record_vert(wptr, ld, 2);
-	mvwxcprintw(wptr, getmaxy(wptr) - 2, "(Y)es  /  (N)o");
+	nc_print_record_vert(wptr, ld, BOX_OFFSET);
+	mvwxcprintw(wptr, getmaxy(wptr) - BOX_OFFSET, "(Y)es  /  (N)o");
 	wrefresh(wptr);
 
 	int c = 0;
@@ -1630,7 +1639,7 @@ int nc_select_field_to_edit(WINDOW* wptr) {
 		switch(c) {
 			case('j'):
 			case(KEY_DOWN):
-				if (select + 1 <= 6) {
+				if (select + 1 <= (INPUT_WIN_ROWS - BOX_OFFSET)) {
 					mvwchgat(wptr, select, 0, -1, A_NORMAL, 0, NULL);
 					select++;
 					mvwchgat(wptr, select, 0, -1, A_REVERSE, 0, NULL);
@@ -1684,9 +1693,9 @@ void nc_edit_transaction(int linenum) {
 
 	memcpy(pLd, ld, sizeof(*ld));
 
-	nc_print_record_vert(wptr_edit, ld, 2);
+	nc_print_record_vert(wptr_edit, ld, BOX_OFFSET);
 
-	mvwprintw(wptr_edit, 6, 2, "%s", "Delete");
+	mvwprintw(wptr_edit, INPUT_WIN_ROWS - BOX_OFFSET, BOX_OFFSET, "%s", "Delete");
 
 	box(wptr_edit, 0, 0);
 	wrefresh(wptr_edit);
@@ -1749,7 +1758,7 @@ void show_detail_subwindow(char *line) {
 	mvwxcprintw(wptr_detail, 0, "Details");
 	struct LineData linedata_, *ld = &linedata_;
 	ld = tokenize_str(ld, line);
-	nc_print_record_vert(wptr_detail, ld, 2);
+	nc_print_record_vert(wptr_detail, ld, BOX_OFFSET);
 	nc_exit_window_key(wptr_detail);
 }
 
@@ -1838,8 +1847,7 @@ void nc_read_loop(
 					cur_y++;
 					select++;
 
-					/* Handle case where there's more records than the window
-					 * can display at once */
+					/* Scroll down */
 					if (displayed_lines < plines->lines && cur_y == max_y) {
 						fseek(fptr, pidx->data[plines->data[select]], SEEK_SET);
 						line_str = fgets(linebuff, sizeof(linebuff), fptr);
@@ -1863,6 +1871,8 @@ void nc_read_loop(
 					select--;
 
 					if (cur_y < 0) cur_y = -1;
+					
+					/* Scroll up */
 					if (displayed_lines < plines->lines && cur_y == -1 && select >= 0) {
 						fseek(fptr, pidx->data[plines->data[select]], SEEK_SET);
 						line_str = fgets(linebuff, sizeof(linebuff), fptr);
@@ -1889,28 +1899,79 @@ void nc_read_loop(
 				wrefresh(wptr_parent);
 				c = 0;
 				break;
+			case(KEY_NPAGE):
+				for (int i = 0; i < 10; i++) {
+				if (select + 1 < plines->lines) {
+					mvwchgat(wptr, cur_y, 0, -1, A_NORMAL, 0, NULL); 
+					cur_y++;
+					select++;
+
+					/* Scroll down */
+					if (displayed_lines < plines->lines && cur_y == max_y) {
+						fseek(fptr, pidx->data[plines->data[select]], SEEK_SET);
+						line_str = fgets(linebuff, sizeof(linebuff), fptr);
+						ld = tokenize_str(ld, line_str);
+
+						wmove(wptr, 0, 0);
+						wdeleteln(wptr);
+						wmove(wptr, max_y - 1, 0);
+						nc_print_record_hr(wptr, cw, ld, max_y - 1);
+						cur_y = getcury(wptr);
+					}
+					mvwchgat(wptr, cur_y, 0, -1, A_REVERSE, 0, NULL); 
+				}
+				}
+				break;
+			case(KEY_PPAGE):
+				for (int i = 0; i < 10; i++) {
+				if (select - 1 >= 0) {
+					mvwchgat(wptr, cur_y, 0, -1, A_NORMAL, 0, NULL); 
+					cur_y--;
+					select--;
+
+					if (cur_y < 0) cur_y = -1;
+					
+					/* Scroll up */
+					if (displayed_lines < plines->lines && cur_y == -1 && select >= 0) {
+						fseek(fptr, pidx->data[plines->data[select]], SEEK_SET);
+						line_str = fgets(linebuff, sizeof(linebuff), fptr);
+						ld = tokenize_str(ld, line_str);
+
+						wmove(wptr, 0, 0);
+						winsertln(wptr);
+						nc_print_record_hr(wptr, cw, ld, 0);
+						cur_y = getcury(wptr);
+					}
+					mvwchgat(wptr, cur_y, 0, -1, A_REVERSE, 0, NULL); 
+				}
+				}
+				break;
 			case('a'):
 			case(KEY_F(1)):
-				sr->flag = 1;
+				sr->flag = ADD;
 				sr->index = plines->data[select];
 				return;
 			case('e'):
 			case(KEY_F(2)):
-				sr->flag = 2;
+				sr->flag = EDIT;
 				sr->index = plines->data[select];
 				return;
 			case('r'):
 			case(KEY_F(3)):
-				sr->flag = 3;
+				sr->flag = READ;
 				sr->index = 0;
 			case('q'):
 			case(KEY_F(4)):
-				sr->flag = 0;
+				sr->flag = QUIT;
+				sr->index = 0;
+				return;
+			case(KEY_RESIZE):
+				sr->flag = RESIZE;
 				sr->index = 0;
 				return;
 		}
 	}
-	sr->flag = 0;
+	sr->flag = NO_SELECT;
 	sr->index = 0;
 	return; // no selection
 }
@@ -1970,6 +2031,8 @@ void nc_read_setup(int sel_year, int sel_month) {
 
 	print_column_headers(wptr_read, x_off);
 
+	nc_print_footer(stdscr);
+	refresh();
 	box(wptr_read, 0, 0);
 	mvwprintw(wptr_read, 0, x_off, "%d %s", sel_year, months[sel_month - 1]);
 	wrefresh(wptr_read);
@@ -1988,17 +2051,24 @@ void nc_read_setup(int sel_year, int sel_month) {
 	nc_exit_window(wptr_read);
 
 	switch(sr->flag) {
-		case(0): // 0 is no selection
+		case(NO_SELECT): // 0 is no selection
 			nc_read_setup(0, 0);
 			break;
-		case(1):
+		case(ADD):
 			nc_add_transaction(sel_year, sel_month);
 			break;
-		case(2):
+		case(EDIT):
 			nc_edit_transaction(sr->index);
 			nc_read_setup(sel_year, sel_month);
 			break;
-		case(3):
+		case(READ):
+			nc_read_setup(sel_year, sel_month);
+		case(QUIT):
+			break;
+		case(RESIZE):
+			while (test_terminal_size() == -1) {
+				getch();
+			}
 			nc_read_setup(sel_year, sel_month);
 		default:
 			break;
