@@ -34,7 +34,7 @@ void clear_input_error_message(WINDOW *wptr) {
 	wrefresh(wptr);
 }
 
-void calculate_columns(struct ColumnWidth *cw) {
+void calculate_columns(struct ColumnWidth *cw, int max_x) {
 
 	cw->date = DATE_X;
 	cw->trns = TRNS_X;
@@ -42,15 +42,15 @@ void calculate_columns(struct ColumnWidth *cw) {
 
 	int static_columns = cw->date + cw->trns + cw->amnt;
 
-	if (cw->max_x < MIN_COLUMNS) {
+	if (max_x < MIN_COLUMNS) {
 		cw->date = 6;
 		cw->trns = 5;
 		int small_scr = cw->date + cw->trns + cw->amnt;
-		cw->catg = (cw->max_x - small_scr) / 3;
-		cw->desc = (cw->max_x - small_scr) / 3 + cw->catg;
-	} else if ((cw->max_x - static_columns) / 2 < 64) {
-		cw->catg = (cw->max_x - static_columns) / 3;
-		cw->desc = (cw->max_x - static_columns) / 3 + cw->catg;
+		cw->catg = (max_x - small_scr) / 3;
+		cw->desc = (max_x - small_scr) / 3 + cw->catg;
+	} else if ((max_x - static_columns) / 2 < 64) {
+		cw->catg = (max_x - static_columns) / 3;
+		cw->desc = (max_x - static_columns) / 3 + cw->catg;
 	} else {
 		cw->desc = 64;
 		cw->catg = 64;
@@ -59,12 +59,11 @@ void calculate_columns(struct ColumnWidth *cw) {
 
 void print_column_headers(WINDOW *wptr, int x_off) {
 	struct ColumnWidth column_width, *cw = &column_width;
-	cw->max_x = getmaxx(wptr);
-	cw->max_x -= x_off;
 	
-	calculate_columns(cw);
 
 	int cur = x_off;
+
+	calculate_columns(cw, getmaxx(wptr) - x_off);
 
 	mvwprintw(wptr, 1, cur, "DATE");
 
@@ -76,7 +75,7 @@ void print_column_headers(WINDOW *wptr, int x_off) {
 	mvwprintw(wptr, 1, cur += cw->catg, "DESCRIPTION");
 	mvwprintw(wptr, 1, cur += cw->desc, "TYPE");
 	mvwprintw(wptr, 1, cur += cw->trns, "AMOUNT");
-	mvwchgat(wptr, 1, x_off, cw->max_x - 2, A_REVERSE, 0, NULL);
+	mvwchgat(wptr, 1, x_off, getmaxx(wptr) - x_off * 2, A_REVERSE, 0, NULL);
 
 	wrefresh(wptr);
 }

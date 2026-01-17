@@ -29,7 +29,6 @@
 #define BOX_OFFSET 2
 
 typedef struct ColumnWidth {
-	int max_x;
 	int date;
 	int catg;
 	int desc;
@@ -45,7 +44,7 @@ extern int test_terminal_size(void);
  * category width into catg, description width into desc, transaction type
  * width into trns, and amount into amnt.
  */
-extern void calculate_columns(struct ColumnWidth *cw);
+extern void calculate_columns(struct ColumnWidth *cw, int max_x);
 
 /*
  * Print headers for the reading data to wptr, column width is calculated
