@@ -1572,9 +1572,9 @@ DynInts *get_matching_line_nums(FILE *fptr, int month, int year) {
 	char *str;
 
 	if (seek_beyond_header(fptr) == -1) {
-		if (cli_mode == true) {
-			puts("Failed to read header");
-		}
+		perror("Unable to read header");
+		free(lines);
+		return NULL;
 	}
 
 	while (1) {
