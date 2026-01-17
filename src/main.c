@@ -860,8 +860,8 @@ void nc_add_transaction(int year, int month) {
 	struct LineData userlinedata_, *uld = &userlinedata_;
 	DynInts *pidx = index_csv();
 
-	FILE *fptr = open_csv("r+");
-	fseek(fptr, 0L, SEEK_END);
+//	FILE *fptr = open_csv("r+");
+//	fseek(fptr, 0L, SEEK_END);
 
 	year > 0 ? (uld->year = year) : (uld->year = nc_input_year());
 	month > 0 ? (uld->month = month) : (uld->month = nc_input_month());
@@ -895,7 +895,7 @@ CLEANUP:
 	free(pidx);
 	free(uld->category);
 	free(uld->desc);
-	fclose(fptr);
+//	fclose(fptr);
 	nc_read_setup(uld->year, uld->month);
 }
 
@@ -903,8 +903,8 @@ void add_transaction(void) {
 	struct LineData userlinedata_, *uld = &userlinedata_;
 	DynInts *pidx = index_csv();
 
-	FILE *fptr = open_csv("r+");
-	fseek(fptr, 0L, SEEK_END);
+//	FILE *fptr = open_csv("r+");
+//	fseek(fptr, 0L, SEEK_END);
 
 	uld->year = input_year();
 	uld->month = input_month();
@@ -943,7 +943,7 @@ void add_transaction(void) {
 CLEANUP:
 	if (debug == true) puts("CLEANUP");
 	free(pidx);
-	fclose(fptr);
+//	fclose(fptr);
 	free(uld->category);
 	free(uld->desc);
 }
@@ -958,7 +958,6 @@ DynInts *index_csv(void) {
 
 	pidx->lines = 0;
 	FILE *fptr = open_csv("r");
-	assert(ftell(fptr) == 0);
 	char linebuff[LINE_BUFFER];
 
 	while (1) {
@@ -1885,8 +1884,7 @@ void TEST_nc_print_records_by_category(WINDOW *wptr, FILE*fptr, DynInts *prsc) {
 	char *line;
 
 	int cur = 0;
-	cw->max_x = getmaxx(wptr) - BOX_OFFSET;
-	calculate_columns(cw);
+	calculate_columns(cw, getmaxx(wptr) + BOX_OFFSET);
 	int j = 0;
 	for (int i = 0; i < prsc->lines - j; i++) {
 		if (prsc->data[i] == 0) {
@@ -1921,12 +1919,11 @@ void nc_read_loop(
 	LineData linedata_, *ld = &linedata_;
 	int max_y, max_x;
 	getmaxyx(wptr, max_y, max_x);
-	cw->max_x = max_x + 2; // 2 Offset
 	int displayed_lines = 0;
 	char *line_str;
 	char linebuff[LINE_BUFFER];
 
-	calculate_columns(cw);
+	calculate_columns(cw, max_x + BOX_OFFSET);
 
 	/* 
 	 * Print enough lines to fill the window but not more
@@ -2161,12 +2158,12 @@ void nc_read_setup(int sel_year, int sel_month) {
 	}
 
 	/* THIS IS A TEST */
-	print_column_headers(wptr_read, x_off);
-	mvwxcprintw(wptr_lines, 0, "THIS IS A TEST THIS IS A TEST THIS IS A TEST");
-	DynInts *prsc = sort_by_category(fptr, pidx, plines, sel_year, sel_month);
-	TEST_nc_print_records_by_category(wptr_lines, fptr, prsc);
-	wclear(wptr_lines);
-	free(prsc);
+//	print_column_headers(wptr_read, x_off);
+//	mvwxcprintw(wptr_lines, 0, "THIS IS A TEST THIS IS A TEST THIS IS A TEST");
+//	DynInts *prsc = sort_by_category(fptr, pidx, plines, sel_year, sel_month);
+//	TEST_nc_print_records_by_category(wptr_lines, fptr, prsc);
+//	wclear(wptr_lines);
+//	free(prsc);
 	/* END TEST */
 
 	print_column_headers(wptr_read, x_off);
