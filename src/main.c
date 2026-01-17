@@ -961,7 +961,7 @@ DynInts *index_csv(void) {
 	char linebuff[LINE_BUFFER];
 
 	while (1) {
-		char* test = fgets(linebuff, sizeof(linebuff), fptr);
+		char *test = fgets(linebuff, sizeof(linebuff), fptr);
 		if (test == NULL) {
 			break;
 		}
@@ -980,7 +980,7 @@ DynInts *index_csv(void) {
 	assert(ftell(fptr) == 0);
 
 	for (int i = 0; i < pidx->lines; i++) {
-		char* test = fgets(linebuff, sizeof(linebuff), fptr);
+		char *test = fgets(linebuff, sizeof(linebuff), fptr);
 		if (test == NULL) {
 			break;
 		}
