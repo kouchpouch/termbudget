@@ -33,6 +33,7 @@
     - ( ) Add ability to escape the menu when accepting a user input
     - ( ) Add page up/page down/end/home keys for navigating lists
     - ( ) Add sort by feature
+
 #### Main Feature Set
     - (*) Create a transaction
     - (*) View     " "
