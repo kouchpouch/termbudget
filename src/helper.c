@@ -12,7 +12,7 @@
 // 97 to 122 == lowercase, 65 to 90 == uppercase ASCII codes. 32 between //
 // --------------------------------------------------------------------- //
 
-int upper(char* ltr) {
+int upper(char *ltr) {
 	if (*ltr > SCHAR_MAX - 32) { // Check integer overflow
 		;
 	} else {
@@ -31,7 +31,7 @@ int upper(char* ltr) {
 	return 0;
 }
 
-int lower(char* ltr) {
+int lower(char *ltr) {
 	if (*ltr < SCHAR_MAX) {
 		;
 	} else {

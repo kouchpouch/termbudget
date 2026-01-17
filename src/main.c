@@ -89,7 +89,7 @@ void nc_print_record_hr(WINDOW *wptr, ColumnWidth *cw, struct LineData *ld, int 
 void nc_print_record_vert(WINDOW *wptr, struct LineData *ld, int x_off);
 struct Categories *list_categories(int month, int year);
 DynInts *index_csv();
-int move_temp_to_main(FILE* tempfile, FILE* mainfile);
+int move_temp_to_main(FILE *tempfile, FILE *mainfile);
 int delete_csv_record(int linetodelete);
 
 char *user_input(int n) {
@@ -1684,7 +1684,7 @@ void nc_print_record_vert(WINDOW *wptr, struct LineData *ld, int x_off) {
 	mvwprintw(wptr, 5, x_off, "Amt.--> %.2f", ld->amount);
 }
 
-int nc_select_field_to_edit(WINDOW* wptr) {
+int nc_select_field_to_edit(WINDOW *wptr) {
 	mvwchgat(wptr, 1, 0, -1, A_REVERSE, 0, NULL);
 	keypad(wptr, true);
 	int select = 1;
@@ -1732,7 +1732,7 @@ void nc_edit_transaction(int linenum) {
 	DynInts *pidx = index_csv();
 
 	WINDOW *wptr_edit = create_input_subwindow();
-	FILE* fptr = open_csv("r+");
+	FILE *fptr = open_csv("r+");
 	fseek(fptr, pidx->data[linenum], SEEK_SET);
 
 	char linebuff[LINE_BUFFER];
@@ -1845,7 +1845,7 @@ void refresh_on_detail_close(WINDOW *wptr, WINDOW *wptr_parent, int n) {
 	wrefresh(wptr_parent);
 }
 
-void nc_scroll_prev(long b, FILE *fptr, WINDOW* wptr, ColumnWidth *cw) {
+void nc_scroll_prev(long b, FILE *fptr, WINDOW *wptr, ColumnWidth *cw) {
 	fseek(fptr, b, SEEK_SET);
 	char linebuff[LINE_BUFFER];
 	char *line_str = fgets(linebuff, sizeof(linebuff), fptr);
@@ -1877,7 +1877,7 @@ void nc_scroll_next(long b, FILE *fptr, WINDOW *wptr, ColumnWidth *cw) {
 	nc_print_record_hr(wptr, cw, ld, getmaxy(wptr) - 1);
 }
 
-void TEST_nc_print_records_by_category(WINDOW *wptr, FILE*fptr, DynInts *prsc) {
+void TEST_nc_print_records_by_category(WINDOW *wptr, FILE *fptr, DynInts *prsc) {
 	ColumnWidth column_width, *cw = &column_width;
 	LineData linedata, *ld = &linedata;
 	char linebuffer[LINE_BUFFER];
@@ -2215,7 +2215,7 @@ SELECT_DATE_FAIL:
 	refresh();
 }
 
-int move_temp_to_main(FILE* tempfile, FILE* mainfile) {
+int move_temp_to_main(FILE *tempfile, FILE *mainfile) {
 	if (fclose(mainfile) == -1) {
 		puts("Failed to close main file");
 		return -1;
@@ -2270,7 +2270,7 @@ void edit_transaction(void) {
 	int humantarget;
 	struct LineData linedata, *ld = &linedata;
 
-	FILE* fptr = open_csv("r+");
+	FILE *fptr = open_csv("r+");
 	assert(ftell(fptr) == 0);
 
 	legacy_read_csv();
@@ -2356,7 +2356,7 @@ void edit_transaction(void) {
 	fptr = NULL;
 }
 
-int nc_main_menu(WINDOW* wptr) {
+int nc_main_menu(WINDOW *wptr) {
 	nc_print_welcome(wptr);
 	nc_print_footer(wptr);
 	if (debug == true) {
@@ -2444,7 +2444,7 @@ void main_menu(void) {
 }
 
 int main(int argc, char **argv) {
-	FILE* fptr = open_csv("a"); // Make sure the CSV exists
+	FILE *fptr = open_csv("a"); // Make sure the CSV exists
 	fseek(fptr, 0, SEEK_END);
 	if (ftell(fptr) == 0) {
 		fputs("month,day,year,category,description,transtype,value\n", fptr);
