@@ -56,7 +56,7 @@ const char *months[] = {
 	"DEC"
 };
 
-typedef struct LineData {
+struct LineData {
 	int month;
 	int day;
 	int year;
@@ -65,8 +65,7 @@ typedef struct LineData {
 	int transtype;
 	float amount;
 	int linenum;
-	int offset;
-} LineData;
+};
 
 typedef struct DynamicInts {
 	int lines;
@@ -655,6 +654,12 @@ FILE *open_temp_csv(void) {
 	return tmpfptr;
 }
 
+void seek_n_fields(char **line, int n) {
+	for (int i = 0; i < n; i++) {
+		strsep(line, ",");
+	}
+}
+
 /* Reads the header of the file until a newline is found */
 int seek_beyond_header(FILE *fptr) {
 	int i = 0;
@@ -716,7 +721,7 @@ struct Categories *list_categories(int month, int year) {
 			goto DUPLICATE;
 		}
 
-		strsep(&line, ","); // Skip the day
+		seek_n_fields(&line, 1);
 		
 		if (year != atoi(strsep(&line, ","))) {
 			goto DUPLICATE;
@@ -759,7 +764,8 @@ DUPLICATE:
 
 /* Returns an array of integers representing the byte offsets of records
  * sorted by category */
-DynInts *sort_by_category(FILE *fptr, DynInts *pidx, DynInts *plines, int yr, int mo) {
+DynInts *sort_by_category(FILE *fptr, DynInts *pidx, DynInts *plines, 
+						  int yr, int mo) {
 	int realloc_counter = 0;
 	DynInts *prsc = malloc(sizeof(DynInts) + (sizeof(int) * REALLOC_THRESHOLD));
 	prsc->lines = 0;
@@ -791,11 +797,10 @@ DynInts *sort_by_category(FILE *fptr, DynInts *pidx, DynInts *plines, int yr, in
 			}
 
 			/* Throwaway all these date fields */
-			for (int k = 0; k < 3; k++) {
-				(void)strsep(&line, ",");
-			}
+			seek_n_fields(&line, 3);
 
 			token = strsep(&line, ",");
+
 			
 			if (token == NULL) {
 				free(prsc);
@@ -1194,13 +1199,15 @@ int *list_records_by_year(FILE *fptr) {
 		free(years);
 		return NULL;
 	}
-	(void)strsep(&str, ","); // month
-	(void)strsep(&str, ","); // day, throwaway
+	seek_n_fields(&str, 2);
+//	(void)strsep(&str, ","); // month
+//	(void)strsep(&str, ","); // day, throwaway
 	years[i] = atoi(strsep(&str, ",")); // year
 
 	while((str = fgets(linebuff, sizeof(linebuff), fptr)) != NULL) {
-		(void)strsep(&str, ","); // month
-		(void)strsep(&str, ","); // day, throwaway
+		seek_n_fields(&str, 2);
+//		(void)strsep(&str, ","); // month
+//		(void)strsep(&str, ","); // day, throwaway
 		year = atoi(strsep(&str, ",")); // year
 		if (year != years[i]) {
 			i++;
@@ -1242,7 +1249,8 @@ int *list_records_by_month(FILE *fptr, int matchyear) {
 
 	while((str = fgets(linebuff, sizeof(linebuff), fptr)) != NULL) {
 		month = atoi(strsep(&str, ","));
-		strsep(&str, ",");
+		seek_n_fields(&str, 1);
+//		strsep(&str, ",");
 		year = atoi(strsep(&str, ","));
 		if (matchyear == year) {
 			if (months[0] == 0) {
@@ -1584,7 +1592,8 @@ DynInts *get_matching_line_nums(FILE *fptr, int month, int year) {
 		}
 
 		line_month = atoi(strsep(&str, ","));
-		(void)atoi(strsep(&str, ","));
+		seek_n_fields(&str, 1);
+//		(void)atoi(strsep(&str, ","));
 		line_year = atoi(strsep(&str, ","));
 		if (year == line_year && month == line_month) {
 			if (realloc_counter == REALLOC_THRESHOLD - 1) {
@@ -1819,7 +1828,7 @@ void show_detail_subwindow(char *line) {
 	WINDOW *wptr_detail = create_input_subwindow();
 	box(wptr_detail, 0, 0);
 	mvwxcprintw(wptr_detail, 0, "Details");
-	LineData linedata_, *ld = &linedata_;
+	struct LineData linedata_, *ld = &linedata_;
 	ld = tokenize_str(ld, line);
 	nc_print_record_vert(wptr_detail, ld, BOX_OFFSET);
 	nc_exit_window_key(wptr_detail);
@@ -1852,7 +1861,7 @@ void nc_scroll_prev(long b, FILE *fptr, WINDOW* wptr, ColumnWidth *cw) {
 	if (line_str == NULL) {
 		return;
 	}
-	LineData linedata_, *ld = &linedata_;
+	struct LineData linedata_, *ld = &linedata_;
 	ld = tokenize_str(ld, line_str);
 
 	wmove(wptr, 0, 0);
@@ -1868,7 +1877,7 @@ void nc_scroll_next(long b, FILE *fptr, WINDOW *wptr, ColumnWidth *cw) {
 	if (line_str == NULL) {
 		return;
 	}
-	LineData linedata_, *ld = &linedata_;
+	struct LineData linedata_, *ld = &linedata_;
 	ld = tokenize_str(ld, line_str);
 
 	wmove(wptr, 0, 0);
@@ -1879,7 +1888,7 @@ void nc_scroll_next(long b, FILE *fptr, WINDOW *wptr, ColumnWidth *cw) {
 
 void TEST_nc_print_records_by_category(WINDOW *wptr, FILE*fptr, DynInts *prsc) {
 	ColumnWidth column_width, *cw = &column_width;
-	LineData linedata, *ld = &linedata;
+	struct LineData linedata, *ld = &linedata;
 	char linebuffer[LINE_BUFFER];
 	char *line;
 
@@ -1916,7 +1925,7 @@ void nc_read_loop(
 	DynInts *plines) {
 
 	ColumnWidth column_width, *cw = &column_width;
-	LineData linedata_, *ld = &linedata_;
+	struct LineData linedata_, *ld = &linedata_;
 	int max_y, max_x;
 	getmaxyx(wptr, max_y, max_x);
 	int displayed_lines = 0;
