@@ -1,5 +1,6 @@
 #ifndef HELPER_H
 #define HELPER_H
+#include <stdbool.h>
 
 /* Returns ltr ascii value to uppercase */
 extern int upper(char *ltr);

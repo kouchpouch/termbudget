@@ -9,6 +9,7 @@
 #include "helper.h"
 #include "sorter.h"
 #include "tui.h"
+#include "parser.h"
 
 #define CSV_DIR "./data.csv"
 #define CSV_BAK_DIR "./data.csv.bak"
@@ -654,27 +655,6 @@ FILE *open_temp_csv(void) {
 	return tmpfptr;
 }
 
-void seek_n_fields(char **line, int n) {
-	for (int i = 0; i < n; i++) {
-		strsep(line, ",");
-	}
-}
-
-/* Reads the header of the file until a newline is found */
-int seek_beyond_header(FILE *fptr) {
-	int i = 0;
-	char c = getc(fptr);
-	while (c != '\n' && c != EOF) {
-		c = getc(fptr);
-		i++;
-	}
-	if (i == 0) {
-		return -1;
-	} else {
-		return 0;
-	}
-}
-
 void print_record_vert(struct LineData *ld) {
 	printf(
 		"1.) Date-->  %d/%d/%d\n"
@@ -784,7 +764,8 @@ struct FlexArr *sort_by_category(FILE *fptr, struct FlexArr *pidx, struct FlexAr
 					realloc(prsc, sizeof(*prsc) + ((prsc->lines + REALLOC_THRESHOLD) * sizeof(char *)));
 				if (tmp == NULL) {
 					free(prsc);
-					return NULL;
+					prsc = NULL;
+					goto ERR_NULL;
 				}
 				prsc = tmp;
 			}
@@ -793,18 +774,18 @@ struct FlexArr *sort_by_category(FILE *fptr, struct FlexArr *pidx, struct FlexAr
 			line = fgets(linebuff, sizeof(linebuff), fptr);
 			if (line == NULL) {
 				free(prsc);
-				return NULL;
+				prsc = NULL;
+				goto ERR_NULL;
 			}
 
-			/* Throwaway all these date fields */
 			seek_n_fields(&line, 3);
 
 			token = strsep(&line, ",");
-
 			
 			if (token == NULL) {
 				free(prsc);
-				return NULL;
+				prsc = NULL;
+				goto ERR_NULL;
 			}
 
 			if (strcmp(token, pc->categories[i]) == 0) {
@@ -818,11 +799,11 @@ struct FlexArr *sort_by_category(FILE *fptr, struct FlexArr *pidx, struct FlexAr
 		realloc_counter++;
 	}
 
+ERR_NULL:
 	for (int i = 0; i < pc->count; i++) {
 		free(pc->categories[i]);
 	}
 	free(pc);
-
 	return prsc;
 }
 
@@ -1146,39 +1127,38 @@ FAIL:
 	return -1;
 }
 
-struct LineData *tokenize_str(struct LineData *pLd, char *str) {
-	char **psavestr = &str;
-	char *ptoken;
+/* Populates ld members with tokens from str */
+void tokenize_str(struct LineData *ld, char **str) {
+	char *token;
 	for (int i = 0; i < CSV_FIELDS; i++) {
-		ptoken = strsep(psavestr, ",");
-		if (ptoken == NULL) break;
+		token = strsep(str, ",");
+		if (token == NULL) break;
 		switch (i) {
 			case 0:
-				pLd->month = atoi(ptoken);
+				ld->month = atoi(token);
 				break;
 			case 1:
-				pLd->day = atoi(ptoken);
+				ld->day = atoi(token);
 				break;
 			case 2:
-				pLd->year = atoi(ptoken);
+				ld->year = atoi(token);
 				break;
 			case 3:
-				ptoken[strcspn(ptoken, "\n")] = '\0';
-				pLd->category = ptoken;
+				token[strcspn(token, "\n")] = '\0';
+				ld->category = token;
 				break;
 			case 4:
-				ptoken[strcspn(ptoken, "\n")] = '\0';
-				pLd->desc = ptoken;
+				token[strcspn(token, "\n")] = '\0';
+				ld->desc = token;
 				break;
 			case 5:
-				pLd->transtype = atoi(ptoken);
+				ld->transtype = atoi(token);
 				break;
 			case 6:
-				pLd->amount = atof(ptoken);
+				ld->amount = atof(token);
 				break;
 		}
 	}
-	return pLd;
 }
 
 int *list_records_by_year(FILE *fptr) {
@@ -1200,14 +1180,10 @@ int *list_records_by_year(FILE *fptr) {
 		return NULL;
 	}
 	seek_n_fields(&str, 2);
-//	(void)strsep(&str, ","); // month
-//	(void)strsep(&str, ","); // day, throwaway
 	years[i] = atoi(strsep(&str, ",")); // year
 
 	while((str = fgets(linebuff, sizeof(linebuff), fptr)) != NULL) {
 		seek_n_fields(&str, 2);
-//		(void)strsep(&str, ","); // month
-//		(void)strsep(&str, ","); // day, throwaway
 		year = atoi(strsep(&str, ",")); // year
 		if (year != years[i]) {
 			i++;
@@ -1250,7 +1226,6 @@ int *list_records_by_month(FILE *fptr, int matchyear) {
 	while((str = fgets(linebuff, sizeof(linebuff), fptr)) != NULL) {
 		month = atoi(strsep(&str, ","));
 		seek_n_fields(&str, 1);
-//		strsep(&str, ",");
 		year = atoi(strsep(&str, ","));
 		if (matchyear == year) {
 			if (months[0] == 0) {
@@ -1371,12 +1346,14 @@ void legacy_read_csv(void) {
 		puts("Failed to read header");
 	}
 
+	char *line;
 	while (1) {
 		linenum++;
-		if (fgets(linebuff, sizeof(linebuff), fptr) == NULL) {
+		line = fgets(linebuff, sizeof(linebuff), fptr);
+		if (line == NULL) {
 			break;
 		}
-		ld = tokenize_str(ld, linebuff);
+		tokenize_str(ld, &line);
 		ld->linenum = linenum;
 		if (ld->month == usermonth && ld->year == useryear) {
 			month_record_exists = true;
@@ -1490,6 +1467,7 @@ int nc_read_select_month(WINDOW *wptr, FILE* fptr, int year) {
 
 	int *months_arr = list_records_by_month(fptr, year);
 	int selected_month = 0;
+	int monlen = strlen(months[0]);
 
 	int print_y = 2;
 	int print_x = 2;
@@ -1511,7 +1489,7 @@ int nc_read_select_month(WINDOW *wptr, FILE* fptr, int year) {
 	}
 
 	wmove(wptr, print_y, print_x);
-	wchgat(wptr, 3, A_REVERSE, 0, NULL);
+	wchgat(wptr, monlen,A_REVERSE, 0, NULL);
 	box(wptr, 0, 0);
 	wrefresh(wptr);
 
@@ -1524,8 +1502,8 @@ int nc_read_select_month(WINDOW *wptr, FILE* fptr, int year) {
 			case ('j'):
 			case (KEY_DOWN):
 				if (temp_y - print_y + 1 < scr_idx) {
-					mvwchgat(wptr, temp_y, print_x, 3, A_NORMAL, 0, NULL);
-					mvwchgat(wptr, temp_y + 1, print_x, 3, A_REVERSE, 0, NULL);
+					mvwchgat(wptr, temp_y, print_x, monlen,A_NORMAL, 0, NULL);
+					mvwchgat(wptr, temp_y + 1, print_x, monlen,A_REVERSE, 0, NULL);
 					wrefresh(wptr);
 					cur_idx++;
 				}
@@ -1533,8 +1511,8 @@ int nc_read_select_month(WINDOW *wptr, FILE* fptr, int year) {
 			case ('k'):
 			case (KEY_UP):
 				if (temp_y - 1 >= print_y) {
-					mvwchgat(wptr, temp_y, print_x, 3, A_NORMAL, 0, NULL);
-					mvwchgat(wptr, temp_y - 1, print_x, 3, A_REVERSE, 0, NULL);
+					mvwchgat(wptr, temp_y, print_x, monlen, A_NORMAL, 0, NULL);
+					mvwchgat(wptr, temp_y - 1, print_x, monlen, A_REVERSE, 0, NULL);
 					wrefresh(wptr);
 					cur_idx--;
 				}
@@ -1593,7 +1571,6 @@ struct FlexArr *get_matching_line_nums(FILE *fptr, int month, int year) {
 
 		line_month = atoi(strsep(&str, ","));
 		seek_n_fields(&str, 1);
-//		(void)atoi(strsep(&str, ","));
 		line_year = atoi(strsep(&str, ","));
 		if (year == line_year && month == line_month) {
 			if (realloc_counter == REALLOC_THRESHOLD - 1) {
@@ -1751,7 +1728,7 @@ void nc_edit_transaction(int linenum) {
 		exit(1);
 	}
 
-	ld = tokenize_str(ld, line);
+	tokenize_str(ld, &line);
 
 	struct LineData *pLd = malloc(sizeof(*ld));
 
@@ -1829,7 +1806,7 @@ void show_detail_subwindow(char *line) {
 	box(wptr_detail, 0, 0);
 	mvwxcprintw(wptr_detail, 0, "Details");
 	struct LineData linedata_, *ld = &linedata_;
-	ld = tokenize_str(ld, line);
+	tokenize_str(ld, &line);
 	nc_print_record_vert(wptr_detail, ld, BOX_OFFSET);
 	nc_exit_window_key(wptr_detail);
 }
@@ -1862,7 +1839,7 @@ void nc_scroll_prev(long b, FILE *fptr, WINDOW *wptr, ColumnWidth *cw) {
 		return;
 	}
 	struct LineData linedata_, *ld = &linedata_;
-	ld = tokenize_str(ld, line_str);
+	tokenize_str(ld, &line_str);
 
 	wmove(wptr, 0, 0);
 	winsertln(wptr);
@@ -1878,7 +1855,7 @@ void nc_scroll_next(long b, FILE *fptr, WINDOW *wptr, ColumnWidth *cw) {
 		return;
 	}
 	struct LineData linedata_, *ld = &linedata_;
-	ld = tokenize_str(ld, line_str);
+	tokenize_str(ld, &line_str);
 
 	wmove(wptr, 0, 0);
 	wdeleteln(wptr);
@@ -1905,7 +1882,7 @@ void TEST_nc_print_records_by_category(WINDOW *wptr, FILE *fptr, struct FlexArr 
 		if (line == NULL) {
 			break;
 		}
-		ld = tokenize_str(ld, line);
+		tokenize_str(ld, &line);
 		nc_print_record_hr(wptr, cw, ld, cur);
 		cur++;
 	}
@@ -1920,8 +1897,8 @@ void nc_read_loop(WINDOW *wptr_parent, WINDOW *wptr, FILE *fptr,
 				  struct SelRecord *sr, struct FlexArr *pidx, 
 				  struct FlexArr *plines) {
 
-	ColumnWidth column_width, *cw = &column_width;
-	struct LineData linedata_, *ld = &linedata_;
+	ColumnWidth cw_, *cw = &cw_;
+	struct LineData ld_, *ld = &ld_;
 	int max_y, max_x;
 	getmaxyx(wptr, max_y, max_x);
 	int displayed_lines = 0;
@@ -1942,7 +1919,7 @@ void nc_read_loop(WINDOW *wptr_parent, WINDOW *wptr, FILE *fptr,
 	while (i < max_y && displayed_lines < plines->lines) {
 		fseek(fptr, pidx->data[plines->data[displayed_lines]], SEEK_SET);
 		line_str = fgets(linebuff, sizeof(linebuff), fptr);
-		ld = tokenize_str(ld, line_str);
+		tokenize_str(ld, &line_str);
 		nc_print_record_hr(wptr, cw, ld, i);
 		displayed_lines++;
 		i++;
@@ -2165,7 +2142,9 @@ void nc_read_setup(int sel_year, int sel_month) {
 	/* THIS IS A TEST */
 //	print_column_headers(wptr_read, x_off);
 //	mvwxcprintw(wptr_lines, 0, "THIS IS A TEST THIS IS A TEST THIS IS A TEST");
-//	struct FlexArr *prsc = sort_by_category(fptr, pidx, plines, sel_year, sel_month);
+
+	struct FlexArr *prsc = sort_by_category(fptr, pidx, plines, sel_year, sel_month);
+
 //	TEST_nc_print_records_by_category(wptr_lines, fptr, prsc);
 //	wclear(wptr_lines);
 //	free(prsc);
@@ -2183,6 +2162,9 @@ void nc_read_setup(int sel_year, int sel_month) {
 
 	free(plines);
 	plines = NULL;
+
+	free(prsc);
+	prsc = NULL;
 
 SELECT_DATE_FAIL:
 	free(pidx);
@@ -2283,7 +2265,7 @@ void edit_transaction(void) {
 	struct FlexArr *pcsvindex = index_csv();
 
 	do {
-		puts("Enter a line number");
+		puts("Enter line number");
 		humantarget = input_n_digits(sizeof(long long) + 1, 2);
 	} while (humantarget <= 0 || humantarget > pcsvindex->lines);
 
@@ -2307,7 +2289,7 @@ void edit_transaction(void) {
 		exit(1);
 	}
 
-	ld = tokenize_str(ld, str);
+	tokenize_str(ld, &str);
 
 	struct LineData *pLd = malloc(sizeof(*ld));
 	if (pLd == NULL) {
