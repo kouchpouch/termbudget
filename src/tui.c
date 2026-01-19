@@ -4,6 +4,11 @@
 #include <stdlib.h>
 #include "tui.h"
 
+static void window_creation_fail() {
+	perror("Failed to create ncurses window");
+	exit(1);
+}
+
 int test_terminal_size(void) {
 	if (getmaxy(stdscr) < MIN_ROWS || getmaxx(stdscr) < MIN_COLUMNS) {
 		mvprintw(0, 0, "Terminal is too small");
@@ -94,9 +99,38 @@ int mvwxcprintw(WINDOW *wptr, int y, char *str) {
 WINDOW *create_lines_subwindow(int max_y, int max_x, int y_off, int x_off) {
 	WINDOW *wptr = newwin(max_y - y_off * 2, max_x - x_off * 2, y_off + 1, x_off);
 	if (wptr == NULL) {
-		perror("Failed to create ncurses window");
+		window_creation_fail();
 	}
 	keypad(wptr, true);
+	return wptr;
+}
+
+WINDOW *create_category_select_subwindow(int n) {
+	int win_y;
+	if (n + BOX_OFFSET > getmaxy(stdscr)) {
+		win_y = getmaxy(stdscr) - BOX_OFFSET;
+	} else {
+		win_y = n - BOX_OFFSET;
+	}
+
+	int win_x;
+	if (getmaxx(stdscr) >= MAX_LEN_CATG) {
+		win_x = MAX_LEN_CATG + BOX_OFFSET;
+	} else {
+		win_x = getmaxx(stdscr);
+	}
+
+	int begin_y = getmaxy(stdscr) / 2 - (n) / 2;
+	int begin_x = getmaxx(stdscr) / 2 - win_x / 2;
+	WINDOW *wptr = newwin(win_y, win_x, begin_y, begin_x);
+	if (wptr == NULL) {
+		window_creation_fail();
+	}
+	box(wptr, 0, 0);
+	mvwxcprintw(wptr, 0, "Select Category");
+	mvwxcprintw(wptr, getmaxy(wptr) - 1, 
+				"Press 'c' to Create a Category");
+	wrefresh(wptr);
 	return wptr;
 }
 
@@ -113,11 +147,12 @@ WINDOW *create_input_subwindow(void) {
 		win_x = max_x;
 	}
 
-	WINDOW *wptr = newwin(win_y, win_x, (max_y / 2) - win_y / 2, (max_x / 2) - win_x / 2);
+	WINDOW *wptr = newwin(win_y, win_x, 
+					   	 (max_y / 2) - win_y / 2, 
+					   	 (max_x / 2) - win_x / 2);
 
 	if (wptr == NULL) {
-		perror("Failed to create ncurses window");
-		return NULL;
+		window_creation_fail();
 	}
 
 	box(wptr, 0, 0);

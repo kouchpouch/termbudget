@@ -27,6 +27,9 @@
 #define MIN_ROWS 20
 #define INPUT_WIN_ROWS 8
 #define BOX_OFFSET 2
+#define MAX_LEN_CATG 64
+#define MAX_LEN_DESC 64
+#define INPUT_MSG_Y_OFFSET 2
 
 typedef struct ColumnWidth {
 	int date;
@@ -74,6 +77,10 @@ extern int mvwxcprintw(WINDOW *wptr, int y, char *str);
 
 /* Creates the subwindow for the read function */
 extern WINDOW *create_lines_subwindow(int max_y, int max_x, int y_off, int x_off);
+
+/* Creates the subwindow to select a category, with dimensions based on
+ * n categories */
+extern WINDOW *create_category_select_subwindow(int n);
 
 /* Creates a subwindow for user input with dimensions based on stdscr */
 extern WINDOW *create_input_subwindow(void);
