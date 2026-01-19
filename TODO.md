@@ -4,11 +4,14 @@
         - ( ) Categories
             - ( ) View transactions based on category
             - (*) Add categories
-            - ( ) Delete categories
+            - (*) Delete categories NOTE: User must delete all transactions
+                    assoc. with the category for it to be deleted.
             - ( ) Allocate monthly budget by category
             - (*) List Categories
         - (*) Ability to edit a specific field
-        - (*) Command line arguments?
+        - (*) Command line arguments
+            - (*) Debug
+            - (*) CLI Mode
     - (*) Get rid of strtok and use strsep
     - ( ) Create some unit tests for input validation
     - (*) Sorting The CSV By Date
@@ -31,7 +34,7 @@
     - (*) Use realloc in sorter.c (sort_csv()) instead of having a fixed
             number of lines to index
     - ( ) Add ability to escape the menu when accepting a user input
-    - ( ) Add page up/page down/end/home keys for navigating lists
+    - (*) Add page up/page down/end/home keys for navigating lists
     - ( ) Add sort by feature
 
 #### Main Feature Set
@@ -77,3 +80,5 @@
             year and month, the TUI doesn't refresh properly.
     - (*) Sorter function can't handle adding a record between two years which
             doesn't already exist.
+    - ( ) Input too short warning when entering a single digit line number in 
+            CLI mode
