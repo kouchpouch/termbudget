@@ -2132,7 +2132,6 @@ void nc_read_setup(int sel_year, int sel_month, int sort) {
 		return;
 	}
 
-	int x_off = 2;
 	int max_y, max_x;
 	getmaxyx(wptr_read, max_y, max_x);
 
@@ -2170,22 +2169,29 @@ void nc_read_setup(int sel_year, int sel_month, int sort) {
 	}
 
 	struct FlexArr *psc;
+	char *sort_text;
 
 	switch(sort) {
 		case(DATE):
 			psc = sort_by_date(fptr, pidx, plines);	
+			sort_text = "Date";
 			break;
 		case(CATEGORY):
 			psc = sort_by_category(fptr, pidx, plines, sel_year, sel_month);
+			sort_text = "Category";
 			break;
 		default:
 			psc = sort_by_date(fptr, pidx, plines);	
+			sort_text = "Date";
 			break;
 	}
 
-	print_column_headers(wptr_read, x_off);
+	print_column_headers(wptr_read, BOX_OFFSET);
 	box(wptr_read, 0, 0);
-	mvwprintw(wptr_read, 0, x_off, "%d %s %d", sel_year, months[sel_month - 1], sort);
+	mvwprintw(wptr_read, 0, BOX_OFFSET, "%d %s", sel_year, months[sel_month - 1]);
+	mvwprintw(wptr_read, 0, 
+			  max_x - strlen(sort_text) - strlen("Sort By: ") - BOX_OFFSET, 
+			  "Sort By: %s", sort_text);
 	wrefresh(wptr_read);
 
 	nc_read_loop(wptr_read, wptr_lines, fptr, sr, psc);
@@ -2416,7 +2422,7 @@ int nc_main_menu(WINDOW *wptr) {
 				nc_read_setup_default();
 				break;
 			case('q'):
-			case(KEY_F(RESIZE)): // Quit
+			case(KEY_F(QUIT)): // Quit
 				wclear(wptr);
 				return 1;
 		}
