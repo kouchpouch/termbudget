@@ -19,7 +19,7 @@
 #define LINE_BUFFER 200
 #define STDIN_LARGE_BUFF 64
 #define STDIN_SMALL_BUFF 8
-#define REALLOC_THRESHOLD 64
+#define REALLOC_FLAG 64
 #define INPUT_MSG_Y_OFFSET 2
 
 #define MAX_LEN_AMOUNT 9
@@ -39,8 +39,14 @@ enum MenuKeys {
 	EDIT = 2,
 	READ = 3,
 	QUIT = 4,
-	RESIZE = 5
+	RESIZE = 5,
+	SORT = 6
 } menukeys;
+
+enum SortBy {
+	DATE = 0,
+	CATEGORY = 1
+} sortby;
 
 const char *months[] = {
 	"JAN", 
@@ -83,7 +89,7 @@ struct SelRecord {
 	int index;
 };
 
-void nc_read_setup(int sel_year, int sel_month);
+void nc_read_setup(int sel_year, int sel_month, int sort);
 int nc_confirm_record(struct LineData *ld);
 void nc_print_record_hr(WINDOW *wptr, ColumnWidth *cw, struct LineData *ld, int y);
 void nc_print_record_vert(WINDOW *wptr, struct LineData *ld, int x_off);
@@ -563,7 +569,7 @@ char *nc_select_category(int month, int year) {
 				select = cur - 1;
 				break;
 			case('q'):
-			case(KEY_F(4)):
+			case(KEY_F(QUIT)):
 				goto CLEANUP;
 				break;
 		}
@@ -599,7 +605,7 @@ int nc_input_transaction_type(void) {
 
 	while(t != '1' && t != '2') {
 		t = wgetch(wptr_input);	
-		if (t == 'q' || t == KEY_F(4)) {
+		if (t == 'q' || t == KEY_F(QUIT)) {
 			return -1;
 		}
 	}
@@ -742,12 +748,45 @@ DUPLICATE:
 	return pc; // Struct and each index of categories must be free'd
 }
 
-/* Returns an array of integers representing the byte offsets of records
- * sorted by category */
-struct FlexArr *sort_by_category(FILE *fptr, struct FlexArr *pidx, struct FlexArr *plines, 
-						  int yr, int mo) {
+struct FlexArr *sort_by_date(FILE *fptr, struct FlexArr *pidx,
+							 struct FlexArr *plines)
+{
 	int realloc_counter = 0;
-	struct FlexArr *prsc = malloc(sizeof(struct FlexArr) + (sizeof(int) * REALLOC_THRESHOLD));
+	struct FlexArr *psbd = malloc(sizeof(*psbd) + (sizeof(int) * REALLOC_FLAG));
+	if (psbd == NULL) {
+		return NULL;
+	}
+	psbd->lines = 0;
+	rewind(fptr);
+
+	for (int i = 0; i < plines->lines; i++) {
+		if (psbd->lines >= REALLOC_FLAG - 1) {
+			realloc_counter = 0;
+			struct FlexArr *tmp = realloc(psbd, sizeof(*psbd) + 
+								 ((psbd->lines + REALLOC_FLAG) * 
+								 sizeof(char *)));
+			if (tmp == NULL) {
+				free(psbd);
+				return NULL;	
+			}
+			psbd = tmp;
+		}
+
+		psbd->data[i] = pidx->data[plines->data[i]];
+		psbd->lines++;
+		realloc_counter++;
+	}
+
+	return psbd;
+}
+
+/* Returns an array of integers representing the byte offsets of records 
+ * sorted by category */
+struct FlexArr *sort_by_category(FILE *fptr, struct FlexArr *pidx, 
+								 struct FlexArr *plines, int yr, int mo)
+{
+	int realloc_counter = 0;
+	struct FlexArr *prsc = malloc(sizeof(*prsc) + (sizeof(int) * REALLOC_FLAG));
 	prsc->lines = 0;
 	rewind(fptr);
 	struct Categories *pc = list_categories(mo, yr);
@@ -758,10 +797,11 @@ struct FlexArr *sort_by_category(FILE *fptr, struct FlexArr *pidx, struct FlexAr
 	for (int i = 0; i < pc->count; i++) { // Loop through each category
 		for (int j = 0; j < plines->lines; j++) { // Loop through each record
 
-			if (realloc_counter >= REALLOC_THRESHOLD - 1) {
+			if (realloc_counter >= REALLOC_FLAG - 1) {
 				realloc_counter = 0;
 				struct FlexArr *tmp = 
-					realloc(prsc, sizeof(*prsc) + ((prsc->lines + REALLOC_THRESHOLD) * sizeof(char *)));
+					realloc(prsc, sizeof(*prsc) + ((prsc->lines + REALLOC_FLAG) 
+			 				* sizeof(char *)));
 				if (tmp == NULL) {
 					free(prsc);
 					prsc = NULL;
@@ -794,9 +834,9 @@ struct FlexArr *sort_by_category(FILE *fptr, struct FlexArr *pidx, struct FlexAr
 				realloc_counter++;
 			}
 		}
-		prsc->data[prsc->lines] = 0;
-		prsc->lines++;
-		realloc_counter++;
+//		prsc->data[prsc->lines] = 0;
+//		prsc->lines++;
+//		realloc_counter++;
 	}
 
 ERR_NULL:
@@ -846,9 +886,6 @@ void nc_add_transaction(int year, int month) {
 	struct LineData userlinedata_, *uld = &userlinedata_;
 	struct FlexArr *pidx = index_csv();
 
-//	FILE *fptr = open_csv("r+");
-//	fseek(fptr, 0L, SEEK_END);
-
 	year > 0 ? (uld->year = year) : (uld->year = nc_input_year());
 	month > 0 ? (uld->month = month) : (uld->month = nc_input_month());
 	uld->day = nc_input_day(uld->month, uld->year);
@@ -881,16 +918,12 @@ CLEANUP:
 	free(pidx);
 	free(uld->category);
 	free(uld->desc);
-//	fclose(fptr);
-	nc_read_setup(uld->year, uld->month);
+	nc_read_setup(uld->year, uld->month, 0);
 }
 
 void add_transaction(void) {
 	struct LineData userlinedata_, *uld = &userlinedata_;
 	struct FlexArr *pidx = index_csv();
-
-//	FILE *fptr = open_csv("r+");
-//	fseek(fptr, 0L, SEEK_END);
 
 	uld->year = input_year();
 	uld->month = input_month();
@@ -929,7 +962,6 @@ void add_transaction(void) {
 CLEANUP:
 	if (debug == true) puts("CLEANUP");
 	free(pidx);
-//	fclose(fptr);
 	free(uld->category);
 	free(uld->desc);
 }
@@ -991,7 +1023,7 @@ int nc_confirm_record(struct LineData *ld) {
 	wrefresh(wptr);
 
 	int c = 0;
-	while (c != KEY_F(4) && c != 'q') {
+	while (c != KEY_F(QUIT) && c != 'q') {
 		c = wgetch(wptr);
 		switch(c) {
 			case('y'):
@@ -999,7 +1031,7 @@ int nc_confirm_record(struct LineData *ld) {
 				return 1;
 			case('n'):
 			case('N'):
-			case(KEY_F(4)):
+			case(KEY_F(QUIT)):
 			case('q'):
 			case('Q'):
 				return 0;
@@ -1417,7 +1449,7 @@ int nc_read_select_year(WINDOW *wptr, FILE *fptr) {
 
 	int c = 0;
 	int temp_x;
-	while (c != '\r' && c != '\n' && c != KEY_F(4)) {
+	while (c != '\r' && c != '\n' && c != KEY_F(QUIT)) {
 		c = wgetch(wptr);
 		temp_x = getcurx(wptr);
 		switch (c) {
@@ -1446,7 +1478,7 @@ int nc_read_select_year(WINDOW *wptr, FILE *fptr) {
 			case ('\r'):
 				selected_year = years_arr[scr_idx];
 				break;
-			case (KEY_F(4)):
+			case (KEY_F(QUIT)):
 				free(years_arr);
 				return 0;
 			default: 
@@ -1494,7 +1526,7 @@ int nc_read_select_month(WINDOW *wptr, FILE* fptr, int year) {
 	wrefresh(wptr);
 
 	int c = 0;
-	while (c != '\r' && c != '\n' && c != KEY_F(4)) {
+	while (c != '\r' && c != '\n' && c != KEY_F(QUIT)) {
 		c = wgetch(wptr);
 		temp_y = getcury(wptr);
 //		getyx(wptr, temp_y, temp_x);
@@ -1525,7 +1557,7 @@ int nc_read_select_month(WINDOW *wptr, FILE* fptr, int year) {
 				selected_month = months_arr[cur_idx];
 				wrefresh(wptr);
 				break;
-			case (KEY_F(4)):
+			case (KEY_F(QUIT)):
 				nc_exit_window(wptr);
 				free(months_arr);
 				months_arr = NULL;
@@ -1544,7 +1576,7 @@ int nc_read_select_month(WINDOW *wptr, FILE* fptr, int year) {
 struct FlexArr *get_matching_line_nums(FILE *fptr, int month, int year) {
 	rewind(fptr);
 	struct FlexArr *lines = 
-		malloc(sizeof(struct FlexArr) + (REALLOC_THRESHOLD * sizeof(int)));
+		malloc(sizeof(struct FlexArr) + (REALLOC_FLAG * sizeof(int)));
 	if (lines == NULL) {
 		exit(1);
 	}
@@ -1573,10 +1605,10 @@ struct FlexArr *get_matching_line_nums(FILE *fptr, int month, int year) {
 		seek_n_fields(&str, 1);
 		line_year = atoi(strsep(&str, ","));
 		if (year == line_year && month == line_month) {
-			if (realloc_counter == REALLOC_THRESHOLD - 1) {
+			if (realloc_counter == REALLOC_FLAG - 1) {
 				realloc_counter = 0;
 				void *temp = realloc(lines, sizeof(struct FlexArr) + 
-					((lines->lines) + REALLOC_THRESHOLD) * sizeof(int));
+					((lines->lines) + REALLOC_FLAG) * sizeof(int));
 				if (temp == NULL) {
 					free(lines);
 					exit(1);
@@ -1591,7 +1623,7 @@ struct FlexArr *get_matching_line_nums(FILE *fptr, int month, int year) {
 	}
 
 	/* Shrink back down if oversized alloc */
-	if (lines->lines % REALLOC_THRESHOLD != 0) {	
+	if (lines->lines % REALLOC_FLAG != 0) {	
 		void *temp = realloc(lines, sizeof(struct FlexArr) + 
 					   (lines->lines * sizeof(int)));
 		if (temp == NULL) {
@@ -1679,7 +1711,7 @@ int nc_select_field_to_edit(WINDOW *wptr) {
 	box(wptr, 0, 0);
 	mvwxcprintw(wptr, 0, "Select Field to Edit");
 	wrefresh(wptr);
-	while(c != KEY_F(4) && c != '\n' && c != '\r') {
+	while(c != KEY_F(QUIT) && c != '\n' && c != '\r') {
 		box(wptr, 0, 0);
 		mvwxcprintw(wptr, 0, "Select Field to Edit");
 		wrefresh(wptr);
@@ -1706,7 +1738,7 @@ int nc_select_field_to_edit(WINDOW *wptr) {
 			case('\r'):
 				return select;
 			case('q'):
-			case(KEY_F(4)):
+			case(KEY_F(QUIT)):
 				break;
 		}
 	}
@@ -1890,39 +1922,29 @@ void TEST_nc_print_records_by_category(WINDOW *wptr, FILE *fptr, struct FlexArr 
 }
 
 /*
- * Main read loop. Populates variables in the struct pointed to by sr
- * on a MenuKeys press
+ * Main read loop. Populates member values in the struct pointed to 
+ * by sr on a MenuKeys press. Prints lines by seeking FPI to the byte offset
+ * of psc->data. Sort occurs before this function in nc_read_setup.
  */
 void nc_read_loop(WINDOW *wptr_parent, WINDOW *wptr, FILE *fptr, 
-				  struct SelRecord *sr, struct FlexArr *pidx, 
-				  struct FlexArr *plines) {
-
+				  struct SelRecord *sr, struct FlexArr *psc)
+{
 	ColumnWidth cw_, *cw = &cw_;
 	struct LineData ld_, *ld = &ld_;
 	int max_y, max_x;
 	getmaxyx(wptr, max_y, max_x);
-	int displayed_lines = 0;
+	int displayed = 0;
 	char *line_str;
 	char linebuff[LINE_BUFFER];
 
 	calculate_columns(cw, max_x + BOX_OFFSET);
 
-	/* 
-	 * Print enough lines to fill the window but not more
-	 * pidx->data[plines->data[displayed_lines]] is the byte offset of
-	 * the line in the CSV file.
-	 *
-	 * plines->data is the CSV line starting at 0 on the first line that is
-	 * not the header.
-	 */
-	int i = 0;
-	while (i < max_y && displayed_lines < plines->lines) {
-		fseek(fptr, pidx->data[plines->data[displayed_lines]], SEEK_SET);
+	/* Print initial lines based on screen size */
+	for (int i = 0; i < max_y && displayed < psc->lines; i++, displayed++) {
+		fseek(fptr, psc->data[i], SEEK_SET);
 		line_str = fgets(linebuff, sizeof(linebuff), fptr);
 		tokenize_str(ld, &line_str);
 		nc_print_record_hr(wptr, cw, ld, i);
-		displayed_lines++;
-		i++;
 	}
 
 	wrefresh(wptr);
@@ -1936,22 +1958,22 @@ void nc_read_loop(WINDOW *wptr_parent, WINDOW *wptr, FILE *fptr,
 	wrefresh(wptr);
 
 	int c = 0;
-	while (c != KEY_F(4) && c != '\n' && c != '\r') {
+	while (c != KEY_F(QUIT) && c != '\n' && c != '\r') {
 		wrefresh(wptr);
 		if (debug == true) {
-			nc_print_debug_line(wptr_parent, (plines->data[select]));
+			nc_print_debug_line(wptr_parent, psc->data[select]);
 		}
 		c = wgetch(wptr);
 		switch(c) {
 			case('j'):
 			case(KEY_DOWN):
-				if (select + 1 < plines->lines) {
+				if (select + 1 < psc->lines) {
 					mvwchgat(wptr, cur_y, 0, -1, A_NORMAL, 0, NULL); 
 					cur_y++;
 					select++;
 
-					if (displayed_lines < plines->lines && cur_y == max_y) {
-						nc_scroll_next(pidx->data[plines->data[select]], fptr, wptr, cw);
+					if (displayed < psc->lines && cur_y == max_y) {
+						nc_scroll_next(psc->data[select], fptr, wptr, cw);
 						cur_y = getcury(wptr);
 					}
 					mvwchgat(wptr, cur_y, 0, -1, A_REVERSE, 0, NULL); 
@@ -1967,8 +1989,8 @@ void nc_read_loop(WINDOW *wptr_parent, WINDOW *wptr, FILE *fptr,
 
 					if (cur_y < 0) cur_y = -1;
 					
-					if (displayed_lines < plines->lines && cur_y == -1 && select >= 0) {
-						nc_scroll_prev(pidx->data[plines->data[select]], fptr, wptr, cw);
+					if (displayed < psc->lines && cur_y == -1 && select >= 0) {
+						nc_scroll_prev(psc->data[select], fptr, wptr, cw);
 						cur_y = getcury(wptr);
 					}
 					mvwchgat(wptr, cur_y, 0, -1, A_REVERSE, 0, NULL); 
@@ -1977,22 +1999,22 @@ void nc_read_loop(WINDOW *wptr_parent, WINDOW *wptr, FILE *fptr,
 
 			case('\n'):
 			case('\r'):
-				fseek(fptr, pidx->data[plines->data[select]], SEEK_SET);
+				fseek(fptr, psc->data[select], SEEK_SET);
 				char *line = fgets(linebuff, sizeof(linebuff), fptr);
 				show_detail_subwindow(line);
-				refresh_on_detail_close(wptr, wptr_parent, displayed_lines);
+				refresh_on_detail_close(wptr, wptr_parent, displayed);
 				c = 0;
 				break;
 
 			case(KEY_NPAGE): // PAGE DOWN
 				for(int i = 0; i < 10; i++) {
-					if (select + 1 < plines->lines) {
+					if (select + 1 < psc->lines) {
 						mvwchgat(wptr, cur_y, 0, -1, A_NORMAL, 0, NULL); 
 						cur_y++;
 						select++;
 
-						if (displayed_lines < plines->lines && cur_y == max_y) {
-							nc_scroll_next(pidx->data[plines->data[select]], fptr, wptr, cw);
+						if (displayed < psc->lines && cur_y == max_y) {
+							nc_scroll_next(psc->data[select], fptr, wptr, cw);
 							cur_y = getcury(wptr);
 						}
 						mvwchgat(wptr, cur_y, 0, -1, A_REVERSE, 0, NULL); 
@@ -2011,8 +2033,8 @@ void nc_read_loop(WINDOW *wptr_parent, WINDOW *wptr, FILE *fptr,
 
 						if (cur_y < 0) cur_y = -1;
 						
-						if (displayed_lines < plines->lines && cur_y == -1 && select >= 0) {
-							nc_scroll_prev(pidx->data[plines->data[select]], fptr, wptr, cw);
+						if (displayed < psc->lines && cur_y == -1 && select >= 0) {
+							nc_scroll_prev(psc->data[select], fptr, wptr, cw);
 							cur_y = getcury(wptr);
 						}
 						mvwchgat(wptr, cur_y, 0, -1, A_REVERSE, 0, NULL); 
@@ -2023,13 +2045,13 @@ void nc_read_loop(WINDOW *wptr_parent, WINDOW *wptr, FILE *fptr,
 				break;
 
 			case(KEY_END):
-				while(select + 1 < plines->lines) {
+				while(select + 1 < psc->lines) {
 					mvwchgat(wptr, cur_y, 0, -1, A_NORMAL, 0, NULL); 
 					cur_y++;
 					select++;
 
-					if (displayed_lines < plines->lines && cur_y == max_y) {
-						nc_scroll_next(pidx->data[plines->data[select]], fptr, wptr, cw);
+					if (displayed < psc->lines && cur_y == max_y) {
+						nc_scroll_next(psc->data[select], fptr, wptr, cw);
 						cur_y = getcury(wptr);
 					}
 					mvwchgat(wptr, cur_y, 0, -1, A_REVERSE, 0, NULL); 
@@ -2044,8 +2066,8 @@ void nc_read_loop(WINDOW *wptr_parent, WINDOW *wptr, FILE *fptr,
 
 					if (cur_y < 0) cur_y = -1;
 					
-					if (displayed_lines < plines->lines && cur_y == -1 && select >= 0) {
-						nc_scroll_prev(pidx->data[plines->data[select]], fptr, wptr, cw);
+					if (displayed < psc->lines && cur_y == -1 && select >= 0) {
+						nc_scroll_prev(psc->data[select], fptr, wptr, cw);
 						cur_y = getcury(wptr);
 					}
 					mvwchgat(wptr, cur_y, 0, -1, A_REVERSE, 0, NULL); 
@@ -2053,26 +2075,30 @@ void nc_read_loop(WINDOW *wptr_parent, WINDOW *wptr, FILE *fptr,
 				break;
 
 			case('a'):
-			case(KEY_F(1)):
+			case(KEY_F(ADD)):
 				sr->flag = ADD;
-				sr->index = plines->data[select];
+				sr->index = psc->data[select];
 				return;
 			case('e'):
-			case(KEY_F(2)):
+			case(KEY_F(EDIT)):
 				sr->flag = EDIT;
-				sr->index = plines->data[select];
+				sr->index = psc->data[select];
 				return;
 			case('r'):
-			case(KEY_F(3)):
+			case(KEY_F(READ)):
 				sr->flag = READ;
 				sr->index = 0;
 			case('q'):
-			case(KEY_F(4)):
+			case(KEY_F(QUIT)):
 				sr->flag = QUIT;
 				sr->index = 0;
 				return;
 			case(KEY_RESIZE):
 				sr->flag = RESIZE;
+				sr->index = 0;
+				return;
+			case('s'):
+				sr->flag = SORT;
 				sr->index = 0;
 				return;
 		}
@@ -2082,7 +2108,11 @@ void nc_read_loop(WINDOW *wptr_parent, WINDOW *wptr, FILE *fptr,
 	return;
 }
 
-void nc_read_setup(int sel_year, int sel_month) {
+void nc_read_setup_default() {
+	nc_read_setup(0, 0, 0);
+}
+
+void nc_read_setup(int sel_year, int sel_month, int sort) {
 	/* LINES - 1 to still display the footer under wptr_read */
 	nc_print_footer(stdscr);
 	if (debug == true) {
@@ -2139,32 +2169,34 @@ void nc_read_setup(int sel_year, int sel_month) {
 		return;
 	}
 
-	/* THIS IS A TEST */
-//	print_column_headers(wptr_read, x_off);
-//	mvwxcprintw(wptr_lines, 0, "THIS IS A TEST THIS IS A TEST THIS IS A TEST");
+	struct FlexArr *psc;
 
-	struct FlexArr *prsc = sort_by_category(fptr, pidx, plines, sel_year, sel_month);
-
-//	TEST_nc_print_records_by_category(wptr_lines, fptr, prsc);
-//	wclear(wptr_lines);
-//	free(prsc);
-	/* END TEST */
+	switch(sort) {
+		case(DATE):
+			psc = sort_by_date(fptr, pidx, plines);	
+			break;
+		case(CATEGORY):
+			psc = sort_by_category(fptr, pidx, plines, sel_year, sel_month);
+			break;
+		default:
+			psc = sort_by_date(fptr, pidx, plines);	
+			break;
+	}
 
 	print_column_headers(wptr_read, x_off);
 	box(wptr_read, 0, 0);
-	mvwprintw(wptr_read, 0, x_off, "%d %s", sel_year, months[sel_month - 1]);
+	mvwprintw(wptr_read, 0, x_off, "%d %s %d", sel_year, months[sel_month - 1], sort);
 	wrefresh(wptr_read);
 
-	nc_read_loop(wptr_read, wptr_lines, fptr, sr, pidx, plines);
+	nc_read_loop(wptr_read, wptr_lines, fptr, sr, psc);
 
 	wclear(wptr_read);
 	wclear(wptr_lines);
 
+	free(psc);
+
 	free(plines);
 	plines = NULL;
-
-	free(prsc);
-	prsc = NULL;
 
 SELECT_DATE_FAIL:
 	free(pidx);
@@ -2178,24 +2210,32 @@ SELECT_DATE_FAIL:
 
 	switch(sr->flag) {
 		case(NO_SELECT): // 0 is no selection
-			nc_read_setup(0, 0);
+			nc_read_setup_default();
 			break;
 		case(ADD):
 			nc_add_transaction(sel_year, sel_month);
 			break;
 		case(EDIT):
 			nc_edit_transaction(sr->index);
-			nc_read_setup(sel_year, sel_month);
+			nc_read_setup(sel_year, sel_month, 0);
 			break;
 		case(READ):
-			nc_read_setup(sel_year, sel_month);
+			nc_read_setup(sel_year, sel_month, 0);
 		case(QUIT):
 			break;
 		case(RESIZE):
 			while (test_terminal_size() == -1) {
 				getch();
 			}
-			nc_read_setup(sel_year, sel_month);
+			nc_read_setup(sel_year, sel_month, 0);
+		case(SORT):
+			if (sort == 1) {
+				sort = 0;
+			} else if (sort == 0) {
+				sort = 1;
+			}
+			nc_read_setup(sel_year, sel_month, sort);
+			break;
 		default:
 			break;
 	}
@@ -2352,7 +2392,7 @@ int nc_main_menu(WINDOW *wptr) {
 	wrefresh(wptr);
 
 	int c = 0;
-	while (c != KEY_F(4)) {
+	while (c != KEY_F(QUIT)) {
 		nc_print_welcome(wptr);
 		nc_print_footer(wptr);
 		if (debug == true) {
@@ -2360,19 +2400,23 @@ int nc_main_menu(WINDOW *wptr) {
 		}
 		wrefresh(wptr);
 		c = getch();
-		switch (c) {
-			case (KEY_F(1)): // Add
+		switch(c) {
+			case('a'):
+			case (KEY_F(ADD)): // Add
 				wclear(wptr);
 				nc_add_transaction(0, 0);
 				break;
-			case (KEY_F(2)): // Edit
+			case('e'):
+			case(KEY_F(EDIT)): // Edit
 				wclear(wptr);
 				break;
-			case (KEY_F(3)):
+			case('r'):
+			case(KEY_F(READ)):
 				wclear(wptr);
-				nc_read_setup(0, 0);
+				nc_read_setup_default();
 				break;
-			case (KEY_F(4)): // Quit
+			case('q'):
+			case(KEY_F(RESIZE)): // Quit
 				wclear(wptr);
 				return 1;
 		}
