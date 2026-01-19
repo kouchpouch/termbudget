@@ -661,6 +661,23 @@ FILE *open_temp_csv(void) {
 	return tmpfptr;
 }
 
+int boff_to_linenum(long b) {
+	FILE *fptr = open_csv("r");
+	char linebuff[LINE_BUFFER];
+	int linenum = 0;
+
+	rewind(fptr);
+	
+	while(fgets(linebuff, sizeof(linebuff), fptr) != NULL) {
+		if (ftell(fptr) == b) {
+			break;
+		}
+		linenum++;
+	}
+	
+	return linenum;
+}
+
 void print_record_vert(struct LineData *ld) {
 	printf(
 		"1.) Date-->  %d/%d/%d\n"
@@ -1824,7 +1841,7 @@ void nc_edit_transaction(int linenum) {
 
 void nc_print_debug_line(WINDOW *wptr, int line) {
 	mvwhline(wptr, getmaxy(wptr) - 1, 1, 0, getmaxx(wptr) - 2);
-	mvwprintw(wptr, getmaxy(wptr) - 1, getmaxx(wptr) - 20, "CSV LINE: %d", line);
+	mvwprintw(wptr, getmaxy(wptr) - 1, getmaxx(wptr) - 20, "FILE POS: %d", line);
 	wrefresh(wptr);
 }
 
@@ -1853,9 +1870,11 @@ void refresh_on_detail_close(WINDOW *wptr, WINDOW *wptr_parent, int n) {
 	int temp_y, temp_x;
 	getyx(wptr, temp_y, temp_x);
 	wmove(wptr, 0, 0);
+
 	for (int i = 0; i < n; i++) {
 		mvwchgat(wptr, i, 0, -1, A_NORMAL, 0, NULL);
 	}
+
 	wmove(wptr, temp_y, temp_x);
 	wchgat(wptr, -1, A_REVERSE, 0, NULL); 
 	mvwvline(wptr_parent, 1, 0, 0, getmaxy(wptr_parent) - 2);
@@ -2101,6 +2120,7 @@ void nc_read_loop(WINDOW *wptr_parent, WINDOW *wptr, FILE *fptr,
 				sr->flag = SORT;
 				sr->index = 0;
 				return;
+
 		}
 	}
 	sr->flag = NO_SELECT;
@@ -2222,7 +2242,7 @@ SELECT_DATE_FAIL:
 			nc_add_transaction(sel_year, sel_month);
 			break;
 		case(EDIT):
-			nc_edit_transaction(sr->index);
+			nc_edit_transaction(boff_to_linenum(sr->index));
 			nc_read_setup(sel_year, sel_month, 0);
 			break;
 		case(READ):
