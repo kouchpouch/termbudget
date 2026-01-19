@@ -233,7 +233,7 @@ int nc_input_n_digits(WINDOW *wptr, int max_len, int min_len) {
 	char *str = nc_user_input(max_len, wptr);
 	while (str == NULL) {
 		str = nc_user_input(max_len, wptr);
-		if (debug == true) {
+		if (debug) {
 			mvwxcprintw(wptr, getmaxy(wptr), "nc_user_input() failed");
 		}
 	}
@@ -502,17 +502,26 @@ char *nc_select_category(int month, int year) {
 	struct Categories *pc = list_categories(month, year);
 	WINDOW *wptr = create_category_select_subwindow(pc->count);
 
+	if (debug) {
+		curs_set(1);
+	}
+
 	if (pc->count == 0) {
 		goto MANUAL;
 	}
 
-	int displayed = 1;
-
+	int displayed = 0;
 	/* Print intital data based on window size */
-	for (int i = 0; i < getmaxy(wptr) - BOX_OFFSET; i++) {
-		mvwxcprintw(wptr, displayed, pc->categories[i]);
+	for (int i = 0; i < getmaxy(wptr) - BOX_OFFSET && i < pc->count; i++) {
+		mvwxcprintw(wptr, i + 1, pc->categories[i]);
 		displayed++;
 	}
+
+	if (debug) {
+		mvwprintw(wptr, 0, 0, "N CATG: %d N DISP: %d", pc->count, displayed);
+	}
+
+	wrefresh(wptr);
 
 	int nx = getmaxx(wptr) - (BOX_OFFSET * 2);
 	mvwchgat(wptr, 1, BOX_OFFSET, getmaxx(wptr) - (BOX_OFFSET * 2), 
@@ -923,7 +932,7 @@ void nc_add_transaction(int year, int month) {
 	add_csv_record(resultline, uld);
 
 CLEANUP:
-	if (debug == true) puts("CLEANUP");
+	if (debug) puts("CLEANUP");
 	free(pidx);
 	free(uld->category);
 	free(uld->desc);
@@ -949,9 +958,9 @@ void add_transaction(void) {
 
 	int result = confirm_input();
 	if (result == 1) {
-		if (debug == true) puts("TRUE");
+		if (debug) puts("TRUE");
 	} else if (result == 0) {
-		if (debug == true) puts("FALSE");
+		if (debug) puts("FALSE");
 		goto CLEANUP;
 	} else {
 		puts("Invalid answer");
@@ -964,12 +973,12 @@ void add_transaction(void) {
 		goto CLEANUP;
 	}
 
-	if (debug == true) printf("Result line: %d\n", resultline);
+	if (debug) printf("Result line: %d\n", resultline);
 
 	add_csv_record(resultline, uld);
 
 CLEANUP:
-	if (debug == true) puts("CLEANUP");
+	if (debug) puts("CLEANUP");
 	free(pidx);
 	free(uld->category);
 	free(uld->desc);
@@ -1964,7 +1973,7 @@ void nc_read_loop(WINDOW *wptr_parent, WINDOW *wptr, FILE *fptr,
 	wmove(wptr, 0, 0);
 	mvwchgat(wptr, select, 0, -1, A_REVERSE, 0, NULL); 
 
-	if (debug == true) {
+	if (debug) {
 		curs_set(1);
 	}
 
@@ -1973,7 +1982,7 @@ void nc_read_loop(WINDOW *wptr_parent, WINDOW *wptr, FILE *fptr,
 	int c = 0;
 	while (c != KEY_F(QUIT) && c != '\n' && c != '\r') {
 		wrefresh(wptr);
-		if (debug == true) {
+		if (debug) {
 			nc_print_debug_line(wptr_parent, psc->data[select]);
 		}
 		c = wgetch(wptr);
@@ -2129,7 +2138,7 @@ void nc_read_setup_default() {
 void nc_read_setup(int sel_year, int sel_month, int sort) {
 	/* LINES - 1 to still display the footer under wptr_read */
 	nc_print_footer(stdscr);
-	if (debug == true) {
+	if (debug) {
 		nc_print_debug_flag(stdscr);
 	}
 	refresh();
@@ -2169,6 +2178,7 @@ void nc_read_setup(int sel_year, int sel_month, int sort) {
 	}
 
 	if (!sel_month) sel_month = nc_read_select_month(wptr_read, fptr, sel_year);
+	wclear(wptr_read);
 	if (sel_month < 0) {
 		free(pidx);
 		fclose(fptr);	
@@ -2332,14 +2342,14 @@ void edit_transaction(void) {
 
 	target = humantarget - 1;
 
-	if (debug == true) {
+	if (debug) {
 		printf("TARGET: %d\n", target);
 		printf("TARGET OFFSET: %d\n", pcsvindex->data[target]);
 	}
 
 	fseek(fptr, pcsvindex->data[target], SEEK_SET);
 
-	if (debug == true) {
+	if (debug) {
 		printf("COMMANDED SEEK OFFSET: %d\n", pcsvindex->data[target]);
 	}
 	
@@ -2407,7 +2417,7 @@ void edit_transaction(void) {
 int nc_main_menu(WINDOW *wptr) {
 	nc_print_welcome(wptr);
 	nc_print_footer(wptr);
-	if (debug == true) {
+	if (debug) {
 		nc_print_debug_flag(wptr);
 	}
 	wrefresh(wptr);
@@ -2416,7 +2426,7 @@ int nc_main_menu(WINDOW *wptr) {
 	while (c != KEY_F(QUIT)) {
 		nc_print_welcome(wptr);
 		nc_print_footer(wptr);
-		if (debug == true) {
+		if (debug) {
 			nc_print_debug_flag(wptr);
 		}
 		wrefresh(wptr);
