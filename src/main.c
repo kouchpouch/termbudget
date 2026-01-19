@@ -1912,31 +1912,31 @@ void nc_scroll_next(long b, FILE *fptr, WINDOW *wptr, ColumnWidth *cw) {
 	nc_print_record_hr(wptr, cw, ld, getmaxy(wptr) - 1);
 }
 
-void TEST_nc_print_records_by_category(WINDOW *wptr, FILE *fptr, struct FlexArr *prsc) {
-	ColumnWidth column_width, *cw = &column_width;
-	struct LineData linedata, *ld = &linedata;
-	char linebuffer[LINE_BUFFER];
-	char *line;
-
-	int cur = 0;
-	calculate_columns(cw, getmaxx(wptr) + BOX_OFFSET);
-	int j = 0;
-	for (int i = 0; i < prsc->lines - j; i++) {
-		if (prsc->data[i] == 0) {
-			j++;
-			continue;
-		}
-		fseek(fptr, prsc->data[i], SEEK_SET);
-		line = fgets(linebuffer, sizeof(linebuffer), fptr);	
-		if (line == NULL) {
-			break;
-		}
-		tokenize_str(ld, &line);
-		nc_print_record_hr(wptr, cw, ld, cur);
-		cur++;
-	}
-	wgetch(wptr);
-}
+//void TEST_nc_print_records_by_category(WINDOW *wptr, FILE *fptr, struct FlexArr *prsc) {
+//	ColumnWidth column_width, *cw = &column_width;
+//	struct LineData linedata, *ld = &linedata;
+//	char linebuffer[LINE_BUFFER];
+//	char *line;
+//
+//	int cur = 0;
+//	calculate_columns(cw, getmaxx(wptr) + BOX_OFFSET);
+//	int j = 0;
+//	for (int i = 0; i < prsc->lines - j; i++) {
+//		if (prsc->data[i] == 0) {
+//			j++;
+//			continue;
+//		}
+//		fseek(fptr, prsc->data[i], SEEK_SET);
+//		line = fgets(linebuffer, sizeof(linebuffer), fptr);	
+//		if (line == NULL) {
+//			break;
+//		}
+//		tokenize_str(ld, &line);
+//		nc_print_record_hr(wptr, cw, ld, cur);
+//		cur++;
+//	}
+//	wgetch(wptr);
+//}
 
 /*
  * Main read loop. Populates member values in the struct pointed to 
