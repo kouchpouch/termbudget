@@ -107,10 +107,13 @@ WINDOW *create_lines_subwindow(int max_y, int max_x, int y_off, int x_off) {
 
 WINDOW *create_category_select_subwindow(int n) {
 	int win_y;
-	if (n + BOX_OFFSET > getmaxy(stdscr)) {
+	if (n + BOX_OFFSET > getmaxy(stdscr) 
+		&& n + BOX_OFFSET <= MAX_Y_CATG_SELECT) {
 		win_y = getmaxy(stdscr) - BOX_OFFSET;
+	} else if (n + BOX_OFFSET > MAX_Y_CATG_SELECT) {
+		win_y = MAX_Y_CATG_SELECT;
 	} else {
-		win_y = n - BOX_OFFSET;
+		win_y = n + BOX_OFFSET;
 	}
 
 	int win_x;
@@ -120,7 +123,7 @@ WINDOW *create_category_select_subwindow(int n) {
 		win_x = getmaxx(stdscr);
 	}
 
-	int begin_y = getmaxy(stdscr) / 2 - (n) / 2;
+	int begin_y = getmaxy(stdscr) / 2 - win_y / 2;
 	int begin_x = getmaxx(stdscr) / 2 - win_x / 2;
 	WINDOW *wptr = newwin(win_y, win_x, begin_y, begin_x);
 	if (wptr == NULL) {

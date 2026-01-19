@@ -30,6 +30,7 @@
 #define MAX_LEN_CATG 64
 #define MAX_LEN_DESC 64
 #define INPUT_MSG_Y_OFFSET 2
+#define MAX_Y_CATG_SELECT 22 // Maximum of 20 categories on the screen
 
 typedef struct ColumnWidth {
 	int date;
@@ -79,7 +80,7 @@ extern int mvwxcprintw(WINDOW *wptr, int y, char *str);
 extern WINDOW *create_lines_subwindow(int max_y, int max_x, int y_off, int x_off);
 
 /* Creates the subwindow to select a category, with dimensions based on
- * n categories */
+ * n categories but not larger in the Y axis than MAX_Y_CATG_SELECT */
 extern WINDOW *create_category_select_subwindow(int n);
 
 /* Creates a subwindow for user input with dimensions based on stdscr */
