@@ -2107,6 +2107,7 @@ void nc_read_loop(WINDOW *wptr_parent, WINDOW *wptr, FILE *fptr,
 		case(KEY_F(READ)):
 			sr->flag = READ;
 			sr->index = 0;
+			return;
 		case('q'):
 		case(KEY_F(QUIT)):
 			sr->flag = QUIT;
@@ -2245,7 +2246,8 @@ SELECT_DATE_FAIL:
 		nc_read_setup(sel_year, sel_month, 0);
 		break;
 	case(READ):
-		nc_read_setup(sel_year, sel_month, 0);
+		nc_read_setup_default();
+		break;
 	case(QUIT):
 		break;
 	case(RESIZE):
