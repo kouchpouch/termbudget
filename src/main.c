@@ -494,61 +494,55 @@ char *nc_input_string(char *msg) {
 	return str;
 }
 
+void nc_scroll_next_category(WINDOW *wptr) {
+	;
+}
+
 char *nc_select_category(int month, int year) {
 	struct Categories *pc = list_categories(month, year);
-	int new_win_y = pc->count + 2;
-	int new_win_x = getmaxx(stdscr) >= 64 ? 64 : getmaxx(stdscr);
-	int new_begin_y = getmaxy(stdscr) / 2 - (pc->count + 1) / 2;
-	int new_begin_x = getmaxx(stdscr) / 2 - new_win_x / 2;
-	WINDOW *wptr_input = newwin(new_win_y, new_win_x, new_begin_y, new_begin_x);
-	box(wptr_input, 0, 0);
-	mvwxcprintw(wptr_input, 0, "Select Category");
-	mvwxcprintw(wptr_input, getmaxy(wptr_input) - 1, "Press 'c' to Create a Category");
-	wrefresh(wptr_input);
+	WINDOW *wptr = create_category_select_subwindow(pc->count);
 
 	if (pc->count == 0) {
 		goto MANUAL;
 	}
 
-	int linenum = 1;
-	if (pc->count > MIN_ROWS) { // FIX Add scrolling to this one too
-		mvwxcprintw(wptr_input, 1, "Not enough rows");
-	} else {
-		for (int i = 0; i < pc->count; i++) {
-			mvwxcprintw(wptr_input, linenum, pc->categories[i]);
-			linenum++;
-		}
+	int displayed = 1;
+
+	/* Print intital data based on window size */
+	for (int i = 0; i < getmaxy(wptr) - BOX_OFFSET; i++) {
+		mvwxcprintw(wptr, displayed, pc->categories[i]);
+		displayed++;
 	}
 
-	int x_off = 2;
-	int nx = new_win_x - (x_off * 2);
-	mvwchgat(wptr_input, 1, x_off, new_win_x - (x_off * 2), A_REVERSE, 0, NULL);
+	int nx = getmaxx(wptr) - (BOX_OFFSET * 2);
+	mvwchgat(wptr, 1, BOX_OFFSET, getmaxx(wptr) - (BOX_OFFSET * 2), 
+		  	 A_REVERSE, 0, NULL);
 
 	int cur = 1;
 	int select = -1;
 	int c = 0;
 
 	char *manual_entry;
-	keypad(wptr_input, true);
+	keypad(wptr, true);
 
 	while (c != '\n' && c != '\r') {
-		wrefresh(wptr_input);
-		c = wgetch(wptr_input);
+		wrefresh(wptr);
+		c = wgetch(wptr);
 		switch(c) {
 		case('j'):
 		case(KEY_DOWN):
 			if (cur + 1 <= pc->count) {
-				mvwchgat(wptr_input, cur, x_off, nx, A_NORMAL, 0, NULL);
+				mvwchgat(wptr, cur, BOX_OFFSET, nx, A_NORMAL, 0, NULL);
 				cur++;
-				mvwchgat(wptr_input, cur, x_off, nx, A_REVERSE, 0, NULL);
+				mvwchgat(wptr, cur, BOX_OFFSET, nx, A_REVERSE, 0, NULL);
 			}
 			break;
 		case('k'):
 		case(KEY_UP):
 			if (cur - 1 >= 1) {
-				mvwchgat(wptr_input, cur, x_off, nx, A_NORMAL, 0, NULL);
+				mvwchgat(wptr, cur, BOX_OFFSET, nx, A_NORMAL, 0, NULL);
 				cur--;
-				mvwchgat(wptr_input, cur, x_off, nx, A_REVERSE, 0, NULL);
+				mvwchgat(wptr, cur, BOX_OFFSET, nx, A_REVERSE, 0, NULL);
 			}
 			break;
 		case('c'):
@@ -557,7 +551,7 @@ char *nc_select_category(int month, int year) {
 				free(pc->categories[i]);
 			}
 			free(pc);
-			nc_exit_window(wptr_input);
+			nc_exit_window(wptr);
 			manual_entry = nc_input_string("Enter Category");
 			if (manual_entry == NULL) {
 				return NULL;
@@ -582,7 +576,7 @@ char *nc_select_category(int month, int year) {
 			free(pc->categories[i]);
 		}
 		free(pc);
-		nc_exit_window(wptr_input);
+		nc_exit_window(wptr);
 
 		return tmp; // Will return NULL if stdup failed, callee checks
 	}
@@ -592,7 +586,7 @@ CLEANUP:
 		free(pc->categories[i]);
 	}
 	free(pc);
-	nc_exit_window(wptr_input);
+	nc_exit_window(wptr);
 	return NULL;
 }
 
