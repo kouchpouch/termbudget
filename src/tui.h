@@ -101,7 +101,17 @@ extern void nc_print_welcome(WINDOW *wptr);
 /* Prints the string "DEBUG" on the bottom right of wptr */
 extern void nc_print_debug_flag(WINDOW *wptr);
 
-/* Prints the footer with menu options */
-extern void nc_print_footer(WINDOW *wptr);
+///* Prints the footer with menu options */
+//extern void nc_print_footer(WINDOW *wptr, struct Footer *pf);
+
+/* Prints standard F1-F4 options on wptr */
+extern void nc_print_main_menu_footer(WINDOW *wptr);
+
+extern void nc_print_read_footer(WINDOW *wptr);
+
+/* Prints the footer with extended options on wptr */
+extern void nc_print_extended_footer(WINDOW *wptr);
+
+extern void nc_print_input_footer(WINDOW *wptr);
 
 #endif

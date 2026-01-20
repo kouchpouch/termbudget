@@ -4,6 +4,20 @@
 #include <stdlib.h>
 #include "tui.h"
 
+enum FooterAttr {
+	ON,
+	DIM,
+	OFF,
+} footerattr;
+
+struct Footer {
+	bool extended;
+	unsigned short add;
+	unsigned short edit;
+	unsigned short read;
+	unsigned short quit;
+};
+
 static void window_creation_fail() {
 	perror("Failed to create ncurses window");
 	exit(1);
@@ -213,7 +227,8 @@ void nc_print_debug_flag(WINDOW *wptr) {
 	wattroff(wptr, COLOR_PAIR(1));
 }
 
-void nc_print_footer(WINDOW *wptr) {
+static void nc_print_footer(WINDOW *wptr, struct Footer *pf) {
+	mvwchgat(wptr, getmaxy(wptr) - 1, 0, getmaxx(wptr), A_INVIS, 0, NULL);
 	int max_y, cur;
 	max_y = getmaxy(wptr);
 
@@ -221,28 +236,112 @@ void nc_print_footer(WINDOW *wptr) {
 	curs_set(0);
 
 	char add_key[] = "F1 ";
-	char add_text[] = "Add";
+	char add_text[] = "(A)dd";
 	char edit_key[] = " F2 ";
-	char edit_text[] = "Edit";
+	char edit_text[] = "(E)dit";
 	char read_key[] = " F3 ";
-	char read_text[] = "Read";
+	char read_text[] = "(R)ead";
 	char quit_key[] = " F4 ";
-	char quit_text[] = "Quit";
+	char quit_text[] = "(Q)uit";
+	/* Extended */
+	char sort_key[] = " F5 ";
+	char sort_text[] = "(S)ort";
 
+	if (pf->add == OFF) {
+		wattron(wptr, A_INVIS);
+	}
 	mvwprintw(wptr, max_y - 1, cur, "%s", add_key);
-	wattron(wptr, A_REVERSE);
+	if (pf->add == DIM) {
+		wattron(wptr, A_DIM);
+		wattron(wptr, A_REVERSE);
+	} else if (pf->add == ON) {
+		wattron(wptr, A_REVERSE);
+	}
 	mvwprintw(wptr, max_y - 1, cur += strlen(add_key), "%s", add_text);
 	wattroff(wptr, A_REVERSE);
-	mvwprintw(wptr, max_y - 1, cur += strlen(add_text), "%s", edit_key);
-	wattron(wptr, A_REVERSE);
+	wattroff(wptr, A_DIM);
+	wattroff(wptr, A_INVIS);
+
+	if (pf->edit == OFF) {
+		wattron(wptr, A_INVIS);
+	}
+	mvwprintw(wptr, max_y - 1, cur += strlen(edit_text), "%s", edit_key);
+	if (pf->edit == DIM) {
+		wattron(wptr, A_DIM);
+		wattron(wptr, A_REVERSE);
+	} else if (pf->edit == ON) {
+		wattron(wptr, A_REVERSE);
+	}
 	mvwprintw(wptr, max_y - 1, cur += strlen(edit_key), "%s", edit_text);
 	wattroff(wptr, A_REVERSE);
+	wattroff(wptr, A_DIM);
+	wattroff(wptr, A_INVIS);
+
+	if (pf->read == OFF) {
+		wattron(wptr, A_INVIS);
+	}
 	mvwprintw(wptr, max_y - 1, cur += strlen(edit_text), "%s", read_key);
-	wattron(wptr, A_REVERSE);
+	if (pf->read == DIM) {
+		wattron(wptr, A_DIM);
+		wattron(wptr, A_REVERSE);
+	} else if (pf->read == ON) {
+		wattron(wptr, A_REVERSE);
+	}
 	mvwprintw(wptr, max_y - 1, cur += strlen(read_key), "%s", read_text);
 	wattroff(wptr, A_REVERSE);
+	wattroff(wptr, A_DIM);
+	wattroff(wptr, A_INVIS);
+
+	if (pf->quit == OFF) {
+		wattron(wptr, A_INVIS);
+	}
 	mvwprintw(wptr, max_y - 1, cur += strlen(read_text), "%s", quit_key);
-	wattron(wptr, A_REVERSE);
+	if (pf->quit == DIM) {
+		wattron(wptr, A_DIM);
+		wattron(wptr, A_REVERSE);
+	} else if (pf->quit == ON) {
+		wattron(wptr, A_REVERSE);
+	}
 	mvwprintw(wptr, max_y - 1, cur += strlen(quit_key), "%s", quit_text);
 	wattroff(wptr, A_REVERSE);
+	wattroff(wptr, A_DIM);
+	wattroff(wptr, A_INVIS);
+
+	if (pf->extended) {
+		mvwprintw(wptr, max_y - 1, cur += strlen(quit_text), "%s", sort_key);
+		wattron(wptr, A_REVERSE);
+		mvwprintw(wptr, max_y - 1, cur += strlen(sort_key), "%s", sort_text);
+		wattroff(wptr, A_REVERSE);
+	}
+	wrefresh(wptr);
+}
+
+void nc_print_main_menu_footer(WINDOW *wptr) {
+	struct Footer f, *pf = &f;
+	pf->extended = false;
+	pf->add = ON;
+	pf->edit = DIM;
+	pf->read = ON;
+	pf->quit = ON;
+	nc_print_footer(wptr, pf);
+}
+
+void nc_print_read_footer(WINDOW *wptr) {
+	struct Footer f, *pf = &f;
+	pf->extended = true;
+	pf->add = ON;
+	pf->edit = ON;
+	pf->read = ON;
+	pf->quit = ON;
+	nc_print_footer(wptr, pf);
+}
+
+void nc_print_input_footer(WINDOW *wptr) {
+	struct Footer f, *pf = &f;
+	pf->extended = false;
+	pf->add = DIM;
+	pf->edit = DIM;
+	pf->read = DIM;
+	pf->quit = ON;
+	nc_print_footer(wptr, pf);
 }

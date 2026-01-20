@@ -926,6 +926,7 @@ void add_csv_record(int linetoadd, struct LineData *ld) {
 void nc_add_transaction(int year, int month) {
 	struct LineData userlinedata_, *uld = &userlinedata_;
 	struct FlexArr *pidx = index_csv();
+	nc_print_input_footer(stdscr);
 
 	year > 0 ? (uld->year = year) : (uld->year = nc_input_year());
 	month > 0 ? (uld->month = month) : (uld->month = nc_input_month());
@@ -1962,6 +1963,7 @@ void nc_read_loop(WINDOW *wptr_parent, WINDOW *wptr, FILE *fptr,
 	char linebuff[LINE_BUFFER];
 
 	calculate_columns(cw, max_x + BOX_OFFSET);
+	nc_print_read_footer(stdscr);
 
 	/* Print initial lines based on screen size */
 	for (int i = 0; i < max_y && displayed < psc->lines; i++) {
@@ -2103,21 +2105,25 @@ void nc_read_loop(WINDOW *wptr_parent, WINDOW *wptr, FILE *fptr,
 			}
 			break;
 
+		case('A'):
 		case('a'):
 		case(KEY_F(ADD)):
 			sr->flag = ADD;
 			sr->index = psc->data[select];
 			return;
+		case('E'):
 		case('e'):
 		case(KEY_F(EDIT)):
 			sr->flag = EDIT;
 			sr->index = psc->data[select];
 			return;
+		case('R'):
 		case('r'):
 		case(KEY_F(READ)):
 			sr->flag = READ;
 			sr->index = 0;
 			return;
+		case('Q'):
 		case('q'):
 		case(KEY_F(QUIT)):
 			sr->flag = QUIT;
@@ -2127,6 +2133,7 @@ void nc_read_loop(WINDOW *wptr_parent, WINDOW *wptr, FILE *fptr,
 			sr->flag = RESIZE;
 			sr->index = 0;
 			return;
+		case('S'):
 		case('s'):
 			sr->flag = SORT;
 			sr->index = 0;
@@ -2144,7 +2151,7 @@ void nc_read_setup_default() {
 
 void nc_read_setup(int sel_year, int sel_month, int sort) {
 	/* LINES - 1 to still display the footer under wptr_read */
-	nc_print_footer(stdscr);
+	nc_print_main_menu_footer(stdscr);
 	if (debug) {
 		nc_print_debug_flag(stdscr);
 	}
@@ -2185,12 +2192,12 @@ void nc_read_setup(int sel_year, int sel_month, int sort) {
 	}
 
 	if (!sel_month) sel_month = nc_read_select_month(wptr_read, fptr, sel_year);
-	wclear(wptr_read);
 	if (sel_month < 0) {
 		free(pidx);
 		fclose(fptr);	
 		return;
 	}
+	wclear(wptr_read);
 
 	plines = get_matching_line_nums(fptr, sel_month, sel_year);
 	if (plines == NULL) {
@@ -2244,15 +2251,18 @@ SELECT_DATE_FAIL:
 
 	nc_exit_window(wptr_lines);
 	nc_exit_window(wptr_read);
+	nc_print_main_menu_footer(stdscr);
 
 	switch(sr->flag) {
 	case(NO_SELECT): // 0 is no selection
 		nc_read_setup_default();
 		break;
 	case(ADD):
+		nc_print_input_footer(stdscr);
 		nc_add_transaction(sel_year, sel_month);
 		break;
 	case(EDIT):
+		nc_print_input_footer(stdscr);
 		nc_edit_transaction(boff_to_linenum(sr->index));
 		nc_read_setup(sel_year, sel_month, 0);
 		break;
@@ -2424,7 +2434,7 @@ void edit_transaction(void) {
 
 int nc_main_menu(WINDOW *wptr) {
 	nc_print_welcome(wptr);
-	nc_print_footer(wptr);
+	nc_print_main_menu_footer(wptr);
 	if (debug) {
 		nc_print_debug_flag(wptr);
 	}
@@ -2433,7 +2443,7 @@ int nc_main_menu(WINDOW *wptr) {
 	int c = 0;
 	while (c != KEY_F(QUIT)) {
 		nc_print_welcome(wptr);
-		nc_print_footer(wptr);
+		nc_print_main_menu_footer(wptr);
 		if (debug) {
 			nc_print_debug_flag(wptr);
 		}
