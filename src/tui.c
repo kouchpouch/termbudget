@@ -215,7 +215,7 @@ WINDOW *nc_init_stdscr(void) {
 void nc_print_welcome(WINDOW *wptr) {
 	curs_set(0);
 	mvwxcprintw(wptr, getmaxy(wptr) / 2, "Welcome to termBudget");
-	mvwxcprintw(wptr, getmaxy(wptr) / 2 + 1, "Made by TN");
+	mvwxcprintw(wptr, getmaxy(wptr) / 2 + 1, "github.com/kouchpouch");
 }
 
 void nc_print_debug_flag(WINDOW *wptr) {
@@ -336,12 +336,22 @@ void nc_print_read_footer(WINDOW *wptr) {
 	nc_print_footer(wptr, pf);
 }
 
-void nc_print_input_footer(WINDOW *wptr) {
+void nc_print_quit_footer(WINDOW *wptr) {
 	struct Footer f, *pf = &f;
 	pf->extended = false;
 	pf->add = DIM;
 	pf->edit = DIM;
 	pf->read = DIM;
 	pf->quit = ON;
+	nc_print_footer(wptr, pf);
+}
+
+void nc_print_input_footer(WINDOW *wptr) {
+	struct Footer f, *pf = &f;
+	pf->extended = false;
+	pf->add = DIM;
+	pf->edit = DIM;
+	pf->read = DIM;
+	pf->quit = DIM;
 	nc_print_footer(wptr, pf);
 }

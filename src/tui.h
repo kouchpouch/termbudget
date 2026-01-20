@@ -112,6 +112,10 @@ extern void nc_print_read_footer(WINDOW *wptr);
 /* Prints the footer with extended options on wptr */
 extern void nc_print_extended_footer(WINDOW *wptr);
 
+/* Prints the footer with only the quit key on, every other key is set to
+ * A_DIM and extended mode is set to FALSE */
+extern void nc_print_quit_footer(WINDOW *wptr);
+
 extern void nc_print_input_footer(WINDOW *wptr);
 
 #endif

@@ -39,8 +39,8 @@ enum MenuKeys {
 	EDIT = 2,
 	READ = 3,
 	QUIT = 4,
-	RESIZE = 5,
-	SORT = 6
+	SORT = 5,
+	RESIZE = 13,
 } menukeys;
 
 enum SortBy {
@@ -580,6 +580,7 @@ char *nc_select_category(int month, int year) {
 			free(pc);
 			nc_exit_window(wptr_parent);
 			nc_exit_window(wptr);
+			nc_print_input_footer(stdscr);
 			manual_entry = nc_input_string("Enter Category");
 			return manual_entry;
 		case('\n'):
@@ -1840,21 +1841,26 @@ void nc_edit_transaction(int linenum) {
 	case 0:
 		break;
 	case 1:
+		nc_print_input_footer(stdscr);
 		edit_csv_record(linenum + 1, pLd, 1);
 		break;
 	case 2:
 		edit_csv_record(linenum + 1, pLd, 2);
 		break;
 	case 3:
+		nc_print_input_footer(stdscr);
 		edit_csv_record(linenum + 1, pLd, 3);
 		break;
 	case 4:
+		nc_print_input_footer(stdscr);
 		edit_csv_record(linenum + 1, pLd, 4);
 		break;
 	case 5:
+		nc_print_input_footer(stdscr);
 		edit_csv_record(linenum + 1, pLd, 5);
 		break;
 	case 6:
+		nc_print_input_footer(stdscr);
 		if (nc_confirm_input() == 1) {
 			if (delete_csv_record(linenum + 1) == 0) {
 				nc_message("Successfully Deleted");
@@ -2135,6 +2141,7 @@ void nc_read_loop(WINDOW *wptr_parent, WINDOW *wptr, FILE *fptr,
 			return;
 		case('S'):
 		case('s'):
+		case(KEY_F(SORT)):
 			sr->flag = SORT;
 			sr->index = 0;
 			return;
@@ -2251,7 +2258,7 @@ SELECT_DATE_FAIL:
 
 	nc_exit_window(wptr_lines);
 	nc_exit_window(wptr_read);
-	nc_print_main_menu_footer(stdscr);
+//	nc_print_main_menu_footer(stdscr);
 
 	switch(sr->flag) {
 	case(NO_SELECT): // 0 is no selection
@@ -2262,7 +2269,7 @@ SELECT_DATE_FAIL:
 		nc_add_transaction(sel_year, sel_month);
 		break;
 	case(EDIT):
-		nc_print_input_footer(stdscr);
+		nc_print_quit_footer(stdscr);
 		nc_edit_transaction(boff_to_linenum(sr->index));
 		nc_read_setup(sel_year, sel_month, 0);
 		break;
@@ -2468,6 +2475,9 @@ int nc_main_menu(WINDOW *wptr) {
 		case(KEY_F(QUIT)): // Quit
 			wclear(wptr);
 			return 1;
+		case(KEY_RESIZE):
+			wclear(wptr);
+			break;
 		}
 	}
 	endwin();
