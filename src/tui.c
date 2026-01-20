@@ -246,6 +246,8 @@ static void nc_print_footer(WINDOW *wptr, struct Footer *pf) {
 	/* Extended */
 	char sort_key[] = " F5 ";
 	char sort_text[] = "(S)ort";
+	char overview_key[] = " F6 ";
+	char overview_text[] = "(O)verview";
 
 	if (pf->add == OFF) {
 		wattron(wptr, A_INVIS);
@@ -311,6 +313,11 @@ static void nc_print_footer(WINDOW *wptr, struct Footer *pf) {
 		mvwprintw(wptr, max_y - 1, cur += strlen(quit_text), "%s", sort_key);
 		wattron(wptr, A_REVERSE);
 		mvwprintw(wptr, max_y - 1, cur += strlen(sort_key), "%s", sort_text);
+		wattroff(wptr, A_REVERSE);
+
+		mvwprintw(wptr, max_y - 1, cur += strlen(sort_text), "%s", overview_key);
+		wattron(wptr, A_REVERSE);
+		mvwprintw(wptr, max_y - 1, cur += strlen(overview_key), "%s", overview_text);
 		wattroff(wptr, A_REVERSE);
 	}
 	wrefresh(wptr);
