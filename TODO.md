@@ -35,7 +35,8 @@
             number of lines to index
     - ( ) Add ability to escape the menu when accepting a user input
     - (*) Add page up/page down/end/home keys for navigating lists
-    - ( ) Add sort by feature
+    - (*) Add sort by feature
+    - ( ) Dim menu options in the footer if they are not available to use
 
 #### Main Feature Set
     - (*) Create a transaction
