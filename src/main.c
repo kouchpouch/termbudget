@@ -500,7 +500,8 @@ void nc_scroll_next_category(WINDOW *wptr) {
 
 char *nc_select_category(int month, int year) {
 	struct Categories *pc = list_categories(month, year);
-	WINDOW *wptr = create_category_select_subwindow(pc->count);
+	WINDOW *wptr_parent = create_category_select_parent(pc->count);
+	WINDOW *wptr = create_category_select_subwindow(wptr_parent);
 
 	if (debug) {
 		curs_set(1);
@@ -512,25 +513,24 @@ char *nc_select_category(int month, int year) {
 
 	int displayed = 0;
 	/* Print intital data based on window size */
-	for (int i = 0; i < getmaxy(wptr) - BOX_OFFSET && i < pc->count; i++) {
-		mvwxcprintw(wptr, i + 1, pc->categories[i]);
+	for (int i = 0; i < getmaxy(wptr) && i < pc->count; i++) {
+		mvwxcprintw(wptr, i, pc->categories[i]);
 		displayed++;
 	}
 
 	if (debug) {
-		mvwprintw(wptr, 0, 0, "N CATG: %d N DISP: %d", pc->count, displayed);
+		mvwprintw(wptr_parent, 0, 0, "N CATG: %d N DISP: %d", pc->count, displayed);
 	}
 
 	wrefresh(wptr);
 
-	int nx = getmaxx(wptr) - (BOX_OFFSET * 2);
-	mvwchgat(wptr, 1, BOX_OFFSET, getmaxx(wptr) - (BOX_OFFSET * 2), 
-		  	 A_REVERSE, 0, NULL);
+	mvwchgat(wptr, 0, 0, -1, A_REVERSE, 0, NULL);
 
-	int cur = 1;
-	int select = -1;
+	int cur = 0; // Y=0 is the box and title, datalines start at 1.
+	int select = 0;
 	int c = 0;
 
+	int max_y = getmaxy(wptr);
 	char *manual_entry;
 	keypad(wptr, true);
 
@@ -540,18 +540,36 @@ char *nc_select_category(int month, int year) {
 		switch(c) {
 		case('j'):
 		case(KEY_DOWN):
-			if (cur + 1 <= pc->count) {
-				mvwchgat(wptr, cur, BOX_OFFSET, nx, A_NORMAL, 0, NULL);
+			if (select + 1 < pc->count) {
+				mvwchgat(wptr, cur, 0, -1, A_NORMAL, 0, NULL);
 				cur++;
-				mvwchgat(wptr, cur, BOX_OFFSET, nx, A_REVERSE, 0, NULL);
+				select++;
+
+				if (displayed < pc->count && cur == max_y) {
+					wmove(wptr, 0, 0);
+					wdeleteln(wptr);
+					mvwxcprintw(wptr, max_y - 1, pc->categories[select]);
+					cur = max_y - 1;
+				}
+
+				mvwchgat(wptr, cur, 0, -1, A_REVERSE, 0, NULL);
 			}
 			break;
 		case('k'):
 		case(KEY_UP):
-			if (cur - 1 >= 1) {
-				mvwchgat(wptr, cur, BOX_OFFSET, nx, A_NORMAL, 0, NULL);
+			if (select - 1 >= 0) {
+				mvwchgat(wptr, cur, 0, -1, A_NORMAL, 0, NULL);
 				cur--;
-				mvwchgat(wptr, cur, BOX_OFFSET, nx, A_REVERSE, 0, NULL);
+				select--;
+
+				if (select >= 0 && displayed < pc->count && cur == -1) {
+					wmove(wptr, 0, 0);
+					winsertln(wptr);
+					mvwxcprintw(wptr, 0, pc->categories[select]);
+					cur = 0;
+				}
+
+				mvwchgat(wptr, cur, 0, -1, A_REVERSE, 0, NULL);
 			}
 			break;
 		case('c'):
@@ -569,7 +587,6 @@ char *nc_select_category(int month, int year) {
 		case('\n'):
 		case('\r'):
 		case(KEY_ENTER):
-			select = cur - 1;
 			break;
 		case('q'):
 		case(KEY_F(QUIT)):
@@ -585,6 +602,7 @@ char *nc_select_category(int month, int year) {
 			free(pc->categories[i]);
 		}
 		free(pc);
+		nc_exit_window(wptr_parent);
 		nc_exit_window(wptr);
 
 		return tmp; // Will return NULL if stdup failed, callee checks
@@ -595,6 +613,7 @@ CLEANUP:
 		free(pc->categories[i]);
 	}
 	free(pc);
+	nc_exit_window(wptr_parent);
 	nc_exit_window(wptr);
 	return NULL;
 }
@@ -910,6 +929,9 @@ void nc_add_transaction(int year, int month) {
 	month > 0 ? (uld->month = month) : (uld->month = nc_input_month());
 	uld->day = nc_input_day(uld->month, uld->year);
 	uld->category = nc_select_category(uld->month, uld->year);
+	if (uld->category == NULL) {
+		goto CLEANUP;
+	}
 	uld->desc = nc_input_string("Enter Description");
 	uld->transtype = nc_input_transaction_type();
 	uld->amount = nc_input_amount();
@@ -1960,11 +1982,12 @@ void nc_read_loop(WINDOW *wptr_parent, WINDOW *wptr, FILE *fptr,
 	calculate_columns(cw, max_x + BOX_OFFSET);
 
 	/* Print initial lines based on screen size */
-	for (int i = 0; i < max_y && displayed < psc->lines; i++, displayed++) {
+	for (int i = 0; i < max_y && displayed < psc->lines; i++) {
 		fseek(fptr, psc->data[i], SEEK_SET);
 		line_str = fgets(linebuff, sizeof(linebuff), fptr);
 		tokenize_str(ld, &line_str);
 		nc_print_record_hr(wptr, cw, ld, i);
+		displayed++;
 	}
 
 	/* Move cursor to first line of data and set that line to reverse video */
@@ -2009,9 +2032,11 @@ void nc_read_loop(WINDOW *wptr_parent, WINDOW *wptr, FILE *fptr,
 				cur_y--;
 				select--;
 
-				if (cur_y < 0) cur_y = -1;
+				if (cur_y < 0) {
+					cur_y = -1;
+				}
 				
-				if (displayed < psc->lines && cur_y == -1 && select >= 0) {
+				if (select >= 0 && displayed < psc->lines && cur_y == -1) {
 					nc_scroll_prev(psc->data[select], fptr, wptr, cw);
 					cur_y = getcury(wptr);
 				}

@@ -105,7 +105,7 @@ WINDOW *create_lines_subwindow(int max_y, int max_x, int y_off, int x_off) {
 	return wptr;
 }
 
-WINDOW *create_category_select_subwindow(int n) {
+WINDOW *create_category_select_parent(int n) {
 	int win_y;
 	if (n + BOX_OFFSET > getmaxy(stdscr) 
 		&& n + BOX_OFFSET <= MAX_Y_CATG_SELECT) {
@@ -134,6 +134,18 @@ WINDOW *create_category_select_subwindow(int n) {
 	mvwxcprintw(wptr, getmaxy(wptr) - 1, 
 				"Press 'c' to Create a Category");
 	wrefresh(wptr);
+	return wptr;
+}
+
+WINDOW *create_category_select_subwindow(WINDOW *wptr_parent) {
+	WINDOW *wptr = newwin(getmaxy(wptr_parent) - BOX_OFFSET,
+					   	  getmaxx(wptr_parent) - BOX_OFFSET,
+					   	  getmaxy(stdscr) / 2 - getmaxy(wptr_parent) / 2 + 1, 
+					   	  getmaxx(stdscr) / 2 - getmaxx(wptr_parent) / 2 + 1);
+	if (wptr == NULL) {
+		window_creation_fail();
+	}
+
 	return wptr;
 }
 

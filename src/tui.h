@@ -79,9 +79,12 @@ extern int mvwxcprintw(WINDOW *wptr, int y, char *str);
 /* Creates the subwindow for the read function */
 extern WINDOW *create_lines_subwindow(int max_y, int max_x, int y_off, int x_off);
 
-/* Creates the subwindow to select a category, with dimensions based on
+/* Creates the parent window to select a category, with dimensions based on
  * n categories but not larger in the Y axis than MAX_Y_CATG_SELECT */
-extern WINDOW *create_category_select_subwindow(int n);
+extern WINDOW *create_category_select_parent(int n);
+
+/* Creates the subwindow inside of wptr_parent for holding data */
+extern WINDOW *create_category_select_subwindow(WINDOW *wptr_parent);
 
 /* Creates a subwindow for user input with dimensions based on stdscr */
 extern WINDOW *create_input_subwindow(void);
