@@ -40,6 +40,7 @@ enum MenuKeys {
 	READ = 3,
 	QUIT = 4,
 	SORT = 5,
+	OVERVIEW = 6,
 	RESIZE = 13,
 } menukeys;
 
@@ -70,7 +71,7 @@ struct LineData {
 	char *category;
 	char *desc;
 	int transtype;
-	float amount;
+	double amount;
 	int linenum;
 };
 
@@ -89,6 +90,11 @@ struct SelRecord {
 	int index;
 };
 
+struct Balances {
+	double income;
+	double expense;
+};
+
 void nc_read_setup(int sel_year, int sel_month, int sort);
 int nc_confirm_record(struct LineData *ld);
 void nc_print_record_hr(WINDOW *wptr, ColumnWidth *cw, struct LineData *ld, int y);
@@ -97,6 +103,7 @@ struct Categories *list_categories(int month, int year);
 struct FlexArr *index_csv();
 int move_temp_to_main(FILE *tempfile, FILE *mainfile);
 int delete_csv_record(int linetodelete);
+struct FlexArr *get_matching_line_nums(FILE *fptr, int month, int year);
 
 char *user_input(int n) {
 	size_t buffersize = n + 1;
@@ -354,14 +361,14 @@ int input_transaction_type(void) {
 	return t - 1; // sub 1 to convert human readable to CSV format
 }
 
-float input_amount(void) {
+double input_amount(void) {
 	puts("$ Amount:");
 	char *str = user_input(MAX_LEN_AMOUNT);
 	while (str == NULL) {
 		puts("Invalid");
 		str = user_input(MAX_LEN_AMOUNT);
 	}
-	float amount = atof(str);
+	double amount = atof(str);
 	free(str);
 	str = NULL;
 	return amount;
@@ -573,7 +580,7 @@ char *nc_select_category(int month, int year) {
 			}
 			break;
 		case('c'):
-		MANUAL:
+MANUAL:
 			for (int i = 0; i < pc->count; i++) {
 				free(pc->categories[i]);
 			}
@@ -645,7 +652,7 @@ int nc_input_transaction_type(void) {
 	return -1;
 }
 
-float nc_input_amount(void) {
+double nc_input_amount(void) {
 	WINDOW *wptr_input = create_input_subwindow();
 	mvwxcprintw(wptr_input, INPUT_MSG_Y_OFFSET, "Enter Amount");
 	keypad(wptr_input, true);
@@ -657,7 +664,7 @@ float nc_input_amount(void) {
 
 	nc_exit_window(wptr_input);
 
-	float amount = atof(str);
+	double amount = atof(str);
 	free(str);
 
 	return amount;
@@ -1049,11 +1056,6 @@ struct FlexArr *index_csv(void) {
 		pidx->data[i] = ftell(fptr);
 	}
 
-//  Every line offset list
-//	for (int i = 0; i < pidx->lines; i++) {
-//		printf("Offset is %d at line %d\n", pidx->data[i], i+1);
-//	}
-
 	fclose(fptr);
 	fptr = NULL;
 	return pidx;
@@ -1318,12 +1320,15 @@ int *list_records_by_month(FILE *fptr, int matchyear) {
 	return months;
 }
 
-void nc_print_bar_graph(int income, int expense) {
-	;
+/* This overview should show every month for the yearly overview with a bar
+ * graph representing expense and income, with colors! */
+void nc_overview_setup(int year, int month) {
+	FILE *fptr = open_csv("r");
+	struct FlexArr *plines = get_matching_line_nums(fptr, year, month);
 }
 
 /* Prints a 2 bar graphs showing the difference between income and expense */
-void print_bar_graph(float expense, float income) {
+void print_bar_graph(double expense, double income) {
 	char income_bar[10];
 	char expense_bar[10];
 
@@ -1333,14 +1338,14 @@ void print_bar_graph(float expense, float income) {
 	}
 
 	if (income > expense) {
-		float diff = expense / income;
+		double diff = expense / income;
 		diff *= 10;
 		for (int i = 0; i < sizeof(expense_bar); i++) {
 			i < (int)diff ? 
 			(expense_bar[i] = '#') : (expense_bar[i] = '-');
 		}
 	} else {
-		float diff = income / expense;
+		double diff = income / expense;
 		diff *= 10;
 		for (int i = 0; i < sizeof(income_bar); i++) {
 			i < (int)diff ? 
@@ -1366,8 +1371,8 @@ void print_bar_graph(float expense, float income) {
 void legacy_read_csv(void) {
 	int useryear;
 	int usermonth;
-	float income = 0;
-	float expense = 0;
+	double income = 0;
+	double expense = 0;
 	int linenum = 0;
 	int i = 0;
 	char linebuff[LINE_BUFFER] = {0};
@@ -1883,6 +1888,40 @@ void nc_print_debug_line(WINDOW *wptr, int line) {
 	wrefresh(wptr);
 }
 
+void calculate_balance(struct Balances *pb, struct FlexArr *psc) {
+	FILE *fptr = open_csv("r");
+	pb->income = 0.0;
+	pb->expense = 0.0;
+	int type;
+	char linebuff[LINE_BUFFER];
+	char *line;
+
+	for (int i = 0; i < psc->lines; i++) {
+		fseek(fptr, psc->data[i], SEEK_SET);
+		line = fgets(linebuff, sizeof(linebuff), fptr);
+		if (line == NULL) {
+			break;
+		}
+		seek_n_fields(&line, 5);
+		type = atoi(strsep(&line, ","));
+		if (type == 0) {
+			pb->expense += atof(strsep(&line, ","));
+		} else {
+			pb->income += atof(strsep(&line, ","));
+		}
+	}
+	fclose(fptr);
+}
+
+void nc_print_balances(WINDOW *wptr, struct FlexArr *psc) {
+	struct Balances pb_, *pb = &pb_;
+	calculate_balance(pb, psc);
+	int total_len = intlen(pb->income) + intlen(pb->expense) + strlen("Expenses: $.00 Income: $.00");
+	mvwprintw(wptr, 0, getmaxx(wptr) / 2 - total_len / 2, 
+		   	  "Expenses: $%.2f Income: $%.2f", pb->expense, pb->income);
+	wrefresh(wptr);
+}
+
 /*
  * Creates a sub window inside of wptr to display a line-by-line format of
  * the selected record at index i of pidx->data. Following the format style
@@ -1969,6 +2008,7 @@ void nc_read_loop(WINDOW *wptr_parent, WINDOW *wptr, FILE *fptr,
 	char linebuff[LINE_BUFFER];
 
 	calculate_columns(cw, max_x + BOX_OFFSET);
+	nc_print_balances(wptr_parent, psc);
 	nc_print_read_footer(stdscr);
 
 	/* Print initial lines based on screen size */
@@ -2135,14 +2175,20 @@ void nc_read_loop(WINDOW *wptr_parent, WINDOW *wptr, FILE *fptr,
 			sr->flag = QUIT;
 			sr->index = 0;
 			return;
-		case(KEY_RESIZE):
-			sr->flag = RESIZE;
-			sr->index = 0;
-			return;
 		case('S'):
 		case('s'):
 		case(KEY_F(SORT)):
 			sr->flag = SORT;
+			sr->index = 0;
+			return;
+		case('O'):
+		case('o'):
+		case(KEY_F(OVERVIEW)):
+			sr->flag = OVERVIEW;
+			sr->index = 0;
+			return;
+		case(KEY_RESIZE):
+			sr->flag = RESIZE;
 			sr->index = 0;
 			return;
 		}
@@ -2150,6 +2196,18 @@ void nc_read_loop(WINDOW *wptr_parent, WINDOW *wptr, FILE *fptr,
 	sr->flag = NO_SELECT;
 	sr->index = 0;
 	return;
+}
+
+void nc_read_cleanup(WINDOW *wp, WINDOW *wc, struct FlexArr *psc,
+					 struct FlexArr *plines, struct FlexArr *pidx,
+					 FILE *fptr)
+{
+	nc_exit_window(wp);
+	nc_exit_window(wc);
+	free(psc);
+	free(plines);
+	free(pidx);
+	fclose(fptr);
 }
 
 void nc_read_setup_default() {
@@ -2241,18 +2299,14 @@ void nc_read_setup(int sel_year, int sel_month, int sort) {
 
 	nc_read_loop(wptr_read, wptr_lines, fptr, sr, psc);
 
-	wclear(wptr_lines);
-	wclear(wptr_read);
-
 	free(psc);
-
+	psc = NULL;
 	free(plines);
 	plines = NULL;
 
 SELECT_DATE_FAIL:
 	free(pidx);
 	pidx = NULL;
-
 	fclose(fptr);
 	fptr = NULL;
 
@@ -2278,12 +2332,6 @@ SELECT_DATE_FAIL:
 		break;
 	case(QUIT):
 		break;
-	case(RESIZE):
-		while (test_terminal_size() == -1) {
-			getch();
-		}
-		nc_read_setup(sel_year, sel_month, 0);
-		break;
 	case(SORT):
 		if (sort == 1) {
 			sort = 0;
@@ -2291,6 +2339,15 @@ SELECT_DATE_FAIL:
 			sort = 1;
 		}
 		nc_read_setup(sel_year, sel_month, sort);
+		break;
+	case(OVERVIEW):
+		nc_overview_setup(sel_year, sel_month);
+		break;
+	case(RESIZE):
+		while (test_terminal_size() == -1) {
+			getch();
+		}
+		nc_read_setup(sel_year, sel_month, 0);
 		break;
 	default:
 		break;
