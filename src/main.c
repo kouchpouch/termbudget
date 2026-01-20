@@ -578,11 +578,9 @@ char *nc_select_category(int month, int year) {
 				free(pc->categories[i]);
 			}
 			free(pc);
+			nc_exit_window(wptr_parent);
 			nc_exit_window(wptr);
 			manual_entry = nc_input_string("Enter Category");
-			if (manual_entry == NULL) {
-				return NULL;
-			}
 			return manual_entry;
 		case('\n'):
 		case('\r'):
@@ -636,8 +634,12 @@ int nc_input_transaction_type(void) {
 
 	/* Have these statements here to explictly return a 0 or 1 without
 	 * having to do an integer/char conversion */
-	if (t == '1') return 0;
-	if (t == '2') return 1;
+	if (t == '1') {
+		return 0;
+	}
+	if (t == '2') {
+		return 1;
+	}
 	
 	return -1;
 }
@@ -1764,6 +1766,10 @@ int nc_select_field_to_edit(WINDOW *wptr) {
 				mvwchgat(wptr, select, 0, -1, A_NORMAL, 0, NULL);
 				select++;
 				mvwchgat(wptr, select, 0, -1, A_REVERSE, 0, NULL);
+			} else {
+				mvwchgat(wptr, select, 0, -1, A_NORMAL, 0, NULL);
+				select = 1;
+				mvwchgat(wptr, select, 0, -1, A_REVERSE, 0, NULL);
 			}
 			break;
 		case('k'):
@@ -1771,6 +1777,10 @@ int nc_select_field_to_edit(WINDOW *wptr) {
 			if (select - 1 > 0) {
 				mvwchgat(wptr, select, 0, -1, A_NORMAL, 0, NULL);
 				select--;
+				mvwchgat(wptr, select, 0, -1, A_REVERSE, 0, NULL);
+			} else {
+				mvwchgat(wptr, select, 0, -1, A_NORMAL, 0, NULL);
+				select = INPUT_WIN_ROWS - BOX_OFFSET;
 				mvwchgat(wptr, select, 0, -1, A_REVERSE, 0, NULL);
 			}
 			break;
@@ -1936,32 +1946,6 @@ void nc_scroll_next(long b, FILE *fptr, WINDOW *wptr, ColumnWidth *cw) {
 	wmove(wptr, getmaxy(wptr) - 1, 0);
 	nc_print_record_hr(wptr, cw, ld, getmaxy(wptr) - 1);
 }
-
-//void TEST_nc_print_records_by_category(WINDOW *wptr, FILE *fptr, struct FlexArr *prsc) {
-//	ColumnWidth column_width, *cw = &column_width;
-//	struct LineData linedata, *ld = &linedata;
-//	char linebuffer[LINE_BUFFER];
-//	char *line;
-//
-//	int cur = 0;
-//	calculate_columns(cw, getmaxx(wptr) + BOX_OFFSET);
-//	int j = 0;
-//	for (int i = 0; i < prsc->lines - j; i++) {
-//		if (prsc->data[i] == 0) {
-//			j++;
-//			continue;
-//		}
-//		fseek(fptr, prsc->data[i], SEEK_SET);
-//		line = fgets(linebuffer, sizeof(linebuffer), fptr);	
-//		if (line == NULL) {
-//			break;
-//		}
-//		tokenize_str(ld, &line);
-//		nc_print_record_hr(wptr, cw, ld, cur);
-//		cur++;
-//	}
-//	wgetch(wptr);
-//}
 
 /*
  * Main read loop. Populates member values in the struct pointed to 
