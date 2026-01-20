@@ -1547,7 +1547,6 @@ int nc_read_select_month(WINDOW *wptr, FILE* fptr, int year) {
 	int print_x = 2;
 
 	int temp_y = 0;
-//	int temp_x = 0;
 	
 	int scr_idx = 0;
 	int cur_idx = 0;
@@ -1571,7 +1570,6 @@ int nc_read_select_month(WINDOW *wptr, FILE* fptr, int year) {
 	while (c != '\r' && c != '\n' && c != KEY_F(QUIT)) {
 		c = wgetch(wptr);
 		temp_y = getcury(wptr);
-//		getyx(wptr, temp_y, temp_x);
 		switch(c) {
 		case('j'):
 		case(KEY_DOWN):
@@ -1592,7 +1590,7 @@ int nc_read_select_month(WINDOW *wptr, FILE* fptr, int year) {
 			}
 			break;
 		case(KEY_RESIZE):
-			// FIX Right now I have no idea how to handle this
+
 			break;
 		case('\n'):
 		case('\r'):
@@ -2229,8 +2227,8 @@ void nc_read_setup(int sel_year, int sel_month, int sort) {
 
 	nc_read_loop(wptr_read, wptr_lines, fptr, sr, psc);
 
-	wclear(wptr_read);
 	wclear(wptr_lines);
+	wclear(wptr_read);
 
 	free(psc);
 
@@ -2268,6 +2266,7 @@ SELECT_DATE_FAIL:
 			getch();
 		}
 		nc_read_setup(sel_year, sel_month, 0);
+		break;
 	case(SORT):
 		if (sort == 1) {
 			sort = 0;
