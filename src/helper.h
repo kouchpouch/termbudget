@@ -12,4 +12,7 @@ extern int lower(char *ltr);
  * returns maximum days in that month */
 extern bool dayexists(int d, int m, int y);
 
+/* Returns the len of n */
+extern int intlen(int n);
+
 #endif

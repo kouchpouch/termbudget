@@ -83,3 +83,11 @@ bool dayexists(int d, int m, int y) {
 
 	return false;
 }
+
+int intlen(int n) {
+	int len = 0;
+	for (int i = 1; i < n; i *= 10) {
+		len++;
+	}
+	return len;
+}
