@@ -53,7 +53,38 @@ void clear_input_error_message(WINDOW *wptr) {
 	wrefresh(wptr);
 }
 
-void calculate_columns(struct ColumnWidth *cw, int max_x) {
+int calculate_overview_columns(WINDOW *wptr) {
+	/* 
+	 * There will be an expense and an income bar, each 1 column wide. =2
+	 * There will also be text with the abbreviated month. =3
+	 * Then there's the dollar amounts, which can vary but these can be offset
+	 * vertically to not interfere with eachother. There also needs to be
+	 * spacing between every month's bar graph. This should be dynamic but at
+	 * least 2 columns.
+	 *
+	 * Therefore the minimum width to display the overview is:
+	 * Minimum 7 per month to center the abbreviated month.
+	 * 7 * 12 = 84 + 2 spaces on either side for the wptr_parent box.
+	 * Total Minimum Columns = 86 on stdscr, 84 on wptr_data.
+	 */
+
+	int space = 0;
+	if (getmaxx(wptr) >= 84) {
+		space = getmaxx(wptr) / 12;
+		if (space % 2 == 0) {
+			if (((space + 1) * 12) < getmaxx(wptr)) {
+				space += 1;
+			} else {
+				space -= 1;
+			}
+		}
+	} else {
+		return -1;
+	}
+	return space > 20 ? 20 : space;
+}
+
+void calculate_columns(struct ColWidth *cw, int max_x) {
 
 	cw->date = DATE_X;
 	cw->trns = TRNS_X;
@@ -77,7 +108,7 @@ void calculate_columns(struct ColumnWidth *cw, int max_x) {
 }
 
 void print_column_headers(WINDOW *wptr, int x_off) {
-	struct ColumnWidth column_width, *cw = &column_width;
+	struct ColWidth column_width, *cw = &column_width;
 	
 
 	int cur = x_off;

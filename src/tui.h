@@ -32,23 +32,28 @@
 #define INPUT_MSG_Y_OFFSET 2
 #define MAX_Y_CATG_SELECT 22 // Maximum of 20 categories on the screen
 
-typedef struct ColumnWidth {
+struct ColWidth {
 	int date;
 	int catg;
 	int desc;
 	int trns;
 	int amnt;
-} ColumnWidth;
+};
+
 
 /* Tests that the stdscr is big enough to handle this program */
 extern int test_terminal_size(void);
+
+/* Returns the number of spaces between each bar graph for the overview
+ * option */
+extern int calculate_overview_columns(WINDOW *wptr);
 
 /* 
  * Calculate column offsets for ncurses formatting, sets date width into date,
  * category width into catg, description width into desc, transaction type
  * width into trns, and amount into amnt.
  */
-extern void calculate_columns(struct ColumnWidth *cw, int max_x);
+extern void calculate_columns(struct ColWidth *cw, int max_x);
 
 /*
  * Print headers for the reading data to wptr, column width is calculated
