@@ -95,9 +95,10 @@ struct Balances {
 	double expense;
 };
 
+void calculate_balance(struct Balances *pb, struct FlexArr *pbo);
 void nc_read_setup(int sel_year, int sel_month, int sort);
 int nc_confirm_record(struct LineData *ld);
-void nc_print_record_hr(WINDOW *wptr, ColumnWidth *cw, struct LineData *ld, int y);
+void nc_print_record_hr(WINDOW *wptr, struct ColWidth *cw, struct LineData *ld, int y);
 void nc_print_record_vert(WINDOW *wptr, struct LineData *ld, int x_off);
 struct Categories *list_categories(int month, int year);
 struct FlexArr *index_csv();
@@ -797,6 +798,38 @@ DUPLICATE:
 	return pc; // Struct and each index of categories must be free'd
 }
 
+struct FlexArr *get_byte_offsets_date(int y, int m) {
+	int realloc_counter = 0;	
+	struct FlexArr *pbo = malloc(sizeof(*pbo) + (sizeof(int) * REALLOC_FLAG));
+	if (pbo == NULL) {
+		return NULL;
+	}
+	pbo->lines = 0;
+	FILE *fptr = open_csv("r");
+	struct FlexArr *pidx = index_csv();
+	struct FlexArr *plines = get_matching_line_nums(fptr, m, y);
+
+	for (int i = 0; i < plines->lines; i++) {
+		if (pbo->lines >= REALLOC_FLAG - 1) {
+			realloc_counter = 0;
+			struct FlexArr *tmp = realloc(pbo, sizeof(*pbo) +
+								 ((pbo->lines + REALLOC_FLAG) *
+		  						 sizeof(int)));
+			if (tmp == NULL) {
+				free(pbo);
+				return NULL;
+			}
+			pbo = tmp;
+		}
+		pbo->data[i] = pidx->data[plines->data[i]];
+		pbo->lines++;
+	}
+	free(pidx);
+	free(plines);
+	fclose(fptr);
+	return pbo;
+}
+
 struct FlexArr *sort_by_date(FILE *fptr, struct FlexArr *pidx,
 							 struct FlexArr *plines)
 {
@@ -813,7 +846,7 @@ struct FlexArr *sort_by_date(FILE *fptr, struct FlexArr *pidx,
 			realloc_counter = 0;
 			struct FlexArr *tmp = realloc(psbd, sizeof(*psbd) + 
 								 ((psbd->lines + REALLOC_FLAG) * 
-								 sizeof(char *)));
+								 sizeof(int)));
 			if (tmp == NULL) {
 				free(psbd);
 				return NULL;	
@@ -1320,11 +1353,91 @@ int *list_records_by_month(FILE *fptr, int matchyear) {
 	return months;
 }
 
+/* Returns the row on the bottom 4th of wptr */
+int last_quarter_row(WINDOW *wptr) {
+	return getmaxy(wptr) - getmaxy(wptr) / 4;
+}
+
+void nc_print_overview_balances(WINDOW *wptr, int *months, int year) {
+	int space = calculate_overview_columns(wptr);
+	int y = last_quarter_row(wptr) + 2;
+	int cur = (getmaxx(wptr) - space * 11) / 2 - 1;
+	struct Balances pb_, *pb = &pb_;
+	for (int i = 0; i < 12; i++) {
+		if (months[i] != 0) {
+			struct FlexArr *pbo = get_byte_offsets_date(year, months[i]);
+			calculate_balance(pb, pbo);
+			wmove(wptr, y, cur);
+			wprintw(wptr, "+$%.0f", pb->income);
+			wmove(wptr, y + 1, cur);
+			wprintw(wptr, "-$%.0f", pb->expense);
+			cur += space - (intlen(pb->income) + strlen("+$"));
+		} else {
+			wmove(wptr, y, cur);
+			wprintw(wptr, "+$0");
+			wmove(wptr, y + 1, cur);
+			wprintw(wptr, "-$0");
+			cur += space - (intlen(pb->income) + strlen("+$.00"));
+		}
+	}
+	wrefresh(wptr);
+}
+
+void nc_print_overview_months(WINDOW *wptr) {
+	int space = calculate_overview_columns(wptr);
+	int y = last_quarter_row(wptr);
+	int cur = (getmaxx(wptr) - space * 11) / 2 - 1;
+	wprintw(wptr, "INIT CUR: %d ", cur);
+	wprintw(wptr, "SPACE: %d ", space);
+	wprintw(wptr, "SPACEx11: %d ", space * 11);
+	wprintw(wptr, "MAX X: %d ", getmaxx(wptr));
+
+	for (int i = 0; i < 12; i++) {
+		wmove(wptr, y, cur);
+		wprintw(wptr, "%s", months[i]);
+		cur += space;
+	}
+	wrefresh(wptr);
+}
+
 /* This overview should show every month for the yearly overview with a bar
- * graph representing expense and income, with colors! */
-void nc_overview_setup(int year, int month) {
+ * graph representing expense and income, with colors! If there's no data 
+ * for the month, just display zero zero and no bar graph, but still show
+ * all the months. */
+void nc_overview(int year) {
+	WINDOW *wptr_parent = newwin(LINES - 1, 0, 0, 0);
+	WINDOW *wptr_data = create_lines_subwindow(getmaxy(wptr_parent) - 1,
+									getmaxx(wptr_parent), 1, BOX_OFFSET);
 	FILE *fptr = open_csv("r");
-	struct FlexArr *plines = get_matching_line_nums(fptr, year, month);
+	box(wptr_parent, 0, 0);
+	wrefresh(wptr_parent);
+	wrefresh(wptr_data);
+	
+	int *months = list_records_by_month(fptr, year);
+	fclose(fptr);
+
+	/* 
+	 * Attempt to print the bar graphs vertically, but if there isn't enough
+	 * room on the terminal, print them horizontally. If there's still not
+	 * enough room, print a "too small" message.
+	 */
+	int space = calculate_overview_columns(wptr_data);
+	if (space < 0) {
+		; // Attempt to print vertically
+	}
+
+	nc_print_overview_months(wptr_data);
+	
+	nc_print_overview_balances(wptr_data, months, year);
+
+	if (getmaxx(wptr_data) < 72) {
+		mvwprintw(wptr_data, 0, 0, "Terminal is too small");
+		wrefresh(wptr_data);
+	}
+
+	free(months);
+	nc_exit_window_key(wptr_parent);
+	nc_exit_window_key(wptr_data);
 }
 
 /* Prints a 2 bar graphs showing the difference between income and expense */
@@ -1698,7 +1811,7 @@ struct FlexArr *get_matching_line_nums(FILE *fptr, int month, int year) {
  */
 void nc_print_record_hr(
 	WINDOW *wptr, 
-	ColumnWidth *cw, 
+	struct ColWidth *cw, 
 	struct LineData *ld, 
 	int y) {
 
@@ -1888,7 +2001,7 @@ void nc_print_debug_line(WINDOW *wptr, int line) {
 	wrefresh(wptr);
 }
 
-void calculate_balance(struct Balances *pb, struct FlexArr *psc) {
+void calculate_balance(struct Balances *pb, struct FlexArr *pbo) {
 	FILE *fptr = open_csv("r");
 	pb->income = 0.0;
 	pb->expense = 0.0;
@@ -1896,8 +2009,8 @@ void calculate_balance(struct Balances *pb, struct FlexArr *psc) {
 	char linebuff[LINE_BUFFER];
 	char *line;
 
-	for (int i = 0; i < psc->lines; i++) {
-		fseek(fptr, psc->data[i], SEEK_SET);
+	for (int i = 0; i < pbo->lines; i++) {
+		fseek(fptr, pbo->data[i], SEEK_SET);
 		line = fgets(linebuff, sizeof(linebuff), fptr);
 		if (line == NULL) {
 			break;
@@ -1913,7 +2026,7 @@ void calculate_balance(struct Balances *pb, struct FlexArr *psc) {
 	fclose(fptr);
 }
 
-void nc_print_balances(WINDOW *wptr, struct FlexArr *psc) {
+void nc_print_balances_text(WINDOW *wptr, struct FlexArr *psc) {
 	struct Balances pb_, *pb = &pb_;
 	calculate_balance(pb, psc);
 	int total_len = intlen(pb->income) + intlen(pb->expense) + strlen("Expenses: $.00 Income: $.00");
@@ -1959,7 +2072,7 @@ void refresh_on_detail_close(WINDOW *wptr, WINDOW *wptr_parent, int n) {
 	wrefresh(wptr_parent);
 }
 
-void nc_scroll_prev(long b, FILE *fptr, WINDOW *wptr, ColumnWidth *cw) {
+void nc_scroll_prev(long b, FILE *fptr, WINDOW *wptr, struct ColWidth *cw) {
 	fseek(fptr, b, SEEK_SET);
 	char linebuff[LINE_BUFFER];
 	char *line_str = fgets(linebuff, sizeof(linebuff), fptr);
@@ -1974,7 +2087,7 @@ void nc_scroll_prev(long b, FILE *fptr, WINDOW *wptr, ColumnWidth *cw) {
 	nc_print_record_hr(wptr, cw, ld, 0);
 }
 
-void nc_scroll_next(long b, FILE *fptr, WINDOW *wptr, ColumnWidth *cw) {
+void nc_scroll_next(long b, FILE *fptr, WINDOW *wptr, struct ColWidth *cw) {
 	fseek(fptr, b, SEEK_SET);
 	char linebuff[LINE_BUFFER];
 	char *line_str;
@@ -1999,7 +2112,7 @@ void nc_scroll_next(long b, FILE *fptr, WINDOW *wptr, ColumnWidth *cw) {
 void nc_read_loop(WINDOW *wptr_parent, WINDOW *wptr, FILE *fptr, 
 				  struct SelRecord *sr, struct FlexArr *psc)
 {
-	ColumnWidth cw_, *cw = &cw_;
+	struct ColWidth cw_, *cw = &cw_;
 	struct LineData ld_, *ld = &ld_;
 	int max_y, max_x;
 	getmaxyx(wptr, max_y, max_x);
@@ -2008,7 +2121,7 @@ void nc_read_loop(WINDOW *wptr_parent, WINDOW *wptr, FILE *fptr,
 	char linebuff[LINE_BUFFER];
 
 	calculate_columns(cw, max_x + BOX_OFFSET);
-	nc_print_balances(wptr_parent, psc);
+	nc_print_balances_text(wptr_parent, psc);
 	nc_print_read_footer(stdscr);
 
 	/* Print initial lines based on screen size */
@@ -2215,7 +2328,7 @@ void nc_read_setup_default() {
 }
 
 void nc_read_setup(int sel_year, int sel_month, int sort) {
-	/* LINES - 1 to still display the footer under wptr_read */
+	/* LINES - 1 to still display the footer under wptr_parent */
 	nc_print_main_menu_footer(stdscr);
 	if (debug) {
 		nc_print_debug_flag(stdscr);
@@ -2227,42 +2340,42 @@ void nc_read_setup(int sel_year, int sel_month, int sort) {
 	sr->flag = -1;
 	FILE *fptr = open_csv("r");
 
-	WINDOW *wptr_read = newwin(LINES - 1, 0, 0, 0);
-	if (wptr_read == NULL) {
+	WINDOW *wptr_parent = newwin(LINES - 1, 0, 0, 0);
+	if (wptr_parent == NULL) {
 		perror("Failed to create ncurses window");
 		fclose(fptr);
 		return;
 	}
 
 	int max_y, max_x;
-	getmaxyx(wptr_read, max_y, max_x);
+	getmaxyx(wptr_parent, max_y, max_x);
 
-	WINDOW *wptr_lines;
+	WINDOW *wptr_data;
 	struct FlexArr *plines;
 
-	wptr_lines = create_lines_subwindow(max_y - 1, max_x, 1, BOX_OFFSET);
-	wrefresh(wptr_lines);
+	wptr_data = create_lines_subwindow(max_y - 1, max_x, 1, BOX_OFFSET);
+	wrefresh(wptr_data);
 
-	if (!sel_year) sel_year = nc_read_select_year(wptr_read, fptr);
+	if (!sel_year) sel_year = nc_read_select_year(wptr_parent, fptr);
 	if (sel_year == 0) {
 		goto SELECT_DATE_FAIL;
 	} else if (sel_year == RESIZE) {
 		sr->flag = 0;
 		goto SELECT_DATE_FAIL;
 	} else if (sel_year == -1) {
-		mvwxcprintw(wptr_read, max_y / 2, 
+		mvwxcprintw(wptr_parent, max_y / 2, 
 			  "No records exist, add (F1) to get started");
-		wgetch(wptr_read);
+		wgetch(wptr_parent);
 		goto SELECT_DATE_FAIL;
 	}
 
-	if (!sel_month) sel_month = nc_read_select_month(wptr_read, fptr, sel_year);
+	if (!sel_month) sel_month = nc_read_select_month(wptr_parent, fptr, sel_year);
 	if (sel_month < 0) {
 		free(pidx);
 		fclose(fptr);	
 		return;
 	}
-	wclear(wptr_read);
+	wclear(wptr_parent);
 
 	plines = get_matching_line_nums(fptr, sel_month, sel_year);
 	if (plines == NULL) {
@@ -2289,15 +2402,15 @@ void nc_read_setup(int sel_year, int sel_month, int sort) {
 		break;
 	}
 
-	print_column_headers(wptr_read, BOX_OFFSET);
-	box(wptr_read, 0, 0);
-	mvwprintw(wptr_read, 0, BOX_OFFSET, "%d %s", sel_year, months[sel_month - 1]);
-	mvwprintw(wptr_read, 0, 
+	print_column_headers(wptr_parent, BOX_OFFSET);
+	box(wptr_parent, 0, 0);
+	mvwprintw(wptr_parent, 0, BOX_OFFSET, "%d %s", sel_year, months[sel_month - 1]);
+	mvwprintw(wptr_parent, 0, 
 			  max_x - strlen(sort_text) - strlen("Sort By: ") - BOX_OFFSET, 
 			  "Sort By: %s", sort_text);
-	wrefresh(wptr_read);
+	wrefresh(wptr_parent);
 
-	nc_read_loop(wptr_read, wptr_lines, fptr, sr, psc);
+	nc_read_loop(wptr_parent, wptr_data, fptr, sr, psc);
 
 	free(psc);
 	psc = NULL;
@@ -2310,8 +2423,8 @@ SELECT_DATE_FAIL:
 	fclose(fptr);
 	fptr = NULL;
 
-	nc_exit_window(wptr_lines);
-	nc_exit_window(wptr_read);
+	nc_exit_window(wptr_data);
+	nc_exit_window(wptr_parent);
 //	nc_print_main_menu_footer(stdscr);
 
 	switch(sr->flag) {
@@ -2341,7 +2454,7 @@ SELECT_DATE_FAIL:
 		nc_read_setup(sel_year, sel_month, sort);
 		break;
 	case(OVERVIEW):
-		nc_overview_setup(sel_year, sel_month);
+		nc_overview(sel_year);
 		break;
 	case(RESIZE):
 		while (test_terminal_size() == -1) {
