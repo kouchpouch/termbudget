@@ -823,6 +823,7 @@ struct FlexArr *get_byte_offsets_date(int y, int m) {
 		}
 		pbo->data[i] = pidx->data[plines->data[i]];
 		pbo->lines++;
+		realloc_counter++;
 	}
 	free(pidx);
 	free(plines);
@@ -1358,28 +1359,54 @@ int last_quarter_row(WINDOW *wptr) {
 	return getmaxy(wptr) - getmaxy(wptr) / 4;
 }
 
-void nc_print_overview_balances(WINDOW *wptr, int *months, int year) {
+int first_quarter_row(WINDOW *wptr) {
+	return getmaxy(wptr) / 4;
+}
+
+void nc_print_overview_graph(WINDOW *wptr, int *months, int year) {
+	init_pair(1, COLOR_RED, -1);
+	init_pair(2, COLOR_GREEN, -1);
+
+	int tmpx = 0;
 	int space = calculate_overview_columns(wptr);
 	int y = last_quarter_row(wptr) + 2;
 	int cur = (getmaxx(wptr) - space * 11) / 2 - 1;
+	int mo = 1;
+	double ratios[11] = {0.0}; // Holds each month's income/expense ratio
+	double maxvals[11] = {0.0};
 	struct Balances pb_, *pb = &pb_;
-	for (int i = 0; i < 12; i++) {
-		if (months[i] != 0) {
+	for (int i = 0; i < 12 && mo <= 12; i++, mo++) {
+		tmpx = 0;
+		if (months[i] == mo) {
 			struct FlexArr *pbo = get_byte_offsets_date(year, months[i]);
 			calculate_balance(pb, pbo);
-			wmove(wptr, y, cur);
+			tmpx = intlen(pb->income) / 2;
+			wmove(wptr, y, cur - tmpx);
+			wattron(wptr, COLOR_PAIR(2));
 			wprintw(wptr, "+$%.0f", pb->income);
-			wmove(wptr, y + 1, cur);
+			wattroff(wptr, COLOR_PAIR(2));
+			tmpx = intlen(pb->expense) / 2;
+			wmove(wptr, y + 1, cur - tmpx);
+			wattron(wptr, COLOR_PAIR(1));
 			wprintw(wptr, "-$%.0f", pb->expense);
-			cur += space - (intlen(pb->income) + strlen("+$"));
+			wattron(wptr, COLOR_PAIR(1));
+			ratios[i] = pb->expense / pb->income;
+			maxvals[i] = pb->expense >= pb->income ? pb->expense : pb->income;
+			cur += space;
 		} else {
 			wmove(wptr, y, cur);
+			wattron(wptr, COLOR_PAIR(2));
 			wprintw(wptr, "+$0");
+			wattroff(wptr, COLOR_PAIR(2));
 			wmove(wptr, y + 1, cur);
+			wattron(wptr, COLOR_PAIR(1));
 			wprintw(wptr, "-$0");
-			cur += space - (intlen(pb->income) + strlen("+$.00"));
+			wattron(wptr, COLOR_PAIR(1));
+			cur += space;
+			i--;
 		}
 	}
+
 	wrefresh(wptr);
 }
 
@@ -1427,17 +1454,18 @@ void nc_overview(int year) {
 	}
 
 	nc_print_overview_months(wptr_data);
-	
-	nc_print_overview_balances(wptr_data, months, year);
+	nc_print_overview_graph(wptr_data, months, year);
 
 	if (getmaxx(wptr_data) < 72) {
 		mvwprintw(wptr_data, 0, 0, "Terminal is too small");
 		wrefresh(wptr_data);
 	}
 
+	wgetch(wptr_parent);
+
 	free(months);
-	nc_exit_window_key(wptr_parent);
-	nc_exit_window_key(wptr_data);
+	nc_exit_window(wptr_parent);
+	nc_exit_window(wptr_data);
 }
 
 /* Prints a 2 bar graphs showing the difference between income and expense */
