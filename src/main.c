@@ -1363,17 +1363,114 @@ int first_quarter_row(WINDOW *wptr) {
 	return getmaxy(wptr) / 4;
 }
 
-void nc_print_overview_graph(WINDOW *wptr, int *months, int year) {
-	init_pair(1, COLOR_RED, -1);
-	init_pair(2, COLOR_GREEN, -1);
+double get_max_value(int elements, double *arr) {
+	double tmp = 0.0;
+	double max = 0.0;
 
+	for (int i = 0; i < elements; i++) {
+		tmp = arr[i];
+		if (tmp > max) {
+			max = tmp;	
+		}
+	}
+
+	return max;
+}
+
+void nc_print_overview_graphs(WINDOW *wptr, int *months, int year) {
+	double ratios[12] = {0.0}; // Holds each month's income/expense ratio
+	double maxvals[12] = {0.0};
+	struct Balances pb_, *pb = &pb_;
+	int space = calculate_overview_columns(wptr);
+	int mo = 1;
+
+	enum GraphRatios {
+		NO_INCOME = -1,
+		NO_EXPENSE = -2,
+	};
+
+	for (int i = 0; i < 12 && mo <= 12; i++, mo++) {
+		if (months[i] == mo) {
+			struct FlexArr *pbo = get_byte_offsets_date(year, months[i]);
+			calculate_balance(pb, pbo);
+			if (pb->income == 0) { // Prevent a div by zero
+				ratios[mo - 1] = NO_INCOME;
+			} else if (pb->expense == 0) {
+				ratios[mo - 1] = NO_EXPENSE;
+			} else {
+				ratios[mo - 1] = pb->expense / pb->income;
+			}
+			maxvals[mo - 1] = pb->expense >= pb->income ? pb->expense : pb->income;
+		} else {
+			i--;
+		}
+	}
+
+	int bar_width = 3;
+	int cur = (getmaxx(wptr) - space * 11) / 2 - 1;
+	double exp_bar_len = 0;
+	double inc_bar_len = 0;
+	int max_bar_len = (last_quarter_row(wptr) - 2) - first_quarter_row(wptr) + 4;
+
+	double maxval = get_max_value(12, maxvals);
+
+	for (int i = 0; i < 12; i++) {
+		if (maxvals[i] == 0) {
+			cur += space;
+			continue;
+		}
+
+		if (ratios[i] > 1) {
+			// Expenses are greater than income
+			exp_bar_len = maxvals[i] / maxval;
+			exp_bar_len = max_bar_len * exp_bar_len;
+			inc_bar_len = exp_bar_len / ratios[i];
+
+		} else if (ratios[i] == NO_INCOME) {
+			// There are only expenses
+			exp_bar_len = maxvals[i] / maxval;
+			inc_bar_len = 0;
+
+		} else if (ratios[i] == NO_EXPENSE) {
+			inc_bar_len = maxvals[i] / maxval;
+			exp_bar_len = 0;
+
+		} else {
+			// Income is greater than expenses
+			inc_bar_len = maxvals[i] / maxval;
+			inc_bar_len = max_bar_len * inc_bar_len;
+			exp_bar_len = inc_bar_len / ratios[i];
+		}
+
+		if (inc_bar_len > 0 && inc_bar_len < 1) {
+			inc_bar_len = 1;
+		}
+		if (exp_bar_len > 0 && exp_bar_len < 1) {
+			exp_bar_len = 1;
+		}
+
+		for (int j = 0; j < exp_bar_len; j++) {
+			mvwchgat(wptr, last_quarter_row(wptr) - 2 - j, cur, bar_width, A_REVERSE, COLOR_RED, NULL);
+		}
+
+		cur += bar_width;
+		for (int j = 0; j < inc_bar_len; j++) {
+			mvwchgat(wptr, last_quarter_row(wptr) - 2 - j, cur, bar_width, A_REVERSE, COLOR_GREEN, NULL);
+		}
+		cur += space - bar_width;
+	}
+	
+	/* Debug */
+	wrefresh(wptr);
+	
+}
+
+void nc_print_overview_balances(WINDOW *wptr, int *months, int year) {
 	int tmpx = 0;
 	int space = calculate_overview_columns(wptr);
 	int y = last_quarter_row(wptr) + 2;
-	int cur = (getmaxx(wptr) - space * 11) / 2 - 1;
+	int cur = (getmaxx(wptr) - space * 11) / 2;
 	int mo = 1;
-	double ratios[11] = {0.0}; // Holds each month's income/expense ratio
-	double maxvals[11] = {0.0};
 	struct Balances pb_, *pb = &pb_;
 	for (int i = 0; i < 12 && mo <= 12; i++, mo++) {
 		tmpx = 0;
@@ -1390,8 +1487,6 @@ void nc_print_overview_graph(WINDOW *wptr, int *months, int year) {
 			wattron(wptr, COLOR_PAIR(1));
 			wprintw(wptr, "-$%.0f", pb->expense);
 			wattron(wptr, COLOR_PAIR(1));
-			ratios[i] = pb->expense / pb->income;
-			maxvals[i] = pb->expense >= pb->income ? pb->expense : pb->income;
 			cur += space;
 		} else {
 			wmove(wptr, y, cur);
@@ -1413,7 +1508,7 @@ void nc_print_overview_graph(WINDOW *wptr, int *months, int year) {
 void nc_print_overview_months(WINDOW *wptr) {
 	int space = calculate_overview_columns(wptr);
 	int y = last_quarter_row(wptr);
-	int cur = (getmaxx(wptr) - space * 11) / 2 - 1;
+	int cur = (getmaxx(wptr) - space * 11) / 2;
 	wprintw(wptr, "INIT CUR: %d ", cur);
 	wprintw(wptr, "SPACE: %d ", space);
 	wprintw(wptr, "SPACEx11: %d ", space * 11);
@@ -1435,6 +1530,8 @@ void nc_overview(int year) {
 	WINDOW *wptr_parent = newwin(LINES - 1, 0, 0, 0);
 	WINDOW *wptr_data = create_lines_subwindow(getmaxy(wptr_parent) - 1,
 									getmaxx(wptr_parent), 1, BOX_OFFSET);
+	init_pair(1, COLOR_RED, -1);
+	init_pair(2, COLOR_GREEN, -1);
 	FILE *fptr = open_csv("r");
 	box(wptr_parent, 0, 0);
 	wrefresh(wptr_parent);
@@ -1454,7 +1551,8 @@ void nc_overview(int year) {
 	}
 
 	nc_print_overview_months(wptr_data);
-	nc_print_overview_graph(wptr_data, months, year);
+	nc_print_overview_balances(wptr_data, months, year);
+	nc_print_overview_graphs(wptr_data, months, year);
 
 	if (getmaxx(wptr_data) < 72) {
 		mvwprintw(wptr_data, 0, 0, "Terminal is too small");
