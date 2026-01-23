@@ -37,6 +37,7 @@ int sort_csv(int month, int day, int year) {
 	bool yearmatch = false;
 	bool monthmatch = false;
 	bool lessermonthsfound = false;
+	bool greatermonthfound = false;
 	bool yearlessthanmin = false;
 
 	int realloc_counter = 0;
@@ -104,10 +105,15 @@ int sort_csv(int month, int day, int year) {
 					result_line = line - 1; // Went too far, go back one line
 					break;
 				}
-			/* Handle edge case where E.G. a line has only 1 matching month */
+			/* Handle edge case where a line has only 1 matching month */
 			} else if (monthmatch == true && monthtoken > month) {
 				lessermonthsfound = false;
+				result_line = line;
 				break;
+			} else if (monthmatch == false && monthtoken > month) {
+				greatermonthfound = true;
+				result_line = line;
+				break;	
 			} else {
 				result_line = arr[0];
 				break;
@@ -130,11 +136,15 @@ int sort_csv(int month, int day, int year) {
 	} else if (yearmatch == false) {
 		year > maxyear ? (result_line = line) : (result_line = 1);
 	}
-	if (yearmatch == true && monthmatch == false && lessermonthsfound == true) {
+	if (yearmatch && !monthmatch && lessermonthsfound && greatermonthfound) {
+		free(arr);
+		fclose(fptr);
+		return result_line - 1;
+	} else if (yearmatch && !monthmatch && lessermonthsfound) {
 		free(arr);
 		fclose(fptr);
 		return result_line;
-	} else if (yearmatch == true && monthmatch == false) {
+	} else if (yearmatch && !monthmatch) {
 		free(arr);
 		fclose(fptr);
 		return result_line - 1;

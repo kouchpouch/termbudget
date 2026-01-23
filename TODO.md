@@ -86,5 +86,7 @@
             doesn't already exist.
     - ( ) Input too short warning when entering a single digit line number in 
             CLI mode
-    - ( ) Sorter still doesn't completely work. Adding months between months
-            doesn't work as intended.
+    - (*) Sorter still doesn't completely work. Adding months between months
+            doesn't work as intended. If January has 2 records in it and a
+            new record is added, like a record in May, the may record will be
+            inserted between the two records in January.

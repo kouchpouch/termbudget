@@ -1414,6 +1414,11 @@ void nc_print_overview_graphs(WINDOW *wptr, int *months, int year) {
 
 	double maxval = get_max_value(12, maxvals);
 
+	wmove(wptr, 1, 1);
+	for (int i = 0; i < 12; i++) {
+		wprintw(wptr, "RAT: %.2f VAL: %.2f\n", ratios[i], maxvals[i]);
+	}
+
 	for (int i = 0; i < 12; i++) {
 		if (maxvals[i] == 0) {
 			cur += space;
@@ -1439,24 +1444,30 @@ void nc_print_overview_graphs(WINDOW *wptr, int *months, int year) {
 			// Income is greater than expenses
 			inc_bar_len = maxvals[i] / maxval;
 			inc_bar_len = max_bar_len * inc_bar_len;
-			exp_bar_len = inc_bar_len / ratios[i];
+			exp_bar_len = inc_bar_len * ratios[i];
+			wmove(wptr, getmaxy(wptr) - 2, 5);
+			wprintw(wptr, "%.2f", exp_bar_len);
+			wgetch(wptr);
 		}
 
 		if (inc_bar_len > 0 && inc_bar_len < 1) {
 			inc_bar_len = 1;
 		}
+
 		if (exp_bar_len > 0 && exp_bar_len < 1) {
 			exp_bar_len = 1;
 		}
+
+		for (int j = 0; j < inc_bar_len; j++) {
+			mvwchgat(wptr, last_quarter_row(wptr) - 2 - j, cur, bar_width, A_REVERSE, COLOR_GREEN, NULL);
+		}
+
+		cur += bar_width;
 
 		for (int j = 0; j < exp_bar_len; j++) {
 			mvwchgat(wptr, last_quarter_row(wptr) - 2 - j, cur, bar_width, A_REVERSE, COLOR_RED, NULL);
 		}
 
-		cur += bar_width;
-		for (int j = 0; j < inc_bar_len; j++) {
-			mvwchgat(wptr, last_quarter_row(wptr) - 2 - j, cur, bar_width, A_REVERSE, COLOR_GREEN, NULL);
-		}
 		cur += space - bar_width;
 	}
 	
@@ -1559,6 +1570,7 @@ void nc_overview(int year) {
 		wrefresh(wptr_data);
 	}
 
+	wrefresh(wptr_data);
 	wgetch(wptr_parent);
 
 	free(months);
