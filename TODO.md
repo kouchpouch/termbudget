@@ -37,6 +37,7 @@
     - (*) Add page up/page down/end/home keys for navigating lists
     - (*) Add sort by feature
     - ( ) Dim menu options in the footer if they are not available to use
+    - ( ) Overview can be selected on nc_select_year
 
 #### Main Feature Set
     - (*) Create a transaction
@@ -61,6 +62,8 @@
             - (*) When adding a transaction, select a category or add new
                     in an NCURSES menu.
         - ( ) Overview
+            - ( ) With bar graphs
+            - ( ) Yearly summary
         - (*) Scroll through dates
         - ( ) Resizing
     - (*) Basic Bar Graph Trends
@@ -83,3 +86,5 @@
             doesn't already exist.
     - ( ) Input too short warning when entering a single digit line number in 
             CLI mode
+    - ( ) Sorter still doesn't completely work. Adding months between months
+            doesn't work as intended.
