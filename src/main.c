@@ -1414,9 +1414,11 @@ void nc_print_overview_graphs(WINDOW *wptr, int *months, int year) {
 
 	double maxval = get_max_value(12, maxvals);
 
-	wmove(wptr, 1, 1);
-	for (int i = 0; i < 12; i++) {
-		wprintw(wptr, "RAT: %.2f VAL: %.2f\n", ratios[i], maxvals[i]);
+	if (debug) {
+		wmove(wptr, 1, 1);
+		for (int i = 0; i < 12; i++) {
+			wprintw(wptr, "RAT: %.2f VAL: %.2f\n", ratios[i], maxvals[i]);
+		}
 	}
 
 	for (int i = 0; i < 12; i++) {
@@ -1445,9 +1447,6 @@ void nc_print_overview_graphs(WINDOW *wptr, int *months, int year) {
 			inc_bar_len = maxvals[i] / maxval;
 			inc_bar_len = max_bar_len * inc_bar_len;
 			exp_bar_len = inc_bar_len * ratios[i];
-			wmove(wptr, getmaxy(wptr) - 2, 5);
-			wprintw(wptr, "%.2f", exp_bar_len);
-			wgetch(wptr);
 		}
 
 		if (inc_bar_len > 0 && inc_bar_len < 1) {
@@ -1459,13 +1458,15 @@ void nc_print_overview_graphs(WINDOW *wptr, int *months, int year) {
 		}
 
 		for (int j = 0; j < inc_bar_len; j++) {
-			mvwchgat(wptr, last_quarter_row(wptr) - 2 - j, cur, bar_width, A_REVERSE, COLOR_GREEN, NULL);
+			mvwchgat(wptr, last_quarter_row(wptr) - 2 - j, cur, bar_width, 
+					 A_REVERSE, COLOR_GREEN, NULL);
 		}
 
 		cur += bar_width;
 
 		for (int j = 0; j < exp_bar_len; j++) {
-			mvwchgat(wptr, last_quarter_row(wptr) - 2 - j, cur, bar_width, A_REVERSE, COLOR_RED, NULL);
+			mvwchgat(wptr, last_quarter_row(wptr) - 2 - j, cur, bar_width, 
+					 A_REVERSE, COLOR_RED, NULL);
 		}
 
 		cur += space - bar_width;
@@ -1520,10 +1521,13 @@ void nc_print_overview_months(WINDOW *wptr) {
 	int space = calculate_overview_columns(wptr);
 	int y = last_quarter_row(wptr);
 	int cur = (getmaxx(wptr) - space * 11) / 2;
-	wprintw(wptr, "INIT CUR: %d ", cur);
-	wprintw(wptr, "SPACE: %d ", space);
-	wprintw(wptr, "SPACEx11: %d ", space * 11);
-	wprintw(wptr, "MAX X: %d ", getmaxx(wptr));
+
+	if (debug) {
+		wprintw(wptr, "INIT CUR: %d ", cur);
+		wprintw(wptr, "SPACE: %d ", space);
+		wprintw(wptr, "SPACEx11: %d ", space * 11);
+		wprintw(wptr, "MAX X: %d ", getmaxx(wptr));
+	}
 
 	for (int i = 0; i < 12; i++) {
 		wmove(wptr, y, cur);
