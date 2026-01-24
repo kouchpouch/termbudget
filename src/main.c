@@ -803,7 +803,7 @@ struct FlexArr *get_byte_offsets_date(int y, int m) {
 	struct FlexArr *plines = get_matching_line_nums(fptr, m, y);
 
 	for (int i = 0; i < plines->lines; i++) {
-		if (pbo->lines >= REALLOC_FLAG - 1) {
+		if (realloc_counter >= REALLOC_FLAG - 1) {
 			realloc_counter = 0;
 			struct FlexArr *tmp = realloc(pbo, sizeof(*pbo) +
 								 ((pbo->lines + REALLOC_FLAG) *
@@ -836,7 +836,7 @@ struct FlexArr *sort_by_date(FILE *fptr, struct FlexArr *pidx,
 	rewind(fptr);
 
 	for (int i = 0; i < plines->lines; i++) {
-		if (psbd->lines >= REALLOC_FLAG - 1) {
+		if (realloc_counter >= REALLOC_FLAG - 1) {
 			realloc_counter = 0;
 			struct FlexArr *tmp = realloc(psbd, sizeof(*psbd) + 
 								 ((psbd->lines + REALLOC_FLAG) * 
