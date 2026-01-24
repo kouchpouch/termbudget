@@ -298,7 +298,7 @@ static void nc_print_footer(WINDOW *wptr, struct Footer *pf) {
 	if (pf->edit == OFF) {
 		wattron(wptr, A_INVIS);
 	}
-	mvwprintw(wptr, max_y - 1, cur += strlen(edit_text), "%s", edit_key);
+	mvwprintw(wptr, max_y - 1, cur += strlen(add_text), "%s", edit_key);
 	if (pf->edit == DIM) {
 		wattron(wptr, A_DIM);
 		wattron(wptr, A_REVERSE);
