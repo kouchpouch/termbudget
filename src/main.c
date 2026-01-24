@@ -10,23 +10,15 @@
 #include "sorter.h"
 #include "tui.h"
 #include "parser.h"
-
-#define CSV_DIR "./data.csv"
-#define CSV_BAK_DIR "./data.csv.bak"
-#define CSV_FIELDS 7
-#define TEMP_FILE_DIR "./tmp.txt"
-#define MIN_INPUT_CHAR 2
-#define LINE_BUFFER 200
-#define STDIN_LARGE_BUFF 64
-#define STDIN_SMALL_BUFF 8
-#define REALLOC_FLAG 64
-#define INPUT_MSG_Y_OFFSET 2
+#include "main.h"
 
 #define MAX_LEN_AMOUNT 9
 #define MAX_LEN_DAY_MON 2
 #define MIN_LEN_DAY_MON 1
 #define MAX_LEN_YEAR 4
 #define MIN_LEN_YEAR 4
+#define MIN_INPUT_CHAR 2
+#define INPUT_MSG_Y_OFFSET 2
 
 #define CURRENT_YEAR 2026 // FIX This is to not be hard coded
 
@@ -95,6 +87,7 @@ struct Balances {
 	double expense;
 };
 
+void nc_read_setup_default();
 void calculate_balance(struct Balances *pb, struct FlexArr *pbo);
 void nc_read_setup(int sel_year, int sel_month, int sort);
 int nc_confirm_record(struct LineData *ld);
@@ -1401,6 +1394,7 @@ void nc_print_overview_graphs(WINDOW *wptr, int *months, int year) {
 				ratios[mo - 1] = pb->expense / pb->income;
 			}
 			maxvals[mo - 1] = pb->expense >= pb->income ? pb->expense : pb->income;
+			free(pbo);
 		} else {
 			i--;
 		}
@@ -1471,10 +1465,6 @@ void nc_print_overview_graphs(WINDOW *wptr, int *months, int year) {
 
 		cur += space - bar_width;
 	}
-	
-	/* Debug */
-	wrefresh(wptr);
-	
 }
 
 void nc_print_overview_balances(WINDOW *wptr, int *months, int year) {
@@ -1499,6 +1489,7 @@ void nc_print_overview_balances(WINDOW *wptr, int *months, int year) {
 			wattron(wptr, COLOR_PAIR(1));
 			wprintw(wptr, "-$%.0f", pb->expense);
 			wattron(wptr, COLOR_PAIR(1));
+			free(pbo);
 			cur += space;
 		} else {
 			wmove(wptr, y, cur);
@@ -1534,14 +1525,40 @@ void nc_print_overview_months(WINDOW *wptr) {
 		wprintw(wptr, "%s", months[i]);
 		cur += space;
 	}
-	wrefresh(wptr);
 }
 
-/* This overview should show every month for the yearly overview with a bar
- * graph representing expense and income, with colors! If there's no data 
- * for the month, just display zero zero and no bar graph, but still show
- * all the months. */
-void nc_overview(int year) {
+unsigned int nc_overview_loop(WINDOW *wptr, int *months, int year) {
+	unsigned int flag = 0;
+	int c;
+	int space = calculate_overview_columns(wptr);
+	if (space > 0) {
+		nc_print_overview_months(wptr);
+		nc_print_overview_balances(wptr, months, year);
+		nc_print_overview_graphs(wptr, months, year);
+		wrefresh(wptr);
+		c = wgetch(wptr);
+	} else {
+		wprintw(wptr, "Terminal is too small");
+		wrefresh(wptr);
+		c = wgetch(wptr);
+	}
+
+	switch(c) {
+	case(KEY_RESIZE):
+		flag = RESIZE;
+		break;
+	case(KEY_F(QUIT)):
+		flag = QUIT;
+		break;
+	default:
+		flag = NO_SELECT;
+		break;
+	}
+
+	return flag;
+}
+
+void nc_overview_setup(int year) {
 	WINDOW *wptr_parent = newwin(LINES - 1, 0, 0, 0);
 	WINDOW *wptr_data = create_lines_subwindow(getmaxy(wptr_parent) - 1,
 									getmaxx(wptr_parent), 1, BOX_OFFSET);
@@ -1555,31 +1572,22 @@ void nc_overview(int year) {
 	int *months = list_records_by_month(fptr, year);
 	fclose(fptr);
 
-	/* 
-	 * Attempt to print the bar graphs vertically, but if there isn't enough
-	 * room on the terminal, print them horizontally. If there's still not
-	 * enough room, print a "too small" message.
-	 */
-	int space = calculate_overview_columns(wptr_data);
-	if (space < 0) {
-		; // Attempt to print vertically
-	}
-
-	nc_print_overview_months(wptr_data);
-	nc_print_overview_balances(wptr_data, months, year);
-	nc_print_overview_graphs(wptr_data, months, year);
-
-	if (getmaxx(wptr_data) < 72) {
-		mvwprintw(wptr_data, 0, 0, "Terminal is too small");
-		wrefresh(wptr_data);
-	}
-
-	wrefresh(wptr_data);
-	wgetch(wptr_parent);
+	unsigned int flag = nc_overview_loop(wptr_data, months, year);
 
 	free(months);
 	nc_exit_window(wptr_parent);
 	nc_exit_window(wptr_data);
+
+	switch(flag) {
+	case(RESIZE):
+		nc_overview_setup(year);
+		break;
+	case(QUIT):
+		break;
+	default:
+		nc_read_setup_default();
+		break;
+	}
 }
 
 /* Prints a 2 bar graphs showing the difference between income and expense */
@@ -1782,6 +1790,7 @@ int nc_read_select_year(WINDOW *wptr, FILE *fptr) {
 		case('\r'):
 			selected_year = years_arr[scr_idx];
 			break;
+		case('q'):
 		case(KEY_F(QUIT)):
 			free(years_arr);
 			return 0;
@@ -2596,7 +2605,7 @@ SELECT_DATE_FAIL:
 		nc_read_setup(sel_year, sel_month, sort);
 		break;
 	case(OVERVIEW):
-		nc_overview(sel_year);
+		nc_overview_setup(sel_year);
 		break;
 	case(RESIZE):
 		while (test_terminal_size() == -1) {
