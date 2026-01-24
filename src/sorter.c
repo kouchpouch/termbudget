@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <limits.h>
 #include "sorter.h"
+#include "main.h"
 
 #define REALLOC_THRESHOLD 64
 
@@ -20,6 +21,22 @@ int get_total_csv_lines() {
 /* We assume that the CSV is sorted by date already. Because every operation
  * to edit or add a transaction will go through the sorting function to
  * determine where to insert the record. */
+
+//unsigned int sort_csv_new(int month, int day, int year) {
+//	FILE *fptr = fopen("data.csv", "r");
+//	if (fptr == NULL) {
+//		perror("Failed to open file");
+//		exit(1);
+//	}
+//
+//	unsigned int result_line = -1;
+//	unsigned int line = 1; // Line starts at 1 to skip the header
+//	
+//	/* Read the header */
+//	
+//
+//
+//}
 
 /* Returns a line number to insert a record sorted by year, month, day */
 int sort_csv(int month, int day, int year) {
