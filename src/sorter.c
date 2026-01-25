@@ -30,8 +30,9 @@ unsigned int sort_csv_new(int month, int day, int year) {
 		exit(1);
 	}
 
-	unsigned int result_line = -1;
 	unsigned int line = 1; // Line starts at 1 to skip the header
+	unsigned int result_line = 0;
+	unsigned int lessdayline = 0;
 	
 	/* Read the header */
 	if (seek_beyond_header(fptr) == -1) {
@@ -43,33 +44,72 @@ unsigned int sort_csv_new(int month, int day, int year) {
 	char linebuff[LINE_BUFFER];
 	char *str;
 
-	unsigned int max_year = 0;
-	unsigned int min_year = UINT_MAX;
 	unsigned int yeartok, monthtok, daytok;
-	unsigned int realloc_counter = 0;
-
-	int *arr = calloc(REALLOC_THRESHOLD, sizeof(unsigned int));
-	unsigned int idx = 0;
+	bool greateryear = false;
+	bool matchingyear = false;
+	bool lesseryear = false;
+	bool lessermonth = false;
+	bool lesserday = false;
 
 	while((str = fgets(linebuff, sizeof(linebuff), fptr)) != NULL) {
+		line++;
+
 		monthtok = atoi(strsep(&str, ","));
 		daytok = atoi(strsep(&str, ","));
 		yeartok = atoi(strsep(&str, ","));
 
-		if (yeartok < min_year) {
-			min_year = yeartok;
-		} else if (yeartok > max_year) {
-			max_year = yeartok;
+		if (yeartok < year) {
+			lesseryear = true;
+		} else if (yeartok == year) {
+			matchingyear = true;
+		} else if (yeartok > year) {
+			greateryear = true;
 		}
 
-		/* Thinking to myself
-		 * I wonder if I can make this simpler, maybe when the year
-		 * matches, the month matches, and the day matches, sure,
-		 * we know the line.
-		 *
-		 */
+		if (yeartok > year) {
+			result_line = line - 1;
+			break;
+		}
 
+		if (yeartok == year && monthtok == month && daytok == day) {
+			lesserday = false;
+			lessermonth = false;
+			result_line = line;
+			break;
+		}
+
+		if (yeartok == year && monthtok == month && daytok > day) {
+			lesserday = false;
+			lessermonth = false;
+			result_line = line - 1;
+			break;
+		}
+
+		if (yeartok == year && monthtok == month && daytok < day) {
+			lesserday = true;
+			lessermonth = false;
+			lessdayline = line;
+		}
+		
+		if (yeartok == year && monthtok > month) {
+			lessermonth = false;
+			result_line = line - 1;
+			break;
+		}
+
+		if (yeartok == year && monthtok < month) {
+			lessermonth = true;
+			result_line = line;
+		}
 	}
+
+	if (!lesseryear && !matchingyear && greateryear) {
+		result_line = 1;
+	} else if (lesserday) {
+		result_line = lessdayline;
+	}
+
+	fclose(fptr);
 
 	return result_line;
 }

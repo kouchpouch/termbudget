@@ -78,7 +78,7 @@ struct Categories {
 };
 
 struct SelRecord {
-	int flag;
+	unsigned int flag;
 	int index;
 };
 
@@ -980,14 +980,7 @@ void nc_add_transaction(int year, int month) {
 		goto CLEANUP;
 	}
 
-	int resultline = sort_csv(uld->month, uld->day, uld->year);
-
-	if (resultline < 0) {
-		printw("Something has gone horribly wrong");
-		refresh();
-		getch();	
-		goto CLEANUP;
-	}
+	unsigned int resultline = sort_csv_new(uld->month, uld->day, uld->year);
 
 	add_csv_record(resultline, uld);
 
@@ -1027,7 +1020,7 @@ void add_transaction(void) {
 		goto CLEANUP;
 	}
 
-	int resultline = sort_csv(uld->month, uld->day, uld->year);
+	unsigned int resultline = sort_csv_new(uld->month, uld->day, uld->year);
 	if (resultline < 0) {
 		puts("Failed to find where to add this record");
 		goto CLEANUP;
@@ -1048,7 +1041,7 @@ struct FlexArr *index_csv(void) {
 	struct FlexArr *pidx = 
 		malloc(sizeof(struct FlexArr) + 0 * sizeof(int));
 	if (pidx == NULL) {
-		puts("Failed to allocate memory");
+		perror("Failed to allocate memory");
 		exit(1);
 	}
 
@@ -1067,7 +1060,7 @@ struct FlexArr *index_csv(void) {
 	struct FlexArr *tmp = realloc(pidx, sizeof(*pidx) + (pidx->lines * sizeof(int)));
 
 	if (tmp == NULL) {
-		puts("Failed to allocate memory");
+		perror("Failed to allocate memory");
 		exit(1);
 	}
 	pidx = tmp;
@@ -1147,7 +1140,7 @@ int edit_csv_record(int linetoreplace, struct LineData *ld, int field) {
 		/* Have to add and delete here because the record will be placed
 		 * in a new position when the date changes */
 		delete_csv_record(linetoreplace - 1);
-		add_csv_record(sort_csv(ld->month, ld->day, ld->year), ld);
+		add_csv_record(sort_csv_new(ld->month, ld->day, ld->year), ld);
 		return 0;
 
 	case 2:
@@ -1790,6 +1783,10 @@ int nc_read_select_year(WINDOW *wptr, FILE *fptr) {
 		case('\r'):
 			selected_year = years_arr[scr_idx];
 			break;
+//		case('o'):
+//		case(KEY_F(OVERVIEW)):
+//			selected_year = years_arr[scr_idx];
+//			break;
 		case('q'):
 		case(KEY_F(QUIT)):
 			free(years_arr);
@@ -1861,7 +1858,7 @@ int nc_read_select_month(WINDOW *wptr, FILE* fptr, int year) {
 			}
 			break;
 		case(KEY_RESIZE):
-
+				// FIX
 			break;
 		case('\n'):
 		case('\r'):
