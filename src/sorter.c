@@ -5,11 +5,12 @@
 #include <limits.h>
 #include "sorter.h"
 #include "main.h"
+#include "parser.h"
 
 #define REALLOC_THRESHOLD 64
 
 int get_total_csv_lines() {
-	FILE *fptr = fopen("data.csv", "r");
+	FILE *fptr = fopen(CSV_DIR, "r");
 	int lines = 0;
 	char buff[256];
 	while (fgets(buff, sizeof(buff), fptr) != NULL) {
@@ -22,21 +23,56 @@ int get_total_csv_lines() {
  * to edit or add a transaction will go through the sorting function to
  * determine where to insert the record. */
 
-//unsigned int sort_csv_new(int month, int day, int year) {
-//	FILE *fptr = fopen("data.csv", "r");
-//	if (fptr == NULL) {
-//		perror("Failed to open file");
-//		exit(1);
-//	}
-//
-//	unsigned int result_line = -1;
-//	unsigned int line = 1; // Line starts at 1 to skip the header
-//	
-//	/* Read the header */
-//	
-//
-//
-//}
+unsigned int sort_csv_new(int month, int day, int year) {
+	FILE *fptr = fopen(CSV_DIR, "r");
+	if (fptr == NULL) {
+		perror("Failed to open file");
+		exit(1);
+	}
+
+	unsigned int result_line = -1;
+	unsigned int line = 1; // Line starts at 1 to skip the header
+	
+	/* Read the header */
+	if (seek_beyond_header(fptr) == -1) {
+		perror("Failed to read header");
+		fclose(fptr);
+		exit(1);
+	}
+	
+	char linebuff[LINE_BUFFER];
+	char *str;
+
+	unsigned int max_year = 0;
+	unsigned int min_year = UINT_MAX;
+	unsigned int yeartok, monthtok, daytok;
+	unsigned int realloc_counter = 0;
+
+	int *arr = calloc(REALLOC_THRESHOLD, sizeof(unsigned int));
+	unsigned int idx = 0;
+
+	while((str = fgets(linebuff, sizeof(linebuff), fptr)) != NULL) {
+		monthtok = atoi(strsep(&str, ","));
+		daytok = atoi(strsep(&str, ","));
+		yeartok = atoi(strsep(&str, ","));
+
+		if (yeartok < min_year) {
+			min_year = yeartok;
+		} else if (yeartok > max_year) {
+			max_year = yeartok;
+		}
+
+		/* Thinking to myself
+		 * I wonder if I can make this simpler, maybe when the year
+		 * matches, the month matches, and the day matches, sure,
+		 * we know the line.
+		 *
+		 */
+
+	}
+
+	return result_line;
+}
 
 /* Returns a line number to insert a record sorted by year, month, day */
 int sort_csv(int month, int day, int year) {
