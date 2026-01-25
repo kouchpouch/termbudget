@@ -1,5 +1,4 @@
 #include <limits.h>
-#include <stdio.h>
 #include <stdbool.h>
 #include "helper.h"
 
