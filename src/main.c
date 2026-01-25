@@ -668,42 +668,6 @@ double nc_input_amount(void) {
 //--------------------------USER INPUT ABOVE---------------------------------//
 //---------------------------------------------------------------------------//
 
-FILE *open_csv(char *mode) {
-	FILE *fptr = fopen(CSV_DIR, mode);
-	if (fptr == NULL) {
-		perror("Failed to open file");
-		exit(1);
-	} else {
-		return fptr;
-	}
-}
-
-FILE *open_temp_csv(void) {
-	FILE *tmpfptr = fopen("tmp.txt", "w+");
-	if (tmpfptr == NULL) {
-		perror("Failed to open file");
-		exit(1);
-	}
-	return tmpfptr;
-}
-
-int boff_to_linenum(long b) {
-	FILE *fptr = open_csv("r");
-	char linebuff[LINE_BUFFER];
-	int linenum = 0;
-	
-	while(fgets(linebuff, sizeof(linebuff), fptr) != NULL) {
-		if (ftell(fptr) == b) {
-			break;
-		}
-		linenum++;
-	}
-
-	fclose(fptr);
-	
-	return linenum;
-}
-
 void print_record_vert(struct LineData *ld) {
 	printf(
 		"1.) Date-->  %d/%d/%d\n"
@@ -951,9 +915,8 @@ void add_csv_record(int linetoadd, struct LineData *ld) {
 		   );
 		}
 	} while(line != NULL);
-	if (move_temp_to_main(tmpfptr, fptr) == 0) {
-		puts("Complete");
-	}
+	
+	move_temp_to_main(tmpfptr, fptr);
 }
 
 /* Optional parameters int month, year. If add transaction is selected while
@@ -1213,9 +1176,7 @@ int edit_csv_record(int linetoreplace, struct LineData *ld, int field) {
 	} while(line != NULL);
 
 	/* move_temp_to_main() closes the file pointers */
-	if (move_temp_to_main(tmpfptr, fptr) == 0) {
-		puts("Edit Complete");
-	}
+	move_temp_to_main(tmpfptr, fptr);
 
 	if (field == 2) free(ld->category);
 	if (field == 3) free(ld->desc);
@@ -1422,11 +1383,11 @@ void nc_print_overview_graphs(WINDOW *wptr, int *months, int year) {
 
 		} else if (ratios[i] == NO_INCOME) {
 			// There are only expenses
-			exp_bar_len = maxvals[i] / maxval;
+			exp_bar_len = max_bar_len * (maxvals[i] / maxval);
 			inc_bar_len = 0;
 
 		} else if (ratios[i] == NO_EXPENSE) {
-			inc_bar_len = maxvals[i] / maxval;
+			inc_bar_len = max_bar_len * (maxvals[i] / maxval);
 			exp_bar_len = 0;
 
 		} else {
@@ -1557,11 +1518,10 @@ void nc_overview_setup(int year) {
 									getmaxx(wptr_parent), 1, BOX_OFFSET);
 	init_pair(1, COLOR_RED, -1);
 	init_pair(2, COLOR_GREEN, -1);
-	FILE *fptr = open_csv("r");
 	box(wptr_parent, 0, 0);
 	wrefresh(wptr_parent);
-	wrefresh(wptr_data);
 	
+	FILE *fptr = open_csv("r");
 	int *months = list_records_by_month(fptr, year);
 	fclose(fptr);
 
@@ -2061,7 +2021,7 @@ int nc_select_field_to_edit(WINDOW *wptr) {
 	return 0;
 }
 
-void nc_edit_transaction(int linenum) {
+void nc_edit_transaction(unsigned int linenum) {
 	struct LineData linedata, *ld = &linedata;
 	struct FlexArr *pidx = index_csv();
 
@@ -2633,7 +2593,7 @@ int move_temp_to_main(FILE *tempfile, FILE *mainfile) {
 		puts("Failed to move main file");	
 		return -1;
 	}
-	if (rename("tmp.txt", CSV_DIR) == -1) {
+	if (rename(TEMP_FILE_DIR, CSV_DIR) == -1) {
 		puts("Failed to move temporary file");	
 		return -1;
 	}
@@ -2646,11 +2606,8 @@ int delete_csv_record(int linetodelete) {
 		return -1;
 	}
 	FILE *fptr = open_csv("r");
-	FILE *tmpfptr = fopen("tmp.txt", "w+");
-	if (fptr == NULL) {
-		puts("Failed to open file");
-		return -1;
-	}
+	FILE *tmpfptr = open_temp_csv();
+
 	char linebuff[LINE_BUFFER * 2];
 	char *line;
 	int linenum = 0;
