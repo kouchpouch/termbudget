@@ -115,6 +115,7 @@ unsigned int sort_csv_new(int month, int day, int year) {
 }
 
 /* Returns a line number to insert a record sorted by year, month, day */
+[[deprecated("Do not use, replaced by sort_csv_new")]]
 int sort_csv(int month, int day, int year) {
 	FILE *fptr = fopen("data.csv", "r");
 	if (fptr == NULL) exit(1);

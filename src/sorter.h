@@ -9,6 +9,6 @@ extern unsigned int sort_csv_new(int month, int day, int year);
 
 /* Returns a the line in the CSV to insert the data sorted by date,
  * assumes the CSV is already sorted by date */
-extern int sort_csv(int month, int day, int year); 
+[[deprecated]]extern int sort_csv(int month, int day, int year); 
 
 #endif
