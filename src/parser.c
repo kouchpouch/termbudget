@@ -1,5 +1,41 @@
-#include "helper.h"
 #include "parser.h"
+#include "main.h"
+
+FILE *open_csv(char *mode) {
+	FILE *fptr = fopen(CSV_DIR, mode);
+	if (fptr == NULL) {
+		perror("Failed to open file");
+		exit(1);
+	} else {
+		return fptr;
+	}
+}
+
+FILE *open_temp_csv(void) {
+	FILE *tmpfptr = fopen(TEMP_FILE_DIR, "w+");
+	if (tmpfptr == NULL) {
+		perror("Failed to open file");
+		exit(1);
+	}
+	return tmpfptr;
+}
+
+unsigned int boff_to_linenum(long b) {
+	FILE *fptr = open_csv("r");
+	char linebuff[LINE_BUFFER];
+	int linenum = 0;
+	
+	while(fgets(linebuff, sizeof(linebuff), fptr) != NULL) {
+		if (ftell(fptr) == b) {
+			break;
+		}
+		linenum++;
+	}
+
+	fclose(fptr);
+	
+	return linenum;
+}
 
 void seek_n_fields(char **line, int n) {
 	for (int i = 0; i < n; i++) {
