@@ -10,7 +10,7 @@
 #define REALLOC_THRESHOLD 64
 
 int get_total_csv_lines() {
-	FILE *fptr = fopen(CSV_DIR, "r");
+	FILE *fptr = fopen(RECORD_DIR, "r");
 	int lines = 0;
 	char buff[256];
 	while (fgets(buff, sizeof(buff), fptr) != NULL) {
@@ -23,7 +23,7 @@ int get_total_csv_lines() {
  * to edit or add a transaction will go through the sorting function to
  * determine where to insert the record. */
 unsigned int sort_csv_new(int month, int day, int year) {
-	FILE *fptr = fopen(CSV_DIR, "r");
+	FILE *fptr = fopen(RECORD_DIR, "r");
 	if (fptr == NULL) {
 		perror("Failed to open file");
 		exit(1);
