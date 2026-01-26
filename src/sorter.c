@@ -22,7 +22,6 @@ int get_total_csv_lines() {
 /* We assume that the CSV is sorted by date already. Because every operation
  * to edit or add a transaction will go through the sorting function to
  * determine where to insert the record. */
-
 unsigned int sort_csv_new(int month, int day, int year) {
 	FILE *fptr = fopen(CSV_DIR, "r");
 	if (fptr == NULL) {
@@ -48,6 +47,8 @@ unsigned int sort_csv_new(int month, int day, int year) {
 	bool greateryear = false;
 	bool matchingyear = false;
 	bool lesseryear = false;
+	/* lessermonth isn't used, but I'm keeping it here until I prove I don't
+	 * need it */
 	bool lessermonth = false;
 	bool lesserday = false;
 
