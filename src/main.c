@@ -2838,11 +2838,36 @@ void main_menu(void) {
 	return;
 }
 
+/* Verifies that the files needed to run termbudget exist and writes headers */
+int verify_files_exist(void) {
+	FILE *rcrdfptr = open_record_csv("a");
+	if (rcrdfptr == NULL) {
+		perror("Failed to open/create record file");
+		return -1;
+	}
+	fseek(rcrdfptr, 0, SEEK_END);
+	if (ftell(rcrdfptr) == 0) {
+		fputs("month,day,year,category,description,transtype,value\n", rcrdfptr);
+	}
+	fclose(rcrdfptr);
+
+	FILE *bdgtfptr = open_budget_csv("a");
+	if (bdgtfptr == NULL) {
+		perror("Failed to open/create budget file");
+		return -1;
+	}
+	fseek(bdgtfptr, 0, SEEK_END);
+	if (ftell(bdgtfptr) == 0) {
+		fputs("month,year,category,value\n", bdgtfptr);
+	}
+	fclose(bdgtfptr);
+
+	return 0;
+}
+
 int main(int argc, char **argv) {
-	FILE *fptr = open_record_csv("a"); // Make sure the CSV exists
-	fseek(fptr, 0, SEEK_END);
-	if (ftell(fptr) == 0) {
-		fputs("month,day,year,category,description,transtype,value\n", fptr);
+	if (verify_files_exist() == -1) {
+		exit(1);
 	}
 
 	debug = false;
@@ -2858,8 +2883,6 @@ int main(int argc, char **argv) {
 			}
 		}
 	}
-	
-	fclose(fptr);
 
 	if (cli_mode == false) {
 		stdscr = nc_init_stdscr();
