@@ -5,8 +5,11 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
-/* Opens file located at CSV_DIR in mode. Exits on failure */
+/* Opens file located at RECORD_DIR in mode mode. Exits on failure */
 extern FILE *open_record_csv(char *mode);
+
+/* Opens file located at BUDGET_DIR in mode mode. Exits on failure */
+extern FILE *open_budget_csv(char *mode);
 
 /* Opens file located at TMP_DIR in w+ mode. Exits on failure */
 extern FILE *open_temp_csv(void);

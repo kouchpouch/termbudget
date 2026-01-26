@@ -1,14 +1,24 @@
 #include "parser.h"
 #include "main.h"
 
-FILE *open_record_csv(char *mode) {
-	FILE *fptr = fopen(RECORD_DIR, mode);
+FILE *open_file(char *mode, char *dir) {
+	FILE *fptr = fopen(dir, mode);
 	if (fptr == NULL) {
 		perror("Failed to open file");
 		exit(1);
 	} else {
 		return fptr;
 	}
+}
+
+FILE *open_budget_csv(char *mode) {
+	FILE *f = open_file(mode, BUDGET_DIR);
+	return f;
+}
+
+FILE *open_record_csv(char *mode) {
+	FILE *f = open_file(mode, RECORD_DIR);
+	return f;
 }
 
 FILE *open_temp_csv(void) {
