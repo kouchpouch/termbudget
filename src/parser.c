@@ -1,8 +1,8 @@
 #include "parser.h"
 #include "main.h"
 
-FILE *open_csv(char *mode) {
-	FILE *fptr = fopen(CSV_DIR, mode);
+FILE *open_record_csv(char *mode) {
+	FILE *fptr = fopen(RECORD_DIR, mode);
 	if (fptr == NULL) {
 		perror("Failed to open file");
 		exit(1);
@@ -21,7 +21,7 @@ FILE *open_temp_csv(void) {
 }
 
 unsigned int boff_to_linenum(long b) {
-	FILE *fptr = open_csv("r");
+	FILE *fptr = open_record_csv("r");
 	char linebuff[LINE_BUFFER];
 	int linenum = 0;
 	

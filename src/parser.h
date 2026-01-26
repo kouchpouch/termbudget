@@ -6,7 +6,7 @@
 #include <stdlib.h>
 
 /* Opens file located at CSV_DIR in mode. Exits on failure */
-extern FILE *open_csv(char *mode);
+extern FILE *open_record_csv(char *mode);
 
 /* Opens file located at TMP_DIR in w+ mode. Exits on failure */
 extern FILE *open_temp_csv(void);
