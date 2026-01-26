@@ -31,7 +31,7 @@
     - (*) Implement visual truncation when there are not enough columns to
             display all the field data
     - ( ) Move to integer/fixed point arithmetic for financial calculations
-    - (*) Use realloc in sorter.c (sort_csv()) instead of having a fixed
+    - (*) *n/a* Use realloc in sorter.c (sort_csv()) instead of having a fixed
             number of lines to index
     - ( ) Add ability to escape the menu when accepting a user input
     - (*) Add page up/page down/end/home keys for navigating lists
@@ -62,7 +62,7 @@
             - (*) When adding a transaction, select a category or add new
                     in an NCURSES menu.
         - ( ) Overview
-            - ( ) With bar graphs
+            - (*) With bar graphs
             - ( ) Yearly summary
         - (*) Scroll through dates
         - ( ) Resizing
@@ -72,7 +72,7 @@
     - (*) A line number is able to be selected (line 1) and it will edit the
             header line. Also line 1 is displayed as line 2. Probably something
             to do with the humanreadable target variable being subtracted by 2
-    - (*) Sorter places a previous year on line 3 when a more recent year is on
+    - (*) *n/a* Sorter places a previous year on line 3 when a more recent year is on
             line 2.
     - (*) Sorter edge case on adding a transaction to a month which does not
             match and is not greater than the target month. If the months in
@@ -82,11 +82,11 @@
             read the line (because it doesn't exist).
     - (*) If editing a record's date causing no more records to exist for that
             year and month, the TUI doesn't refresh properly.
-    - (*) Sorter function can't handle adding a record between two years which
+    - (*) *n/a* Sorter function can't handle adding a record between two years which
             doesn't already exist.
     - ( ) Input too short warning when entering a single digit line number in 
             CLI mode
-    - (*) Sorter still doesn't completely work. Adding months between months
+    - (*) *n/a* Sorter still doesn't completely work. Adding months between months
             doesn't work as intended. If January has 2 records in it and a
             new record is added, like a record in May, the may record will be
             inserted between the two records in January.
