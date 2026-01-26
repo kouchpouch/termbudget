@@ -34,6 +34,7 @@ enum MenuKeys {
 	SORT = 5,
 	OVERVIEW = 6,
 	RESIZE = 13,
+	NO_RCRD = 14
 } menukeys;
 
 enum SortBy {
@@ -95,7 +96,7 @@ void nc_print_record_hr(WINDOW *wptr, struct ColWidth *cw, struct LineData *ld, 
 void nc_print_record_vert(WINDOW *wptr, struct LineData *ld, int x_off);
 struct Categories *list_categories(int month, int year);
 struct FlexArr *index_csv();
-int move_temp_to_main(FILE *tempfile, FILE *mainfile);
+int mv_tmp_to_record_file(FILE *tempfile, FILE *mainfile);
 int delete_csv_record(int linetodelete);
 struct FlexArr *get_matching_line_nums(FILE *fptr, int month, int year);
 
@@ -700,7 +701,7 @@ void print_record_hr(struct LineData *ld) {
 }
 
 struct Categories *list_categories(int month, int year) {
-	FILE *fptr = open_csv("r");
+	FILE *fptr = open_record_csv("r");
 	char *line;
 	char *token;
 	char linebuff[LINE_BUFFER];
@@ -743,7 +744,6 @@ struct Categories *list_categories(int month, int year) {
 		}
 
 		pc->categories[pc->count] = strdup(token);
-
 		pc->count++;
 
 DUPLICATE:
@@ -762,7 +762,7 @@ struct FlexArr *get_byte_offsets_date(int y, int m) {
 		return NULL;
 	}
 	pbo->lines = 0;
-	FILE *fptr = open_csv("r");
+	FILE *fptr = open_record_csv("r");
 	struct FlexArr *pidx = index_csv();
 	struct FlexArr *plines = get_matching_line_nums(fptr, m, y);
 
@@ -889,7 +889,7 @@ ERR_NULL:
 
 /* Adds a record to the CSV on line linetoadd */
 void add_csv_record(int linetoadd, struct LineData *ld) {
-	FILE *fptr = open_csv("r");
+	FILE *fptr = open_record_csv("r");
 	FILE *tmpfptr = open_temp_csv();
 
 	char linebuff[LINE_BUFFER];
@@ -916,7 +916,7 @@ void add_csv_record(int linetoadd, struct LineData *ld) {
 		}
 	} while(line != NULL);
 	
-	move_temp_to_main(tmpfptr, fptr);
+	mv_tmp_to_record_file(tmpfptr, fptr);
 }
 
 /* Optional parameters int month, year. If add transaction is selected while
@@ -953,6 +953,10 @@ CLEANUP:
 	free(uld->category);
 	free(uld->desc);
 	nc_read_setup(uld->year, uld->month, 0);
+}
+
+void nc_add_transaction_default() {
+	nc_add_transaction(0, 0);
 }
 
 void add_transaction(void) {
@@ -1009,7 +1013,7 @@ struct FlexArr *index_csv(void) {
 	}
 
 	pidx->lines = 0;
-	FILE *fptr = open_csv("r");
+	FILE *fptr = open_record_csv("r");
 	char linebuff[LINE_BUFFER];
 
 	while (1) {
@@ -1153,7 +1157,7 @@ int edit_csv_record(int linetoreplace, struct LineData *ld, int field) {
 		}
 	}
 
-	FILE *fptr = open_csv("r");
+	FILE *fptr = open_record_csv("r");
 	FILE *tmpfptr = open_temp_csv();
 
 	do {
@@ -1175,8 +1179,8 @@ int edit_csv_record(int linetoreplace, struct LineData *ld, int field) {
 		}
 	} while(line != NULL);
 
-	/* move_temp_to_main() closes the file pointers */
-	move_temp_to_main(tmpfptr, fptr);
+	/* mv_tmp_to_record_file() closes the file pointers */
+	mv_tmp_to_record_file(tmpfptr, fptr);
 
 	if (field == 2) free(ld->category);
 	if (field == 3) free(ld->desc);
@@ -1521,7 +1525,7 @@ void nc_overview_setup(int year) {
 	box(wptr_parent, 0, 0);
 	wrefresh(wptr_parent);
 	
-	FILE *fptr = open_csv("r");
+	FILE *fptr = open_record_csv("r");
 	int *months = list_records_by_month(fptr, year);
 	fclose(fptr);
 
@@ -1592,7 +1596,7 @@ void legacy_read_csv(void) {
 	int linenum = 0;
 	int i = 0;
 	char linebuff[LINE_BUFFER] = {0};
-	FILE *fptr = open_csv("r");
+	FILE *fptr = open_record_csv("r");
 	int *yearsarr;
 	bool month_record_exists = false;
 	bool year_record_exists = false;
@@ -1672,6 +1676,7 @@ void legacy_read_csv(void) {
 	fptr = NULL;
 }
 
+/* On a non-select, the return value is the inverted menukeys value */
 int nc_read_select_year(WINDOW *wptr, FILE *fptr) {
 	rewind(fptr);
 
@@ -1679,7 +1684,7 @@ int nc_read_select_year(WINDOW *wptr, FILE *fptr) {
 
 	int *years_arr = list_records_by_year(fptr);
 	if (years_arr == NULL) {
-		return -1;
+		return -(NO_RCRD);
 	}
 	int selected_year = 0;
 	int print_y = 1;
@@ -1739,22 +1744,20 @@ int nc_read_select_year(WINDOW *wptr, FILE *fptr) {
 		case('a'):
 		case(KEY_F(ADD)):
 			free(years_arr);
-			return ADD;
+			years_arr = NULL;
+			return -(ADD);
 		case(KEY_RESIZE):
 			free(years_arr);
-			return RESIZE;
+			years_arr = NULL;
+			return -(RESIZE);
 		case('\n'):
 		case('\r'):
 			selected_year = years_arr[scr_idx];
 			break;
-//		case('o'):
-//		case(KEY_F(OVERVIEW)):
-//			selected_year = years_arr[scr_idx];
-//			break;
 		case('q'):
 		case(KEY_F(QUIT)):
 			free(years_arr);
-			return 0;
+			return -(QUIT);
 		default: 
 			break;
 		}
@@ -1768,6 +1771,7 @@ int nc_read_select_year(WINDOW *wptr, FILE *fptr) {
 	return selected_year;
 }
 
+/* On a non-select, the return value is the inverted menukeys value */
 int nc_read_select_month(WINDOW *wptr, FILE* fptr, int year) {
 	rewind(fptr);
 
@@ -1818,23 +1822,24 @@ int nc_read_select_month(WINDOW *wptr, FILE* fptr, int year) {
 			}
 			break;
 		case(KEY_RESIZE):
-			/* 
-			 * This RESIZE macro has to be greater than 12, which I have no
+			free(months_arr);
+			months_arr = NULL;
+
+			/* This RESIZE macro has to be greater than 12, which I have no
 			 * intention of changing. I hate this. However--I'm lazy. Plus,
-			 * all of the resizes in this program suck.
-			 */
-			selected_month = RESIZE;
+			 * all of the resizes in this program suck. */
+			return -(RESIZE);
 			break;
 		case('\n'):
 		case('\r'):
 			selected_month = months_arr[cur_idx];
 			wrefresh(wptr);
 			break;
+		case('q'):
 		case(KEY_F(QUIT)):
-			nc_exit_window(wptr);
 			free(months_arr);
 			months_arr = NULL;
-			return -1;
+			return -(QUIT);
 		default: 
 			break;
 		}
@@ -2031,7 +2036,7 @@ void nc_edit_transaction(unsigned int linenum) {
 	struct FlexArr *pidx = index_csv();
 
 	WINDOW *wptr_edit = create_input_subwindow();
-	FILE *fptr = open_csv("r+");
+	FILE *fptr = open_record_csv("r+");
 	fseek(fptr, pidx->data[linenum], SEEK_SET);
 
 	char linebuff[LINE_BUFFER];
@@ -2115,7 +2120,7 @@ void nc_print_debug_line(WINDOW *wptr, int line) {
 }
 
 void calculate_balance(struct Balances *pb, struct FlexArr *pbo) {
-	FILE *fptr = open_csv("r");
+	FILE *fptr = open_record_csv("r");
 	pb->income = 0.0;
 	pb->expense = 0.0;
 	int type;
@@ -2455,7 +2460,7 @@ void nc_read_setup(int sel_year, int sel_month, int sort) {
 	struct FlexArr *pidx = index_csv();
 	struct SelRecord sr_ , *sr = &sr_;
 	sr->flag = -1;
-	FILE *fptr = open_csv("r");
+	FILE *fptr = open_record_csv("r");
 
 	WINDOW *wptr_parent = newwin(LINES - 1, 0, 0, 0);
 	if (wptr_parent == NULL) {
@@ -2473,16 +2478,16 @@ void nc_read_setup(int sel_year, int sel_month, int sort) {
 	wptr_data = create_lines_subwindow(max_y - 1, max_x, 1, BOX_OFFSET);
 	wrefresh(wptr_data);
 
-	if (!sel_year) sel_year = nc_read_select_year(wptr_parent, fptr);
-	if (sel_year == 0) {
-		goto SELECT_DATE_FAIL;
-	} else if (sel_year == RESIZE) {
-		sr->flag = 0;
-		goto SELECT_DATE_FAIL;
-	} else if (sel_year == -1) {
+	if (!sel_year) {
+		sel_year = nc_read_select_year(wptr_parent, fptr);
+	}
+	if (sel_year == -(NO_RCRD)) {
 		mvwxcprintw(wptr_parent, max_y / 2, 
 			  "No records exist, add (F1) to get started");
 		wgetch(wptr_parent);
+		goto SELECT_DATE_FAIL;
+	} else if (sel_year < 0) {
+		sr->flag = -(sel_year);
 		goto SELECT_DATE_FAIL;
 	}
 
@@ -2490,13 +2495,10 @@ void nc_read_setup(int sel_year, int sel_month, int sort) {
 		sel_month = nc_read_select_month(wptr_parent, fptr, sel_year);
 	}
 	if (sel_month < 0) {
-		sr->flag = QUIT;
-		goto SELECT_DATE_FAIL;
-	} else if (sel_month == RESIZE) {
-		sr->flag = RESIZE;
-		sel_month = 0;
+		sr->flag = -(sel_month);
 		goto SELECT_DATE_FAIL;
 	}
+
 	wclear(wptr_parent);
 
 	plines = get_matching_line_nums(fptr, sel_month, sel_year);
@@ -2555,7 +2557,11 @@ SELECT_DATE_FAIL:
 		break;
 	case(ADD):
 		nc_print_input_footer(stdscr);
-		nc_add_transaction(sel_year, sel_month);
+		if (sel_year < 0 || sel_month < 0) {
+			nc_add_transaction_default();
+		} else {
+			nc_add_transaction(sel_year, sel_month);
+		}
 		break;
 	case(EDIT):
 		nc_print_quit_footer(stdscr);
@@ -2578,10 +2584,10 @@ SELECT_DATE_FAIL:
 		while (test_terminal_size() == -1) {
 			getch();
 		}
-		if (sel_month) {
+		if (sel_month > 0 && sel_year > 0) {
 			nc_read_setup(sel_year, sel_month, 0);
 		} else {
-			nc_read_setup_year(sel_year);
+			nc_read_setup_default();
 		}
 		break;
 	default:
@@ -2590,28 +2596,38 @@ SELECT_DATE_FAIL:
 	refresh();
 }
 
-int move_temp_to_main(FILE *tempfile, FILE *mainfile) {
-	if (fclose(mainfile) == -1) {
-		puts("Failed to close main file");
+int move_tmp_to_main(FILE *tmp, FILE *main, char *dir, char *backdir) {
+	if (fclose(main) == -1) {
+		perror("Failed to close main file");
 		return -1;
 	} else {
-		mainfile = NULL;
+		main = NULL;
 	}
-	if (fclose(tempfile) == -1) {
-		puts("Failed to close temporary file");
+	if (fclose(tmp) == -1) {
+		perror("Failed to close temporary file");
 		return -1;
 	} else {
-		tempfile = NULL;
+		tmp = NULL;
 	}
-	if (rename(CSV_DIR, CSV_BAK_DIR) == -1) {
-		puts("Failed to move main file");	
+	if (rename(dir, backdir) == -1) {
+		perror("Failed to move main file");	
 		return -1;
 	}
-	if (rename(TEMP_FILE_DIR, CSV_DIR) == -1) {
-		puts("Failed to move temporary file");	
+	if (rename(TEMP_FILE_DIR, dir) == -1) {
+		perror("Failed to move temporary file");	
 		return -1;
 	}
 	return 0;
+}
+
+int mv_tmp_to_budget_file(FILE *tmp, FILE* main) {
+	int retval = move_tmp_to_main(tmp, main, BUDGET_DIR, BUDGET_BAK_DIR);
+	return retval;
+}
+
+int mv_tmp_to_record_file(FILE *tmp, FILE* main) {
+	int retval = move_tmp_to_main(tmp, main, RECORD_DIR, RECORD_BAK_DIR);
+	return retval;
 }
 
 int delete_csv_record(int linetodelete) {
@@ -2619,7 +2635,7 @@ int delete_csv_record(int linetodelete) {
 		puts("Cannot delete line 0");
 		return -1;
 	}
-	FILE *fptr = open_csv("r");
+	FILE *fptr = open_record_csv("r");
 	FILE *tmpfptr = open_temp_csv();
 
 	char linebuff[LINE_BUFFER * 2];
@@ -2633,7 +2649,7 @@ int delete_csv_record(int linetodelete) {
 		}
 		linenum++;	
 	} while(line != NULL);
-	move_temp_to_main(tmpfptr, fptr);
+	mv_tmp_to_record_file(tmpfptr, fptr);
 	return 0;
 }
 
@@ -2642,7 +2658,7 @@ void edit_transaction(void) {
 	int humantarget;
 	struct LineData linedata, *ld = &linedata;
 
-	FILE *fptr = open_csv("r+");
+	FILE *fptr = open_record_csv("r+");
 	assert(ftell(fptr) == 0);
 
 	legacy_read_csv();
@@ -2749,7 +2765,7 @@ int nc_main_menu(WINDOW *wptr) {
 		case('a'):
 		case (KEY_F(ADD)): // Add
 			wclear(wptr);
-			nc_add_transaction(0, 0);
+			nc_add_transaction_default();
 			break;
 		case('e'):
 		case(KEY_F(EDIT)): // Edit
@@ -2823,7 +2839,7 @@ void main_menu(void) {
 }
 
 int main(int argc, char **argv) {
-	FILE *fptr = open_csv("a"); // Make sure the CSV exists
+	FILE *fptr = open_record_csv("a"); // Make sure the CSV exists
 	fseek(fptr, 0, SEEK_END);
 	if (ftell(fptr) == 0) {
 		fputs("month,day,year,category,description,transtype,value\n", fptr);
