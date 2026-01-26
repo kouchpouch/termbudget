@@ -1,6 +1,8 @@
 a.out
 data.csv
 data.csv.*
+budget.csv
+budget.csv.*
 termbudget
 termbudget.*
 *.bak
