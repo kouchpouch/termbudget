@@ -1736,6 +1736,10 @@ int nc_read_select_year(WINDOW *wptr, FILE *fptr) {
 				scr_idx++;
 			}
 			break;
+		case('a'):
+		case(KEY_F(ADD)):
+			free(years_arr);
+			return ADD;
 		case(KEY_RESIZE):
 			free(years_arr);
 			return RESIZE;
@@ -1771,54 +1775,55 @@ int nc_read_select_month(WINDOW *wptr, FILE* fptr, int year) {
 	int selected_month = 0;
 	int monlen = strlen(months[0]);
 
-	int print_y = 2;
-	int print_x = 2;
-
 	int temp_y = 0;
-	
 	int scr_idx = 0;
 	int cur_idx = 0;
 
-	wmove(wptr, print_y, print_x);
+	wmove(wptr, BOX_OFFSET, BOX_OFFSET);
 	for (int i = 0; i < 12; i++) {
 		temp_y = getcury(wptr);
 		if (months_arr[i] != 0) {
-			wmove(wptr, temp_y, print_x);
+			wmove(wptr, temp_y, BOX_OFFSET);
 			wprintw(wptr, "%s\n", months[months_arr[i] - 1]);
 			scr_idx++;
 		}
 	}
 
-	wmove(wptr, print_y, print_x);
-	wchgat(wptr, monlen,A_REVERSE, 0, NULL);
+	wmove(wptr, BOX_OFFSET, BOX_OFFSET);
+	wchgat(wptr, monlen, A_REVERSE, 0, NULL);
 	box(wptr, 0, 0);
 	wrefresh(wptr);
 
 	int c = 0;
-	while (c != '\r' && c != '\n' && c != KEY_F(QUIT)) {
+	while (c != '\r' && c != '\n' && c != KEY_F(QUIT) && c != KEY_RESIZE) {
 		c = wgetch(wptr);
 		temp_y = getcury(wptr);
 		switch(c) {
 		case('j'):
 		case(KEY_DOWN):
-			if (temp_y - print_y + 1 < scr_idx) {
-				mvwchgat(wptr, temp_y, print_x, monlen,A_NORMAL, 0, NULL);
-				mvwchgat(wptr, temp_y + 1, print_x, monlen,A_REVERSE, 0, NULL);
+			if (temp_y - BOX_OFFSET + 1 < scr_idx) {
+				mvwchgat(wptr, temp_y, BOX_OFFSET, monlen, A_NORMAL, 0, NULL);
+				mvwchgat(wptr, temp_y + 1, BOX_OFFSET, monlen, A_REVERSE, 0, NULL);
 				wrefresh(wptr);
 				cur_idx++;
 			}
 			break;
 		case('k'):
 		case(KEY_UP):
-			if (temp_y - 1 >= print_y) {
-				mvwchgat(wptr, temp_y, print_x, monlen, A_NORMAL, 0, NULL);
-				mvwchgat(wptr, temp_y - 1, print_x, monlen, A_REVERSE, 0, NULL);
+			if (temp_y - 1 >= BOX_OFFSET) {
+				mvwchgat(wptr, temp_y, BOX_OFFSET, monlen, A_NORMAL, 0, NULL);
+				mvwchgat(wptr, temp_y - 1, BOX_OFFSET, monlen, A_REVERSE, 0, NULL);
 				wrefresh(wptr);
 				cur_idx--;
 			}
 			break;
 		case(KEY_RESIZE):
-				// FIX
+			/* 
+			 * This RESIZE macro has to be greater than 12, which I have no
+			 * intention of changing. I hate this. However--I'm lazy. Plus,
+			 * all of the resizes in this program suck.
+			 */
+			selected_month = RESIZE;
 			break;
 		case('\n'):
 		case('\r'):
@@ -2435,6 +2440,10 @@ void nc_read_setup_default() {
 	nc_read_setup(0, 0, 0);
 }
 
+void nc_read_setup_year(int sel_year) {
+	nc_read_setup(sel_year, 0, 0);
+}
+
 void nc_read_setup(int sel_year, int sel_month, int sort) {
 	/* LINES - 1 to still display the footer under wptr_parent */
 	nc_print_main_menu_footer(stdscr);
@@ -2477,11 +2486,16 @@ void nc_read_setup(int sel_year, int sel_month, int sort) {
 		goto SELECT_DATE_FAIL;
 	}
 
-	if (!sel_month) sel_month = nc_read_select_month(wptr_parent, fptr, sel_year);
+	if (!sel_month) {
+		sel_month = nc_read_select_month(wptr_parent, fptr, sel_year);
+	}
 	if (sel_month < 0) {
-		free(pidx);
-		fclose(fptr);	
-		return;
+		sr->flag = QUIT;
+		goto SELECT_DATE_FAIL;
+	} else if (sel_month == RESIZE) {
+		sr->flag = RESIZE;
+		sel_month = 0;
+		goto SELECT_DATE_FAIL;
 	}
 	wclear(wptr_parent);
 
@@ -2554,11 +2568,7 @@ SELECT_DATE_FAIL:
 	case(QUIT):
 		break;
 	case(SORT):
-		if (sort == 1) {
-			sort = 0;
-		} else if (sort == 0) {
-			sort = 1;
-		}
+		(sort == 0) ? (sort = 1) : (sort = 0);
 		nc_read_setup(sel_year, sel_month, sort);
 		break;
 	case(OVERVIEW):
@@ -2568,7 +2578,11 @@ SELECT_DATE_FAIL:
 		while (test_terminal_size() == -1) {
 			getch();
 		}
-		nc_read_setup(sel_year, sel_month, 0);
+		if (sel_month) {
+			nc_read_setup(sel_year, sel_month, 0);
+		} else {
+			nc_read_setup_year(sel_year);
+		}
 		break;
 	default:
 		break;
