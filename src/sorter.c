@@ -7,8 +7,6 @@
 #include "main.h"
 #include "parser.h"
 
-#define REALLOC_THRESHOLD 64
-
 int get_total_csv_lines() {
 	FILE *fptr = fopen(RECORD_DIR, "r");
 	int lines = 0;
