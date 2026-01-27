@@ -23,4 +23,11 @@ extern void seek_n_fields(char **line, int n);
 /* Reads the header of the file until a newline is found */
 extern int seek_beyond_header(FILE *fptr);
 
+/* Returns the number of fields by reading the header of fptr */
+extern unsigned int get_num_fields(FILE *fptr);
+
+/* Returns an integer value of a given line number line and of field number 
+ * field. Field numbers start at 1 */
+extern int get_int_record_field(int line, int field);
+
 #endif

@@ -66,3 +66,30 @@ int seek_beyond_header(FILE *fptr) {
 		return 0;
 	}
 }
+
+unsigned int get_num_fields(FILE *fptr) {
+	unsigned int n = 1;
+	rewind(fptr);
+
+	char c;
+	do {
+		c = fgetc(fptr);
+		if (c == ',') {
+			n++;
+		}
+	} while (c != '\n' && c != EOF);
+
+	return n;
+}
+
+int get_int_record_field(int line, int field) {
+	FILE *fptr = open_record_csv("r");
+	unsigned int maxfields = get_num_fields(fptr);
+	if (field > get_num_fields(fptr)) {
+		perror("That field doesn't exist");
+		fclose(fptr);
+		return -1;
+	}
+
+	return 0;
+}
