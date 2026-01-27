@@ -259,9 +259,12 @@ void nc_print_debug_flag(WINDOW *wptr) {
 }
 
 static void nc_print_footer(WINDOW *wptr, struct Footer *pf) {
-	mvwchgat(wptr, getmaxy(wptr) - 1, 0, getmaxx(wptr), A_INVIS, 0, NULL);
 	int max_y, cur;
 	max_y = getmaxy(wptr);
+	//mvwchgat(wptr, max_y - 1, 0, getmaxx(wptr), A_INVIS, 0, NULL);
+
+	/* Clear the footer line of any old menu items */
+	mvwhline(wptr, max_y - 1, 0, A_INVIS, getmaxx(wptr));
 
 	cur = 0;
 	curs_set(0);
