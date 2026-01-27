@@ -30,7 +30,7 @@ unsigned int sort_csv_new(int month, int day, int year) {
 	}
 
 	unsigned int line = 1; // Line starts at 1 to skip the header
-	unsigned int result_line = 0;
+	unsigned int result_line = 1;
 	unsigned int lessdayline = 0;
 	
 	/* Read the header */
