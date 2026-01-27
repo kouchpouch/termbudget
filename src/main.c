@@ -887,8 +887,34 @@ ERR_NULL:
 	return prsc;
 }
 
+/* Loop through each category in the budget. Returns true or false if the
+ * category exists for the given date range */
+bool category_exists_in_budget(char *category, int month, int year) {
+	FILE *fptr = open_budget_csv("r");
+
+	char linebuff[LINE_BUFFER];
+	char *line;
+	int m, y;
+
+	while((line = fgets(linebuff, sizeof(linebuff), fptr)) != NULL) {
+		/* Match the dates first */
+		m = atoi(strsep(&line, ","));
+		y = atoi(strsep(&line, ","));
+
+		if (y == year && m == month) {
+			if (strcmp(category, strsep(&line, ",")) == 0) {
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
 /* Adds a record to the CSV on line linetoadd */
 void add_csv_record(int linetoadd, struct LineData *ld) {
+	if (category_exists_in_budget(ld->category, ld->month, ld->year)) {
+
+	}
 	FILE *fptr = open_record_csv("r");
 	FILE *tmpfptr = open_temp_csv();
 
@@ -896,9 +922,7 @@ void add_csv_record(int linetoadd, struct LineData *ld) {
 	char *line;
 	int linenum = 0;
 
-	do {
-		line = fgets(linebuff, sizeof(linebuff), fptr);
-		if (line == NULL) break;
+	while((line = fgets(linebuff, sizeof(linebuff), fptr)) != NULL) {
 		linenum++;	
 		if (linenum != linetoadd) {
 			fputs(line, tmpfptr);
@@ -914,7 +938,7 @@ void add_csv_record(int linetoadd, struct LineData *ld) {
 			ld->amount
 		   );
 		}
-	} while(line != NULL);
+	}
 	
 	mv_tmp_to_record_file(tmpfptr, fptr);
 }
@@ -2763,12 +2787,12 @@ int nc_main_menu(WINDOW *wptr) {
 		c = getch();
 		switch(c) {
 		case('a'):
-		case (KEY_F(ADD)): // Add
+		case (KEY_F(ADD)):
 			wclear(wptr);
 			nc_add_transaction_default();
 			break;
 		case('e'):
-		case(KEY_F(EDIT)): // Edit
+		case(KEY_F(EDIT)):
 			wclear(wptr);
 			break;
 		case('r'):
@@ -2777,7 +2801,7 @@ int nc_main_menu(WINDOW *wptr) {
 			nc_read_setup_default();
 			break;
 		case('q'):
-		case(KEY_F(QUIT)): // Quit
+		case(KEY_F(QUIT)):
 			wclear(wptr);
 			return 1;
 		case(KEY_RESIZE):
@@ -2896,4 +2920,5 @@ int main(int argc, char **argv) {
 		}
 	}
 	endwin();
+	return 0;
 }
