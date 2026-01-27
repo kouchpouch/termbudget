@@ -22,13 +22,73 @@ int get_total_csv_lines() {
 /* We assume that the CSV is sorted by date already. Because every operation
  * to edit or add a transaction will go through the sorting function to
  * determine where to insert the record. */
-unsigned int sort_csv_new(int month, int day, int year) {
-	FILE *fptr = fopen(RECORD_DIR, "r");
-	if (fptr == NULL) {
-		perror("Failed to open file");
+unsigned int sort_budget_csv(int month, int year) {
+	FILE *fptr = open_budget_csv("r");
+	unsigned int result_line = 1;
+	unsigned int line = 1;
+
+	if (seek_beyond_header(fptr) == -1) {
+		perror("Failed to read header");
+		fclose(fptr);
 		exit(1);
 	}
 
+	char linebuff[LINE_BUFFER];
+	char *str;
+
+	unsigned int monthtok, yeartok;
+	bool greateryear = false;
+	bool matchingyear = false;
+	bool lesseryear = false;
+
+	while((str = fgets(linebuff, sizeof(linebuff), fptr)) != NULL) {
+		line++;
+
+		monthtok = atoi(strsep(&str, ","));
+		yeartok = atoi(strsep(&str, ","));
+
+		if (yeartok < year) {
+			lesseryear = true;
+		} else if (yeartok == year) {
+			matchingyear = true;
+		} else if (yeartok > year) {
+			greateryear = true;
+		}
+
+		if (yeartok > year) {
+			result_line = line - 1;
+			break;
+		}
+
+		if (yeartok == year && monthtok == month) {
+			result_line = line;
+			break;
+		}
+		
+		if (yeartok == year && monthtok > month) {
+			result_line = line - 1;
+			break;
+		}
+
+		if (yeartok == year && monthtok < month) {
+			result_line = line;
+		}
+	}
+
+	if (!lesseryear && !matchingyear && greateryear) {
+		result_line = 1;
+	}
+
+	fclose(fptr);
+
+	return result_line;
+}
+
+/* We assume that the CSV is sorted by date already. Because every operation
+ * to edit or add a transaction will go through the sorting function to
+ * determine where to insert the record. */
+unsigned int sort_record_csv(int month, int day, int year) {
+	FILE *fptr = open_record_csv("r");
 	unsigned int line = 1; // Line starts at 1 to skip the header
 	unsigned int result_line = 1;
 	unsigned int lessdayline = 0;
@@ -43,7 +103,7 @@ unsigned int sort_csv_new(int month, int day, int year) {
 	char linebuff[LINE_BUFFER];
 	char *str;
 
-	unsigned int yeartok, monthtok, daytok;
+	unsigned int daytok, monthtok, yeartok;
 	bool greateryear = false;
 	bool matchingyear = false;
 	bool lesseryear = false;
