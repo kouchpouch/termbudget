@@ -887,9 +887,15 @@ ERR_NULL:
 	return prsc;
 }
 
+void add_budget_category(char *catg, int m, int y) {
+
+
+
+}
+
 /* Loop through each category in the budget. Returns true or false if the
  * category exists for the given date range */
-bool category_exists_in_budget(char *category, int month, int year) {
+bool category_exists_in_budget(char *catg, int month, int year) {
 	FILE *fptr = open_budget_csv("r");
 
 	char linebuff[LINE_BUFFER];
@@ -897,23 +903,21 @@ bool category_exists_in_budget(char *category, int month, int year) {
 	int m, y;
 
 	while((line = fgets(linebuff, sizeof(linebuff), fptr)) != NULL) {
-		/* Match the dates first */
 		m = atoi(strsep(&line, ","));
 		y = atoi(strsep(&line, ","));
-
-		if (y == year && m == month) {
-			if (strcmp(category, strsep(&line, ",")) == 0) {
-				return true;
-			}
+		if (y == year && m == month && strcmp(catg, strsep(&line, ",")) == 0) {
+			return true;
 		}
 	}
+
 	return false;
 }
 
 /* Adds a record to the CSV on line linetoadd */
 void add_csv_record(int linetoadd, struct LineData *ld) {
-	if (category_exists_in_budget(ld->category, ld->month, ld->year)) {
-
+	if (!category_exists_in_budget(ld->category, ld->month, ld->year)) {
+		/* Implement a way to add the category if it doesn't exist */
+		add_budget_category(ld->category, ld->month, ld->year);
 	}
 	FILE *fptr = open_record_csv("r");
 	FILE *tmpfptr = open_temp_csv();
@@ -967,7 +971,7 @@ void nc_add_transaction(int year, int month) {
 		goto CLEANUP;
 	}
 
-	unsigned int resultline = sort_csv_new(uld->month, uld->day, uld->year);
+	unsigned int resultline = sort_record_csv(uld->month, uld->day, uld->year);
 
 	add_csv_record(resultline, uld);
 
@@ -1011,7 +1015,7 @@ void add_transaction(void) {
 		goto CLEANUP;
 	}
 
-	unsigned int resultline = sort_csv_new(uld->month, uld->day, uld->year);
+	unsigned int resultline = sort_record_csv(uld->month, uld->day, uld->year);
 	if (resultline < 0) {
 		puts("Failed to find where to add this record");
 		goto CLEANUP;
@@ -1131,7 +1135,7 @@ int edit_csv_record(int linetoreplace, struct LineData *ld, int field) {
 		/* Have to add and delete here because the record will be placed
 		 * in a new position when the date changes */
 		delete_csv_record(linetoreplace - 1);
-		add_csv_record(sort_csv_new(ld->month, ld->day, ld->year), ld);
+		add_csv_record(sort_record_csv(ld->month, ld->day, ld->year), ld);
 		return 0;
 
 	case 2:
