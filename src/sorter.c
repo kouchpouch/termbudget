@@ -195,7 +195,7 @@ int sort_csv(int month, int day, int year) {
 
 	int realloc_counter = 0;
 	/* Initial alloc of 64 integers */
-	int *arr = calloc(REALLOC_THRESHOLD, sizeof(int));
+	int *arr = calloc(REALLOC_FLAG, sizeof(int));
 	int idx = 0;
 
 	(void)fgets(buff, buffsize, fptr); // Header, throwaway
@@ -222,9 +222,9 @@ int sort_csv(int month, int day, int year) {
 		if (yeartoken == year) {
 			/* If the year matches, descend into the month field */
 			realloc_counter++;
-			if (realloc_counter >= REALLOC_THRESHOLD) {
+			if (realloc_counter >= REALLOC_FLAG) {
 				realloc_counter = 0;
-				int *tmp = realloc(arr, ((idx + REALLOC_THRESHOLD) * sizeof(int)));
+				int *tmp = realloc(arr, ((idx + REALLOC_FLAG) * sizeof(int)));
 				if (tmp == NULL) {
 					free(arr);
 				}
