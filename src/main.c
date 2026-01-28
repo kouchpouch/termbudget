@@ -88,6 +88,7 @@ struct Balances {
 	double expense;
 };
 
+int mv_tmp_to_budget_file(FILE *tmp, FILE* main);
 void nc_read_setup_default();
 void calculate_balance(struct Balances *pb, struct FlexArr *pbo);
 void nc_read_setup(int sel_year, int sel_month, int sort);
@@ -496,10 +497,6 @@ char *nc_input_string(char *msg) {
 	return str;
 }
 
-void nc_scroll_next_category(WINDOW *wptr) {
-	;
-}
-
 char *nc_select_category(int month, int year) {
 	struct Categories *pc = list_categories(month, year);
 	WINDOW *wptr_parent = create_category_select_parent(pc->count);
@@ -888,36 +885,64 @@ ERR_NULL:
 }
 
 void add_budget_category(char *catg, int m, int y) {
+	unsigned int linetoadd = sort_budget_csv(m, y);
+	FILE *fptr = open_budget_csv("r");
+	FILE *tmpfptr = open_temp_csv();
 
+	char linebuff[LINE_BUFFER];
+	char *line;
+	int linenum = 0;
 
+	while((line = fgets(linebuff, sizeof(linebuff), fptr)) != NULL) {
+		linenum++;	
+		if (linenum != linetoadd) {
+			fputs(line, tmpfptr);
+		} else if (linenum == linetoadd) {
+			fputs(line, tmpfptr);
+			fprintf(tmpfptr, "%d,%d,%s,%d\n", m, y, catg, 0);
+		}
+	}
 
+	mv_tmp_to_budget_file(tmpfptr, fptr);
 }
 
 /* Loop through each category in the budget. Returns true or false if the
  * category exists for the given date range */
 bool category_exists_in_budget(char *catg, int month, int year) {
-	FILE *fptr = open_budget_csv("r");
+	struct BudgetTokens bt, *pbt = &bt;
+	int i = 1;
 
-	char linebuff[LINE_BUFFER];
-	char *line;
-	int m, y;
-
-	while((line = fgets(linebuff, sizeof(linebuff), fptr)) != NULL) {
-		m = atoi(strsep(&line, ","));
-		y = atoi(strsep(&line, ","));
-		if (y == year && m == month && strcmp(catg, strsep(&line, ",")) == 0) {
+	while((pbt = tokenize_budget_line(i)) != NULL) {
+		if (pbt->y == year && pbt->m == month && strcmp(pbt->catg, catg) == 0) {
+			free_budget_tokens(pbt);
 			return true;
 		}
+		free_budget_tokens(pbt);
+		i++;
 	}
-
+	free_budget_tokens(pbt);
 	return false;
+}
+
+/* The idea here is to verify that all of the categories that exist in 
+ * the record csv also exist in the budget csv */
+int verify_file_integrity() {
+	FILE *bfptr = open_budget_csv("r");
+	FILE *rfptr = open_record_csv("r");
+
+	return 0;
 }
 
 /* Adds a record to the CSV on line linetoadd */
 void add_csv_record(int linetoadd, struct LineData *ld) {
 	if (!category_exists_in_budget(ld->category, ld->month, ld->year)) {
 		/* Implement a way to add the category if it doesn't exist */
+		puts("THE CATEGORY DOES NOT EXIST!");
+		getc(stdin);
 		add_budget_category(ld->category, ld->month, ld->year);
+	} else {
+		puts("THE CATEGORY DOES EXIST!");
+		getc(stdin);
 	}
 	FILE *fptr = open_record_csv("r");
 	FILE *tmpfptr = open_temp_csv();
