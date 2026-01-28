@@ -1,5 +1,8 @@
+#include <stdlib.h>
+#include <string.h>
 #include "parser.h"
 #include "main.h"
+#include "tui.h"
 
 FILE *open_file(char *mode, char *dir) {
 	FILE *fptr = fopen(dir, mode);
@@ -82,14 +85,120 @@ unsigned int get_num_fields(FILE *fptr) {
 	return n;
 }
 
-int get_int_record_field(int line, int field) {
+void free_budget_tokens(struct BudgetTokens *pbt) {
+	free(pbt->catg);
+	free(pbt);
+}
+
+struct BudgetTokens *tokenize_budget_line(int line) {
+	if (line == 0) {
+		return NULL;
+	}
+	struct BudgetTokens *pbt = calloc(sizeof(struct BudgetTokens), 1);
+	if (pbt == NULL) {
+		perror("Failed to allocate memory");
+		exit(1);
+	}
+
+	FILE *fptr = open_budget_csv("r");
+
+	rewind(fptr);
+	seek_beyond_header(fptr);
+
+	char linebuff[LINE_BUFFER];
+	char *str;
+
+	int i = 1;
+	while ((str = fgets(linebuff, sizeof(linebuff), fptr)) != NULL) {
+		if (i == line && str == NULL) {
+			free(pbt);
+			return NULL;
+		} else if (i == line) {
+			break;
+		}
+		i++;
+	}
+
+	fclose(fptr);
+
+	if (i > line || i < line || i == 0) {
+		free(pbt);
+		return NULL;
+	}
+
+	pbt->m = atoi(strsep(&str, ","));
+	pbt->y = atoi(strsep(&str, ","));
+	char *tmp = strndup(strsep(&str, ","), MAX_LEN_CATG);
+	if (tmp == NULL) {
+		free(pbt);
+		perror("Failed to allocate memory");
+		exit(1);
+	}
+	pbt->catg = tmp;
+	pbt->amount = atof(strsep(&str, ","));
+
+	return pbt;
+}
+
+struct DateMDY *get_date_mdy(int line) {
+	struct DateMDY *pd = calloc(sizeof(*pd), 1);
 	FILE *fptr = open_record_csv("r");
-	unsigned int maxfields = get_num_fields(fptr);
-	if (field > get_num_fields(fptr)) {
+
+	rewind(fptr);
+
+	char linebuff[LINE_BUFFER];
+	char *str;
+
+	int i = 0;
+	while ((str = fgets(linebuff, sizeof(linebuff), fptr)) != NULL) {
+		if (i == line) {
+			break;
+		}
+		i++;
+	}
+
+	fclose(fptr);
+
+	if (i > line || i < line) {
+		return NULL;
+	}
+
+	pd->m = atoi(strsep(&str, ","));
+	pd->d = atoi(strsep(&str, ","));
+	pd->y = atoi(strsep(&str, ","));
+
+	return pd;
+}
+
+int get_int_field(int line, int field) {
+	FILE *fptr = open_record_csv("r");
+
+	if (field > get_num_fields(fptr) || field < 1) {
 		perror("That field doesn't exist");
 		fclose(fptr);
 		return -1;
 	}
 
-	return 0;
+	rewind(fptr);
+
+	char linebuff[LINE_BUFFER];
+	char *str;
+
+	int i = 0;
+	while ((str = fgets(linebuff, sizeof(linebuff), fptr)) != NULL) {
+		if (i == line) {
+			break;
+		}
+		i++;
+	}
+
+	if (i > line || i < line) {
+		return -1;
+	}
+
+	fclose(fptr);
+
+	seek_n_fields(&str, field - 1);
+
+	return atoi(strsep(&str, ","));
 }

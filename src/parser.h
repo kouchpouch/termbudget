@@ -5,6 +5,19 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
+struct DateMDY {
+	unsigned int m;
+	unsigned int d;
+	unsigned int y;
+};
+
+struct BudgetTokens {
+	unsigned int m;
+	unsigned int y;
+	char *catg;
+	double amount;
+};
+
 /* Opens file located at RECORD_DIR in mode mode. Exits on failure */
 extern FILE *open_record_csv(char *mode);
 
@@ -26,8 +39,18 @@ extern int seek_beyond_header(FILE *fptr);
 /* Returns the number of fields by reading the header of fptr */
 extern unsigned int get_num_fields(FILE *fptr);
 
+/* Frees the struct and any applicable members */
+extern void free_budget_tokens(struct BudgetTokens *pbt);
+
+/* Returns malloc'd tokenized variables in BudgetTokens. 
+ * BudgetTokens catg is separately malloc'd and must be free'd */
+extern struct BudgetTokens *tokenize_budget_line(int line);
+
+/* Returns month and year of line from budget csv */
+extern struct DateMY *get_date_my(int line);
+
 /* Returns an integer value of a given line number line and of field number 
  * field. Field numbers start at 1 */
-extern int get_int_record_field(int line, int field);
+extern int get_int_field(int line, int field);
 
 #endif
