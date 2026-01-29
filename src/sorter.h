@@ -1,3 +1,8 @@
+/*
+ * Includes functions which find the appropriate line to insert a record
+ * into a CSV with the first three fields of every record being
+ * "month,day,year".
+ */
 #ifndef SORTER_H
 #define SORTER_H
 

@@ -1,3 +1,7 @@
+/*
+ * Includes ncurses helpers and macros
+ */
+
 #ifndef TUI_H
 #define TUI_H
 #include <ncurses.h>
