@@ -15,4 +15,9 @@
 #define MIN_YEAR 1000
 #define MAX_YEAR 9999
 
+struct FlexArr {
+	int lines;
+	int data[];
+};
+
 #endif
