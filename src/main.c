@@ -920,7 +920,6 @@ bool category_exists_in_budget(char *catg, int month, int year) {
 		free_budget_tokens(pbt);
 		i++;
 	}
-	free_budget_tokens(pbt);
 	return false;
 }
 
@@ -937,12 +936,9 @@ int verify_file_integrity() {
 void add_csv_record(int linetoadd, struct LineData *ld) {
 	if (!category_exists_in_budget(ld->category, ld->month, ld->year)) {
 		/* Implement a way to add the category if it doesn't exist */
-		puts("THE CATEGORY DOES NOT EXIST!");
-		getc(stdin);
 		add_budget_category(ld->category, ld->month, ld->year);
 	} else {
-		puts("THE CATEGORY DOES EXIST!");
-		getc(stdin);
+		;
 	}
 	FILE *fptr = open_record_csv("r");
 	FILE *tmpfptr = open_temp_csv();

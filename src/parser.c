@@ -94,7 +94,7 @@ struct BudgetTokens *tokenize_budget_line(int line) {
 	if (line == 0) {
 		return NULL;
 	}
-	struct BudgetTokens *pbt = calloc(sizeof(struct BudgetTokens), 1);
+	struct BudgetTokens *pbt = malloc(sizeof(struct BudgetTokens));
 	if (pbt == NULL) {
 		perror("Failed to allocate memory");
 		exit(1);
@@ -109,9 +109,9 @@ struct BudgetTokens *tokenize_budget_line(int line) {
 	char *str;
 
 	int i = 1;
-	while ((str = fgets(linebuff, sizeof(linebuff), fptr)) != NULL) {
-		if (i == line && str == NULL) {
-			free(pbt);
+	while (1) {
+		str = fgets(linebuff, sizeof(linebuff), fptr);
+		if (str == NULL) {
 			return NULL;
 		} else if (i == line) {
 			break;
@@ -121,8 +121,7 @@ struct BudgetTokens *tokenize_budget_line(int line) {
 
 	fclose(fptr);
 
-	if (i > line || i < line || i == 0) {
-		free(pbt);
+	if (i > line || i < line) {
 		return NULL;
 	}
 
