@@ -7,7 +7,7 @@
 #define SORTER_H
 
 /* Returns total lines in the CSV */
-extern int get_total_csv_lines();
+extern int get_total_csv_lines(void);
 
 /* Returns the line sorted by date to insert data for budget.csv */
 extern unsigned int sort_budget_csv(int month, int year);
