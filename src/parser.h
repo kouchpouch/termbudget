@@ -64,7 +64,7 @@ extern struct BudgetTokens *tokenize_budget_line(int line);
 extern struct DateMY *get_date_my(int line);
 
 /* Populates ld members with tokens from str */
-extern void tokenize_str(struct LineData *ld, char **str);
+extern void tokenize_record(struct LineData *ld, char **str);
 
 /* Returns an integer value of a given line number line and of field number 
  * field. Field numbers start at 1 */

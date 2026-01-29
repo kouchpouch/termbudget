@@ -1603,7 +1603,7 @@ void legacy_read_csv(void) {
 		if (line == NULL) {
 			break;
 		}
-		tokenize_str(ld, &line);
+		tokenize_record(ld, &line);
 		ld->linenum = linenum;
 		if (ld->month == usermonth && ld->year == useryear) {
 			month_record_exists = true;
@@ -1995,7 +1995,7 @@ void nc_edit_transaction(unsigned int linenum) {
 		exit(1);
 	}
 
-	tokenize_str(ld, &line);
+	tokenize_record(ld, &line);
 
 	struct LineData *pLd = malloc(sizeof(*ld));
 
@@ -2112,7 +2112,7 @@ void show_detail_subwindow(char *line) {
 	box(wptr_detail, 0, 0);
 	mvwxcprintw(wptr_detail, 0, "Details");
 	struct LineData linedata_, *ld = &linedata_;
-	tokenize_str(ld, &line);
+	tokenize_record(ld, &line);
 	nc_print_record_vert(wptr_detail, ld, BOX_OFFSET);
 	nc_exit_window_key(wptr_detail);
 }
@@ -2147,7 +2147,7 @@ void nc_scroll_prev(long b, FILE *fptr, WINDOW *wptr, struct ColWidth *cw) {
 		return;
 	}
 	struct LineData linedata_, *ld = &linedata_;
-	tokenize_str(ld, &line_str);
+	tokenize_record(ld, &line_str);
 
 	wmove(wptr, 0, 0);
 	winsertln(wptr);
@@ -2163,7 +2163,7 @@ void nc_scroll_next(long b, FILE *fptr, WINDOW *wptr, struct ColWidth *cw) {
 		return;
 	}
 	struct LineData linedata_, *ld = &linedata_;
-	tokenize_str(ld, &line_str);
+	tokenize_record(ld, &line_str);
 
 	wmove(wptr, 0, 0);
 	wdeleteln(wptr);
@@ -2195,7 +2195,7 @@ void nc_read_loop(WINDOW *wptr_parent, WINDOW *wptr, FILE *fptr,
 	for (int i = 0; i < max_y && displayed < psc->lines; i++) {
 		fseek(fptr, psc->data[i], SEEK_SET);
 		line_str = fgets(linebuff, sizeof(linebuff), fptr);
-		tokenize_str(ld, &line_str);
+		tokenize_record(ld, &line_str);
 		nc_print_record_hr(wptr, cw, ld, i);
 		displayed++;
 	}
@@ -2639,7 +2639,7 @@ void edit_transaction(void) {
 		exit(1);
 	}
 
-	tokenize_str(ld, &str);
+	tokenize_record(ld, &str);
 
 	struct LineData *pLd = malloc(sizeof(*ld));
 	if (pLd == NULL) {

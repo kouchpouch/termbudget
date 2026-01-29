@@ -139,7 +139,7 @@ struct BudgetTokens *tokenize_budget_line(int line) {
 	return pbt;
 }
 
-void tokenize_str(struct LineData *ld, char **str) {
+void tokenize_record(struct LineData *ld, char **str) {
 	char *token;
 	for (int i = 0; i < CSV_FIELDS; i++) {
 		token = strsep(str, ",");
