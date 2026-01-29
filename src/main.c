@@ -906,15 +906,6 @@ bool category_exists_in_budget(char *catg, int month, int year) {
 	return false;
 }
 
-/* The idea here is to verify that all of the categories that exist in 
- * the record csv also exist in the budget csv */
-int verify_file_integrity() {
-	FILE *bfptr = open_budget_csv("r");
-	FILE *rfptr = open_record_csv("r");
-
-	return 0;
-}
-
 /* Adds a record to the CSV on line linetoadd */
 void add_csv_record(int linetoadd, struct LineData *ld) {
 	if (!category_exists_in_budget(ld->category, ld->month, ld->year)) {
