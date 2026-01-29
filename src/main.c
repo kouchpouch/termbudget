@@ -730,7 +730,7 @@ DUPLICATE:
 
 struct FlexArr *get_byte_offsets_date(int y, int m) {
 	int realloc_counter = 0;	
-	struct FlexArr *pbo = malloc(sizeof(*pbo) + (sizeof(int) * REALLOC_FLAG));
+	struct FlexArr *pbo = malloc(sizeof(*pbo) + (sizeof(long) * REALLOC_FLAG));
 	if (pbo == NULL) {
 		return NULL;
 	}
@@ -744,7 +744,7 @@ struct FlexArr *get_byte_offsets_date(int y, int m) {
 			realloc_counter = 0;
 			struct FlexArr *tmp = realloc(pbo, sizeof(*pbo) +
 								 ((pbo->lines + REALLOC_FLAG) *
-		  						 sizeof(int)));
+		  						 sizeof(long)));
 			if (tmp == NULL) {
 				free(pbo);
 				return NULL;
@@ -765,7 +765,7 @@ struct FlexArr *sort_by_date(FILE *fptr, struct FlexArr *pidx,
 							 struct FlexArr *plines)
 {
 	int realloc_counter = 0;
-	struct FlexArr *psbd = malloc(sizeof(*psbd) + (sizeof(int) * REALLOC_FLAG));
+	struct FlexArr *psbd = malloc(sizeof(*psbd) + (sizeof(long) * REALLOC_FLAG));
 	if (psbd == NULL) {
 		return NULL;
 	}
@@ -777,7 +777,7 @@ struct FlexArr *sort_by_date(FILE *fptr, struct FlexArr *pidx,
 			realloc_counter = 0;
 			struct FlexArr *tmp = realloc(psbd, sizeof(*psbd) + 
 								 ((psbd->lines + REALLOC_FLAG) * 
-								 sizeof(int)));
+								 sizeof(long)));
 			if (tmp == NULL) {
 				free(psbd);
 				return NULL;	
@@ -799,7 +799,7 @@ struct FlexArr *sort_by_category(FILE *fptr, struct FlexArr *pidx,
 								 struct FlexArr *plines, int yr, int mo)
 {
 	int realloc_counter = 0;
-	struct FlexArr *prsc = malloc(sizeof(*prsc) + (sizeof(int) * REALLOC_FLAG));
+	struct FlexArr *prsc = malloc(sizeof(*prsc) + (sizeof(long) * REALLOC_FLAG));
 	prsc->lines = 0;
 	rewind(fptr);
 	struct Categories *pc = list_categories(mo, yr);
@@ -813,8 +813,8 @@ struct FlexArr *sort_by_category(FILE *fptr, struct FlexArr *pidx,
 			if (realloc_counter >= REALLOC_FLAG - 1) {
 				realloc_counter = 0;
 				struct FlexArr *tmp = 
-					realloc(prsc, sizeof(*prsc) + ((prsc->lines + REALLOC_FLAG) 
-			 				* sizeof(char *)));
+					realloc(prsc, sizeof(*prsc) + 
+			 			    ((prsc->lines + REALLOC_FLAG) * sizeof(char *)));
 				if (tmp == NULL) {
 					free(prsc);
 					prsc = NULL;
@@ -1819,14 +1819,14 @@ int nc_read_select_month(WINDOW *wptr, FILE* fptr, int year) {
 struct FlexArr *get_matching_line_nums(FILE *fptr, int month, int year) {
 	rewind(fptr);
 	struct FlexArr *lines = 
-		malloc(sizeof(struct FlexArr) + (REALLOC_FLAG * sizeof(int)));
+		malloc(sizeof(struct FlexArr) + (REALLOC_FLAG * sizeof(long)));
 	if (lines == NULL) {
 		exit(1);
 	}
 
 	lines->lines = 0;
 
-	int linenumber = 0;
+	long linenumber = 0;
 	int line_month, line_year;
 	int realloc_counter = 0;
 	char linebuff[LINE_BUFFER];
@@ -1851,7 +1851,7 @@ struct FlexArr *get_matching_line_nums(FILE *fptr, int month, int year) {
 			if (realloc_counter == REALLOC_FLAG - 1) {
 				realloc_counter = 0;
 				void *temp = realloc(lines, sizeof(struct FlexArr) + 
-					((lines->lines) + REALLOC_FLAG) * sizeof(int));
+					((lines->lines) + REALLOC_FLAG) * sizeof(long));
 				if (temp == NULL) {
 					free(lines);
 					exit(1);
@@ -1868,7 +1868,7 @@ struct FlexArr *get_matching_line_nums(FILE *fptr, int month, int year) {
 	/* Shrink back down if oversized alloc */
 	if (lines->lines % REALLOC_FLAG != 0) {	
 		void *temp = realloc(lines, sizeof(struct FlexArr) + 
-					   (lines->lines * sizeof(int)));
+					   (lines->lines * sizeof(long)));
 		if (temp == NULL) {
 			free(lines);
 			exit(1);
