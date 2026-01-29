@@ -90,14 +90,17 @@ void free_budget_tokens(struct BudgetTokens *pbt) {
 	free(pbt);
 }
 
-//struct FlexArr *get_budget_catg_by_date(int month, int year) {
-//	struct FlexArr *pfa = 
-//		malloc((sizeof(struct FlexArr)) + ());
-//
-//
-//
-//	return pfa;
-//}
+// FIX implement
+struct FlexArr *get_budget_catg_by_date(int month, int year) {
+	struct FlexArr *pfa = 
+		malloc((sizeof(struct FlexArr)) + (sizeof(long) * REALLOC_FLAG));
+
+	pfa->lines = 0;
+	int realloc_counter = 0;
+	long linenumber = 0;
+
+	return pfa;
+}
 
 struct BudgetTokens *tokenize_budget_line(int line) {
 	if (line == 0) {
@@ -248,7 +251,7 @@ int get_int_field(int line, int field) {
 
 struct FlexArr *index_csv(FILE *fptr) {
 	struct FlexArr *pidx = 
-		malloc(sizeof(struct FlexArr) + 0 * sizeof(int));
+		malloc(sizeof(struct FlexArr) + 0 * sizeof(long));
 	if (pidx == NULL) {
 		perror("Failed to allocate memory");
 		exit(1);
