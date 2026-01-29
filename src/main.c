@@ -6,19 +6,12 @@
 #include <assert.h>
 #include <ctype.h>
 #include <ncurses.h>
+#include "fileintegrity.h"
 #include "helper.h"
 #include "sorter.h"
 #include "tui.h"
 #include "parser.h"
 #include "main.h"
-
-#define MAX_LEN_AMOUNT 9
-#define MAX_LEN_DAY_MON 2
-#define MIN_LEN_DAY_MON 1
-#define MAX_LEN_YEAR 4
-#define MIN_LEN_YEAR 4
-#define MIN_INPUT_CHAR 2
-#define INPUT_MSG_Y_OFFSET 2
 
 #define CURRENT_YEAR 2026 // FIX This is to not be hard coded
 
@@ -2818,6 +2811,8 @@ int main(int argc, char **argv) {
 	if (verify_files_exist() == -1) {
 		exit(1);
 	}
+
+	assert(record_len_verification());
 
 	debug = false;
 	cli_mode = false;

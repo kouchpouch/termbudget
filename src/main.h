@@ -15,6 +15,14 @@
 #define MIN_YEAR 1000
 #define MAX_YEAR 9999
 
+#define MAX_LEN_AMOUNT 9
+#define MAX_LEN_DAY_MON 2
+#define MIN_LEN_DAY_MON 1
+#define MAX_LEN_YEAR 4
+#define MIN_LEN_YEAR 4
+#define MIN_INPUT_CHAR 2
+#define INPUT_MSG_Y_OFFSET 2
+
 struct FlexArr {
 	int lines;
 	int data[];
