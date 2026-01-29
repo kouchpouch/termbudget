@@ -24,8 +24,8 @@
 #define INPUT_MSG_Y_OFFSET 2
 
 struct FlexArr {
-	int lines;
-	int data[];
+	long lines;
+	long data[];
 };
 
 #endif

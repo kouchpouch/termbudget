@@ -899,14 +899,37 @@ bool category_exists_in_budget(char *catg, int month, int year) {
 	return false;
 }
 
+/*
+ * Delete records at FPI b
+ */
+int delete_category_orphans(long b) {
+
+	return 0;
+}
+
+/* 
+ * This is basically the opposite of category_exists_in_budget(). Checking
+ * BUDGET_DIR against RECORD_DIR and find any orphaned categories.
+ * Returns 0 on success, -1 on error. I'll implement this later, it might not
+ * actually be required.
+ */
+bool find_category_orphans(int month, int year) {
+	struct BudgetTokens bt, *pbt = &bt;
+	struct Categories *pc = list_categories(month, year);
+
+	unsigned int i = 1;
+
+
+	return 0;
+}
+
+
 /* Adds a record to the CSV on line linetoadd */
 void add_csv_record(int linetoadd, struct LineData *ld) {
 	if (!category_exists_in_budget(ld->category, ld->month, ld->year)) {
-		/* Implement a way to add the category if it doesn't exist */
 		add_budget_category(ld->category, ld->month, ld->year);
-	} else {
-		;
-	}
+	} 
+
 	FILE *fptr = open_record_csv("r");
 	FILE *tmpfptr = open_temp_csv();
 
@@ -2616,13 +2639,13 @@ void edit_transaction(void) {
 
 	if (debug) {
 		printf("TARGET: %d\n", target);
-		printf("TARGET OFFSET: %d\n", pcsvindex->data[target]);
+		printf("TARGET OFFSET: %ld\n", pcsvindex->data[target]);
 	}
 
 	fseek(fptr, pcsvindex->data[target], SEEK_SET);
 
 	if (debug) {
-		printf("COMMANDED SEEK OFFSET: %d\n", pcsvindex->data[target]);
+		printf("COMMANDED SEEK OFFSET: %ld\n", pcsvindex->data[target]);
 	}
 	
 	char linebuff[LINE_BUFFER];
