@@ -10,7 +10,6 @@
 
 /* Returns true if record csv fields are equal to or less than the maximum
  * lengths defined in main. False if not */
-extern bool record_len_verification();
-
+extern bool record_len_verification(void);
 
 #endif
