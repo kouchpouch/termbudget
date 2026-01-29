@@ -1182,40 +1182,6 @@ FAIL:
 	return -1;
 }
 
-/* Populates ld members with tokens from str */
-void tokenize_str(struct LineData *ld, char **str) {
-	char *token;
-	for (int i = 0; i < CSV_FIELDS; i++) {
-		token = strsep(str, ",");
-		if (token == NULL) break;
-		switch(i) {
-		case 0:
-			ld->month = atoi(token);
-			break;
-		case 1:
-			ld->day = atoi(token);
-			break;
-		case 2:
-			ld->year = atoi(token);
-			break;
-		case 3:
-			token[strcspn(token, "\n")] = '\0';
-			ld->category = token;
-			break;
-		case 4:
-			token[strcspn(token, "\n")] = '\0';
-			ld->desc = token;
-			break;
-		case 5:
-			ld->transtype = atoi(token);
-			break;
-		case 6:
-			ld->amount = atof(token);
-			break;
-		}
-	}
-}
-
 int *list_records_by_year(FILE *fptr) {
 	char linebuff[LINE_BUFFER];
 	char *str;
