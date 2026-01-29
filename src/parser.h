@@ -56,6 +56,9 @@ extern unsigned int get_num_fields(FILE *fptr);
 /* Frees the struct and any applicable members */
 extern void free_budget_tokens(struct BudgetTokens *pbt);
 
+/* Returns line numbers from BUDGET_DIR that match month, year */
+extern struct FlexArr *get_buget_catg_by_date(int month, int year);
+
 /* Returns malloc'd tokenized variables in BudgetTokens. 
  * BudgetTokens catg is separately malloc'd and must be free'd */
 extern struct BudgetTokens *tokenize_budget_line(int line);
@@ -70,6 +73,8 @@ extern void tokenize_record(struct LineData *ld, char **str);
  * field. Field numbers start at 1 */
 extern int get_int_field(int line, int field);
 
+/* Returns byte offset values for the beginning of each line in fptr file
+ * position indicator position will be retained */
 struct FlexArr *index_csv(FILE *fptr);
 
 #endif
