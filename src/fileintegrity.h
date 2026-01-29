@@ -6,7 +6,11 @@
 #ifndef FILEINTEGRITY_H
 #define FILEINTEGRITY_H
 
+#include <stdbool.h>
 
+/* Returns true if record csv fields are equal to or less than the maximum
+ * lengths defined in main. False if not */
+extern bool record_len_verification();
 
 
 #endif
