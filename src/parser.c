@@ -201,3 +201,47 @@ int get_int_field(int line, int field) {
 
 	return atoi(strsep(&str, ","));
 }
+
+struct FlexArr *index_csv(FILE *fptr) {
+	struct FlexArr *pidx = 
+		malloc(sizeof(struct FlexArr) + 0 * sizeof(int));
+	if (pidx == NULL) {
+		perror("Failed to allocate memory");
+		exit(1);
+	}
+
+	long temp_byte_offset = ftell(fptr);
+	pidx->lines = 0;
+	rewind(fptr);
+	//FILE *fptr = open_record_csv("r");
+	char linebuff[LINE_BUFFER];
+
+	while (1) {
+		char *test = fgets(linebuff, sizeof(linebuff), fptr);
+		if (test == NULL) {
+			break;
+		}
+		pidx->lines++;
+	}
+
+	struct FlexArr *tmp = realloc(pidx, sizeof(*pidx) + (pidx->lines * sizeof(int)));
+
+	if (tmp == NULL) {
+		perror("Failed to allocate memory");
+		exit(1);
+	}
+	pidx = tmp;
+
+	rewind(fptr);
+
+	for (int i = 0; i < pidx->lines; i++) {
+		char *test = fgets(linebuff, sizeof(linebuff), fptr);
+		if (test == NULL) {
+			break;
+		}
+		pidx->data[i] = ftell(fptr);
+	}
+
+	fseek(fptr, temp_byte_offset, SEEK_SET);
+	return pidx;
+}

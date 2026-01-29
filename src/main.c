@@ -57,22 +57,6 @@ const char *months[] = {
 	"DEC"
 };
 
-struct LineData {
-	int month;
-	int day;
-	int year;
-	char *category;
-	char *desc;
-	int transtype;
-	double amount;
-	int linenum;
-};
-
-struct FlexArr {
-	int lines;
-	int data[];
-};
-
 struct Categories {
 	int count;
 	char *categories[];
@@ -96,7 +80,6 @@ int nc_confirm_record(struct LineData *ld);
 void nc_print_record_hr(WINDOW *wptr, struct ColWidth *cw, struct LineData *ld, int y);
 void nc_print_record_vert(WINDOW *wptr, struct LineData *ld, int x_off);
 struct Categories *list_categories(int month, int year);
-struct FlexArr *index_csv();
 int mv_tmp_to_record_file(FILE *tempfile, FILE *mainfile);
 int delete_csv_record(int linetodelete);
 struct FlexArr *get_matching_line_nums(FILE *fptr, int month, int year);
@@ -760,7 +743,7 @@ struct FlexArr *get_byte_offsets_date(int y, int m) {
 	}
 	pbo->lines = 0;
 	FILE *fptr = open_record_csv("r");
-	struct FlexArr *pidx = index_csv();
+	struct FlexArr *pidx = index_csv(fptr);
 	struct FlexArr *plines = get_matching_line_nums(fptr, m, y);
 
 	for (int i = 0; i < plines->lines; i++) {
@@ -972,7 +955,9 @@ void add_csv_record(int linetoadd, struct LineData *ld) {
  * on the read screen these will be auto-filled. */
 void nc_add_transaction(int year, int month) {
 	struct LineData userlinedata_, *uld = &userlinedata_;
-	struct FlexArr *pidx = index_csv();
+	FILE *fptr = open_record_csv("r");
+	struct FlexArr *pidx = index_csv(fptr);
+	fclose(fptr);
 	nc_print_input_footer(stdscr);
 
 	year > 0 ? (uld->year = year) : (uld->year = nc_input_year());
@@ -1010,7 +995,9 @@ void nc_add_transaction_default() {
 
 void add_transaction(void) {
 	struct LineData userlinedata_, *uld = &userlinedata_;
-	struct FlexArr *pidx = index_csv();
+	FILE *fptr = open_record_csv("r");
+	struct FlexArr *pidx = index_csv(fptr);
+	fclose(fptr);
 
 	uld->year = input_year();
 	uld->month = input_month();
@@ -1051,50 +1038,6 @@ CLEANUP:
 	free(pidx);
 	free(uld->category);
 	free(uld->desc);
-}
-
-struct FlexArr *index_csv(void) {
-	struct FlexArr *pidx = 
-		malloc(sizeof(struct FlexArr) + 0 * sizeof(int));
-	if (pidx == NULL) {
-		perror("Failed to allocate memory");
-		exit(1);
-	}
-
-	pidx->lines = 0;
-	FILE *fptr = open_record_csv("r");
-	char linebuff[LINE_BUFFER];
-
-	while (1) {
-		char *test = fgets(linebuff, sizeof(linebuff), fptr);
-		if (test == NULL) {
-			break;
-		}
-		pidx->lines++;
-	}
-
-	struct FlexArr *tmp = realloc(pidx, sizeof(*pidx) + (pidx->lines * sizeof(int)));
-
-	if (tmp == NULL) {
-		perror("Failed to allocate memory");
-		exit(1);
-	}
-	pidx = tmp;
-
-	rewind(fptr);
-	assert(ftell(fptr) == 0);
-
-	for (int i = 0; i < pidx->lines; i++) {
-		char *test = fgets(linebuff, sizeof(linebuff), fptr);
-		if (test == NULL) {
-			break;
-		}
-		pidx->data[i] = ftell(fptr);
-	}
-
-	fclose(fptr);
-	fptr = NULL;
-	return pidx;
 }
 
 int nc_confirm_record(struct LineData *ld) {
@@ -2082,10 +2025,10 @@ int nc_select_field_to_edit(WINDOW *wptr) {
 
 void nc_edit_transaction(unsigned int linenum) {
 	struct LineData linedata, *ld = &linedata;
-	struct FlexArr *pidx = index_csv();
 
 	WINDOW *wptr_edit = create_input_subwindow();
 	FILE *fptr = open_record_csv("r+");
+	struct FlexArr *pidx = index_csv(fptr);
 	fseek(fptr, pidx->data[linenum], SEEK_SET);
 
 	char linebuff[LINE_BUFFER];
@@ -2506,10 +2449,10 @@ void nc_read_setup(int sel_year, int sel_month, int sort) {
 	}
 	refresh();
 
-	struct FlexArr *pidx = index_csv();
 	struct SelRecord sr_ , *sr = &sr_;
 	sr->flag = -1;
 	FILE *fptr = open_record_csv("r");
+	struct FlexArr *pidx = index_csv(fptr);
 
 	WINDOW *wptr_parent = newwin(LINES - 1, 0, 0, 0);
 	if (wptr_parent == NULL) {
@@ -2712,7 +2655,7 @@ void edit_transaction(void) {
 
 	legacy_read_csv();
 	
-	struct FlexArr *pcsvindex = index_csv();
+	struct FlexArr *pcsvindex = index_csv(fptr);
 
 	do {
 		puts("Enter line number");

@@ -1,3 +1,6 @@
+/*
+ * Includes parsing functions for CSV files used in termBudget
+ */
 #ifndef PARSER_H
 #define PARSER_H
 #include <stdio.h>
@@ -16,6 +19,17 @@ struct BudgetTokens {
 	unsigned int y;
 	char *catg;
 	double amount;
+};
+
+struct LineData {
+	int month;
+	int day;
+	int year;
+	char *category;
+	char *desc;
+	int transtype;
+	double amount;
+	int linenum;
 };
 
 /* Opens file located at RECORD_DIR in mode mode. Exits on failure */
@@ -52,5 +66,7 @@ extern struct DateMY *get_date_my(int line);
 /* Returns an integer value of a given line number line and of field number 
  * field. Field numbers start at 1 */
 extern int get_int_field(int line, int field);
+
+struct FlexArr *index_csv(FILE *fptr);
 
 #endif
