@@ -90,14 +90,55 @@ void free_budget_tokens(struct BudgetTokens *pbt) {
 	free(pbt);
 }
 
-// FIX implement
+/* Returns all budget categories' line numbers that match the given month,
+* year. Return struct must be free'd */
 struct FlexArr *get_budget_catg_by_date(int month, int year) {
 	struct FlexArr *pfa = 
 		malloc((sizeof(struct FlexArr)) + (sizeof(long) * REALLOC_FLAG));
 
+	if (pfa == NULL) {
+		perror("Failed to allocate memory");
+		exit(1);
+	}
+
+	FILE *fptr = open_budget_csv("r");
+
 	pfa->lines = 0;
-	int realloc_counter = 0;
-	long linenumber = 0;
+	unsigned int realloc_counter = 0;
+
+	seek_beyond_header(fptr);
+	long linenumber = 1;
+	char linebuff[LINE_BUFFER];
+	char *str;
+	int m;
+	int y;
+
+	while (1) {
+		str = fgets(linebuff, sizeof(linebuff), fptr);
+		if (str == NULL) {
+			break;
+		}
+
+		m = atoi(strsep(&str, ","));
+		y = atoi(strsep(&str, ","));
+
+		if (y == year && m == month) {
+			if (realloc_counter >= REALLOC_FLAG - 1) {
+				realloc_counter = 0;
+				struct FlexArr *tmp = realloc(pfa, (sizeof(struct FlexArr)) +
+								  (REALLOC_FLAG + pfa->lines) * sizeof(long));
+				if (tmp == NULL) {
+					perror("Failed to allocate memory");
+					free(pfa);
+					exit(1);
+				}
+				pfa = tmp;
+			}
+			pfa->data[pfa->lines] = linenumber;
+			pfa->lines++;
+			realloc_counter++;
+		}
+	}
 
 	return pfa;
 }
