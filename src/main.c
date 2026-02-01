@@ -65,6 +65,7 @@ struct Balances {
 	double expense;
 };
 
+void memory_allocate_fail();
 int mv_tmp_to_budget_file(FILE *tmp, FILE* main);
 void nc_read_setup_default();
 void calculate_balance(struct Balances *pb, struct FlexArr *pbo);
@@ -82,8 +83,7 @@ char *user_input(int n) {
 	char *buffer = (char *)malloc(buffersize);
 
 	if (buffer == NULL) {
-		puts("Failed to allocate memory");
-		return buffer;
+		memory_allocate_fail();
 	}
 	if (fgets(buffer, buffersize, stdin) == NULL) {
 		printf("Invalid Input\n");
@@ -140,7 +140,7 @@ char *nc_user_input(int n, WINDOW *wptr) {
 
 	noecho();
 
-	char *buffer = (char *)malloc(buffersize);
+	char *buffer = malloc(buffersize);
 	if (buffer == NULL) {
 		return buffer;
 	}
@@ -642,6 +642,11 @@ double nc_input_amount(void) {
 //--------------------------USER INPUT ABOVE---------------------------------//
 //---------------------------------------------------------------------------//
 
+void memory_allocate_fail() {
+	perror("Failed to allocate memory");
+	exit(1);
+}
+
 void print_record_vert(struct LineData *ld) {
 	printf(
 		"1.) Date-->  %d/%d/%d\n"
@@ -730,7 +735,7 @@ DUPLICATE:
 
 struct FlexArr *get_byte_offsets_date(int y, int m) {
 	int realloc_counter = 0;	
-	struct FlexArr *pbo = malloc(sizeof(*pbo) + (sizeof(long) * REALLOC_FLAG));
+	struct FlexArr *pbo = malloc(sizeof(*pbo) + (sizeof(long) * REALLOC_INCR));
 	if (pbo == NULL) {
 		return NULL;
 	}
@@ -740,10 +745,10 @@ struct FlexArr *get_byte_offsets_date(int y, int m) {
 	struct FlexArr *plines = get_matching_line_nums(fptr, m, y);
 
 	for (int i = 0; i < plines->lines; i++) {
-		if (realloc_counter >= REALLOC_FLAG - 1) {
+		if (realloc_counter >= REALLOC_INCR - 1) {
 			realloc_counter = 0;
 			struct FlexArr *tmp = realloc(pbo, sizeof(*pbo) +
-								 ((pbo->lines + REALLOC_FLAG) *
+								 ((pbo->lines + REALLOC_INCR) *
 		  						 sizeof(long)));
 			if (tmp == NULL) {
 				free(pbo);
@@ -765,7 +770,7 @@ struct FlexArr *sort_by_date(FILE *fptr, struct FlexArr *pidx,
 							 struct FlexArr *plines)
 {
 	int realloc_counter = 0;
-	struct FlexArr *psbd = malloc(sizeof(*psbd) + (sizeof(long) * REALLOC_FLAG));
+	struct FlexArr *psbd = malloc(sizeof(*psbd) + (sizeof(long) * REALLOC_INCR));
 	if (psbd == NULL) {
 		return NULL;
 	}
@@ -773,10 +778,10 @@ struct FlexArr *sort_by_date(FILE *fptr, struct FlexArr *pidx,
 	rewind(fptr);
 
 	for (int i = 0; i < plines->lines; i++) {
-		if (realloc_counter >= REALLOC_FLAG - 1) {
+		if (realloc_counter >= REALLOC_INCR - 1) {
 			realloc_counter = 0;
 			struct FlexArr *tmp = realloc(psbd, sizeof(*psbd) + 
-								 ((psbd->lines + REALLOC_FLAG) * 
+								 ((psbd->lines + REALLOC_INCR) * 
 								 sizeof(long)));
 			if (tmp == NULL) {
 				free(psbd);
@@ -799,7 +804,7 @@ struct FlexArr *sort_by_category(FILE *fptr, struct FlexArr *pidx,
 								 struct FlexArr *plines, int yr, int mo)
 {
 	int realloc_counter = 0;
-	struct FlexArr *prsc = malloc(sizeof(*prsc) + (sizeof(long) * REALLOC_FLAG));
+	struct FlexArr *prsc = malloc(sizeof(*prsc) + (sizeof(long) * REALLOC_INCR));
 	prsc->lines = 0;
 	rewind(fptr);
 	struct Categories *pc = list_categories(mo, yr);
@@ -810,11 +815,11 @@ struct FlexArr *sort_by_category(FILE *fptr, struct FlexArr *pidx,
 	for (int i = 0; i < pc->count; i++) { // Loop through each category
 		for (int j = 0; j < plines->lines; j++) { // Loop through each record
 
-			if (realloc_counter >= REALLOC_FLAG - 1) {
+			if (realloc_counter >= REALLOC_INCR - 1) {
 				realloc_counter = 0;
 				struct FlexArr *tmp = 
 					realloc(prsc, sizeof(*prsc) + 
-			 			    ((prsc->lines + REALLOC_FLAG) * sizeof(char *)));
+			 			    ((prsc->lines + REALLOC_INCR) * sizeof(char *)));
 				if (tmp == NULL) {
 					free(prsc);
 					prsc = NULL;
@@ -1218,8 +1223,7 @@ int *list_records_by_year(FILE *fptr) {
 			int *tmp = realloc(years, (i + 1) * sizeof(int));
 			if (tmp == NULL) {
 				free(years);
-				puts("Failed to reallocate memory");
-				exit(1);
+				memory_allocate_fail();
 			}
 			years = tmp;
 			years[i] = year;
@@ -1228,8 +1232,7 @@ int *list_records_by_year(FILE *fptr) {
 	int *tmp = realloc(years, (i + 2) * sizeof(int));
 	if (tmp == NULL) {
 		free(years);
-		puts("Failed to reallocate memory");
-		exit(1);
+		memory_allocate_fail();
 	}
 	years = tmp;
 	/* Place a zero at the end of the array to mark the end */
@@ -1819,7 +1822,7 @@ int nc_read_select_month(WINDOW *wptr, FILE* fptr, int year) {
 struct FlexArr *get_matching_line_nums(FILE *fptr, int month, int year) {
 	rewind(fptr);
 	struct FlexArr *lines = 
-		malloc(sizeof(struct FlexArr) + (REALLOC_FLAG * sizeof(long)));
+		malloc(sizeof(struct FlexArr) + (REALLOC_INCR * sizeof(long)));
 	if (lines == NULL) {
 		exit(1);
 	}
@@ -1848,10 +1851,10 @@ struct FlexArr *get_matching_line_nums(FILE *fptr, int month, int year) {
 		seek_n_fields(&str, 1);
 		line_year = atoi(strsep(&str, ","));
 		if (year == line_year && month == line_month) {
-			if (realloc_counter == REALLOC_FLAG - 1) {
+			if (realloc_counter == REALLOC_INCR - 1) {
 				realloc_counter = 0;
 				void *temp = realloc(lines, sizeof(struct FlexArr) + 
-					((lines->lines) + REALLOC_FLAG) * sizeof(long));
+					((lines->lines) + REALLOC_INCR) * sizeof(long));
 				if (temp == NULL) {
 					free(lines);
 					exit(1);
@@ -1866,7 +1869,7 @@ struct FlexArr *get_matching_line_nums(FILE *fptr, int month, int year) {
 	}
 
 	/* Shrink back down if oversized alloc */
-	if (lines->lines % REALLOC_FLAG != 0) {	
+	if (lines->lines % REALLOC_INCR != 0) {	
 		void *temp = realloc(lines, sizeof(struct FlexArr) + 
 					   (lines->lines * sizeof(long)));
 		if (temp == NULL) {
@@ -2016,10 +2019,9 @@ void nc_edit_transaction(unsigned int linenum) {
 	struct LineData *pLd = malloc(sizeof(*ld));
 
 	if (pLd == NULL) {
-		perror("Failed to allocate memory");
 		free(pidx);
 		fclose(fptr);
-		fptr = NULL;
+		memory_allocate_fail();
 		return;
 	}
 
@@ -2659,11 +2661,10 @@ void edit_transaction(void) {
 
 	struct LineData *pLd = malloc(sizeof(*ld));
 	if (pLd == NULL) {
-		puts("Failed to allocate memory");
 		free(pcsvindex);
 		fclose(fptr);
 		fptr = NULL;
-		exit(1);
+		memory_allocate_fail();
 	}
 
 	memcpy(pLd, ld, sizeof(*ld));
