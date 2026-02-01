@@ -38,6 +38,21 @@
     - (*) Add sort by feature
     - ( ) Dim menu options in the footer if they are not available to use
     - ( ) Overview can be selected on nc_select_year
+    - ( ) Make index_csv function in parser.c amortize memory allocation
+    - ( ) Create methods for managing the actual budgeting system of the
+            program. This concerns budget.csv, defining budget category
+            money allocation, file verification, user input, and an easy to
+            use and view interface.
+        - ( ) Budget CSV parsing
+        - ( ) Sorting by Category should be the default behavior
+        - ( ) Show each category in the read loop and it's associated planned
+                amount for each category and how much is remaining.
+        - ( ) Allow budget planning, I.E. making categories where no record
+                currently exists.
+        - ( ) Handle deleting categories, possibly renaming as well. But
+                probably not.
+        - ( ) Orphaned categories handling
+        - ( ) Verify data between files and in the files themselves (The CSVs)
 
 #### Main Feature Set
     - (*) Create a transaction
