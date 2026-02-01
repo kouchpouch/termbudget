@@ -10,7 +10,9 @@
 #define LINE_BUFFER 200
 #define STDIN_LARGE_BUFF 64
 #define STDIN_SMALL_BUFF 8
-#define REALLOC_FLAG 64
+#define REALLOC_INCR 64
+#define INDEX_ALLOC 1024
+#define MAX_ALLOC 1024 * 1024
 
 #define MIN_YEAR 1000
 #define MAX_YEAR 9999
@@ -27,5 +29,9 @@ struct FlexArr {
 	long lines;
 	long data[];
 };
+
+/* Exits the program with "exit(1)" and prints the error message. */
+extern void memory_allocate_fail();
+
 
 #endif
