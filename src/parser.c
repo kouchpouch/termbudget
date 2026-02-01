@@ -94,11 +94,10 @@ void free_budget_tokens(struct BudgetTokens *pbt) {
 * year. Return struct must be free'd */
 struct FlexArr *get_budget_catg_by_date(int month, int year) {
 	struct FlexArr *pfa = 
-		malloc((sizeof(struct FlexArr)) + (sizeof(long) * REALLOC_FLAG));
+		malloc((sizeof(struct FlexArr)) + (sizeof(long) * REALLOC_INCR));
 
 	if (pfa == NULL) {
-		perror("Failed to allocate memory");
-		exit(1);
+		memory_allocate_fail();
 	}
 
 	FILE *fptr = open_budget_csv("r");
@@ -123,14 +122,13 @@ struct FlexArr *get_budget_catg_by_date(int month, int year) {
 		y = atoi(strsep(&str, ","));
 
 		if (y == year && m == month) {
-			if (realloc_counter >= REALLOC_FLAG - 1) {
+			if (realloc_counter >= REALLOC_INCR - 1) {
 				realloc_counter = 0;
 				struct FlexArr *tmp = realloc(pfa, (sizeof(struct FlexArr)) +
-								  (REALLOC_FLAG + pfa->lines) * sizeof(long));
+								  (REALLOC_INCR + pfa->lines) * sizeof(long));
 				if (tmp == NULL) {
-					perror("Failed to allocate memory");
 					free(pfa);
-					exit(1);
+					memory_allocate_fail();
 				}
 				pfa = tmp;
 			}
@@ -149,8 +147,7 @@ struct BudgetTokens *tokenize_budget_line(int line) {
 	}
 	struct BudgetTokens *pbt = malloc(sizeof(struct BudgetTokens));
 	if (pbt == NULL) {
-		perror("Failed to allocate memory");
-		exit(1);
+		memory_allocate_fail();
 	}
 
 	FILE *fptr = open_budget_csv("r");
@@ -185,8 +182,7 @@ struct BudgetTokens *tokenize_budget_line(int line) {
 	char *tmp = strndup(strsep(&str, ","), MAX_LEN_CATG);
 	if (tmp == NULL) {
 		free(pbt);
-		perror("Failed to allocate memory");
-		exit(1);
+		memory_allocate_fail();
 	}
 	pbt->catg = tmp;
 	pbt->amount = atof(strsep(&str, ","));
@@ -290,12 +286,62 @@ int get_int_field(int line, int field) {
 	return atoi(strsep(&str, ","));
 }
 
+/* 
+ * Rewrite of index_csv to include amortized memory allocation. Amortization on
+ * other functions in the program doesn't exist, but due to this function
+ * reading and storing the entire file, it may as well be amortized. The old
+ * function scans through the entire RECORD_DIR file twice. Once to get the
+ * total number of records to allocate the appropriate amount of memory, then
+ * goes through the entire file again and inserts the byte offset vales into
+ * a dynamically sized array. There will most likely be a performance decrease
+ * for small files but for very large RECORD_DIR files this approach will most
+ * likely be faster.
+ *
+ * To counter that, the initial allocation will be much larger than
+ * REALLOC_INCR which is used in cases where realistically not many values
+ * will be stored in the array.
+ */
 struct FlexArr *index_csv(FILE *fptr) {
-	struct FlexArr *pidx = 
-		malloc(sizeof(struct FlexArr) + 0 * sizeof(long));
+	struct FlexArr *pidx =
+		malloc(sizeof(struct FlexArr) + (sizeof(long) * INDEX_ALLOC));
 	if (pidx == NULL) {
-		perror("Failed to allocate memory");
-		exit(1);
+		memory_allocate_fail();
+	}
+	unsigned long capacity = INDEX_ALLOC;
+	pidx->lines = 0;
+
+	char linebuff[LINE_BUFFER];
+
+	while (fgets(linebuff, sizeof(linebuff), fptr) != NULL) {
+		pidx->data[pidx->lines] = ftell(fptr);
+		pidx->lines++;
+
+		if (pidx->lines >= capacity) {
+			if (capacity * 2 <= MAX_ALLOC) {
+				capacity *= 2;
+			} else {
+				capacity += MAX_ALLOC;
+			}
+			struct FlexArr *tmp =
+				realloc(pidx, sizeof(struct FlexArr) + (sizeof(long) * capacity));
+			if (tmp == NULL) {
+				free(pidx);
+				memory_allocate_fail();
+			}
+			pidx = tmp;
+		}
+	}
+
+	return pidx;
+}
+
+// Do not use. Has been renamed to index_csv_old to prevent refactoring
+[[deprecated("Old inefficient indexer, do not use. Replaced with index_csv")]]
+struct FlexArr *index_csv_old(FILE *fptr) {
+	struct FlexArr *pidx = 
+		malloc(sizeof(struct FlexArr) + sizeof(long));
+	if (pidx == NULL) {
+		memory_allocate_fail();
 	}
 
 	long temp_byte_offset = ftell(fptr);
@@ -315,8 +361,7 @@ struct FlexArr *index_csv(FILE *fptr) {
 	struct FlexArr *tmp = realloc(pidx, sizeof(*pidx) + (pidx->lines * sizeof(long)));
 
 	if (tmp == NULL) {
-		perror("Failed to allocate memory");
-		exit(1);
+		memory_allocate_fail();
 	}
 	pidx = tmp;
 
