@@ -2911,8 +2911,6 @@ int main(int argc, char **argv) {
 
 	assert(record_len_verification());
 	int corrected = verify_categories_exist_in_budget();
-	printf("Corrected %d records\n", corrected);
-	getc(stdin);
 
 	debug = false;
 	cli_mode = false;
@@ -2926,6 +2924,12 @@ int main(int argc, char **argv) {
 				cli_mode = true;
 			}
 		}
+	}
+
+	if (debug) {
+		printf("Corrected %d records\n", corrected);
+		printf("Press enter to continue");
+		getc(stdin);
 	}
 
 	if (cli_mode == false) {
