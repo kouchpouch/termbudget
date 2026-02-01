@@ -50,11 +50,6 @@ const char *months[] = {
 	"DEC"
 };
 
-struct Categories {
-	int count;
-	char *categories[];
-};
-
 struct SelRecord {
 	unsigned int flag;
 	int index;
@@ -65,6 +60,8 @@ struct Balances {
 	double expense;
 };
 
+int *list_records_by_month(FILE *fptr, int matchyear);
+int *list_records_by_year(FILE *fptr);
 void memory_allocate_fail();
 int mv_tmp_to_budget_file(FILE *tmp, FILE* main);
 void nc_read_setup_default();
@@ -928,6 +925,77 @@ bool find_category_orphans(int month, int year) {
 	return 0;
 }
 
+void free_categories(struct Categories *pc) {
+	for (int i = 0; i < pc->count; i++) {
+		free(pc->categories[i]);
+	}
+	free(pc);
+}
+
+int cmp_catg_and_fix(struct Categories *prc, 
+					 struct Categories *pbc, int m, int y) {
+	int corrected = 0;
+	bool cat_exists = false;
+	for (int i = 0; i < prc->count; i++) {
+		cat_exists = false;
+		for (int j = 0; j < pbc->count; j++) {
+			if (strcmp(prc->categories[i], pbc->categories[j]) == 0) {
+				cat_exists = true;
+			}
+		}
+		if (!cat_exists) {
+			add_budget_category(prc->categories[i], m, y);
+			corrected++;
+		}
+	}
+	return corrected;
+}
+
+/*
+ * Ensures that if a category exists in RECORD_DIR(main.h)
+ * it will also exist in BUDGET_DIR(main.h). BUDGET_DIR is verified against
+ * RECORD_DIR, not the other way around. If a category exists in BUDGET_DIR
+ * and not RECORD_DIR leading to an orphaned category--this is not checked.
+ *
+ * Orphaned categories are expected and a normal part of the program that are
+ * used for budget planning.
+ *
+ * Returns a 0 or positive value of records that were corrected successfully.
+ * Returns -1 on failure.
+ */
+int verify_categories_exist_in_budget() {
+	FILE *rfptr = open_record_csv("r");
+	int corrected = 0;
+
+	/* Go through each year and find the matching months, then find the
+	 * matching categories, then compare.. Lotta work! Good thing this only
+	 * runs once at startup. */
+
+	struct Categories prc_, *prc = &prc_;
+	struct Categories pbc_, *pbc = &pbc_;
+	int *years = list_records_by_year(rfptr);
+	int i = 0;
+	while (years[i] != 0) {
+		rewind(rfptr);
+		int *months = list_records_by_month(rfptr, years[i]);
+		for (int j = 0; j < 12; j++) {
+			if (months[j] != 0) {
+				prc = list_categories(months[j], years[i]);
+				pbc = get_budget_catg_by_date(months[j], years[i]);
+				corrected += cmp_catg_and_fix(prc, pbc, months[j], years[i]);
+				free_categories(prc);
+				free_categories(pbc);
+			}
+		}
+		free(months);
+		i++;
+	}
+
+	free(years);
+	fclose(rfptr);
+
+	return corrected;
+}
 
 /* Adds a record to the CSV on line linetoadd */
 void add_csv_record(int linetoadd, struct LineData *ld) {
@@ -1194,6 +1262,8 @@ FAIL:
 	return -1;
 }
 
+/* Returns an malloc'd array of integers containing the years in which records
+ * are found in fptr. A '0' marks the end of the array. */
 int *list_records_by_year(FILE *fptr) {
 	char linebuff[LINE_BUFFER];
 	char *str;
@@ -1242,6 +1312,9 @@ int *list_records_by_year(FILE *fptr) {
 	return years;
 }
 
+/* Returns a calloc'd array of months in which records exist in fptr which
+ * match the year of matchyear. The month value is '0' if that month doesn't
+ * exist. The size of the array is always 12. */
 int *list_records_by_month(FILE *fptr, int matchyear) {
 	char linebuff[LINE_BUFFER];
 	char *str;
@@ -2837,6 +2910,9 @@ int main(int argc, char **argv) {
 	}
 
 	assert(record_len_verification());
+	int corrected = verify_categories_exist_in_budget();
+	printf("Corrected %d records\n", corrected);
+	getc(stdin);
 
 	debug = false;
 	cli_mode = false;
