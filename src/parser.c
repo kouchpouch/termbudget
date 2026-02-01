@@ -90,9 +90,59 @@ void free_budget_tokens(struct BudgetTokens *pbt) {
 	free(pbt);
 }
 
+struct Categories *get_budget_catg_by_date(int month, int year) {
+	struct Categories *pc = 
+		malloc((sizeof(struct Categories)) + (sizeof(char *) * REALLOC_INCR));
+
+	if (pc == NULL) {
+		memory_allocate_fail();
+	}
+
+	FILE *fptr = open_budget_csv("r");
+
+	pc->count = 0;
+	unsigned int realloc_counter = 0;
+
+	seek_beyond_header(fptr);
+	char linebuff[LINE_BUFFER];
+	char *str;
+	char *catg;
+	int m;
+	int y;
+
+	while (1) {
+		str = fgets(linebuff, sizeof(linebuff), fptr);
+		if (str == NULL) {
+			break;
+		}
+
+		m = atoi(strsep(&str, ","));
+		y = atoi(strsep(&str, ","));
+		catg = strsep(&str, ",");
+
+		if (y == year && m == month) {
+			if (realloc_counter >= REALLOC_INCR - 1) {
+				realloc_counter = 0;
+				struct Categories *tmp = realloc(pc, (sizeof(struct FlexArr)) +
+								  (REALLOC_INCR + pc->count) * sizeof(char *));
+				if (tmp == NULL) {
+					free(pc);
+					memory_allocate_fail();
+				}
+				pc = tmp;
+			}
+			pc->categories[pc->count] = strdup(catg);
+			pc->count++;
+			realloc_counter++;
+		}
+	}
+
+	return pc;
+}
+
 /* Returns all budget categories' line numbers that match the given month,
 * year. Return struct must be free'd */
-struct FlexArr *get_budget_catg_by_date(int month, int year) {
+struct FlexArr *get_budget_catg_by_date_ln(int month, int year) {
 	struct FlexArr *pfa = 
 		malloc((sizeof(struct FlexArr)) + (sizeof(long) * REALLOC_INCR));
 
