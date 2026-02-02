@@ -367,9 +367,9 @@ char *input_category(int month, int year) {
 	bool cat_exists = false;
 	struct Categories *pc = list_categories(month, year);
 
-	if (pc->count > 0) {
+	if (pc->size > 0) {
 		puts("Categories:");
-		for (int i = 0; i < pc->count; i++) {
+		for (int i = 0; i < pc->size; i++) {
 			printf("%s ", pc->categories[i]);
 		}
 		printf("\n");
@@ -382,7 +382,7 @@ RETRY:
 	cat_exists = false;
 	str = input_str_retry("Enter Category:");
 
-	for (int i = 0; i < pc->count; i++) {
+	for (int i = 0; i < pc->size; i++) {
 		if (strcmp(str, pc->categories[i]) == 0) {
 			cat_exists = true;
 			break;
@@ -398,9 +398,10 @@ RETRY:
 		}
 	}
 
-	for (int i = 0; i < pc->count; i++) {
+	for (int i = 0; i < pc->size; i++) {
 		free(pc->categories[i]);
 	}
+
 	free(pc);
 	return str;
 }
@@ -472,26 +473,26 @@ char *nc_input_string(char *msg) {
 
 char *nc_select_category(int month, int year) {
 	struct Categories *pc = list_categories(month, year);
-	WINDOW *wptr_parent = create_category_select_parent(pc->count);
+	WINDOW *wptr_parent = create_category_select_parent(pc->size);
 	WINDOW *wptr = create_category_select_subwindow(wptr_parent);
 
 	if (debug) {
 		curs_set(1);
 	}
 
-	if (pc->count == 0) {
+	if (pc->size == 0) {
 		goto MANUAL;
 	}
 
 	int displayed = 0;
 	/* Print intital data based on window size */
-	for (int i = 0; i < getmaxy(wptr) && i < pc->count; i++) {
+	for (int i = 0; i < getmaxy(wptr) && i < pc->size; i++) {
 		mvwxcprintw(wptr, i, pc->categories[i]);
 		displayed++;
 	}
 
 	if (debug) {
-		mvwprintw(wptr_parent, 0, 0, "N CATG: %ld N DISP: %d", pc->count, displayed);
+		mvwprintw(wptr_parent, 0, 0, "N CATG: %ld N DISP: %d", pc->size, displayed);
 	}
 
 	wrefresh(wptr);
@@ -512,12 +513,12 @@ char *nc_select_category(int month, int year) {
 		switch(c) {
 		case('j'):
 		case(KEY_DOWN):
-			if (select + 1 < pc->count) {
+			if (select + 1 < pc->size) {
 				mvwchgat(wptr, cur, 0, -1, A_NORMAL, 0, NULL);
 				cur++;
 				select++;
 
-				if (displayed < pc->count && cur == max_y) {
+				if (displayed < pc->size && cur == max_y) {
 					wmove(wptr, 0, 0);
 					wdeleteln(wptr);
 					mvwxcprintw(wptr, max_y - 1, pc->categories[select]);
@@ -534,7 +535,7 @@ char *nc_select_category(int month, int year) {
 				cur--;
 				select--;
 
-				if (select >= 0 && displayed < pc->count && cur == -1) {
+				if (select >= 0 && displayed < pc->size && cur == -1) {
 					wmove(wptr, 0, 0);
 					winsertln(wptr);
 					mvwxcprintw(wptr, 0, pc->categories[select]);
@@ -546,7 +547,7 @@ char *nc_select_category(int month, int year) {
 			break;
 		case('c'):
 MANUAL:
-			for (int i = 0; i < pc->count; i++) {
+			for (int i = 0; i < pc->size; i++) {
 				free(pc->categories[i]);
 			}
 			free(pc);
@@ -569,7 +570,7 @@ MANUAL:
 	if (select >= 0) {
 		char *tmp = strdup(pc->categories[select]); // Must be free'd
 
-		for (int i = 0; i < pc->count; i++) {
+		for (int i = 0; i < pc->size; i++) {
 			free(pc->categories[i]);
 		}
 		free(pc);
@@ -580,7 +581,7 @@ MANUAL:
 	}
 
 CLEANUP:
-	for (int i = 0; i < pc->count; i++) {
+	for (int i = 0; i < pc->size; i++) {
 		free(pc->categories[i]);
 	}
 	free(pc);
@@ -686,7 +687,7 @@ struct Categories *list_categories(int month, int year) {
 	char linebuff[LINE_BUFFER];
 	struct Categories *pc = 
 		malloc(sizeof(struct Categories) + (sizeof(char *) * REALLOC_INCR));
-	pc->count = 0;
+	pc->size = 0;
 	pc->capacity = REALLOC_INCR;
 
 	seek_beyond_header(fptr);
@@ -705,15 +706,15 @@ struct Categories *list_categories(int month, int year) {
 		token = strsep(&line, ",");
 		token[strcspn(token, "\n")] = '\0';
 
-		if (pc->count != 0) { // Duplicate Check
-			for (int i = 0; i < pc->count; i++) {
+		if (pc->size != 0) { // Duplicate Check
+			for (int i = 0; i < pc->size; i++) {
 				if (strcmp(pc->categories[i], token) == 0) {
 					goto DUPLICATE;
 				}
 			}
 		}
 
-		if (pc->count >= pc->capacity) {
+		if (pc->size >= pc->capacity) {
 			pc->capacity += REALLOC_INCR;
 			struct Categories *temp = realloc(pc, sizeof(struct Categories) + 
 										((pc->capacity) * sizeof(char *)));
@@ -723,8 +724,8 @@ struct Categories *list_categories(int month, int year) {
 			pc = temp;
 		}
 
-		pc->categories[pc->count] = strdup(token);
-		pc->count++;
+		pc->categories[pc->size] = strdup(token);
+		pc->size++;
 
 DUPLICATE:
 		memset(linebuff, 0, sizeof(linebuff)); // Reset the Buffer
@@ -809,7 +810,7 @@ Vec *sort_by_category(FILE *fptr, Vec *pidx, Vec *plines, int yr, int mo)
 	char *line;
 	char *token;
 
-	for (int i = 0; i < pc->count; i++) { // Loop through each category
+	for (int i = 0; i < pc->size; i++) { // Loop through each category
 		for (int j = 0; j < plines->size; j++) { // Loop through each record
 
 			if (prsc->size >= prsc->capacity) {
@@ -850,7 +851,7 @@ Vec *sort_by_category(FILE *fptr, Vec *pidx, Vec *plines, int yr, int mo)
 	}
 
 ERR_NULL:
-	for (int i = 0; i < pc->count; i++) {
+	for (int i = 0; i < pc->size; i++) {
 		free(pc->categories[i]);
 	}
 	free(pc);
@@ -922,20 +923,20 @@ int delete_category_orphans(long b) {
 //}
 
 void free_categories(struct Categories *pc) {
-	for (int i = 0; i < pc->count; i++) {
+	for (int i = 0; i < pc->size; i++) {
 		free(pc->categories[i]);
 	}
 	free(pc);
 }
 
-int cmp_catg_and_fix(struct Categories *prc, 
-					 struct Categories *pbc, int m, int y) 
+int cmp_catg_and_fix(struct Categories *prc, struct Categories *pbc, 
+					 int m, int y) 
 {
 	int corrected = 0;
 	bool cat_exists = false;
-	for (int i = 0; i < prc->count; i++) {
+	for (int i = 0; i < prc->size; i++) {
 		cat_exists = false;
-		for (int j = 0; j < pbc->count; j++) {
+		for (int j = 0; j < pbc->size; j++) {
 			if (strcmp(prc->categories[i], pbc->categories[j]) == 0) {
 				cat_exists = true;
 			}
