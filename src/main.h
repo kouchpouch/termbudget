@@ -44,6 +44,6 @@ struct FlexArr {
 };
 
 /* Exits the program with "exit(1)" and prints the error message. */
-extern void memory_allocate_fail();
+extern void memory_allocate_fail(void);
 
 #endif
