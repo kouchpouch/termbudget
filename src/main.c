@@ -491,7 +491,7 @@ char *nc_select_category(int month, int year) {
 	}
 
 	if (debug) {
-		mvwprintw(wptr_parent, 0, 0, "N CATG: %d N DISP: %d", pc->count, displayed);
+		mvwprintw(wptr_parent, 0, 0, "N CATG: %ld N DISP: %d", pc->count, displayed);
 	}
 
 	wrefresh(wptr);
@@ -675,13 +675,19 @@ void print_record_hr(struct LineData *ld) {
 	 );
 }
 
+/*
+ * For a given month and year, return an array of strings from the category
+ * field of the RECORD_DIR csv file.
+ */
 struct Categories *list_categories(int month, int year) {
 	FILE *fptr = open_record_csv("r");
 	char *line;
 	char *token;
 	char linebuff[LINE_BUFFER];
-	struct Categories *pc = malloc(sizeof(struct Categories));
+	struct Categories *pc = 
+		malloc(sizeof(struct Categories) + (sizeof(char *) * REALLOC_INCR));
 	pc->count = 0;
+	pc->capacity = REALLOC_INCR;
 
 	seek_beyond_header(fptr);
 
@@ -697,8 +703,6 @@ struct Categories *list_categories(int month, int year) {
 		}
 
 		token = strsep(&line, ",");
-		
-		if (token == NULL) break;
 		token[strcspn(token, "\n")] = '\0';
 
 		if (pc->count != 0) { // Duplicate Check
@@ -709,12 +713,13 @@ struct Categories *list_categories(int month, int year) {
 			}
 		}
 
-		struct Categories *temp = realloc(pc, sizeof(struct Categories) + 
-									((pc->count + 1) * sizeof(char *)));
-
-		if (temp == NULL) {
-			exit(1);
-		} else {
+		if (pc->count >= pc->capacity) {
+			pc->capacity += REALLOC_INCR;
+			struct Categories *temp = realloc(pc, sizeof(struct Categories) + 
+										((pc->capacity) * sizeof(char *)));
+			if (temp == NULL) {
+				memory_allocate_fail();
+			}
 			pc = temp;
 		}
 
@@ -849,9 +854,6 @@ struct FlexArr *sort_by_category(FILE *fptr, struct FlexArr *pidx,
 				realloc_counter++;
 			}
 		}
-//		prsc->data[prsc->lines] = 0;
-//		prsc->lines++;
-//		realloc_counter++;
 	}
 
 ERR_NULL:
@@ -915,15 +917,16 @@ int delete_category_orphans(long b) {
  * Returns 0 on success, -1 on error. I'll implement this later, it might not
  * actually be required.
  */
-bool find_category_orphans(int month, int year) {
-	struct BudgetTokens bt, *pbt = &bt;
-	struct Categories *pc = list_categories(month, year);
 
-	unsigned int i = 1;
-
-
-	return 0;
-}
+//bool find_category_orphans(int month, int year) {
+//	struct BudgetTokens bt, *pbt = &bt;
+//	struct Categories *pc = list_categories(month, year);
+//
+//	unsigned int i = 1;
+//
+//
+//	return 0;
+//}
 
 void free_categories(struct Categories *pc) {
 	for (int i = 0; i < pc->count; i++) {
@@ -933,7 +936,8 @@ void free_categories(struct Categories *pc) {
 }
 
 int cmp_catg_and_fix(struct Categories *prc, 
-					 struct Categories *pbc, int m, int y) {
+					 struct Categories *pbc, int m, int y) 
+{
 	int corrected = 0;
 	bool cat_exists = false;
 	for (int i = 0; i < prc->count; i++) {
@@ -963,6 +967,7 @@ int cmp_catg_and_fix(struct Categories *prc,
  * Returns a 0 or positive value of records that were corrected successfully.
  * Returns -1 on failure.
  */
+
 int verify_categories_exist_in_budget() {
 	FILE *rfptr = open_record_csv("r");
 	int corrected = 0;
