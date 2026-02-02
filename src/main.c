@@ -768,6 +768,12 @@ struct FlexArr *get_byte_offsets_date(int y, int m) {
 	return pbo;
 }
 
+/*
+ * Returns an array of line numbers sorted by date. No actual sorting is done
+ * in this function, it is assumed the CSV is already sorted. This is basically
+ * just moving memory around for the sake of portability and other sorting
+ * selections.
+ */
 struct FlexArr *sort_by_date(FILE *fptr, struct FlexArr *pidx,
 							 struct FlexArr *plines)
 {
