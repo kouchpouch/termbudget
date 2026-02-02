@@ -140,8 +140,10 @@ struct Categories *get_budget_catg_by_date(int month, int year) {
 	return pc;
 }
 
-/* Returns all budget categories' line numbers that match the given month,
-* year. Return struct must be free'd */
+/* 
+ * Returns all budget categories' line numbers that match the given month,
+ * year. Return struct must be free'd.
+ */
 struct FlexArr *get_budget_catg_by_date_ln(int month, int year) {
 	struct FlexArr *pfa = 
 		malloc((sizeof(struct FlexArr)) + (sizeof(long) * REALLOC_INCR));
@@ -316,8 +318,8 @@ int get_int_field(int line, int field) {
 
 	char linebuff[LINE_BUFFER];
 	char *str;
-
 	int i = 0;
+
 	while ((str = fgets(linebuff, sizeof(linebuff), fptr)) != NULL) {
 		if (i == line) {
 			break;
@@ -336,10 +338,7 @@ int get_int_field(int line, int field) {
 	return atoi(strsep(&str, ","));
 }
 
-/* Just a test for future refactoring. Eventually almost all struct FlexArr
- * return types will be replaced by Vec. At least all of them who dynamically
- * allocates memory. I should've just had a vector struct to begin with. */
-Vec *index_csv_vec(FILE *fptr) {
+Vec *index_csv(FILE *fptr) {
 	Vec *pidx =
 		malloc(sizeof(Vec) + (sizeof(long) * INDEX_ALLOC));
 	if (pidx == NULL) {
@@ -373,23 +372,7 @@ Vec *index_csv_vec(FILE *fptr) {
 	return pidx;
 }
 
-/* 
- * Rewrite of index_csv to include amortized memory allocation. Amortization on
- * other functions in the program doesn't exist, but due to this function
- * reading and storing the entire file, it may as well be amortized. The old
- * function scans through the entire RECORD_DIR file twice. Once to get the
- * total number of records to allocate the appropriate amount of memory, then
- * goes through the entire file again and inserts the byte offset vales into
- * a dynamically sized array. There will most likely be a performance decrease
- * for small files but for very large RECORD_DIR files this approach will most
- * likely be faster.
- *
- * To counter that, the initial allocation will be much larger than
- * REALLOC_INCR which is used in cases where realistically not many values
- * will be stored in the array.
- */
-
-struct FlexArr *index_csv(FILE *fptr) {
+struct FlexArr *index_csv_flexarr(FILE *fptr) {
 	struct FlexArr *pidx =
 		malloc(sizeof(struct FlexArr) + (sizeof(long) * INDEX_ALLOC));
 	if (pidx == NULL) {
