@@ -38,7 +38,7 @@
     - (*) Add sort by feature
     - ( ) Dim menu options in the footer if they are not available to use
     - ( ) Overview can be selected on nc_select_year
-    - ( ) Make index_csv function in parser.c amortize memory allocation
+    - (*) Make index_csv function in parser.c amortize memory allocation
     - ( ) Create methods for managing the actual budgeting system of the
             program. This concerns budget.csv, defining budget category
             money allocation, file verification, user input, and an easy to
@@ -82,6 +82,12 @@
         - (*) Scroll through dates
         - ( ) Resizing
     - (*) Basic Bar Graph Trends
+
+#### Refactors
+    - ( ) Replace any function which dynamically allocates memory into a
+            dynamically sized array with type Vec. This will prevent having
+            to create the local realloc_counter that i've been using. It's
+            not great.
 
 #### Bugs
     - (*) A line number is able to be selected (line 1) and it will edit the
