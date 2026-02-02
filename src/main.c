@@ -62,9 +62,9 @@ struct Balances {
 
 int *list_records_by_month(FILE *fptr, int matchyear);
 int *list_records_by_year(FILE *fptr);
-void memory_allocate_fail();
+void memory_allocate_fail(void);
 int mv_tmp_to_budget_file(FILE *tmp, FILE* main);
-void nc_read_setup_default();
+void nc_read_setup_default(void);
 void calculate_balance(struct Balances *pb, Vec *pbo);
 void nc_read_setup(int sel_year, int sel_month, int sort);
 int nc_confirm_record(struct LineData *ld);
@@ -640,7 +640,7 @@ double nc_input_amount(void) {
 //--------------------------USER INPUT ABOVE---------------------------------//
 //---------------------------------------------------------------------------//
 
-void memory_allocate_fail() {
+void memory_allocate_fail(void) {
 	perror("Failed to allocate memory");
 	exit(1);
 }
@@ -962,7 +962,7 @@ int cmp_catg_and_fix(struct Categories *prc, struct Categories *pbc,
  * Returns -1 on failure.
  */
 
-int verify_categories_exist_in_budget() {
+int verify_categories_exist_in_budget(void) {
 	FILE *rfptr = open_record_csv("r");
 	int corrected = 0;
 
@@ -1071,7 +1071,7 @@ CLEANUP:
 	nc_read_setup(uld->year, uld->month, 0);
 }
 
-void nc_add_transaction_default() {
+void nc_add_transaction_default(void) {
 	nc_add_transaction(0, 0);
 }
 
@@ -2469,7 +2469,7 @@ void nc_read_cleanup(WINDOW *wp, WINDOW *wc, Vec *psc, Vec *plines, Vec *pidx,
 	fclose(fptr);
 }
 
-void nc_read_setup_default() {
+void nc_read_setup_default(void) {
 	nc_read_setup(0, 0, 0);
 }
 

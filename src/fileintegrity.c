@@ -9,7 +9,7 @@
 #include <stdbool.h>
 #include <string.h>
 
-bool record_len_verification() {
+bool record_len_verification(void) {
 	FILE *fptr = open_record_csv("r");
 
 	struct LineData ld, *pld = &ld;

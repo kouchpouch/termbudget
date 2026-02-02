@@ -32,19 +32,18 @@ typedef struct {
 	long data[];
 } Vec;
 
-struct FlexArr {
-	long lines;
-	long data[];
-};
-
 struct Categories {
 	unsigned long capacity;
 	unsigned long size;
 	char *categories[];
 };
 
+struct FlexArr {
+	long lines;
+	long data[];
+};
+
 /* Exits the program with "exit(1)" and prints the error message. */
 extern void memory_allocate_fail();
-
 
 #endif

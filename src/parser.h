@@ -1,5 +1,5 @@
 /*
- * Includes parsing functions for CSV files used in termBudget
+ * Includes parsing functions for CSV files used in termBudget.
  */
 #ifndef PARSER_H
 #define PARSER_H

@@ -18,7 +18,7 @@ struct Footer {
 	unsigned short quit;
 };
 
-static void window_creation_fail() {
+static void window_creation_fail(void) {
 	perror("Failed to create ncurses window");
 	exit(1);
 }
