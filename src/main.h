@@ -38,8 +38,8 @@ struct FlexArr {
 };
 
 struct Categories {
-	unsigned long count;
 	unsigned long capacity;
+	unsigned long size;
 	char *categories[];
 };
 
