@@ -73,7 +73,7 @@ void nc_print_record_vert(WINDOW *wptr, struct LineData *ld, int x_off);
 struct Categories *list_categories(int month, int year);
 int mv_tmp_to_record_file(FILE *tempfile, FILE *mainfile);
 int delete_csv_record(int linetodelete);
-struct FlexArr *get_matching_line_nums(FILE *fptr, int month, int year);
+Vec *get_matching_line_nums(FILE *fptr, int month, int year);
 
 char *user_input(int n) {
 	size_t buffersize = n + 1;
@@ -736,18 +736,18 @@ DUPLICATE:
 }
 
 Vec *get_byte_offsets_date(int y, int m) {
-	int realloc_counter = 0;	
 	Vec *pbo = malloc(sizeof(*pbo) + (sizeof(long) * REALLOC_INCR));
 	if (pbo == NULL) {
 		return NULL;
 	}
+
 	pbo->capacity = REALLOC_INCR;
 	pbo->size = 0;
 	FILE *fptr = open_record_csv("r");
-	struct FlexArr *pidx = index_csv(fptr);
-	struct FlexArr *plines = get_matching_line_nums(fptr, m, y);
+	Vec *pidx = index_csv(fptr);
+	Vec *plines = get_matching_line_nums(fptr, m, y);
 
-	for (int i = 0; i < plines->lines; i++) {
+	for (int i = 0; i < plines->size; i++) {
 		if (pbo->size >= pbo->capacity) {
 			pbo->capacity += REALLOC_INCR;
 			Vec *tmp = 
@@ -774,20 +774,19 @@ Vec *get_byte_offsets_date(int y, int m) {
  * just moving memory around for the sake of portability and other sorting
  * selections.
  */
-Vec *sort_by_date(FILE *fptr, struct FlexArr *pidx,
-							 struct FlexArr *plines)
+Vec *sort_by_date(FILE *fptr, Vec *pidx, Vec *plines)
 {
-	Vec *psbd = malloc(sizeof(*psbd) + (sizeof(long) * plines->lines));
+	Vec *psbd = malloc(sizeof(*psbd) + (sizeof(long) * plines->size));
 
 	if (psbd == NULL) {
 		memory_allocate_fail();
 	}
 
-	psbd->capacity = plines->lines;
+	psbd->capacity = plines->size;
 	psbd->size = 0;
 	rewind(fptr);
 
-	for (int i = 0; i < plines->lines; i++) {
+	for (int i = 0; i < plines->size; i++) {
 		psbd->data[i] = pidx->data[plines->data[i]];
 		psbd->size++;
 	}
@@ -797,8 +796,7 @@ Vec *sort_by_date(FILE *fptr, struct FlexArr *pidx,
 
 /* Returns an array of integers representing the byte offsets of records 
  * sorted by category */
-Vec *sort_by_category(FILE *fptr, struct FlexArr *pidx, struct FlexArr *plines, 
-					  int yr, int mo)
+Vec *sort_by_category(FILE *fptr, Vec *pidx, Vec *plines, int yr, int mo)
 {
 	Vec *prsc = malloc(sizeof(*prsc) + (sizeof(long) * REALLOC_INCR));
 	prsc->capacity = REALLOC_INCR;
@@ -812,7 +810,7 @@ Vec *sort_by_category(FILE *fptr, struct FlexArr *pidx, struct FlexArr *plines,
 	char *token;
 
 	for (int i = 0; i < pc->count; i++) { // Loop through each category
-		for (int j = 0; j < plines->lines; j++) { // Loop through each record
+		for (int j = 0; j < plines->size; j++) { // Loop through each record
 
 			if (prsc->size >= prsc->capacity) {
 				prsc->capacity += REALLOC_INCR;
@@ -967,14 +965,17 @@ int verify_categories_exist_in_budget() {
 	FILE *rfptr = open_record_csv("r");
 	int corrected = 0;
 
-	/* Go through each year and find the matching months, then find the
+	/* 
+	 * Go through each year and find the matching months, then find the
 	 * matching categories, then compare.. Lotta work! Good thing this only
-	 * runs once at startup. */
+	 * runs once at startup. 
+	 */
 
 	struct Categories prc_, *prc = &prc_;
 	struct Categories pbc_, *pbc = &pbc_;
 	int *years = list_records_by_year(rfptr);
 	int i = 0;
+
 	while (years[i] != 0) {
 		rewind(rfptr);
 		int *months = list_records_by_month(rfptr, years[i]);
@@ -1036,7 +1037,7 @@ void add_csv_record(int linetoadd, struct LineData *ld) {
 void nc_add_transaction(int year, int month) {
 	struct LineData userlinedata_, *uld = &userlinedata_;
 	FILE *fptr = open_record_csv("r");
-	struct FlexArr *pidx = index_csv(fptr);
+	Vec *pidx = index_csv(fptr);
 	fclose(fptr);
 	nc_print_input_footer(stdscr);
 
@@ -1076,7 +1077,7 @@ void nc_add_transaction_default() {
 void add_transaction(void) {
 	struct LineData userlinedata_, *uld = &userlinedata_;
 	FILE *fptr = open_record_csv("r");
-	struct FlexArr *pidx = index_csv(fptr);
+	Vec *pidx = index_csv(fptr);
 	fclose(fptr);
 
 	uld->year = input_year();
@@ -1892,25 +1893,25 @@ int nc_read_select_month(WINDOW *wptr, FILE* fptr, int year) {
 	return selected_month;
 }
 
-struct FlexArr *get_matching_line_nums(FILE *fptr, int month, int year) {
+Vec *get_matching_line_nums(FILE *fptr, int month, int year) {
 	rewind(fptr);
-	struct FlexArr *lines = 
-		malloc(sizeof(struct FlexArr) + (REALLOC_INCR * sizeof(long)));
-	if (lines == NULL) {
-		exit(1);
+	Vec *pl = 
+		malloc(sizeof(*pl) + (sizeof(long) * REALLOC_INCR));
+	if (pl == NULL) {
+		memory_allocate_fail();
 	}
 
-	lines->lines = 0;
+	pl->size = 0;
+	pl->capacity = REALLOC_INCR;
 
 	long linenumber = 0;
 	int line_month, line_year;
-	int realloc_counter = 0;
 	char linebuff[LINE_BUFFER];
 	char *str;
 
 	if (seek_beyond_header(fptr) == -1) {
 		perror("Unable to read header");
-		free(lines);
+		free(pl);
 		return NULL;
 	}
 
@@ -1924,44 +1925,31 @@ struct FlexArr *get_matching_line_nums(FILE *fptr, int month, int year) {
 		seek_n_fields(&str, 1);
 		line_year = atoi(strsep(&str, ","));
 		if (year == line_year && month == line_month) {
-			if (realloc_counter == REALLOC_INCR - 1) {
-				realloc_counter = 0;
-				void *temp = realloc(lines, sizeof(struct FlexArr) + 
-					((lines->lines) + REALLOC_INCR) * sizeof(long));
-				if (temp == NULL) {
-					free(lines);
-					exit(1);
+			if (pl->size >= pl->capacity) {
+				pl->capacity += REALLOC_INCR;
+				Vec *tmp = 
+					realloc(pl, sizeof(*pl) + (sizeof(long) * pl->capacity));
+				if (tmp == NULL) {
+					free(pl);
+					memory_allocate_fail();
 				}
-				lines = temp;
+				pl = tmp;
 			}
-			lines->data[lines->lines] = linenumber;
-			lines->lines++;	
-			realloc_counter++;
+			pl->data[pl->size] = linenumber;
+			pl->size++;	
 		}
 		linenumber++;
 	}
 
-	/* Shrink back down if oversized alloc */
-	if (lines->lines % REALLOC_INCR != 0) {	
-		void *temp = realloc(lines, sizeof(struct FlexArr) + 
-					   (lines->lines * sizeof(long)));
-		if (temp == NULL) {
-			free(lines);
-			exit(1);
-		}
-		lines = temp;
-	}
-
-	if (lines->lines > 0) {
-		return lines;
+	if (pl->size > 0) {
+		return pl;
 	} else {
-		free(lines);
-		lines = NULL;
+		free(pl);
+		pl = NULL;
 		return NULL;
 	}
 	return NULL;
 }
-
 
 /* 
  * Prints record from ld, formatting in columns from cw, to a window pointed
@@ -2077,7 +2065,7 @@ void nc_edit_transaction(unsigned int linenum) {
 
 	WINDOW *wptr_edit = create_input_subwindow();
 	FILE *fptr = open_record_csv("r+");
-	struct FlexArr *pidx = index_csv(fptr);
+	Vec *pidx = index_csv(fptr);
 	fseek(fptr, pidx->data[linenum], SEEK_SET);
 
 	char linebuff[LINE_BUFFER];
@@ -2469,8 +2457,7 @@ void nc_read_loop(WINDOW *wptr_parent, WINDOW *wptr, FILE *fptr,
 	return;
 }
 
-void nc_read_cleanup(WINDOW *wp, WINDOW *wc, Vec *psc,
-					 struct FlexArr *plines, struct FlexArr *pidx,
+void nc_read_cleanup(WINDOW *wp, WINDOW *wc, Vec *psc, Vec *plines, Vec *pidx,
 					 FILE *fptr)
 {
 	nc_exit_window(wp);
@@ -2500,7 +2487,7 @@ void nc_read_setup(int sel_year, int sel_month, int sort) {
 	struct SelRecord sr_ , *sr = &sr_;
 	sr->flag = -1;
 	FILE *fptr = open_record_csv("r");
-	struct FlexArr *pidx = index_csv(fptr);
+	Vec *pidx = index_csv(fptr);
 
 	WINDOW *wptr_parent = newwin(LINES - 1, 0, 0, 0);
 	if (wptr_parent == NULL) {
@@ -2513,7 +2500,7 @@ void nc_read_setup(int sel_year, int sel_month, int sort) {
 	getmaxyx(wptr_parent, max_y, max_x);
 
 	WINDOW *wptr_data;
-	struct FlexArr *plines;
+	Vec *plines;
 
 	wptr_data = create_lines_subwindow(max_y - 1, max_x, 1, BOX_OFFSET);
 	wrefresh(wptr_data);
@@ -2703,24 +2690,24 @@ void edit_transaction(void) {
 
 	legacy_read_csv();
 	
-	struct FlexArr *pcsvindex = index_csv(fptr);
+	Vec *pidx = index_csv(fptr);
 
 	do {
 		puts("Enter line number");
 		humantarget = input_n_digits(sizeof(long long) + 1, 2);
-	} while (humantarget <= 0 || humantarget > pcsvindex->lines);
+	} while (humantarget <= 0 || humantarget > pidx->size);
 
 	target = humantarget - 1;
 
 	if (debug) {
 		printf("TARGET: %d\n", target);
-		printf("TARGET OFFSET: %ld\n", pcsvindex->data[target]);
+		printf("TARGET OFFSET: %ld\n", pidx->data[target]);
 	}
 
-	fseek(fptr, pcsvindex->data[target], SEEK_SET);
+	fseek(fptr, pidx->data[target], SEEK_SET);
 
 	if (debug) {
-		printf("COMMANDED SEEK OFFSET: %ld\n", pcsvindex->data[target]);
+		printf("COMMANDED SEEK OFFSET: %ld\n", pidx->data[target]);
 	}
 	
 	char linebuff[LINE_BUFFER];
@@ -2734,7 +2721,7 @@ void edit_transaction(void) {
 
 	struct LineData *pLd = malloc(sizeof(*ld));
 	if (pLd == NULL) {
-		free(pcsvindex);
+		free(pidx);
 		fclose(fptr);
 		fptr = NULL;
 		memory_allocate_fail();
@@ -2777,8 +2764,8 @@ void edit_transaction(void) {
 
 	free(pLd);
 	pLd = NULL;
-	free(pcsvindex);
-	pcsvindex = NULL;
+	free(pidx);
+	pidx = NULL;
 	fclose(fptr);
 	fptr = NULL;
 }
