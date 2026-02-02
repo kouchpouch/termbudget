@@ -65,7 +65,7 @@ int *list_records_by_year(FILE *fptr);
 void memory_allocate_fail();
 int mv_tmp_to_budget_file(FILE *tmp, FILE* main);
 void nc_read_setup_default();
-void calculate_balance(struct Balances *pb, struct FlexArr *pbo);
+void calculate_balance(struct Balances *pb, Vec *pbo);
 void nc_read_setup(int sel_year, int sel_month, int sort);
 int nc_confirm_record(struct LineData *ld);
 void nc_print_record_hr(WINDOW *wptr, struct ColWidth *cw, struct LineData *ld, int y);
@@ -735,23 +735,23 @@ DUPLICATE:
 	return pc; // Struct and each index of categories must be free'd
 }
 
-struct FlexArr *get_byte_offsets_date(int y, int m) {
+Vec *get_byte_offsets_date(int y, int m) {
 	int realloc_counter = 0;	
-	struct FlexArr *pbo = malloc(sizeof(*pbo) + (sizeof(long) * REALLOC_INCR));
+	Vec *pbo = malloc(sizeof(*pbo) + (sizeof(long) * REALLOC_INCR));
 	if (pbo == NULL) {
 		return NULL;
 	}
-	pbo->lines = 0;
+	pbo->capacity = REALLOC_INCR;
+	pbo->size = 0;
 	FILE *fptr = open_record_csv("r");
 	struct FlexArr *pidx = index_csv(fptr);
 	struct FlexArr *plines = get_matching_line_nums(fptr, m, y);
 
 	for (int i = 0; i < plines->lines; i++) {
-		if (realloc_counter >= REALLOC_INCR - 1) {
-			realloc_counter = 0;
-			struct FlexArr *tmp = realloc(pbo, sizeof(*pbo) +
-								 ((pbo->lines + REALLOC_INCR) *
-		  						 sizeof(long)));
+		if (pbo->size >= pbo->capacity) {
+			pbo->capacity += REALLOC_INCR;
+			Vec *tmp = 
+				realloc(pbo, sizeof(*pbo) + (sizeof(long) * pbo->capacity));
 			if (tmp == NULL) {
 				free(pbo);
 				return NULL;
@@ -759,9 +759,9 @@ struct FlexArr *get_byte_offsets_date(int y, int m) {
 			pbo = tmp;
 		}
 		pbo->data[i] = pidx->data[plines->data[i]];
-		pbo->lines++;
-		realloc_counter++;
+		pbo->size++;
 	}
+
 	free(pidx);
 	free(plines);
 	fclose(fptr);
@@ -769,26 +769,27 @@ struct FlexArr *get_byte_offsets_date(int y, int m) {
 }
 
 /*
- * Returns an array of line numbers sorted by date. No actual sorting is done
+ * Returns an vector of byte offsets sorted by date. No actual sorting is done
  * in this function, it is assumed the CSV is already sorted. This is basically
  * just moving memory around for the sake of portability and other sorting
  * selections.
  */
-struct FlexArr *sort_by_date(FILE *fptr, struct FlexArr *pidx,
+Vec *sort_by_date(FILE *fptr, struct FlexArr *pidx,
 							 struct FlexArr *plines)
 {
-	struct FlexArr *psbd = malloc(sizeof(*psbd) + (sizeof(long) * plines->lines));
+	Vec *psbd = malloc(sizeof(*psbd) + (sizeof(long) * plines->lines));
 
 	if (psbd == NULL) {
 		memory_allocate_fail();
 	}
 
-	psbd->lines = 0;
+	psbd->capacity = plines->lines;
+	psbd->size = 0;
 	rewind(fptr);
 
 	for (int i = 0; i < plines->lines; i++) {
 		psbd->data[i] = pidx->data[plines->data[i]];
-		psbd->lines++;
+		psbd->size++;
 	}
 
 	return psbd;
@@ -796,14 +797,16 @@ struct FlexArr *sort_by_date(FILE *fptr, struct FlexArr *pidx,
 
 /* Returns an array of integers representing the byte offsets of records 
  * sorted by category */
-struct FlexArr *sort_by_category(FILE *fptr, struct FlexArr *pidx, 
-								 struct FlexArr *plines, int yr, int mo)
+Vec *sort_by_category(FILE *fptr, struct FlexArr *pidx, struct FlexArr *plines, 
+					  int yr, int mo)
 {
-	int realloc_counter = 0;
-	struct FlexArr *prsc = malloc(sizeof(*prsc) + (sizeof(long) * REALLOC_INCR));
-	prsc->lines = 0;
+	Vec *prsc = malloc(sizeof(*prsc) + (sizeof(long) * REALLOC_INCR));
+	prsc->capacity = REALLOC_INCR;
+	prsc->size = 0;
+
 	rewind(fptr);
 	struct Categories *pc = list_categories(mo, yr);
+
 	char linebuff[LINE_BUFFER];
 	char *line;
 	char *token;
@@ -811,11 +814,10 @@ struct FlexArr *sort_by_category(FILE *fptr, struct FlexArr *pidx,
 	for (int i = 0; i < pc->count; i++) { // Loop through each category
 		for (int j = 0; j < plines->lines; j++) { // Loop through each record
 
-			if (realloc_counter >= REALLOC_INCR - 1) {
-				realloc_counter = 0;
-				struct FlexArr *tmp = 
-					realloc(prsc, sizeof(*prsc) + 
-			 			    ((prsc->lines + REALLOC_INCR) * sizeof(char *)));
+			if (prsc->size >= prsc->capacity) {
+				prsc->capacity += REALLOC_INCR;
+				Vec *tmp =
+					realloc(prsc, sizeof(*prsc) + (prsc->capacity * sizeof(char *)));
 				if (tmp == NULL) {
 					free(prsc);
 					prsc = NULL;
@@ -843,9 +845,8 @@ struct FlexArr *sort_by_category(FILE *fptr, struct FlexArr *pidx,
 			}
 
 			if (strcmp(token, pc->categories[i]) == 0) {
-				prsc->data[prsc->lines] = pidx->data[plines->data[j]];
-				prsc->lines++;
-				realloc_counter++;
+				prsc->data[prsc->size] = pidx->data[plines->data[j]];
+				prsc->size++;
 			}
 		}
 	}
@@ -1382,7 +1383,7 @@ void nc_print_overview_graphs(WINDOW *wptr, int *months, int year) {
 
 	for (int i = 0; i < 12 && mo <= 12; i++, mo++) {
 		if (months[i] == mo) {
-			struct FlexArr *pbo = get_byte_offsets_date(year, months[i]);
+			Vec *pbo = get_byte_offsets_date(year, months[i]);
 			calculate_balance(pb, pbo);
 			if (pb->income == 0) { // Prevent a div by zero
 				ratios[mo - 1] = NO_INCOME;
@@ -1475,7 +1476,7 @@ void nc_print_overview_balances(WINDOW *wptr, int *months, int year) {
 	for (int i = 0; i < 12 && mo <= 12; i++, mo++) {
 		tmpx = 0;
 		if (months[i] == mo) {
-			struct FlexArr *pbo = get_byte_offsets_date(year, months[i]);
+			Vec *pbo = get_byte_offsets_date(year, months[i]);
 			calculate_balance(pb, pbo);
 			tmpx = intlen(pb->income) / 2;
 			wmove(wptr, y, cur - tmpx);
@@ -2158,7 +2159,7 @@ void nc_print_debug_line(WINDOW *wptr, int line) {
 	wrefresh(wptr);
 }
 
-void calculate_balance(struct Balances *pb, struct FlexArr *pbo) {
+void calculate_balance(struct Balances *pb, Vec *pbo) {
 	FILE *fptr = open_record_csv("r");
 	pb->income = 0.0;
 	pb->expense = 0.0;
@@ -2166,7 +2167,7 @@ void calculate_balance(struct Balances *pb, struct FlexArr *pbo) {
 	char linebuff[LINE_BUFFER];
 	char *line;
 
-	for (int i = 0; i < pbo->lines; i++) {
+	for (int i = 0; i < pbo->size; i++) {
 		fseek(fptr, pbo->data[i], SEEK_SET);
 		line = fgets(linebuff, sizeof(linebuff), fptr);
 		if (line == NULL) {
@@ -2183,7 +2184,7 @@ void calculate_balance(struct Balances *pb, struct FlexArr *pbo) {
 	fclose(fptr);
 }
 
-void nc_print_balances_text(WINDOW *wptr, struct FlexArr *psc) {
+void nc_print_balances_text(WINDOW *wptr, Vec *psc) {
 	struct Balances pb_, *pb = &pb_;
 	calculate_balance(pb, psc);
 	int total_len = intlen(pb->income) + intlen(pb->expense) + strlen("Expenses: $.00 Income: $.00");
@@ -2267,7 +2268,7 @@ void nc_scroll_next(long b, FILE *fptr, WINDOW *wptr, struct ColWidth *cw) {
  * of psc->data. Sort occurs before this function in nc_read_setup.
  */
 void nc_read_loop(WINDOW *wptr_parent, WINDOW *wptr, FILE *fptr, 
-				  struct SelRecord *sr, struct FlexArr *psc)
+				  struct SelRecord *sr, Vec *psc)
 {
 	struct ColWidth cw_, *cw = &cw_;
 	struct LineData ld_, *ld = &ld_;
@@ -2282,7 +2283,7 @@ void nc_read_loop(WINDOW *wptr_parent, WINDOW *wptr, FILE *fptr,
 	nc_print_read_footer(stdscr);
 
 	/* Print initial lines based on screen size */
-	for (int i = 0; i < max_y && displayed < psc->lines; i++) {
+	for (int i = 0; i < max_y && displayed < psc->size; i++) {
 		fseek(fptr, psc->data[i], SEEK_SET);
 		line_str = fgets(linebuff, sizeof(linebuff), fptr);
 		tokenize_record(ld, &line_str);
@@ -2312,12 +2313,12 @@ void nc_read_loop(WINDOW *wptr_parent, WINDOW *wptr, FILE *fptr,
 		switch(c) {
 		case('j'):
 		case(KEY_DOWN):
-			if (select + 1 < psc->lines) {
+			if (select + 1 < psc->size) {
 				mvwchgat(wptr, cur_y, 0, -1, A_NORMAL, 0, NULL); 
 				cur_y++;
 				select++;
 
-				if (displayed < psc->lines && cur_y == max_y) {
+				if (displayed < psc->size && cur_y == max_y) {
 					nc_scroll_next(psc->data[select], fptr, wptr, cw);
 					cur_y = getcury(wptr);
 				}
@@ -2336,7 +2337,7 @@ void nc_read_loop(WINDOW *wptr_parent, WINDOW *wptr, FILE *fptr,
 					cur_y = -1;
 				}
 				
-				if (select >= 0 && displayed < psc->lines && cur_y == -1) {
+				if (select >= 0 && displayed < psc->size && cur_y == -1) {
 					nc_scroll_prev(psc->data[select], fptr, wptr, cw);
 					cur_y = getcury(wptr);
 				}
@@ -2355,12 +2356,12 @@ void nc_read_loop(WINDOW *wptr_parent, WINDOW *wptr, FILE *fptr,
 
 		case(KEY_NPAGE): // PAGE DOWN
 			for(int i = 0; i < 10; i++) {
-				if (select + 1 < psc->lines) {
+				if (select + 1 < psc->size) {
 					mvwchgat(wptr, cur_y, 0, -1, A_NORMAL, 0, NULL); 
 					cur_y++;
 					select++;
 
-					if (displayed < psc->lines && cur_y == max_y) {
+					if (displayed < psc->size && cur_y == max_y) {
 						nc_scroll_next(psc->data[select], fptr, wptr, cw);
 						cur_y = getcury(wptr);
 					}
@@ -2380,7 +2381,7 @@ void nc_read_loop(WINDOW *wptr_parent, WINDOW *wptr, FILE *fptr,
 
 					if (cur_y < 0) cur_y = -1;
 					
-					if (displayed < psc->lines && cur_y == -1 && select >= 0) {
+					if (displayed < psc->size && cur_y == -1 && select >= 0) {
 						nc_scroll_prev(psc->data[select], fptr, wptr, cw);
 						cur_y = getcury(wptr);
 					}
@@ -2392,12 +2393,12 @@ void nc_read_loop(WINDOW *wptr_parent, WINDOW *wptr, FILE *fptr,
 			break;
 
 		case(KEY_END):
-			while(select + 1 < psc->lines) {
+			while(select + 1 < psc->size) {
 				mvwchgat(wptr, cur_y, 0, -1, A_NORMAL, 0, NULL); 
 				cur_y++;
 				select++;
 
-				if (displayed < psc->lines && cur_y == max_y) {
+				if (displayed < psc->size && cur_y == max_y) {
 					nc_scroll_next(psc->data[select], fptr, wptr, cw);
 					cur_y = getcury(wptr);
 				}
@@ -2413,7 +2414,7 @@ void nc_read_loop(WINDOW *wptr_parent, WINDOW *wptr, FILE *fptr,
 
 				if (cur_y < 0) cur_y = -1;
 				
-				if (displayed < psc->lines && cur_y == -1 && select >= 0) {
+				if (displayed < psc->size && cur_y == -1 && select >= 0) {
 					nc_scroll_prev(psc->data[select], fptr, wptr, cw);
 					cur_y = getcury(wptr);
 				}
@@ -2468,7 +2469,7 @@ void nc_read_loop(WINDOW *wptr_parent, WINDOW *wptr, FILE *fptr,
 	return;
 }
 
-void nc_read_cleanup(WINDOW *wp, WINDOW *wc, struct FlexArr *psc,
+void nc_read_cleanup(WINDOW *wp, WINDOW *wc, Vec *psc,
 					 struct FlexArr *plines, struct FlexArr *pidx,
 					 FILE *fptr)
 {
@@ -2547,7 +2548,7 @@ void nc_read_setup(int sel_year, int sel_month, int sort) {
 		return;
 	}
 
-	struct FlexArr *psc;
+	Vec *psc;
 	char *sort_text;
 
 	switch(sort) {
