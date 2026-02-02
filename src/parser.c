@@ -92,16 +92,16 @@ void free_budget_tokens(struct BudgetTokens *pbt) {
 
 struct Categories *get_budget_catg_by_date(int month, int year) {
 	struct Categories *pc = 
-		malloc((sizeof(struct Categories)) + (sizeof(char *) * REALLOC_INCR));
+		malloc((sizeof(*pc)) + (sizeof(char *) * REALLOC_INCR));
 
 	if (pc == NULL) {
 		memory_allocate_fail();
 	}
 
-	FILE *fptr = open_budget_csv("r");
+	pc->size = 0;
+	pc->capacity = REALLOC_INCR;
 
-	pc->count = 0;
-	unsigned int realloc_counter = 0;
+	FILE *fptr = open_budget_csv("r");
 
 	seek_beyond_header(fptr);
 	char linebuff[LINE_BUFFER];
@@ -121,19 +121,20 @@ struct Categories *get_budget_catg_by_date(int month, int year) {
 		catg = strsep(&str, ",");
 
 		if (y == year && m == month) {
-			if (realloc_counter >= REALLOC_INCR - 1) {
-				realloc_counter = 0;
-				struct Categories *tmp = realloc(pc, (sizeof(struct FlexArr)) +
-								  (REALLOC_INCR + pc->count) * sizeof(char *));
+			if (pc->size >= pc->capacity) {
+				pc->capacity += REALLOC_INCR;
+				struct Categories *tmp = 
+					realloc(pc, sizeof(struct Categories) + 
+			 				(sizeof(char *) * pc->capacity));
+
 				if (tmp == NULL) {
 					free(pc);
 					memory_allocate_fail();
 				}
 				pc = tmp;
 			}
-			pc->categories[pc->count] = strdup(catg);
-			pc->count++;
-			realloc_counter++;
+			pc->categories[pc->size] = strdup(catg);
+			pc->size++;
 		}
 	}
 
@@ -143,7 +144,11 @@ struct Categories *get_budget_catg_by_date(int month, int year) {
 /* 
  * Returns all budget categories' line numbers that match the given month,
  * year. Return struct must be free'd.
+ *
+ * REPLACED by get_budget_catg_by_date which returns byte offsets instead of
+ * line numbers.
  */
+[[deprecated("Replaced by get_budget_catg_by_date")]]
 struct FlexArr *get_budget_catg_by_date_ln(int month, int year) {
 	struct FlexArr *pfa = 
 		malloc((sizeof(struct FlexArr)) + (sizeof(long) * REALLOC_INCR));
@@ -372,6 +377,7 @@ Vec *index_csv(FILE *fptr) {
 	return pidx;
 }
 
+[[deprecated("Struct FlexArr changed to a Vec")]]
 struct FlexArr *index_csv_flexarr(FILE *fptr) {
 	struct FlexArr *pidx =
 		malloc(sizeof(struct FlexArr) + (sizeof(long) * INDEX_ALLOC));

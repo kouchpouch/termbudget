@@ -57,9 +57,6 @@ extern unsigned int get_num_fields(FILE *fptr);
 /* Frees the struct and any applicable members */
 extern void free_budget_tokens(struct BudgetTokens *pbt);
 
-/* Returns count and line numbers from BUDGET_DIR that match month, year */
-extern struct FlexArr *get_budget_catg_by_date_ln(int month, int year);
-
 /* Returns number of categories and the string literal categories of given
  * month and year in BUDGET_DIR(main.h) */
 extern struct Categories *get_budget_catg_by_date(int month, int year);
@@ -100,6 +97,6 @@ extern Vec *index_csv(FILE *fptr);
 
 /* Returns byte offset values for the beginning of each line in fptr file
  * position indicator position will be retained */
-extern struct FlexArr *index_csv_flexarr(FILE *fptr);
+//extern struct FlexArr *index_csv_flexarr(FILE *fptr);
 
 #endif
