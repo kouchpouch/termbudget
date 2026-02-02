@@ -336,6 +336,43 @@ int get_int_field(int line, int field) {
 	return atoi(strsep(&str, ","));
 }
 
+/* Just a test for future refactoring. Eventually almost all struct FlexArr
+ * return types will be replaced by Vec. At least all of them who dynamically
+ * allocates memory. I should've just had a vector struct to begin with. */
+Vec *index_csv_vec(FILE *fptr) {
+	Vec *pidx =
+		malloc(sizeof(Vec) + (sizeof(long) * INDEX_ALLOC));
+	if (pidx == NULL) {
+		memory_allocate_fail();
+	}
+	pidx->capacity = INDEX_ALLOC;
+	pidx->size = 0;
+
+	char linebuff[LINE_BUFFER];
+
+	while (fgets(linebuff, sizeof(linebuff), fptr) != NULL) {
+		pidx->data[pidx->size] = ftell(fptr);
+		pidx->size++;
+
+		if (pidx->size >= pidx->capacity) {
+			if (pidx->capacity * 2 <= MAX_ALLOC) {
+				pidx->capacity *= 2;
+			} else {
+				pidx->capacity += MAX_ALLOC;
+			}
+			Vec *tmp =
+				realloc(pidx, sizeof(Vec) + (sizeof(long) * pidx->capacity));
+			if (tmp == NULL) {
+				free(pidx);
+				memory_allocate_fail();
+			}
+			pidx = tmp;
+		}
+	}
+
+	return pidx;
+}
+
 /* 
  * Rewrite of index_csv to include amortized memory allocation. Amortization on
  * other functions in the program doesn't exist, but due to this function
@@ -351,6 +388,7 @@ int get_int_field(int line, int field) {
  * REALLOC_INCR which is used in cases where realistically not many values
  * will be stored in the array.
  */
+
 struct FlexArr *index_csv(FILE *fptr) {
 	struct FlexArr *pidx =
 		malloc(sizeof(struct FlexArr) + (sizeof(long) * INDEX_ALLOC));
