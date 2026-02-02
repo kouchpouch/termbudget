@@ -771,30 +771,18 @@ struct FlexArr *get_byte_offsets_date(int y, int m) {
 struct FlexArr *sort_by_date(FILE *fptr, struct FlexArr *pidx,
 							 struct FlexArr *plines)
 {
-	int realloc_counter = 0;
-	struct FlexArr *psbd = malloc(sizeof(*psbd) + (sizeof(long) * REALLOC_INCR));
+	struct FlexArr *psbd = malloc(sizeof(*psbd) + (sizeof(long) * plines->lines));
+
 	if (psbd == NULL) {
-		return NULL;
+		memory_allocate_fail();
 	}
+
 	psbd->lines = 0;
 	rewind(fptr);
 
 	for (int i = 0; i < plines->lines; i++) {
-		if (realloc_counter >= REALLOC_INCR - 1) {
-			realloc_counter = 0;
-			struct FlexArr *tmp = realloc(psbd, sizeof(*psbd) + 
-								 ((psbd->lines + REALLOC_INCR) * 
-								 sizeof(long)));
-			if (tmp == NULL) {
-				free(psbd);
-				return NULL;	
-			}
-			psbd = tmp;
-		}
-
 		psbd->data[i] = pidx->data[plines->data[i]];
 		psbd->lines++;
-		realloc_counter++;
 	}
 
 	return psbd;
