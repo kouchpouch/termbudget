@@ -798,10 +798,13 @@ Vec *sort_by_category(FILE *fptr, Vec *pidx, Vec *plines, int yr, int mo)
 	char *line;
 	char *token;
 
-	for (int i = 0; i < pc->size; i++) { // Loop through each category
-		for (int j = 0; j < plines->size; j++) { // Loop through each record
-
-			if (prsc->size >= prsc->capacity) {
+	for (int i = 0; i < pc->size; i++) { // Iterate categories
+		prsc->data[prsc->size] = 0;
+		prsc->size++;
+		for (int j = 0; j < plines->size; j++) { // Iterate records
+			/* Check prsc->size + 1 because a zero will be added to the array
+			 * to mark the spaces between categories */
+			if (prsc->size + 1 >= prsc->capacity) {
 				prsc->capacity += REALLOC_INCR;
 				Vec *tmp =
 					realloc(prsc, sizeof(*prsc) + (prsc->capacity * sizeof(char *)));
@@ -822,7 +825,6 @@ Vec *sort_by_category(FILE *fptr, Vec *pidx, Vec *plines, int yr, int mo)
 			}
 
 			seek_n_fields(&line, 3);
-
 			token = strsep(&line, ",");
 			
 			if (token == NULL) {
@@ -830,7 +832,6 @@ Vec *sort_by_category(FILE *fptr, Vec *pidx, Vec *plines, int yr, int mo)
 				prsc = NULL;
 				goto ERR_NULL;
 			}
-
 			if (strcmp(token, pc->categories[i]) == 0) {
 				prsc->data[prsc->size] = pidx->data[plines->data[j]];
 				prsc->size++;
@@ -2256,14 +2257,38 @@ void nc_read_loop(WINDOW *wptr_parent, WINDOW *wptr, FILE *fptr,
 	nc_print_balances_text(wptr_parent, psc);
 	nc_print_read_footer(stdscr);
 
-	/* Print initial lines based on screen size */
+	/* little testing.... */
+	long tmp;
+	FILE *bfptr = open_budget_csv("r");
 	for (int i = 0; i < max_y && displayed < psc->size; i++) {
+
+		/* 
+		 * If the data in psc->data is 0, that indicates the next category
+		 * is going to be displayed. However the data from BUDGET_DIR needs to
+		 * be read. So this will get a bit interesting. This logic will
+		 * be extracted into their own functions.
+		 *
+		 * This is only a test. 
+		 */
+		if (psc->data[i] == 0) {
+		
+		}
+
 		fseek(fptr, psc->data[i], SEEK_SET);
 		line_str = fgets(linebuff, sizeof(linebuff), fptr);
 		tokenize_record(ld, &line_str);
 		nc_print_record_hr(wptr, cw, ld, i);
 		displayed++;
 	}
+
+	/* Print initial lines based on screen size */
+//	for (int i = 0; i < max_y && displayed < psc->size; i++) {
+//		fseek(fptr, psc->data[i], SEEK_SET);
+//		line_str = fgets(linebuff, sizeof(linebuff), fptr);
+//		tokenize_record(ld, &line_str);
+//		nc_print_record_hr(wptr, cw, ld, i);
+//		displayed++;
+//	}
 
 	/* Move cursor to first line of data and set that line to reverse video */
 	int select = 0; // To keep track of selection for indexing
@@ -2438,6 +2463,7 @@ void nc_read_loop(WINDOW *wptr_parent, WINDOW *wptr, FILE *fptr,
 			return;
 		}
 	}
+
 	sr->flag = NO_SELECT;
 	sr->index = 0;
 	return;
@@ -2452,6 +2478,66 @@ void nc_read_cleanup(WINDOW *wp, WINDOW *wc, Vec *psc, Vec *plines, Vec *pidx,
 	free(plines);
 	free(pidx);
 	fclose(fptr);
+}
+
+void free_record_category_tree(CategoryRoot *pcr) {
+	int i = 0;
+	while (pcr[i].next != NULL) {
+		for (int j = 0; j < pcr[i].nmembers; j++) {
+			;
+		}
+		i++;
+	}
+}
+
+/*
+ * Mallocs CategoryMembers, initializes pcr->pcc with the pointer to the
+ * first CategoryMember, initializes pcr->nmembers with the number of
+ * CategoryMembers in the tree.
+ *
+ * Returns 0 on success.
+ */
+int *init_record_category_members(CategoryRoot *pcr, Vec *psc, int m, int y) {
+	
+
+	return 0;
+}
+
+/*
+ * This might work, maybe it won't. The vision is to return the pointer of the
+ * first CategoryRoot. A CategoryRoot contains the byteoffset of the data
+ * in BUDGET_DIR. This will be displayed to the user in the main read loop.
+ * There, the user should be able to edit the category's amount for budget
+ * planning. Renaming will be implemented later, maybe. It may or may not make
+ * sense.
+ *
+ * A CategoryRoot contains a pointer that points to the first CategoryMember
+ * and a pointer to the next CategoryRoot. The number of CategoryRoots is known
+ * by the time this function is called. The number of categories is returned
+ * in the struct Categories returned by list_categories() in main.c.
+ *
+ * To access the data I'm thinking about two for loops, one that goes through
+ * each CategoryRoot's CategoryMembers until a NULL pointer is reached, then
+ * iterate over the next CategoryRoot until CategoryRoot->nmembers is reached.
+ */
+CategoryRoot *init_record_category_tree(unsigned long n, int m, int y) {
+	CategoryRoot *pcr = malloc(n * sizeof(*pcr));
+	if (pcr == NULL) {
+		memory_allocate_fail();
+	}
+
+	for (int i = 0; i < n; i++) {
+		pcr[i].nmembers = 0;
+		if (i > 0) {
+			pcr[i - 1].next = &pcr[i];
+		}
+		if (i == n - 1) {
+			pcr[i].next = NULL;
+		}
+
+	}
+
+	return pcr;
 }
 
 void nc_read_setup_default(void) {
@@ -2523,6 +2609,7 @@ void nc_read_setup(int sel_year, int sel_month, int sort) {
 
 	Vec *psc;
 	char *sort_text;
+	CategoryRoot *cat_root;
 
 	switch(sort) {
 	case(DATE):
@@ -2531,6 +2618,7 @@ void nc_read_setup(int sel_year, int sel_month, int sort) {
 		break;
 	case(CATEGORY):
 		psc = sort_by_category(fptr, pidx, plines, sel_year, sel_month);
+		cat_root = init_record_category_tree(psc->size, sel_month, sel_year);
 		sort_text = "Category";
 		break;
 	default:
