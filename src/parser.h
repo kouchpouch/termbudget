@@ -1,5 +1,18 @@
 /*
  * Includes parsing functions for CSV files used in termBudget.
+ *
+ * This program is free software: you can redistribute it and/or modify 
+ * it under the terms of the GNU General Public License as published by 
+ * the Free Software Foundation, either version 3 of the License, 
+ * or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of 
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU 
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along 
+ * with this program. If not, see <https://www.gnu.org/licenses/>. 
  */
 #ifndef PARSER_H
 #define PARSER_H
@@ -60,6 +73,10 @@ extern void free_budget_tokens(struct BudgetTokens *pbt);
 /* Returns number of categories and the string literal categories of given
  * month and year in BUDGET_DIR(main.h) */
 extern struct Categories *get_budget_catg_by_date(int month, int year);
+
+/* Returns Vec containing byte offsets of each category that matches month,
+ * year in BUDGET_DIR. */
+extern Vec *get_budget_catg_by_date_bo(int month, int year);
 
 /* Returns malloc'd tokenized variables in BudgetTokens. 
  * BudgetTokens catg is separately malloc'd and must be free'd */

@@ -1,3 +1,17 @@
+/*
+ * This program is free software: you can redistribute it and/or modify 
+ * it under the terms of the GNU General Public License as published by 
+ * the Free Software Foundation, either version 3 of the License, 
+ * or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of 
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU 
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along 
+ * with this program. If not, see <https://www.gnu.org/licenses/>. 
+ */
 #include <stdlib.h>
 #include <string.h>
 #include "parser.h"
@@ -148,54 +162,43 @@ struct Categories *get_budget_catg_by_date(int month, int year) {
  * REPLACED by get_budget_catg_by_date which returns byte offsets instead of
  * line numbers.
  */
-[[deprecated("Replaced by get_budget_catg_by_date")]]
-struct FlexArr *get_budget_catg_by_date_ln(int month, int year) {
-	struct FlexArr *pfa = 
-		malloc((sizeof(struct FlexArr)) + (sizeof(long) * REALLOC_INCR));
-
-	if (pfa == NULL) {
+Vec *get_budget_catg_by_date_bo(int month, int year) {
+	Vec *pcbo = malloc((sizeof(*pcbo)) + (sizeof(long) * REALLOC_INCR));
+	if (pcbo == NULL) {
 		memory_allocate_fail();
 	}
 
+	pcbo->capacity = REALLOC_INCR;
+	pcbo->size = 0;
+
 	FILE *fptr = open_budget_csv("r");
 
-	pfa->lines = 0;
-	unsigned int realloc_counter = 0;
-
 	seek_beyond_header(fptr);
-	long linenumber = 1;
 	char linebuff[LINE_BUFFER];
 	char *str;
 	int m;
 	int y;
 
-	while (1) {
-		str = fgets(linebuff, sizeof(linebuff), fptr);
-		if (str == NULL) {
-			break;
-		}
-
+	while ((str = fgets(linebuff, sizeof(linebuff), fptr)) != NULL) {
 		m = atoi(strsep(&str, ","));
 		y = atoi(strsep(&str, ","));
 
 		if (y == year && m == month) {
-			if (realloc_counter >= REALLOC_INCR - 1) {
-				realloc_counter = 0;
-				struct FlexArr *tmp = realloc(pfa, (sizeof(struct FlexArr)) +
-								  (REALLOC_INCR + pfa->lines) * sizeof(long));
+			if (pcbo->size >= pcbo->capacity) {
+				pcbo->capacity += REALLOC_INCR;
+				Vec *tmp = realloc(pcbo, sizeof(Vec) + (sizeof(long) * pcbo->capacity));
 				if (tmp == NULL) {
-					free(pfa);
+					free(pcbo);
 					memory_allocate_fail();
 				}
-				pfa = tmp;
+				pcbo = tmp;
 			}
-			pfa->data[pfa->lines] = linenumber;
-			pfa->lines++;
-			realloc_counter++;
+			pcbo->data[pcbo->size] = ftell(fptr);
+			pcbo->size++;
 		}
 	}
 
-	return pfa;
+	return pcbo;
 }
 
 struct BudgetTokens *tokenize_budget_line(int line) {

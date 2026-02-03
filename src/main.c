@@ -1,3 +1,17 @@
+/*
+ * This program is free software: you can redistribute it and/or modify 
+ * it under the terms of the GNU General Public License as published by 
+ * the Free Software Foundation, either version 3 of the License, 
+ * or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of 
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU 
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along 
+ * with this program. If not, see <https://www.gnu.org/licenses/>. 
+ */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -2498,6 +2512,7 @@ void free_record_category_tree(CategoryRoot *pcr) {
  * Returns 0 on success.
  */
 int *init_record_category_members(CategoryRoot *pcr, Vec *psc, int m, int y) {
+
 	
 
 	return 0;
@@ -2522,6 +2537,7 @@ int *init_record_category_members(CategoryRoot *pcr, Vec *psc, int m, int y) {
  */
 CategoryRoot *init_record_category_tree(unsigned long n, int m, int y) {
 	CategoryRoot *pcr = malloc(n * sizeof(*pcr));
+	Vec *pcbo = get_budget_catg_by_date_bo(m, y);
 	if (pcr == NULL) {
 		memory_allocate_fail();
 	}
