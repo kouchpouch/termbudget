@@ -60,6 +60,7 @@ struct Balances {
 	double expense;
 };
 
+void free_categories(struct Categories *pc);
 int *list_records_by_month(FILE *fptr, int matchyear);
 int *list_records_by_year(FILE *fptr);
 void memory_allocate_fail(void);
@@ -398,11 +399,7 @@ RETRY:
 		}
 	}
 
-	for (int i = 0; i < pc->size; i++) {
-		free(pc->categories[i]);
-	}
-
-	free(pc);
+	free_categories(pc);
 	return str;
 }
 
@@ -547,10 +544,7 @@ char *nc_select_category(int month, int year) {
 			break;
 		case('c'):
 MANUAL:
-			for (int i = 0; i < pc->size; i++) {
-				free(pc->categories[i]);
-			}
-			free(pc);
+			free_categories(pc);
 			nc_exit_window(wptr_parent);
 			nc_exit_window(wptr);
 			nc_print_input_footer(stdscr);
@@ -570,10 +564,7 @@ MANUAL:
 	if (select >= 0) {
 		char *tmp = strdup(pc->categories[select]); // Must be free'd
 
-		for (int i = 0; i < pc->size; i++) {
-			free(pc->categories[i]);
-		}
-		free(pc);
+		free_categories(pc);
 		nc_exit_window(wptr_parent);
 		nc_exit_window(wptr);
 
@@ -581,10 +572,7 @@ MANUAL:
 	}
 
 CLEANUP:
-	for (int i = 0; i < pc->size; i++) {
-		free(pc->categories[i]);
-	}
-	free(pc);
+	free_categories(pc);
 	nc_exit_window(wptr_parent);
 	nc_exit_window(wptr);
 	return NULL;
@@ -851,10 +839,7 @@ Vec *sort_by_category(FILE *fptr, Vec *pidx, Vec *plines, int yr, int mo)
 	}
 
 ERR_NULL:
-	for (int i = 0; i < pc->size; i++) {
-		free(pc->categories[i]);
-	}
-	free(pc);
+	free_categories(pc);
 	return prsc;
 }
 
