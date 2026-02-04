@@ -62,7 +62,7 @@ struct categorymember {
 typedef struct categoryroot CategoryRoot;
 
 struct categoryroot {
- 	CategoryMember *pcc;
+ 	CategoryMember **pcc;
 	CategoryRoot *next;
 	long nmembers;
 	long byteoffset;
