@@ -43,7 +43,7 @@
             program. This concerns budget.csv, defining budget category
             money allocation, file verification, user input, and an easy to
             use and view interface.
-        - ( ) Budget CSV parsing
+        - (*) Budget CSV parsing
         - ( ) Sorting by Category should be the default behavior
         - ( ) Show each category in the read loop and it's associated planned
                 amount for each category and how much is remaining.
@@ -52,14 +52,15 @@
         - ( ) Handle deleting categories, possibly renaming as well. But
                 probably not.
         - ( ) Orphaned categories handling
-        - ( ) Verify data between files and in the files themselves (The CSVs)
+        - (*) Verify data between files and in the files themselves (The CSVs)
+    - (*) Create data structures to handle budget planning by category
 
 #### Main Feature Set
     - (*) Create a transaction
     - (*) View     " "
     - (*) Update   " "
     - (*) Delete   " "
-    - ( ) ncurses <-- The big one
+    - (*) ncurses <-- The big one
         - (*) Welcome Menu
         - (*) Read
             - (*) Add ability to scroll through records if they are too
@@ -76,11 +77,11 @@
         - (*) Categories
             - (*) When adding a transaction, select a category or add new
                     in an NCURSES menu.
-        - ( ) Overview
+        - (*) Overview
             - (*) With bar graphs
-            - ( ) Yearly summary
+            - (*) Yearly summary
         - (*) Scroll through dates
-        - ( ) Resizing
+        - (*) Resizing
     - (*) Basic Bar Graph Trends
 
 #### Refactors
@@ -111,3 +112,4 @@
             doesn't work as intended. If January has 2 records in it and a
             new record is added, like a record in May, the may record will be
             inserted between the two records in January.
+    - ( ) Budget sorter is jank, doesn't work
