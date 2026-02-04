@@ -104,6 +104,105 @@ void free_budget_tokens(struct BudgetTokens *pbt) {
 	free(pbt);
 }
 
+Vec *get_records_by_any(int month, int day, int year, char *category, 
+						char *description, int transtype, double amount) 
+{
+	FILE *fptr = open_record_csv("r");
+	Vec *prbc = malloc(sizeof(*prbc) + (sizeof(long) * REALLOC_INCR));
+	if (prbc == NULL) {
+		memory_allocate_fail();
+	}
+
+	prbc->size = 0;
+	prbc->capacity = REALLOC_INCR;
+
+	char linebuff[LINE_BUFFER];
+	char *str;
+
+	struct LineData ld_, *ld = &ld_;
+
+	bool date = false;
+	bool cat = false;
+	bool desc = false;
+	bool tt = false;
+	bool amt = false;
+
+	long tmpbo;
+
+	while ((str = fgets(linebuff, sizeof(linebuff), fptr)) != NULL) {
+		tmpbo = ftell(fptr);
+		tokenize_record(ld, &str);
+		date = false;
+		cat = false;
+		desc = false;
+		tt = false;
+		amt = false;
+		if (year < 0 && month < 0 && day < 0) {
+			date = true;
+		} else if (year > 0 && month > 0 && day > 0) {
+			if (year == ld->year && month == ld->month && day == ld->day) {
+				date = true;
+			}
+		} else if (year > 0 && month > 0 && day < 0) {
+			if (year == ld->year && month == ld->month) {
+				date = true;
+			}
+		} else if (year > 0 && month < 0 && day < 0) {
+			if (year == ld->year) {
+				date = true;
+			}
+		}
+
+		if (category == NULL) {
+			cat = true;
+		} else if (category != NULL) {
+			if (strcmp(category, ld->category) == 0) {
+				cat = true;
+			}
+		}
+
+		if (description == NULL) {
+			desc = true;
+		} else if (description != NULL) {
+			if (strcmp(description, ld->desc) == 0) {
+				desc = true;
+			}
+		}
+
+		if (transtype < 0) {
+			tt = true;
+		} else if (transtype >= 0) {
+			if (transtype == ld->transtype) {
+				tt = true;
+			}
+		}
+
+		if (amount < 0) {
+			amt = true;
+		} else if (amount >= 0) {
+			if (amount == ld->amount) {
+				amt = true;
+			}
+		}
+
+		if (date && cat && desc && tt && amt) {
+			if (prbc->size >= prbc->capacity) {
+				prbc->capacity += REALLOC_INCR;
+				Vec *tmp = realloc(prbc, sizeof(Vec) + (sizeof(long) * prbc->capacity));
+				if (tmp == NULL) {
+					free(prbc);
+					memory_allocate_fail();
+				}
+			}
+			prbc->data[prbc->size] = tmpbo;
+			prbc->size++;
+		}
+	}
+
+	fclose(fptr);
+	return prbc;
+}
+
 struct Categories *get_budget_catg_by_date(int month, int year) {
 	struct Categories *pc = 
 		malloc((sizeof(*pc)) + (sizeof(char *) * REALLOC_INCR));
@@ -155,13 +254,6 @@ struct Categories *get_budget_catg_by_date(int month, int year) {
 	return pc;
 }
 
-/* 
- * Returns all budget categories' line numbers that match the given month,
- * year. Return struct must be free'd.
- *
- * REPLACED by get_budget_catg_by_date which returns byte offsets instead of
- * line numbers.
- */
 Vec *get_budget_catg_by_date_bo(int month, int year) {
 	Vec *pcbo = malloc((sizeof(*pcbo)) + (sizeof(long) * REALLOC_INCR));
 	if (pcbo == NULL) {
@@ -199,6 +291,38 @@ Vec *get_budget_catg_by_date_bo(int month, int year) {
 	}
 
 	return pcbo;
+}
+
+struct BudgetTokens *tokenize_budget_byte_offset(long bo) {
+	if (bo == 0) {
+		return NULL;
+	}
+	struct BudgetTokens *pbt = malloc(sizeof(*pbt));
+	if (pbt == NULL) {
+		memory_allocate_fail();
+	}
+
+	FILE *fptr = open_budget_csv("r");
+
+	fseek(fptr, bo, SEEK_SET);
+	char linebuff[LINE_BUFFER];
+	char *str = fgets(linebuff, sizeof(linebuff), fptr);
+	if (str == NULL) {
+		free(pbt);
+		return NULL;
+	}
+
+	pbt->m = atoi(strsep(&str, ","));
+	pbt->y = atoi(strsep(&str, ","));
+	char *tmp = strndup(strsep(&str, ","), MAX_LEN_CATG);
+	if (tmp == NULL) {
+		free(pbt);
+		memory_allocate_fail();
+	}
+	pbt->catg = tmp;
+	pbt->amount = atof(strsep(&str, ","));
+
+	return pbt;
 }
 
 struct BudgetTokens *tokenize_budget_line(int line) {
