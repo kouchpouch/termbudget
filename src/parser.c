@@ -113,21 +113,20 @@ Vec *get_records_by_any(int month, int day, int year, char *category,
 		memory_allocate_fail();
 	}
 
-	prbc->size = 0;
-	prbc->capacity = REALLOC_INCR;
-
 	char linebuff[LINE_BUFFER];
 	char *str;
-
 	struct LineData ld_, *ld = &ld_;
-
 	bool date = false;
 	bool cat = false;
 	bool desc = false;
 	bool tt = false;
 	bool amt = false;
-
 	long tmpbo;
+
+	prbc->size = 0;
+	prbc->capacity = REALLOC_INCR;
+
+	seek_beyond_header(fptr);
 
 	while ((str = fgets(linebuff, sizeof(linebuff), fptr)) != NULL) {
 		tmpbo = ftell(fptr);
