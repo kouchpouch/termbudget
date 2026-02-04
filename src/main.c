@@ -2273,7 +2273,7 @@ void nc_read_loop(WINDOW *wptr_parent, WINDOW *wptr, FILE *fptr,
 
 	/* little testing.... */
 	long tmp;
-	FILE *bfptr = open_budget_csv("r");
+//	FILE *bfptr = open_budget_csv("r");
 	for (int i = 0; i < max_y && displayed < psc->size; i++) {
 
 		/* 
@@ -2494,19 +2494,20 @@ void nc_read_cleanup(WINDOW *wp, WINDOW *wc, Vec *psc, Vec *plines, Vec *pidx,
 	fclose(fptr);
 }
 
-void free_record_category_tree(CategoryRoot *pcr) {
-	CategoryRoot *head = pcr;
+void free_record_category_tree(CategoryRoot **pcr) {
+	CategoryRoot **head = pcr;
+	unsigned long i = 0;
 	move(0,0);
 
 	while (1) {
-		CategoryRoot *tmp = head;
+		CategoryRoot *tmp = head[i];
 		if (debug) {
-			printw("MEMBERS: %ld, HEAD: %p, NEXT: %p\n", tmp->nmembers, head, head->next);
+			printw("MEMBERS: %ld, HEAD: %p, NEXT: %p\n", tmp->nmembers, tmp, tmp->next);
 			getch();
 		}
 
 		if (tmp->nmembers > 0 && tmp->pcc != NULL) {
-			CategoryMember *mhead = tmp->pcc;
+			CategoryMember *mhead = *tmp->pcc;
 			while (1) {
 				void *mtmp = mhead;
 				if (mhead->next == NULL) {
@@ -2515,6 +2516,7 @@ void free_record_category_tree(CategoryRoot *pcr) {
 						getch();
 					}
 					free(mhead);
+					free(tmp->pcc);
 					break;
 				}
 				if (debug) {
@@ -2527,13 +2529,17 @@ void free_record_category_tree(CategoryRoot *pcr) {
 			}
 		}
 
-		if (head->next == NULL) {
-			free(head);
-		//	printw("BROKE OUT, TREE FREE'D\n");
+		if (head[i]->next == NULL) {
+			free(head[i]);
+			if (debug) {
+				printw("BROKE OUT, TREE FREE'D\n");
+			}
 			break;
 		}
-//		printw("FREEING: %p\n", tmp);
-		head = head->next;
+		if (debug) {
+			printw("FREEING: %p\n", tmp);
+		}
+		head[i] = head[i]->next;
 		free(tmp);
 	}
 }
@@ -2552,7 +2558,6 @@ int *init_record_category_members(CategoryRoot *pcr, int m, int y) {
 	struct BudgetTokens *pbt = tokenize_budget_byte_offset(pcr->byteoffset);
 	Vec *pr = get_records_by_any(m, -1, y, pbt->catg, NULL, -1, -1);
 	unsigned long n = pr->size;
-	printw("%ld RECS ", pr->size);
 	
 	if (n == 0) {
 		free(pr);
@@ -2563,29 +2568,35 @@ int *init_record_category_members(CategoryRoot *pcr, int m, int y) {
 	}
 
 	CategoryMember **ptrs = malloc(sizeof(CategoryMember *) * n);
-	if (debug) {
-		printw("Alloc'd %zu bytes\n", sizeof(CategoryMember *) * n);
-		getch();
-	}
 
 	if (ptrs == NULL) {
 		memory_allocate_fail();
 	}
 
+	if (debug) {
+		printw("Alloc'd %zu bytes for member\n", sizeof(CategoryMember *) * n);
+		getch();
+	}
 	for (unsigned long i = 0; i < n; i++) {
 		ptrs[i] = malloc(sizeof(CategoryMember));
+		if (ptrs == NULL) {
+			memory_allocate_fail();
+		}
 		if (i > 0) {
 			ptrs[i - 1]->next = ptrs[i];
 		}
 		if (i == n - 1) {
 			ptrs[i]->next = NULL;
 		}
+		if (debug) {
+			printw("INSERTING %ld DATA INTO MEMBER #%ld\n", pr->data[i], i);
+		}
 
 		ptrs[i]->byteoffset = pr->data[i];
 		pcr->nmembers++;
 	}
 
-	pcr->pcc = ptrs[0];
+	pcr->pcc = ptrs;
 	free(pr);
 	free_budget_tokens(pbt);
 
@@ -2609,10 +2620,8 @@ int *init_record_category_members(CategoryRoot *pcr, int m, int y) {
  * each CategoryRoot's CategoryMembers until a NULL pointer is reached, then
  * iterate over the next CategoryRoot until CategoryRoot->nmembers is reached.
  */
-CategoryRoot *init_record_category_tree(int m, int y) {
+CategoryRoot **init_record_category_tree(int m, int y) {
 	Vec *pcbo = get_budget_catg_by_date_bo(m, y);
-	printw("%ld CATGS FOUND\n", pcbo->size);
-	getch();
 	unsigned long n = pcbo->size;
 	CategoryRoot **ptrs = malloc(sizeof(CategoryRoot *) * n);
 	if (ptrs == NULL) {
@@ -2620,13 +2629,20 @@ CategoryRoot *init_record_category_tree(int m, int y) {
 	}
 
 	if (debug) {
-		move(25, 0);
-		printw("Alloc'd %zu bytes\n", sizeof(CategoryRoot *) * n);
+		move(10, 0);
+		printw("Alloc'd %zu bytes\n", (sizeof(CategoryRoot *) * n));
+		printw("%ld SIZE\n", pcbo->size);
 		getch();
 	}
 
 	for (int i = 0; i < n; i++) {
 		ptrs[i] = malloc(sizeof(CategoryRoot));
+		if (debug) {
+			printw("DATA %ld ROOT #%d @ ADDR %p\n", pcbo->data[i], i, ptrs[i]);
+		}
+		if (ptrs[i] == NULL) {
+			memory_allocate_fail();
+		}
 		ptrs[i]->nmembers = 0;
 		ptrs[i]->byteoffset = pcbo->data[i];
 		if (i > 0) {
@@ -2639,7 +2655,7 @@ CategoryRoot *init_record_category_tree(int m, int y) {
 	}
 
 	free(pcbo);
-	return ptrs[0];
+	return ptrs;
 }
 
 void nc_read_setup_default(void) {
@@ -2711,7 +2727,7 @@ void nc_read_setup(int sel_year, int sel_month, int sort) {
 
 	Vec *psc;
 	char *sort_text;
-	CategoryRoot *cat_root;
+	CategoryRoot **cat_root;
 
 	switch(sort) {
 	case(DATE):
@@ -2722,6 +2738,7 @@ void nc_read_setup(int sel_year, int sel_month, int sort) {
 		psc = sort_by_category(fptr, pidx, plines, sel_year, sel_month);
 		cat_root = init_record_category_tree(sel_month, sel_year);
 		free_record_category_tree(cat_root);
+		free(cat_root);
 		sort_text = "Category";
 		break;
 	default:
