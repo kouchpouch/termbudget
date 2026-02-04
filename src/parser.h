@@ -70,6 +70,21 @@ extern unsigned int get_num_fields(FILE *fptr);
 /* Frees the struct and any applicable members */
 extern void free_budget_tokens(struct BudgetTokens *pbt);
 
+/* An attempt to generalize getting record byte offsets by some parameter.
+ * To disregard an argument, pass a negative value for any int or double and
+ * pass NULL for any char *, these arguments will not be checked.
+ *
+ * EXAMPLE:
+ * Get records by date: get_records_by_any(2, 5, 2025, NULL, NULL, -1, -1);
+ * Get records by category: get_records_by_any(-1, -1, -1, paychecks, NULL, 
+ *                                             -1, -1);
+ *
+ * Returns a Vec data member containing byte offset values of records that
+ * match and Vec data member size with the total number of records that
+ * matched. */
+extern Vec *get_records_by_any(int month, int day, int year, char *category,
+							   char *description, int transtype, double amount);
+
 /* Returns number of categories and the string literal categories of given
  * month and year in BUDGET_DIR(main.h) */
 extern struct Categories *get_budget_catg_by_date(int month, int year);
@@ -78,8 +93,16 @@ extern struct Categories *get_budget_catg_by_date(int month, int year);
  * year in BUDGET_DIR. */
 extern Vec *get_budget_catg_by_date_bo(int month, int year);
 
-/* Returns malloc'd tokenized variables in BudgetTokens. 
- * BudgetTokens catg is separately malloc'd and must be free'd */
+/* Returns malloc'd tokenized variables in BudgetTokens by seeking the file
+ * position indicator to bo. BudgetTokens catg is separately malloc'd and must 
+ * be free'd. Use free_budget_tokens(). 
+ * Returns NULL on failure, pointer to struct BudgetTokens on success. */
+extern struct BudgetTokens *tokenize_budget_byte_offset(long bo);
+
+/* Returns malloc'd tokenized variables in BudgetTokens which matches
+ * line number line. BudgetTokens catg is separately malloc'd and must 
+ * be free'd. Use free_budget_tokens().
+ * Returns NULL on failure, pointer to struct BudgetTokens on success. */
 extern struct BudgetTokens *tokenize_budget_line(int line);
 
 /* Returns month and year of line from budget csv */
@@ -111,9 +134,5 @@ extern int get_int_field(int line, int field);
  * track of capacity, it is now apart of the struct.
  */
 extern Vec *index_csv(FILE *fptr);
-
-/* Returns byte offset values for the beginning of each line in fptr file
- * position indicator position will be retained */
-//extern struct FlexArr *index_csv_flexarr(FILE *fptr);
 
 #endif
