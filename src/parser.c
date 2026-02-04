@@ -241,6 +241,7 @@ struct Categories *get_budget_catg_by_date(int month, int year) {
 
 				if (tmp == NULL) {
 					free(pc);
+					fclose(fptr);
 					memory_allocate_fail();
 				}
 				pc = tmp;
@@ -250,6 +251,7 @@ struct Categories *get_budget_catg_by_date(int month, int year) {
 		}
 	}
 
+	fclose(fptr);
 	return pc;
 }
 
@@ -264,15 +266,21 @@ Vec *get_budget_catg_by_date_bo(int month, int year) {
 
 	FILE *fptr = open_budget_csv("r");
 
-	seek_beyond_header(fptr);
 	char linebuff[LINE_BUFFER];
 	char *str;
 	int m;
 	int y;
+	long bo;
 
-	while ((str = fgets(linebuff, sizeof(linebuff), fptr)) != NULL) {
+	while (1) {
+		bo = ftell(fptr);
+		str = fgets(linebuff, sizeof(linebuff), fptr);
+		if (str == NULL) {
+			break;
+		}
 		m = atoi(strsep(&str, ","));
 		y = atoi(strsep(&str, ","));
+		printw("M/Y %d %d\n", m, y);
 
 		if (y == year && m == month) {
 			if (pcbo->size >= pcbo->capacity) {
@@ -284,10 +292,12 @@ Vec *get_budget_catg_by_date_bo(int month, int year) {
 				}
 				pcbo = tmp;
 			}
-			pcbo->data[pcbo->size] = ftell(fptr);
+			pcbo->data[pcbo->size] = bo;
 			pcbo->size++;
 		}
 	}
+
+	fclose(fptr);
 
 	return pcbo;
 }
@@ -321,6 +331,7 @@ struct BudgetTokens *tokenize_budget_byte_offset(long bo) {
 	pbt->catg = tmp;
 	pbt->amount = atof(strsep(&str, ","));
 
+	fclose(fptr);
 	return pbt;
 }
 
