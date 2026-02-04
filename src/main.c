@@ -944,7 +944,7 @@ int cmp_catg_and_fix(struct Categories *prc, struct Categories *pbc,
 		if (!cat_exists) {
 			add_budget_category(prc->categories[i], m, y);
 			corrected++;
-		}
+		};
 	}
 	return corrected;
 }
@@ -2500,20 +2500,27 @@ void free_record_category_tree(CategoryRoot *pcr) {
 
 	while (1) {
 		CategoryRoot *tmp = head;
-		printw("MEMBERS: %ld, HEAD: %p, TMP: %p\n", tmp->nmembers, head, tmp);
-		getch();
+		if (debug) {
+			printw("MEMBERS: %ld, HEAD: %p, NEXT: %p\n", tmp->nmembers, head, head->next);
+			getch();
+		}
 
 		if (tmp->nmembers > 0 && tmp->pcc != NULL) {
-			printw("BROKE IN\n");
 			CategoryMember *mhead = tmp->pcc;
 			while (1) {
-				CategoryMember *mtmp = mhead;
-				printw("HEAD: %p, TMP: %p\n", mhead, mtmp);
-				getch();
+				void *mtmp = mhead;
 				if (mhead->next == NULL) {
-					printw("BROKE\n");
-					getch();
+					if (debug) {
+						printw("FREEING MEM %p\n", mhead);
+						getch();
+					}
+					free(mhead);
 					break;
+				}
+				if (debug) {
+					printw("TMP: %p, HEAD: %p, NEXT: %p VALS: %ld %ld\n", mtmp, mhead, mhead->next, mhead->byteoffset, mhead->next->byteoffset);
+					getch();
+					printw("FREEING MEM %p\n", mtmp);
 				}
 				mhead = mhead->next;
 				free(mtmp);
@@ -2521,9 +2528,11 @@ void free_record_category_tree(CategoryRoot *pcr) {
 		}
 
 		if (head->next == NULL) {
-			printw("BROKE OUT, TREE FREE'D\n");
+			free(head);
+		//	printw("BROKE OUT, TREE FREE'D\n");
 			break;
 		}
+//		printw("FREEING: %p\n", tmp);
 		head = head->next;
 		free(tmp);
 	}
@@ -2535,38 +2544,50 @@ void free_record_category_tree(CategoryRoot *pcr) {
  * CategoryMembers in the tree.
  *
  * Returns 0 on success.
+ *
+ * Memory issues: Need to change this to store an array of pointers, not an
+ * array of structs.
  */
 int *init_record_category_members(CategoryRoot *pcr, int m, int y) {
 	struct BudgetTokens *pbt = tokenize_budget_byte_offset(pcr->byteoffset);
 	Vec *pr = get_records_by_any(m, -1, y, pbt->catg, NULL, -1, -1);
 	unsigned long n = pr->size;
-	printw("%ld RECORDS ", pr->size);
+	printw("%ld RECS ", pr->size);
 	
 	if (n == 0) {
+		free(pr);
+		free_budget_tokens(pbt);
 		pcr->nmembers = 0;
 		pcr->pcc = NULL;
 		return 0;
 	}
 
-	CategoryMember *pcm = malloc(n * sizeof(*pcm));
+	CategoryMember **ptrs = malloc(sizeof(CategoryMember *) * n);
+	if (debug) {
+		printw("Alloc'd %zu bytes\n", sizeof(CategoryMember *) * n);
+		getch();
+	}
 
-	if (pcm == NULL) {
+	if (ptrs == NULL) {
 		memory_allocate_fail();
 	}
 
-	for (unsigned long i = 0; i < n - 1; i++) {
-		if (i > 0 && i != n - 2) {
-			pcm[i - 1].next = &pcm[i];
-		} else if (i == n - 2) {
-			pcm[i].next = NULL;
+	for (unsigned long i = 0; i < n; i++) {
+		ptrs[i] = malloc(sizeof(CategoryMember));
+		if (i > 0) {
+			ptrs[i - 1]->next = ptrs[i];
+		}
+		if (i == n - 1) {
+			ptrs[i]->next = NULL;
 		}
 
-		pcm[i].byteoffset = pr->data[i];
+		ptrs[i]->byteoffset = pr->data[i];
 		pcr->nmembers++;
 	}
 
-	pcr->pcc = &pcm[0];
+	pcr->pcc = ptrs[0];
 	free(pr);
+	free_budget_tokens(pbt);
 
 	return 0;
 }
@@ -2590,24 +2611,35 @@ int *init_record_category_members(CategoryRoot *pcr, int m, int y) {
  */
 CategoryRoot *init_record_category_tree(int m, int y) {
 	Vec *pcbo = get_budget_catg_by_date_bo(m, y);
+	printw("%ld CATGS FOUND\n", pcbo->size);
+	getch();
 	unsigned long n = pcbo->size;
-	CategoryRoot *pcr = malloc(n * sizeof(*pcr));
-	if (pcr == NULL) {
+	CategoryRoot **ptrs = malloc(sizeof(CategoryRoot *) * n);
+	if (ptrs == NULL) {
 		memory_allocate_fail();
 	}
 
-	for (int i = 0; i < n - 1; i++) {
-		pcr[i].nmembers = 0;
-		pcr[i].byteoffset = pcbo->data[i];
-		if (i > 0 && i != n - 2) {
-			pcr[i - 1].next = &pcr[i];
-		} else if (i == n - 2) {
-			pcr[i].next = NULL;
-		}
-		init_record_category_members(&pcr[i], m, y);
+	if (debug) {
+		move(25, 0);
+		printw("Alloc'd %zu bytes\n", sizeof(CategoryRoot *) * n);
+		getch();
 	}
 
-	return pcr;
+	for (int i = 0; i < n; i++) {
+		ptrs[i] = malloc(sizeof(CategoryRoot));
+		ptrs[i]->nmembers = 0;
+		ptrs[i]->byteoffset = pcbo->data[i];
+		if (i > 0) {
+			ptrs[i - 1]->next = ptrs[i];
+		}
+		if (i == n - 1) {
+			ptrs[i]->next = NULL;
+		}
+		init_record_category_members(ptrs[i], m, y);
+	}
+
+	free(pcbo);
+	return ptrs[0];
 }
 
 void nc_read_setup_default(void) {
