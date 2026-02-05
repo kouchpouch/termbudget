@@ -31,9 +31,9 @@
 #define TRNS_X 10
 
 /* AMOUNT: Max 7 digits + 2 decimal precision + the literal point '.' +
- * currency symbol + a space. Result = 12.
+ * currency symbol + a space. Result = 12 plus padding = 14.
  * E.G. $1234567.10_ */
-#define AMNT_X 12
+#define AMNT_X 14
 
 /* 11 'n 14 derived from the length of "CATEGORY" and 
  * "DESCRIPTION" + 3 */
