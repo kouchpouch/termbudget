@@ -1957,12 +1957,9 @@ Vec *get_matching_line_nums(FILE *fptr, int month, int year) {
  * to by wptr, at a Y-coordinate of y. Truncates desc and category strings
  * if the window is too small.
  */
-void nc_print_record_hr(
-	WINDOW *wptr, 
-	struct ColWidth *cw, 
-	struct LineData *ld, 
-	int y) {
-
+void nc_print_record_hr(WINDOW *wptr, struct ColWidth *cw, 
+						struct LineData *ld, int y)
+{
 	char *etc = ". ";
 	int x = 0;
 	wmove(wptr, y, x);
