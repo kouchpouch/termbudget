@@ -67,7 +67,9 @@ unsigned int sort_budget_csv(int month, int year) {
 			greateryear = true;
 		}
 
-		if (yeartok > year) {
+		if (yeartok < year) {
+			result_line = line;
+		} else if (yeartok > year) {
 			result_line = line - 1;
 			break;
 		}
@@ -139,10 +141,16 @@ unsigned int sort_record_csv(int month, int day, int year) {
 			greateryear = true;
 		}
 
-		if (yeartok > year) {
+		if (yeartok < year) {
+			result_line = line;
+		} else if (yeartok > year) {
 			result_line = line - 1;
 			break;
 		}
+//		if (yeartok > year) {
+//			result_line = line - 1;
+//			break;
+//		}
 
 		if (yeartok == year && monthtok == month && daytok == day) {
 			lesserday = false;
