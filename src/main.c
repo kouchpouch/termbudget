@@ -26,6 +26,7 @@
 #include "tui.h"
 #include "parser.h"
 #include "main.h"
+#include "categories.h"
 
 #define CURRENT_YEAR 2026 // FIX This is to not be hard coded
 
@@ -2632,10 +2633,10 @@ CategoryRoot **init_record_category_tree(int m, int y) {
 		getch();
 	}
 
-	for (int i = 0; i < n; i++) {
+	for (unsigned long i = 0; i < n; i++) {
 		ptrs[i] = malloc(sizeof(CategoryRoot));
 		if (debug) {
-			printw("DATA %ld ROOT #%d @ ADDR %p\n", pcbo->data[i], i, ptrs[i]);
+			printw("DATA %ld ROOT #%ld @ ADDR %p\n", pcbo->data[i], i, ptrs[i]);
 		}
 		if (ptrs[i] == NULL) {
 			memory_allocate_fail();

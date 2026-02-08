@@ -52,22 +52,6 @@ struct Categories {
 	char *categories[];
 };
 
-typedef struct categorymember CategoryMember;
-
-struct categorymember {
-	CategoryMember *next;
-	long byteoffset;
-};
-
-typedef struct categoryroot CategoryRoot;
-
-struct categoryroot {
- 	CategoryMember **pcc;
-	CategoryRoot *next;
-	long nmembers;
-	long byteoffset;
-};
-
 struct FlexArr {
 	long lines;
 	long data[];
