@@ -739,7 +739,11 @@ DUPLICATE:
 	return pc; // Struct and each index of categories must be free'd
 }
 
-Vec *get_byte_offsets_date(int y, int m) {
+/*
+ * Returns a Vec containing byte offset data for records in RECORDS_DIR that
+ * match a given year y and month m.
+ */
+Vec *get_matching_bo(int m, int y) {
 	Vec *pbo = malloc(sizeof(*pbo) + (sizeof(long) * REALLOC_INCR));
 	if (pbo == NULL) {
 		return NULL;
@@ -881,8 +885,10 @@ void add_budget_category(char *catg, int m, int y) {
 	mv_tmp_to_budget_file(tmpfptr, fptr);
 }
 
-/* Loop through each category in the budget. Returns true or false if the
- * category exists for the given date range */
+/* 
+ * Loop through each category in the budget. Returns true or false if the
+ * category exists for the given date range 
+ */
 bool category_exists_in_budget(char *catg, int month, int year) {
 	struct BudgetTokens bt, *pbt = &bt;
 	int i = 1;
@@ -1386,7 +1392,7 @@ void nc_print_overview_graphs(WINDOW *wptr, int *months, int year) {
 
 	for (int i = 0; i < 12 && mo <= 12; i++, mo++) {
 		if (months[i] == mo) {
-			Vec *pbo = get_byte_offsets_date(year, months[i]);
+			Vec *pbo = get_matching_bo(months[i], year);
 			calculate_balance(pb, pbo);
 			if (pb->income == 0) { // Prevent a div by zero
 				ratios[mo - 1] = NO_INCOME;
@@ -1479,7 +1485,7 @@ void nc_print_overview_balances(WINDOW *wptr, int *months, int year) {
 	for (int i = 0; i < 12 && mo <= 12; i++, mo++) {
 		tmpx = 0;
 		if (months[i] == mo) {
-			Vec *pbo = get_byte_offsets_date(year, months[i]);
+			Vec *pbo = get_matching_bo(months[i], year);
 			calculate_balance(pb, pbo);
 			tmpx = intlen(pb->income) / 2;
 			wmove(wptr, y, cur - tmpx);
@@ -1897,8 +1903,7 @@ int nc_read_select_month(WINDOW *wptr, FILE* fptr, int year) {
 
 Vec *get_matching_line_nums(FILE *fptr, int month, int year) {
 	rewind(fptr);
-	Vec *pl = 
-		malloc(sizeof(*pl) + (sizeof(long) * REALLOC_INCR));
+	Vec *pl = malloc(sizeof(*pl) + (sizeof(long) * REALLOC_INCR));
 	if (pl == NULL) {
 		memory_allocate_fail();
 	}
@@ -2552,9 +2557,9 @@ void free_record_category_tree(CategoryRoot **pcr) {
  * Memory issues: Need to change this to store an array of pointers, not an
  * array of structs.
  */
-int *init_record_category_members(CategoryRoot *pcr, int m, int y) {
+int init_record_category_members(CategoryRoot *pcr, int m, int y) {
 	struct BudgetTokens *pbt = tokenize_budget_byte_offset(pcr->byteoffset);
-	Vec *pr = get_records_by_any(m, -1, y, pbt->catg, NULL, -1, -1);
+	Vec *pr = get_records_by_any(m, -1, y, pbt->catg, NULL, -1, -1, NULL);
 	unsigned long n = pr->size;
 	
 	if (n == 0) {
@@ -2599,6 +2604,53 @@ int *init_record_category_members(CategoryRoot *pcr, int m, int y) {
 	free_budget_tokens(pbt);
 
 	return 0;
+}
+
+void init_category_nodes(CategoryNode *node, Vec *chunk, int m, int y) {
+	struct BudgetTokens *pbt = tokenize_budget_byte_offset(node->catg_fp);
+	Vec *pr = get_records_by_any(m, -1, y, pbt->catg, NULL, -1, -1, chunk);
+	unsigned long n = pr->size;
+
+
+	free(pr);
+	free_budget_tokens(pbt);
+}
+
+CategoryNode **create_category_nodes(int m, int y) {
+	Vec *pcbo = get_budget_catg_by_date_bo(m, y);
+	Vec *chunk = get_matching_bo(m, y);
+	unsigned long n = pcbo->size;
+	CategoryNode **pnode = malloc(sizeof(CategoryRoot *) * n);
+	if (pnode == NULL) {
+		memory_allocate_fail();
+	}
+
+	for (unsigned long i = 0; i < n; i++) {
+		pnode[i] = malloc(sizeof(CategoryNode));
+		if (pnode[i] == NULL) {
+			memory_allocate_fail();
+		}
+
+		pnode[i]->catg_fp = pcbo->data[i];
+
+		if (i == 0) {
+			/* First node has no previous node, set prev pointer to NULL */
+			pnode[0]->prev = NULL;
+		} else if (i > 0) {
+			pnode[i]->prev = pnode[i - 1];
+			pnode[i - 1]->next = pnode[i];		
+		}
+
+		if (i == n - 1) {
+			/* Last node has no next node, set next pointer to NULL */
+			pnode[i]->next = NULL;
+		}
+
+		init_category_nodes(pnode[i], chunk, m, y);
+	}
+
+	free(pcbo);
+	return pnode;
 }
 
 /*
