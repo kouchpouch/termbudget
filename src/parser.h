@@ -70,20 +70,24 @@ extern unsigned int get_num_fields(FILE *fptr);
 /* Frees the struct and any applicable members */
 extern void free_budget_tokens(struct BudgetTokens *pbt);
 
-/* An attempt to generalize getting record byte offsets by some parameter.
+/* Generic function for getting record byte offsets by some parameter.
  * To disregard an argument, pass a negative value for any int or double and
  * pass NULL for any char *, these arguments will not be checked.
  *
  * EXAMPLE:
- * Get records by date: get_records_by_any(2, 5, 2025, NULL, NULL, -1, -1);
- * Get records by category: get_records_by_any(-1, -1, -1, paychecks, NULL, 
- *                                             -1, -1);
- *
+ * Get records by date: 
+ *     get_records_by_any(2, 5, 2025, NULL, NULL, -1, -1, NULL);
+ * Get records by category: 
+ *     get_records_by_any(-1, -1, -1, paychecks, NULL, -1, -1, NULL);
+ * Get records by category in a defined chunk: 
+ *     get_records_by_any(-1, -1, -1, paychecks, NULL, -1, -1, chunk);
+ * 													   
  * Returns a Vec data member containing byte offset values of records that
  * match and Vec data member size with the total number of records that
  * matched. */
 extern Vec *get_records_by_any(int month, int day, int year, char *category,
-							   char *description, int transtype, double amount);
+							   char *description, int transtype, double amount,
+							   Vec *chunk);
 
 /* Returns number of categories and the string literal categories of given
  * month and year in BUDGET_DIR(main.h) */

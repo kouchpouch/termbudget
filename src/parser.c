@@ -105,7 +105,8 @@ void free_budget_tokens(struct BudgetTokens *pbt) {
 }
 
 Vec *get_records_by_any(int month, int day, int year, char *category, 
-						char *description, int transtype, double amount) 
+						char *description, int transtype, double amount,
+						Vec *chunk) 
 {
 	FILE *fptr = open_record_csv("r");
 	Vec *prbc = malloc(sizeof(*prbc) + (sizeof(long) * REALLOC_INCR));
@@ -127,6 +128,12 @@ Vec *get_records_by_any(int month, int day, int year, char *category,
 	prbc->capacity = REALLOC_INCR;
 
 	seek_beyond_header(fptr);
+	
+	unsigned int i = 0;
+	if (chunk != NULL) {
+		fseek(fptr, chunk->data[i], SEEK_SET);
+		i++;
+	}
 
 	while ((str = fgets(linebuff, sizeof(linebuff), fptr)) != NULL) {
 		tmpbo = ftell(fptr);
@@ -195,6 +202,17 @@ Vec *get_records_by_any(int month, int day, int year, char *category,
 			}
 			prbc->data[prbc->size] = tmpbo;
 			prbc->size++;
+		}
+
+		if (chunk != NULL) {
+			if (i <= chunk->size) {
+				fseek(fptr, chunk->data[i], SEEK_SET);
+				i++;
+			} else {
+				printw("%d Iterations of chunk\n", i);
+				getch();
+				break;
+			}
 		}
 	}
 
