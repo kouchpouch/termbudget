@@ -1964,6 +1964,8 @@ void nc_print_category_hr(WINDOW *wptr, struct ColWidth *cw,
 	char *etc = ". ";
 	int x = 0;
 
+	wattron(wptr, A_REVERSE);
+
 	/* Move cursor past the date columns */
 	wmove(wptr, y, x += cw->date);
 	if ((int)strlen(bt->catg) > cw->catg - (int)strlen(etc)) {
@@ -1979,22 +1981,7 @@ void nc_print_category_hr(WINDOW *wptr, struct ColWidth *cw,
 	/* Move cursor past the category column */
 	wmove(wptr, y, x += cw->catg);
 	wprintw(wptr, "%.2f", bt->amount);
-
-//	if ((int)strlen(ld->desc) > cw->desc - (int)strlen(etc)) {
-//		wprintw(wptr, "%.*s%s", cw->desc - (int)strlen(etc), ld->desc, etc);
-//	} else {
-//		wprintw(wptr, "%s", ld->desc);
-//	}
-
-//	wmove(wptr, y, x += cw->desc);
-//	if (getmaxx(wptr) < MIN_COLUMNS) {
-//		wprintw(wptr, "%s", ld->transtype == 0 ? "-" : "+");
-//	} else {
-//		wprintw(wptr, "%s", ld->transtype == 0 ? "Expense" : "Income");
-//	}
-//
-//	wmove(wptr, y, x += cw->trns);
-//	wprintw(wptr, "$%.2f", ld->amount);
+	wattroff(wptr, A_REVERSE);
 }
 
 /* 
@@ -2296,6 +2283,9 @@ void nc_scroll_next(long b, FILE *fptr, WINDOW *wptr, struct ColWidth *cw) {
 /*
  * Returns the value of the total number of rows to display in 
  * nc_read_budget_loop() to handle scrolling.
+ *
+ * The return value is calculated by adding up add CategoryNodes and their
+ * data member's size.
  */
 unsigned int get_total_displayed_rows(CategoryNode **nodes) {
 	unsigned int rows = 0;
@@ -2765,115 +2755,6 @@ void nc_read_cleanup(WINDOW *wp, WINDOW *wc, Vec *psc, Vec *plines, Vec *pidx,
 	fclose(fptr);
 }
 
-void free_record_category_tree(CategoryRoot **pcr) {
-	CategoryRoot **head = pcr;
-	unsigned long i = 0;
-	move(0,0);
-
-	while (1) {
-		CategoryRoot *tmp = head[i];
-		if (debug) {
-			printw("MEMBERS: %ld, HEAD: %p, NEXT: %p\n", tmp->nmembers, tmp, tmp->next);
-			getch();
-		}
-
-		if (tmp->nmembers > 0 && tmp->pcc != NULL) {
-			CategoryMember *mhead = *tmp->pcc;
-			while (1) {
-				void *mtmp = mhead;
-				if (mhead->next == NULL) {
-					if (debug) {
-						printw("FREEING MEM %p\n", mhead);
-						getch();
-					}
-					free(mhead);
-					free(tmp->pcc);
-					break;
-				}
-				if (debug) {
-					printw("TMP: %p, HEAD: %p, NEXT: %p VALS: %ld %ld\n", mtmp, mhead, mhead->next, mhead->byteoffset, mhead->next->byteoffset);
-					getch();
-					printw("FREEING MEM %p\n", mtmp);
-				}
-				mhead = mhead->next;
-				free(mtmp);
-			}
-		}
-
-		if (head[i]->next == NULL) {
-			free(head[i]);
-			if (debug) {
-				printw("BROKE OUT, TREE FREE'D\n");
-			}
-			break;
-		}
-		if (debug) {
-			printw("FREEING: %p\n", tmp);
-		}
-		head[i] = head[i]->next;
-		free(tmp);
-	}
-}
-
-/*
- * Mallocs CategoryMembers, initializes pcr->pcc with the pointer to the
- * first CategoryMember, initializes pcr->nmembers with the number of
- * CategoryMembers in the tree.
- *
- * Returns 0 on success.
- *
- * Memory issues: Need to change this to store an array of pointers, not an
- * array of structs.
- */
-int init_record_category_members(CategoryRoot *pcr, int m, int y) {
-	struct BudgetTokens *pbt = tokenize_budget_byte_offset(pcr->byteoffset);
-	Vec *pr = get_records_by_any(m, -1, y, pbt->catg, NULL, -1, -1, NULL);
-	unsigned long n = pr->size;
-	
-	if (n == 0) {
-		free(pr);
-		free_budget_tokens(pbt);
-		pcr->nmembers = 0;
-		pcr->pcc = NULL;
-		return 0;
-	}
-
-	CategoryMember **ptrs = malloc(sizeof(CategoryMember *) * n);
-
-	if (ptrs == NULL) {
-		memory_allocate_fail();
-	}
-
-	if (debug) {
-		printw("Alloc'd %zu bytes for member\n", sizeof(CategoryMember *) * n);
-		getch();
-	}
-	for (unsigned long i = 0; i < n; i++) {
-		ptrs[i] = malloc(sizeof(CategoryMember));
-		if (ptrs == NULL) {
-			memory_allocate_fail();
-		}
-		if (i > 0) {
-			ptrs[i - 1]->next = ptrs[i];
-		}
-		if (i == n - 1) {
-			ptrs[i]->next = NULL;
-		}
-		if (debug) {
-			printw("INSERTING %ld DATA INTO MEMBER #%ld\n", pr->data[i], i);
-		}
-
-		ptrs[i]->byteoffset = pr->data[i];
-		pcr->nmembers++;
-	}
-
-	pcr->pcc = ptrs;
-	free(pr);
-	free_budget_tokens(pbt);
-
-	return 0;
-}
-
 void free_category_nodes(CategoryNode **nodes) {
 	int i = 0;
 
@@ -2941,61 +2822,6 @@ CategoryNode **create_category_nodes(int m, int y) {
 	free(chunk);
 	free(pcbo);
 	return pnode;
-}
-
-/*
- * This might work, maybe it won't. The vision is to return the pointer of the
- * first CategoryRoot. A CategoryRoot contains the byteoffset of the data
- * in BUDGET_DIR. This will be displayed to the user in the main read loop.
- * There, the user should be able to edit the category's amount for budget
- * planning. Renaming will be implemented later, maybe. It may or may not make
- * sense.
- *
- * A CategoryRoot contains a pointer that points to the first CategoryMember
- * and a pointer to the next CategoryRoot. The number of CategoryRoots is known
- * by the time this function is called. The number of categories is returned
- * in the struct Categories returned by list_categories() in main.c.
- *
- * To access the data I'm thinking about two for loops, one that goes through
- * each CategoryRoot's CategoryMembers until a NULL pointer is reached, then
- * iterate over the next CategoryRoot until CategoryRoot->nmembers is reached.
- */
-CategoryRoot **init_record_category_tree(int m, int y) {
-	Vec *pcbo = get_budget_catg_by_date_bo(m, y);
-	unsigned long n = pcbo->size;
-	CategoryRoot **ptrs = malloc(sizeof(CategoryRoot *) * n);
-	if (ptrs == NULL) {
-		memory_allocate_fail();
-	}
-
-	if (debug) {
-		move(10, 0);
-		printw("Alloc'd %zu bytes\n", (sizeof(CategoryRoot *) * n));
-		printw("%ld SIZE\n", pcbo->size);
-		getch();
-	}
-
-	for (unsigned long i = 0; i < n; i++) {
-		ptrs[i] = malloc(sizeof(CategoryRoot));
-		if (debug) {
-			printw("DATA %ld ROOT #%ld @ ADDR %p\n", pcbo->data[i], i, ptrs[i]);
-		}
-		if (ptrs[i] == NULL) {
-			memory_allocate_fail();
-		}
-		ptrs[i]->nmembers = 0;
-		ptrs[i]->byteoffset = pcbo->data[i];
-		if (i > 0) {
-			ptrs[i - 1]->next = ptrs[i];
-		}
-		if (i == n - 1) {
-			ptrs[i]->next = NULL;
-		}
-		init_record_category_members(ptrs[i], m, y);
-	}
-
-	free(pcbo);
-	return ptrs;
 }
 
 void nc_read_setup_default(void) {
