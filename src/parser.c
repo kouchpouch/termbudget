@@ -114,9 +114,9 @@ Vec *get_records_by_any(int month, int day, int year, char *category,
 		memory_allocate_fail();
 	}
 
+	struct LineData ld_, *ld = &ld_;
 	char linebuff[LINE_BUFFER];
 	char *str;
-	struct LineData ld_, *ld = &ld_;
 	bool date = false;
 	bool cat = false;
 	bool desc = false;
@@ -135,8 +135,12 @@ Vec *get_records_by_any(int month, int day, int year, char *category,
 		i++;
 	}
 
-	while ((str = fgets(linebuff, sizeof(linebuff), fptr)) != NULL) {
+	while (1) {
 		tmpbo = ftell(fptr);
+		str = fgets(linebuff, sizeof(linebuff), fptr);
+		if (str == NULL) {
+			break;
+		}
 		tokenize_record(ld, &str);
 		date = false;
 		cat = false;
