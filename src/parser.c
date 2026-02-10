@@ -205,15 +205,13 @@ Vec *get_records_by_any(int month, int day, int year, char *category,
 		}
 
 		if (chunk != NULL) {
-			if (i <= chunk->size) {
+			if (i < chunk->size) {
 				fseek(fptr, chunk->data[i], SEEK_SET);
 				i++;
-			} else {
-				printw("%d Iterations of chunk\n", i);
-				getch();
-				break;
 			}
 		}
+
+
 	}
 
 	fclose(fptr);
