@@ -41,6 +41,7 @@ enum MenuKeys {
 	QUIT = 4,
 	SORT = 5,
 	OVERVIEW = 6,
+	EDIT_CATG = 7,
 	RESIZE = 13,
 	NO_RCRD = 14
 } menukeys;
@@ -67,7 +68,7 @@ const char *months[] = {
 
 struct SelRecord {
 	unsigned int flag;
-	int index;
+	long index;
 };
 
 struct Balances {
@@ -680,6 +681,48 @@ void print_record_hr(struct LineData *ld) {
 }
 
 /*
+ * Allows the user to change the amount of money allocated to the category at
+ * file position b.
+ */
+void nc_edit_catgory(long b) {
+	FILE *fptr = open_budget_csv("r");
+	FILE *tmpfptr = open_temp_csv();
+	unsigned int line = boff_to_linenum(b);
+	double amt = nc_input_amount();
+	struct BudgetTokens *bt = tokenize_budget_byte_offset(b);
+	if (bt == NULL) {
+		return;
+	}
+
+	char linebuff[LINE_BUFFER * 2];
+	char *str;
+	int linenum = 0;
+	do {
+		str = fgets(linebuff, sizeof(linebuff), fptr);
+		linenum++;	
+
+		if (str == NULL) {
+			break;
+		}
+
+		if (linenum != line) {
+			fputs(str, tmpfptr);
+		} else if (linenum == line) {
+			fprintf(tmpfptr, "%d,%d,%s,%.2f\n",
+		   	bt->m,
+		   	bt->y,
+		   	bt->catg,
+		   	amt
+		   );
+		}
+	} while(str != NULL);
+
+	free_budget_tokens(bt);
+
+	mv_tmp_to_budget_file(tmpfptr, fptr);
+}
+
+/*
  * For a given month and year, return an array of strings from the category
  * field of the RECORD_DIR csv file.
  */
@@ -1246,7 +1289,11 @@ int edit_csv_record(int linetoreplace, struct LineData *ld, int field) {
 
 	do {
 		line = fgets(linebuff, sizeof(linebuff), fptr);
-		if (line == NULL) break;
+
+		if (line == NULL) {
+			break;
+		}
+
 		linenum++;	
 		if (linenum != linetoreplace) {
 			fputs(line, tmpfptr);
@@ -2236,8 +2283,10 @@ void show_detail_subwindow(char *line) {
  * where the window was. This loops through each line and changes it attr
  * back to A_NORMAL and then re-reverse-video's the original line. Cursor
  * position is NOT changed.
+ * Refreshed n number of lines
  */
-void refresh_on_detail_close(WINDOW *wptr, WINDOW *wptr_parent, int n) {
+void refresh_on_detail_close_uniform(WINDOW *wptr, WINDOW *wptr_parent, int n) 
+{
 	int temp_y, temp_x;
 	getyx(wptr, temp_y, temp_x);
 	wmove(wptr, 0, 0);
@@ -2308,13 +2357,12 @@ void nc_scroll_next(long b, FILE *fptr, WINDOW *wptr, struct ColWidth *cw,
 
 int get_total_nodes(CategoryNode **nodes) {
 	int n = 1;
-	
 	for (int i = 0; nodes[i]->next != NULL; i++) {
 		n++;
 	}
-
 	return n;
 }
+
 /*
  * Returns the value of the total number of rows to display in 
  * nc_read_budget_loop() to handle scrolling.
@@ -2368,6 +2416,7 @@ void nc_read_budget_loop(WINDOW *wptr_parent, WINDOW *wptr, FILE *rfptr,
 	 * the first cursor position is a node. */
 	int catg_data = -1;
 	int c = 0;
+	init_pair(1, COLOR_CYAN, -1); // Categories are displayed in cyan
 
 	calculate_columns(cw, max_x + BOX_OFFSET);
 	nc_print_balances_text(wptr_parent, psc);
@@ -2377,6 +2426,7 @@ void nc_read_budget_loop(WINDOW *wptr_parent, WINDOW *wptr, FILE *rfptr,
 	for (int i = 0; displayed < max_y && displayed < total_rows && i < total_nodes; i++) {
 		bt = tokenize_budget_byte_offset(nodes[i]->catg_fp);
 		nc_print_category_hr(wptr, cw, bt, displayed);
+		mvwchgat(wptr, displayed, 0, -1, A_NORMAL, 1, NULL); 
 		displayed++;
 
 		for (int j = 0; displayed < max_y && displayed < total_rows && 
@@ -2413,7 +2463,7 @@ void nc_read_budget_loop(WINDOW *wptr_parent, WINDOW *wptr, FILE *rfptr,
 			if (select + 1 < total_rows) {
 
 				if (catg_data < 0) {
-					mvwchgat(wptr, cur_y, 0, -1, A_NORMAL, 0, NULL); 
+					mvwchgat(wptr, cur_y, 0, -1, A_NORMAL, 1, NULL); 
 					catg_data = 0;
 					cur_y++;
 					select++;
@@ -2455,7 +2505,7 @@ void nc_read_budget_loop(WINDOW *wptr_parent, WINDOW *wptr, FILE *rfptr,
 			if (select - 1 >= 0) {
 
 				if (catg_data < 0) {
-					mvwchgat(wptr, cur_y, 0, -1, A_NORMAL, 0, NULL); 
+					mvwchgat(wptr, cur_y, 0, -1, A_NORMAL, 1, NULL); 
 					catg_node--;
 					catg_data = nodes[catg_node]->data->size - 1;
 					cur_y--;
@@ -2499,7 +2549,7 @@ void nc_read_budget_loop(WINDOW *wptr_parent, WINDOW *wptr, FILE *rfptr,
 				fseek(rfptr, nodes[catg_node]->data->data[catg_data], SEEK_SET);
 				char *line = fgets(linebuff, sizeof(linebuff), rfptr);
 				show_detail_subwindow(line);
-				refresh_on_detail_close(wptr, wptr_parent, displayed);
+				refresh_on_detail_close_uniform(wptr, wptr_parent, displayed);
 				c = 0;
 			}
 			break;
@@ -2526,8 +2576,8 @@ void nc_read_budget_loop(WINDOW *wptr_parent, WINDOW *wptr, FILE *rfptr,
 		case('e'):
 		case(KEY_F(EDIT)):
 			if (catg_data < 0) { 
-				sr->flag = READ;
-				sr->index = 0;
+				sr->flag = EDIT_CATG;
+				sr->index = nodes[catg_node]->catg_fp;
 			} else {
 				sr->flag = EDIT;
 				sr->index = nodes[catg_node]->data->data[catg_data];
@@ -2657,7 +2707,7 @@ void nc_read_loop(WINDOW *wptr_parent, WINDOW *wptr, FILE *fptr,
 			fseek(fptr, psc->data[select], SEEK_SET);
 			char *line = fgets(linebuff, sizeof(linebuff), fptr);
 			show_detail_subwindow(line);
-			refresh_on_detail_close(wptr, wptr_parent, displayed);
+			refresh_on_detail_close_uniform(wptr, wptr_parent, displayed);
 			c = 0;
 			break;
 
@@ -2858,11 +2908,11 @@ CategoryNode **create_category_nodes(int m, int y) {
 }
 
 void nc_read_setup_default(void) {
-	nc_read_setup(0, 0, 0);
+	nc_read_setup(0, 0, CATEGORY);
 }
 
 void nc_read_setup_year(int sel_year) {
-	nc_read_setup(sel_year, 0, 0);
+	nc_read_setup(sel_year, 0, CATEGORY);
 }
 
 void nc_read_setup(int sel_year, int sel_month, int sort) {
@@ -2975,7 +3025,7 @@ SELECT_DATE_FAIL:
 //	nc_print_main_menu_footer(stdscr);
 
 	switch(sr->flag) {
-	case(NO_SELECT): // 0 is no selection
+	case(NO_SELECT):
 		nc_read_setup_default();
 		break;
 	case(ADD):
@@ -3002,6 +3052,9 @@ SELECT_DATE_FAIL:
 		break;
 	case(OVERVIEW):
 		nc_overview_setup(sel_year);
+		break;
+	case(EDIT_CATG):
+		nc_edit_catgory(sr->index); 
 		break;
 	case(RESIZE):
 		while (test_terminal_size() == -1) {
