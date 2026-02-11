@@ -12,6 +12,7 @@
  * You should have received a copy of the GNU General Public License along 
  * with this program. If not, see <https://www.gnu.org/licenses/>. 
  */
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "parser.h"
@@ -451,6 +452,26 @@ void tokenize_record(struct LineData *ld, char **str) {
 			ld->amount = atof(token);
 			break;
 		}
+	}
+}
+
+double get_amount(long b) {
+	FILE *fptr = open_record_csv("r");
+	char linebuff[LINE_BUFFER];
+	char *str;
+	int i = 0;
+	double retval;
+	int transtype;
+
+	fseek(fptr, b, SEEK_SET);
+	str = fgets(linebuff, sizeof(linebuff), fptr);
+	seek_n_fields(&str, 5);
+	fclose(fptr);
+	transtype = atoi(strsep(&str, ","));
+	if (transtype == 0) {
+		return -(atof(strsep(&str, ",")));
+	} else {
+		return atof(strsep(&str, ","));
 	}
 }
 

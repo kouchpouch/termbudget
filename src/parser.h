@@ -109,6 +109,9 @@ extern struct BudgetTokens *tokenize_budget_line(int line);
 /* Populates ld members with tokens from str */
 extern void tokenize_record(struct LineData *ld, char **str);
 
+/* Returns the amount value from file position b */
+extern double get_amount(long b);
+
 /* Returns an integer value of a given line number line and of field number 
  * field. Field numbers start at 1 */
 extern int get_int_field(int line, int field);
