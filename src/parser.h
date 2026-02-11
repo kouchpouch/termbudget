@@ -22,15 +22,9 @@
 #include <stdlib.h>
 #include "main.h"
 
-struct DateMDY {
-	unsigned int m;
-	unsigned int d;
-	unsigned int y;
-};
-
 struct BudgetTokens {
-	unsigned int m;
-	unsigned int y;
+	int m;
+	int y;
 	char *catg;
 	double amount;
 };
@@ -65,7 +59,7 @@ extern void seek_n_fields(char **line, int n);
 extern int seek_beyond_header(FILE *fptr);
 
 /* Returns the number of fields by reading the header of fptr */
-extern unsigned int get_num_fields(FILE *fptr);
+extern int get_num_fields(FILE *fptr);
 
 /* Frees the struct and any applicable members */
 extern void free_budget_tokens(struct BudgetTokens *pbt);
@@ -108,9 +102,6 @@ extern struct BudgetTokens *tokenize_budget_byte_offset(long bo);
  * be free'd. Use free_budget_tokens().
  * Returns NULL on failure, pointer to struct BudgetTokens on success. */
 extern struct BudgetTokens *tokenize_budget_line(int line);
-
-/* Returns month and year of line from budget csv */
-extern struct DateMY *get_date_my(int line);
 
 /* Populates ld members with tokens from str */
 extern void tokenize_record(struct LineData *ld, char **str);
