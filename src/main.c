@@ -982,6 +982,9 @@ int verify_categories_exist_in_budget(void) {
 	struct Categories prc_, *prc = &prc_;
 	struct Categories pbc_, *pbc = &pbc_;
 	int *years = list_records_by_year(rfptr);
+	if (years == NULL) {
+		return 0;
+	}
 	int i = 0;
 
 	while (years[i] != 0) {
@@ -3307,7 +3310,7 @@ int main(int argc, char **argv) {
 	}
 
 	if (debug) {
-		printf("Corrected %d records\n", corrected);
+//		printf("Corrected %d records\n", corrected);
 		printf("Press enter to continue");
 		getc(stdin);
 	}
