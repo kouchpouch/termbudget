@@ -684,10 +684,10 @@ void print_record_hr(struct LineData *ld) {
  * Allows the user to change the amount of money allocated to the category at
  * file position b.
  */
-void nc_edit_catgory(long b) {
+void nc_edit_category(long b) {
 	FILE *fptr = open_budget_csv("r");
 	FILE *tmpfptr = open_temp_csv();
-	unsigned int line = boff_to_linenum(b);
+	unsigned int line = boff_to_linenum_budget(b) + 2;
 	double amt = nc_input_amount();
 	struct BudgetTokens *bt = tokenize_budget_byte_offset(b);
 	if (bt == NULL) {
@@ -3054,7 +3054,8 @@ SELECT_DATE_FAIL:
 		nc_overview_setup(sel_year);
 		break;
 	case(EDIT_CATG):
-		nc_edit_catgory(sr->index); 
+		nc_edit_category(sr->index); 
+		nc_read_setup(sel_year, sel_month, CATEGORY);
 		break;
 	case(RESIZE):
 		while (test_terminal_size() == -1) {
