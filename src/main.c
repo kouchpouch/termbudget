@@ -2261,7 +2261,11 @@ void nc_scroll_prev(long b, FILE *fptr, WINDOW *wptr, struct ColWidth *cw,
 	}
 
 	if (catg) {
-		;
+		struct BudgetTokens *bt = tokenize_budget_byte_offset(b);
+		wmove(wptr, 0, 0);
+		winsertln(wptr);
+		nc_print_category_hr(wptr, cw, bt, 0);
+		free_budget_tokens(bt);
 	} else {
 		struct LineData linedata_, *ld = &linedata_;
 		tokenize_record(ld, &line_str);
@@ -2283,7 +2287,12 @@ void nc_scroll_next(long b, FILE *fptr, WINDOW *wptr, struct ColWidth *cw,
 	}
 
 	if (catg) {
-		;
+		struct BudgetTokens *bt = tokenize_budget_byte_offset(b);
+		wmove(wptr, 0, 0);
+		wdeleteln(wptr);
+		wmove(wptr, getmaxy(wptr) - 1, 0);
+		nc_print_category_hr(wptr, cw, bt, getmaxy(wptr) - 1);
+		free_budget_tokens(bt);
 	} else {
 		struct LineData linedata_, *ld = &linedata_;
 		tokenize_record(ld, &line_str);
@@ -2362,12 +2371,12 @@ void nc_read_budget_loop(WINDOW *wptr_parent, WINDOW *wptr, FILE *rfptr,
 	nc_print_read_footer(stdscr);
 
 	/* Print initial lines based on screen size */
-	for (int i = 0; i < max_y && displayed < total_rows && i < total_nodes; i++) {
+	for (int i = 0; displayed < max_y && displayed < total_rows && i < total_nodes; i++) {
 		bt = tokenize_budget_byte_offset(nodes[i]->catg_fp);
 		nc_print_category_hr(wptr, cw, bt, displayed);
 		displayed++;
 
-		for (int j = 0; (i + j) < max_y && displayed < total_rows && 
+		for (int j = 0; displayed < max_y && displayed < total_rows && 
 			 j < nodes[i]->data->size; j++)
 		{
 			fseek(rfptr, nodes[i]->data->data[j], SEEK_SET);
@@ -2401,6 +2410,7 @@ total_rows_printed:
 		case('j'):
 		case(KEY_DOWN):
 			if (select + 1 < total_rows) {
+
 				if (catg_data < 0) {
 					mvwchgat(wptr, cur_y, 0, -1, A_NORMAL, 0, NULL); 
 					catg_data = 0;
@@ -2421,16 +2431,28 @@ total_rows_printed:
 					select++;
 					mvwchgat(wptr, cur_y, 0, -1, A_REVERSE, 0, NULL); 
 				}
+
+				if (displayed < total_rows && cur_y == max_y) {
+					if (catg_data == -1) {
+						FILE *bfptr = open_budget_csv("r");
+						nc_scroll_next(nodes[catg_node]->catg_fp, 
+					 				   bfptr, wptr, cw, true);
+						fclose(bfptr);
+					} else {
+						nc_scroll_next(nodes[catg_node]->data->data[catg_data], 
+					 				   rfptr, wptr, cw, false);
+					}
+					cur_y = getcury(wptr);
+					mvwchgat(wptr, cur_y, 0, -1, A_REVERSE, 0, NULL); 
+				}
 			}
+
 			break;
 
 		case('k'):
 		case(KEY_UP):
 			if (select - 1 >= 0) {
-			 	/* 
-				 * If the cursor is on a node (catg_data < 0), go back to the 
-				 * previous node's last data member.
-				 */
+
 				if (catg_data < 0) {
 					mvwchgat(wptr, cur_y, 0, -1, A_NORMAL, 0, NULL); 
 					catg_node--;
@@ -2452,6 +2474,21 @@ total_rows_printed:
 					select--;
 					mvwchgat(wptr, cur_y, 0, -1, A_REVERSE, 0, NULL); 
 				}
+
+				if (select >= 0 && displayed < total_rows && cur_y < 0) {
+					cur_y = -1;
+					if (catg_data == -1) {
+						FILE *bfptr = open_budget_csv("r");
+						nc_scroll_prev(nodes[catg_node]->catg_fp, 
+					                   bfptr, wptr, cw, true);
+						fclose(bfptr);
+					} else if (catg_data >= 0) {
+						nc_scroll_prev(nodes[catg_node]->data->data[catg_data], 
+					                   rfptr, wptr, cw, false);
+					}
+					cur_y = getcury(wptr);
+					mvwchgat(wptr, cur_y, 0, -1, A_REVERSE, 0, NULL); 
+				}
 			}
 			break;
 
@@ -2466,29 +2503,34 @@ total_rows_printed:
 			}
 			break;
 
-		case(KEY_NPAGE): // PAGE DOWN
-			break;
-
-		case(KEY_PPAGE): // PAGE UP
-			break;
-
-		case(KEY_END):
-			break;
-
-		case(KEY_HOME):
-			break;
+//		case(KEY_NPAGE): // PAGE DOWN
+//			break;
+//
+//		case(KEY_PPAGE): // PAGE UP
+//			break;
+//
+//		case(KEY_END):
+//			break;
+//
+//		case(KEY_HOME):
+//			break;
 
 		case('A'):
 		case('a'):
 		case(KEY_F(ADD)):
 			sr->flag = ADD;
-			sr->index = psc->data[select];
+			sr->index = 0;
 			return;
 		case('E'):
 		case('e'):
 		case(KEY_F(EDIT)):
-			sr->flag = EDIT;
-			sr->index = psc->data[select];
+			if (catg_data < 0) { 
+				sr->flag = READ;
+				sr->index = 0;
+			} else {
+				sr->flag = EDIT;
+				sr->index = nodes[catg_node]->data->data[catg_data];
+			}
 			return;
 		case('R'):
 		case('r'):
