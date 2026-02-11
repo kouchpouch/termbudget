@@ -64,6 +64,23 @@ unsigned int boff_to_linenum(long b) {
 	return linenum;
 }
 
+unsigned int boff_to_linenum_budget(long b) {
+	FILE *fptr = open_budget_csv("r");
+	char linebuff[LINE_BUFFER];
+	int linenum = 0;
+	
+	while(fgets(linebuff, sizeof(linebuff), fptr) != NULL) {
+		if (ftell(fptr) == b) {
+			break;
+		}
+		linenum++;
+	}
+
+	fclose(fptr);
+	
+	return linenum;
+}
+
 void seek_n_fields(char **line, int n) {
 	for (int i = 0; i < n; i++) {
 		strsep(line, ",");

@@ -52,6 +52,9 @@ extern FILE *open_temp_csv(void);
 /* Returns the line number of byte-offset b in file CSV_DIR */
 extern unsigned int boff_to_linenum(long b);
 
+/* Returns the line number of byte-offset b in file BUDGET_DIR */
+extern unsigned int boff_to_linenum_budget(long b);
+
 /* Moves char * forward n fields in the CSV */
 extern void seek_n_fields(char **line, int n);
 
