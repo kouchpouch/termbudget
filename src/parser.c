@@ -84,8 +84,8 @@ int seek_beyond_header(FILE *fptr) {
 	}
 }
 
-unsigned int get_num_fields(FILE *fptr) {
-	unsigned int n = 1;
+int get_num_fields(FILE *fptr) {
+	int n = 1;
 	rewind(fptr);
 
 	char c;
@@ -435,36 +435,6 @@ void tokenize_record(struct LineData *ld, char **str) {
 			break;
 		}
 	}
-}
-
-struct DateMDY *get_date_mdy(int line) {
-	struct DateMDY *pd = calloc(sizeof(*pd), 1);
-	FILE *fptr = open_record_csv("r");
-
-	rewind(fptr);
-
-	char linebuff[LINE_BUFFER];
-	char *str;
-
-	int i = 0;
-	while ((str = fgets(linebuff, sizeof(linebuff), fptr)) != NULL) {
-		if (i == line) {
-			break;
-		}
-		i++;
-	}
-
-	fclose(fptr);
-
-	if (i > line || i < line) {
-		return NULL;
-	}
-
-	pd->m = atoi(strsep(&str, ","));
-	pd->d = atoi(strsep(&str, ","));
-	pd->y = atoi(strsep(&str, ","));
-
-	return pd;
 }
 
 int get_int_field(int line, int field) {
