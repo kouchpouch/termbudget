@@ -191,21 +191,21 @@ FAIL:
 	return buffer;
 }
 
-int input_n_digits(int max_len, int min_len) {
+int input_n_digits(size_t max_len, size_t min_len) {
 	char *str = user_input(max_len + 1);
 
 	while (str == NULL) {
 		str = user_input(max_len + 1);
 	}
 
-	if ((int)strlen(str) <= min_len) {
+	if (strlen(str) <= min_len) {
 		puts("Input is too short");
 		free(str);
 		str = NULL;
 		return -1;
 	}
 
-	for (int i = 0; i < (int)strlen(str); i++) {
+	for (size_t i = 0; i < strlen(str); i++) {
 		if (!isdigit(*(str + i)) && *(str + i) != '\n') {
 			printf("Invalid character \"%c\", must be digit\n", *(str + i));
 			free(str);
@@ -221,7 +221,7 @@ int input_n_digits(int max_len, int min_len) {
 	return digits;
 }
 
-int nc_input_n_digits(WINDOW *wptr, int max_len, int min_len) {
+int nc_input_n_digits(WINDOW *wptr, size_t max_len, size_t min_len) {
 	char *str = nc_user_input(max_len, wptr);
 	while (str == NULL) {
 		str = nc_user_input(max_len, wptr);
@@ -230,7 +230,7 @@ int nc_input_n_digits(WINDOW *wptr, int max_len, int min_len) {
 		}
 	}
 
-	if ((int)strlen(str) < min_len) {
+	if (strlen(str) < min_len) {
 		mvwxcprintw(wptr, getmaxy(wptr) - BOX_OFFSET, "Input is too short");
 		wrefresh(wptr);
 		free(str);
@@ -238,7 +238,7 @@ int nc_input_n_digits(WINDOW *wptr, int max_len, int min_len) {
 		return -1;
 	}
 
-	for (int i = 0; i < (int)strlen(str); i++) {
+	for (size_t i = 0; i < strlen(str); i++) {
 		if (!isdigit(*(str + i)) && (*(str + i) != '\n' || *(str + i) != '\0')) {
 			mvwxcprintw(wptr, getmaxy(wptr) - BOX_OFFSET, 
 			   "Invalid character, must be digits");
@@ -385,7 +385,7 @@ char *input_category(int month, int year) {
 
 	if (pc->size > 0) {
 		puts("Categories:");
-		for (int i = 0; i < pc->size; i++) {
+		for (size_t i = 0; i < pc->size; i++) {
 			printf("%s ", pc->categories[i]);
 		}
 		printf("\n");
@@ -398,7 +398,7 @@ RETRY:
 	cat_exists = false;
 	str = input_str_retry("Enter Category:");
 
-	for (int i = 0; i < pc->size; i++) {
+	for (size_t i = 0; i < pc->size; i++) {
 		if (strcmp(str, pc->categories[i]) == 0) {
 			cat_exists = true;
 			break;
@@ -498,7 +498,7 @@ char *nc_select_category(int month, int year) {
 
 	int displayed = 0;
 	/* Print intital data based on window size */
-	for (int i = 0; i < getmaxy(wptr) && i < pc->size; i++) {
+	for (size_t i = 0; i < getmaxy(wptr) && i < pc->size; i++) {
 		mvwxcprintw(wptr, i, pc->categories[i]);
 		displayed++;
 	}
@@ -710,7 +710,7 @@ struct Categories *list_categories(int month, int year) {
 		token[strcspn(token, "\n")] = '\0';
 
 		if (pc->size != 0) { // Duplicate Check
-			for (int i = 0; i < pc->size; i++) {
+			for (size_t i = 0; i < pc->size; i++) {
 				if (strcmp(pc->categories[i], token) == 0) {
 					goto DUPLICATE;
 				}
@@ -755,7 +755,7 @@ Vec *get_matching_bo(int m, int y) {
 	Vec *pidx = index_csv(fptr);
 	Vec *plines = get_matching_line_nums(fptr, m, y);
 
-	for (int i = 0; i < plines->size; i++) {
+	for (size_t i = 0; i < plines->size; i++) {
 		if (pbo->size >= pbo->capacity) {
 			pbo->capacity += REALLOC_INCR;
 			Vec *tmp = 
@@ -794,7 +794,7 @@ Vec *sort_by_date(FILE *fptr, Vec *pidx, Vec *plines)
 	psbd->size = 0;
 	rewind(fptr);
 
-	for (int i = 0; i < plines->size; i++) {
+	for (size_t i = 0; i < plines->size; i++) {
 		psbd->data[i] = pidx->data[plines->data[i]];
 		psbd->size++;
 	}
@@ -817,10 +817,10 @@ Vec *sort_by_category(FILE *fptr, Vec *pidx, Vec *plines, int yr, int mo)
 	char *line;
 	char *token;
 
-	for (int i = 0; i < pc->size; i++) { // Iterate categories
+	for (size_t i = 0; i < pc->size; i++) { // Iterate categories
 		prsc->data[prsc->size] = 0;
 		prsc->size++;
-		for (int j = 0; j < plines->size; j++) { // Iterate records
+		for (size_t j = 0; j < plines->size; j++) { // Iterate records
 			/* Check prsc->size + 1 because a zero will be added to the array
 			 * to mark the spaces between categories */
 			if (prsc->size + 1 >= prsc->capacity) {
@@ -930,7 +930,7 @@ int delete_category_orphans(long b) {
 //}
 
 void free_categories(struct Categories *pc) {
-	for (int i = 0; i < pc->size; i++) {
+	for (size_t i = 0; i < pc->size; i++) {
 		free(pc->categories[i]);
 	}
 	free(pc);
@@ -941,9 +941,9 @@ int cmp_catg_and_fix(struct Categories *prc, struct Categories *pbc,
 {
 	int corrected = 0;
 	bool cat_exists = false;
-	for (int i = 0; i < prc->size; i++) {
+	for (size_t i = 0; i < prc->size; i++) {
 		cat_exists = false;
-		for (int j = 0; j < pbc->size; j++) {
+		for (size_t j = 0; j < pbc->size; j++) {
 			if (strcmp(prc->categories[i], pbc->categories[j]) == 0) {
 				cat_exists = true;
 			}
@@ -1459,14 +1459,14 @@ void nc_print_overview_graphs(WINDOW *wptr, int *months, int year) {
 			exp_bar_len = 1;
 		}
 
-		for (int j = 0; j < inc_bar_len; j++) {
+		for (int j = 0; j < (int)inc_bar_len; j++) {
 			mvwchgat(wptr, last_quarter_row(wptr) - 2 - j, cur, bar_width, 
 					 A_REVERSE, COLOR_GREEN, NULL);
 		}
 
 		cur += bar_width;
 
-		for (int j = 0; j < exp_bar_len; j++) {
+		for (int j = 0; j < (int)exp_bar_len; j++) {
 			mvwchgat(wptr, last_quarter_row(wptr) - 2 - j, cur, bar_width, 
 					 A_REVERSE, COLOR_RED, NULL);
 		}
@@ -1602,7 +1602,7 @@ void print_bar_graph(double expense, double income) {
 	char income_bar[10];
 	char expense_bar[10];
 
-	for (int i = 0; i < sizeof(income_bar); i++) {
+	for (size_t i = 0; i < sizeof(income_bar); i++) {
 		income_bar[i] = '#';
 		expense_bar[i] = '#';
 	}
@@ -1624,13 +1624,13 @@ void print_bar_graph(double expense, double income) {
 	}
 
 	printf("Income:  $%.2f [", income);
-	for (int i = 0; i < sizeof(income_bar); i++) {
+	for (size_t i = 0; i < sizeof(income_bar); i++) {
 		printf("%c", income_bar[i]);
 	}
 	printf("]\n");
 
 	printf("Expense: $%.2f [", expense);
-	for (int i = 0; i < sizeof(expense_bar); i++) {
+	for (size_t i = 0; i < sizeof(expense_bar); i++) {
 		printf("%c", expense_bar[i]);
 	}
 	printf("]\n");
@@ -2187,7 +2187,7 @@ void calculate_balance(struct Balances *pb, Vec *pbo) {
 	char linebuff[LINE_BUFFER];
 	char *line;
 
-	for (int i = 0; i < pbo->size; i++) {
+	for (size_t i = 0; i < pbo->size; i++) {
 		fseek(fptr, pbo->data[i], SEEK_SET);
 		line = fgets(linebuff, sizeof(linebuff), fptr);
 		if (line == NULL) {
@@ -2388,8 +2388,6 @@ void nc_read_budget_loop(WINDOW *wptr_parent, WINDOW *wptr, FILE *rfptr,
 		free_budget_tokens(bt);
 	}
 
-total_rows_printed: 
-		
 	/* Move cursor to first line of data and set that line to reverse video */
 	wmove(wptr, 0, 0);
 	mvwchgat(wptr, select, 0, -1, A_REVERSE, 0, NULL); 
@@ -2824,12 +2822,12 @@ CategoryNode **create_category_nodes(int m, int y) {
 	Vec *pcbo = get_budget_catg_by_date_bo(m, y);
 	Vec *chunk = get_matching_bo(m, y);
 	unsigned long n = pcbo->size;
-	CategoryNode **pnode = malloc(sizeof(CategoryRoot *) * n);
+	CategoryNode **pnode = malloc(sizeof(CategoryNode *) * n);
 	if (pnode == NULL) {
 		memory_allocate_fail();
 	}
 
-	for (unsigned long i = 0; i < n; i++) {
+	for (size_t i = 0; i < n; i++) {
 		pnode[i] = malloc(sizeof(CategoryNode));
 		if (pnode[i] == NULL) {
 			memory_allocate_fail();
@@ -3089,7 +3087,7 @@ void edit_transaction(void) {
 
 	do {
 		puts("Enter line number");
-		humantarget = input_n_digits(sizeof(long long) + 1, 2);
+		humantarget = input_n_digits(sizeof(size_t) + 1, 2);
 	} while (humantarget <= 0 || humantarget > pidx->size);
 
 	target = humantarget - 1;

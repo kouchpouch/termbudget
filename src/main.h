@@ -15,6 +15,8 @@
 #ifndef MAIN_H
 #define MAIN_H
 
+#include <stddef.h>
+
 #define REALLOC_INCR 64
 #define INDEX_ALLOC 1024
 #define MAX_ALLOC 1024 * 1024
@@ -41,14 +43,14 @@
 #define INPUT_MSG_Y_OFFSET 2
 
 typedef struct {
-	unsigned long capacity;
-	unsigned long size;
+	size_t capacity;
+	size_t size;
 	long data[];
 } Vec;
 
 struct Categories {
-	unsigned long capacity;
-	unsigned long size;
+	size_t capacity;
+	size_t size;
 	char *categories[];
 };
 
