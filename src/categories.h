@@ -17,22 +17,6 @@
 
 #include "main.h"
 
-typedef struct categorymember CategoryMember;
-
-struct categorymember {
-	CategoryMember *next;
-	long byteoffset;
-};
-
-typedef struct categoryroot CategoryRoot;
-
-struct categoryroot {
- 	CategoryMember **pcc;
-	CategoryRoot *next;
-	long nmembers;
-	long byteoffset;
-};
-
 /*
  * CategoryNode is to be used as a doubly linked list which includes members
  * of CategoryNode pointer next and prev, long catg_fp stores the byte offset
