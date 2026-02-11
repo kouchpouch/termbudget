@@ -48,7 +48,7 @@ unsigned int sort_budget_csv(int month, int year) {
 	char linebuff[LINE_BUFFER];
 	char *str;
 
-	unsigned int monthtok, yeartok;
+	int monthtok, yeartok;
 	bool greateryear = false;
 	bool matchingyear = false;
 	bool lesseryear = false;
@@ -117,13 +117,13 @@ unsigned int sort_record_csv(int month, int day, int year) {
 	char linebuff[LINE_BUFFER];
 	char *str;
 
-	unsigned int daytok, monthtok, yeartok;
+	int daytok, monthtok, yeartok;
 	bool greateryear = false;
 	bool matchingyear = false;
 	bool lesseryear = false;
 	/* lessermonth isn't used, but I'm keeping it here until I prove I don't
 	 * need it */
-	bool lessermonth = false;
+//	bool lessermonth = false;
 	bool lesserday = false;
 
 	while((str = fgets(linebuff, sizeof(linebuff), fptr)) != NULL) {
@@ -154,32 +154,32 @@ unsigned int sort_record_csv(int month, int day, int year) {
 
 		if (yeartok == year && monthtok == month && daytok == day) {
 			lesserday = false;
-			lessermonth = false;
+//			lessermonth = false;
 			result_line = line;
 			break;
 		}
 
 		if (yeartok == year && monthtok == month && daytok > day) {
 			lesserday = false;
-			lessermonth = false;
+//			lessermonth = false;
 			result_line = line - 1;
 			break;
 		}
 
 		if (yeartok == year && monthtok == month && daytok < day) {
 			lesserday = true;
-			lessermonth = false;
+//			lessermonth = false;
 			lessdayline = line;
 		}
 		
 		if (yeartok == year && monthtok > month) {
-			lessermonth = false;
+//			lessermonth = false;
 			result_line = line - 1;
 			break;
 		}
 
 		if (yeartok == year && monthtok < month) {
-			lessermonth = true;
+//			lessermonth = true;
 			result_line = line;
 		}
 	}
