@@ -680,48 +680,108 @@ void print_record_hr(struct LineData *ld) {
 	 );
 }
 
+void nc_print_edit_category_options(WINDOW *wptr) {
+	mvwxcprintw(wptr, 0, "Editing Category");
+	mvwxcprintw(wptr, 3, "Edit Amount");
+	mvwxcprintw(wptr, 4, "Delete");
+}
+
+int nc_select_category_field_to_edit(long b) {
+	WINDOW *wptr = create_input_subwindow();
+	int c = 0;
+	int select = 0;
+	int displayed = 2;
+	int cur_y = 3;
+	int x_reverse = getmaxx(wptr) - BOX_OFFSET * 2;
+	nc_print_edit_category_options(wptr);
+	mvwchgat(wptr, cur_y, BOX_OFFSET, getmaxx(wptr) - BOX_OFFSET * 2, A_REVERSE, 0, NULL); 
+
+	while (c != KEY_F(QUIT) && c != '\n' && c != '\r') {
+		wrefresh(wptr);
+		c = wgetch(wptr);
+		switch (c) {
+		case('j'):
+		case(KEY_DOWN):
+			if (select + 1 < displayed) {
+				mvwchgat(wptr, cur_y, BOX_OFFSET, x_reverse, A_NORMAL, 0, NULL); 
+				cur_y++;
+				select++;
+				mvwchgat(wptr, cur_y, BOX_OFFSET, x_reverse, A_REVERSE, 0, NULL); 
+			}
+			break;
+		case('k'):
+		case(KEY_UP):
+			if (select - 1 >= 0) {
+				mvwchgat(wptr, cur_y, BOX_OFFSET, x_reverse, A_NORMAL, 0, NULL); 
+				cur_y--;
+				select--;
+				mvwchgat(wptr, cur_y, BOX_OFFSET, x_reverse, A_REVERSE, 0, NULL); 
+			}
+			break;
+		case('\n'):
+		case('\r'):
+			return select;
+		case('q'):
+		case(KEY_F(QUIT)):
+			return -1;
+		default:
+			break;
+		}
+	}
+	return -1;
+}
+
 /*
  * Allows the user to change the amount of money allocated to the category at
  * file position b.
  */
 void nc_edit_category(long b) {
+	int select = nc_select_category_field_to_edit(b);
+	if (select == -1) {
+		return;
+	}
 	FILE *fptr = open_budget_csv("r");
 	FILE *tmpfptr = open_temp_csv();
 	unsigned int line = boff_to_linenum_budget(b) + 2;
-	double amt = nc_input_amount();
 	struct BudgetTokens *bt = tokenize_budget_byte_offset(b);
 	if (bt == NULL) {
 		return;
 	}
-
 	char linebuff[LINE_BUFFER * 2];
 	char *str;
 	int linenum = 0;
-	do {
-		str = fgets(linebuff, sizeof(linebuff), fptr);
-		linenum++;	
 
-		if (str == NULL) {
-			break;
-		}
-
-		if (linenum != line) {
-			fputs(str, tmpfptr);
-		} else if (linenum == line) {
-			fprintf(tmpfptr, "%d,%d,%s,%.2f\n",
-		   	bt->m,
-		   	bt->y,
-		   	bt->catg,
-		   	amt
-		   );
-		}
-	} while(str != NULL);
+	if (select == 0) { // EDIT AMOUNT
+		double amt = nc_input_amount();
+		do {
+			str = fgets(linebuff, sizeof(linebuff), fptr);
+			linenum++;	
+			if (str == NULL) {
+				break;
+			}
+			if (linenum != line) {
+				fputs(str, tmpfptr);
+			} else if (linenum == line) {
+				fprintf(tmpfptr, "%d,%d,%s,%.2f\n", bt->m, bt->y, bt->catg, amt);
+			}
+		} while(str != NULL);
+	} else if (select == 1) { // DELETE
+		do {
+			str = fgets(linebuff, sizeof(linebuff), fptr);
+			linenum++;	
+			if (str == NULL) {
+				break;
+			}
+			if (linenum != line) {
+				fputs(str, tmpfptr);
+			}
+		} while(str != NULL);
+	}
 
 	free_budget_tokens(bt);
 
 	mv_tmp_to_budget_file(tmpfptr, fptr);
 }
-
 /*
  * For a given month and year, return an array of strings from the category
  * field of the RECORD_DIR csv file.
@@ -2008,12 +2068,28 @@ Vec *get_matching_line_nums(FILE *fptr, int month, int year) {
 	return NULL;
 }
 
+double get_expenditures_per_category(struct BudgetTokens *bt) {
+	double expenses = 0;
+	Vec *pr = get_records_by_any(bt->m, -1, bt->y, bt->catg, NULL, -1, -1, NULL);
+	for (size_t i = 0; i < pr->size; i++) {
+		expenses += get_amount(pr->data[i]);
+	}
+	return expenses;
+}
+
 void nc_print_category_hr(WINDOW *wptr, struct ColWidth *cw,
 						  struct BudgetTokens *bt, int y)
 {
 	char *etc = ". ";
 	int x = 0;
 	int print_offset = 2;
+	double e = get_expenditures_per_category(bt);
+	double remaining = 0;
+	if (e <= 0) {
+		remaining = bt->amount + e;
+	} else {
+		remaining = bt->amount - e;
+	}
 
 	wattron(wptr, A_REVERSE);
 
@@ -2031,7 +2107,7 @@ void nc_print_category_hr(WINDOW *wptr, struct ColWidth *cw,
 
 	/* Move cursor past the category column */
 	wmove(wptr, y, x += cw->catg - print_offset);
-	wprintw(wptr, "%.2f", bt->amount);
+	wprintw(wptr, "Planned: %.2f, Remaining: %.2f", bt->amount, remaining);
 	wattroff(wptr, A_REVERSE);
 }
 
@@ -2259,7 +2335,7 @@ void nc_print_balances_text(WINDOW *wptr, Vec *psc) {
 	calculate_balance(pb, psc);
 	int total_len = intlen(pb->income) + intlen(pb->expense) + strlen("Expenses: $.00 Income: $.00");
 	mvwprintw(wptr, 0, getmaxx(wptr) / 2 - total_len / 2, 
-		   	  "Expenses: $%.2f Income: $%.2f", pb->expense, pb->income);
+		   	  "Income: $%.2f Expenses: $%.2f", pb->income, pb->expense);
 	wrefresh(wptr);
 }
 
@@ -2462,7 +2538,7 @@ void nc_read_budget_loop(WINDOW *wptr_parent, WINDOW *wptr, FILE *rfptr,
 		case(KEY_DOWN):
 			if (select + 1 < total_rows) {
 
-				if (catg_data < 0) {
+				if (catg_data < 0 && nodes[catg_node]->data->size > 0) {
 					mvwchgat(wptr, cur_y, 0, -1, A_NORMAL, 1, NULL); 
 					catg_data = 0;
 					cur_y++;
@@ -2475,7 +2551,11 @@ void nc_read_budget_loop(WINDOW *wptr_parent, WINDOW *wptr, FILE *rfptr,
 					select++;
 					mvwchgat(wptr, cur_y, 0, -1, A_REVERSE, 0, NULL); 
 				} else if (catg_data == nodes[catg_node]->data->size - 1) {
-					mvwchgat(wptr, cur_y, 0, -1, A_NORMAL, 0, NULL); 
+					if (nodes[catg_node]->data->size == 0) {
+						mvwchgat(wptr, cur_y, 0, -1, A_NORMAL, 1, NULL); 
+					} else {
+						mvwchgat(wptr, cur_y, 0, -1, A_NORMAL, 0, NULL); 
+					}
 					catg_data = -1;
 					catg_node++;
 					cur_y++;
