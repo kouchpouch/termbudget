@@ -101,7 +101,7 @@ char *user_input(int n) {
 	}
 	if (fgets(buffer, buffersize, stdin) == NULL) {
 		printf("Invalid Input\n");
-		goto FAIL;
+		goto err_fail;
 	}
 
 	int length = strnlen(buffer, buffersize);
@@ -112,19 +112,19 @@ char *user_input(int n) {
 		while (c != '\n') {
 			c = getchar();
 		}
-		goto FAIL;
+		goto err_fail;
 	}
 	if (length < MIN_INPUT_CHAR) {
 		puts("Input is too short");
-		goto FAIL;
+		goto err_fail;
 	}
 	if (strstr(buffer, ",")) {
 		puts("No commas allowed, we're using a CSV, after all!");
-		goto FAIL;
+		goto err_fail;
 	}
 	return buffer; // Must be free'd
 
-FAIL:
+err_fail:
 	free(buffer);
 	buffer = NULL;
 	return buffer;
@@ -169,23 +169,23 @@ char *nc_user_input(int n, WINDOW *wptr) {
 		while (c != '\n') {
 			c = getchar();
 		}
-		goto FAIL;
+		goto err_fail;
 	}
 
 	if (length < 1) {
 		mvwxcprintw(wptr, max_y - BOX_OFFSET, "Input is too short");
-		goto FAIL;
+		goto err_fail;
 	}
 
 	if (strstr(buffer, ",")) {
 		mvwxcprintw(wptr, max_y - BOX_OFFSET, "No commas allowed");
-		goto FAIL;
+		goto err_fail;
 	}
 
 	curs_set(0);
 	return buffer; // Must be free'd
 
-FAIL:
+err_fail:
 	curs_set(0);
 	free(buffer);
 	buffer = NULL;
@@ -394,8 +394,7 @@ char *input_category(int month, int year) {
 		puts("No categories exist for this month");
 	}
 
-/* This label is so ghetto */
-RETRY:
+retry_input:
 	cat_exists = false;
 	str = input_str_retry("Enter Category:");
 
@@ -411,7 +410,7 @@ RETRY:
 		if (confirm_input() != 1) {
 			free(str);
 			str = NULL;
-			goto RETRY;
+			goto retry_input;
 		}
 	}
 
@@ -494,7 +493,7 @@ char *nc_select_category(int month, int year) {
 	}
 
 	if (pc->size == 0) {
-		goto MANUAL;
+		goto manual_selection;
 	}
 
 	int displayed = 0;
@@ -559,7 +558,7 @@ char *nc_select_category(int month, int year) {
 			}
 			break;
 		case('c'):
-MANUAL:
+manual_selection:
 			free_categories(pc);
 			nc_exit_window(wptr_parent);
 			nc_exit_window(wptr);
@@ -572,7 +571,7 @@ MANUAL:
 			break;
 		case('q'):
 		case(KEY_F(QUIT)):
-			goto CLEANUP;
+			goto cleanup;
 			break;
 		}
 	}
@@ -587,7 +586,7 @@ MANUAL:
 		return tmp; // Will return NULL if stdup failed, callee checks
 	}
 
-CLEANUP:
+cleanup:
 	free_categories(pc);
 	nc_exit_window(wptr_parent);
 	nc_exit_window(wptr);
@@ -800,13 +799,13 @@ struct Categories *list_categories(int month, int year) {
 
 	while ((line = fgets(linebuff, sizeof(linebuff), fptr)) != NULL) {
 		if (month != atoi(strsep(&line, ","))) {
-			goto DUPLICATE;
+			goto duplicate_exists;
 		}
 
 		seek_n_fields(&line, 1);
 		
 		if (year != atoi(strsep(&line, ","))) {
-			goto DUPLICATE;
+			goto duplicate_exists;
 		}
 
 		token = strsep(&line, ",");
@@ -815,7 +814,7 @@ struct Categories *list_categories(int month, int year) {
 		if (pc->size != 0) { // Duplicate Check
 			for (size_t i = 0; i < pc->size; i++) {
 				if (strcmp(pc->categories[i], token) == 0) {
-					goto DUPLICATE;
+					goto duplicate_exists;
 				}
 			}
 		}
@@ -833,7 +832,7 @@ struct Categories *list_categories(int month, int year) {
 		pc->categories[pc->size] = strdup(token);
 		pc->size++;
 
-DUPLICATE:
+duplicate_exists:
 		memset(linebuff, 0, sizeof(linebuff)); // Reset the Buffer
 	}
 
@@ -933,7 +932,7 @@ Vec *sort_by_category(FILE *fptr, Vec *pidx, Vec *plines, int yr, int mo)
 				if (tmp == NULL) {
 					free(prsc);
 					prsc = NULL;
-					goto ERR_NULL;
+					goto err_null;
 				}
 				prsc = tmp;
 			}
@@ -943,7 +942,7 @@ Vec *sort_by_category(FILE *fptr, Vec *pidx, Vec *plines, int yr, int mo)
 			if (line == NULL) {
 				free(prsc);
 				prsc = NULL;
-				goto ERR_NULL;
+				goto err_null;
 			}
 
 			seek_n_fields(&line, 3);
@@ -952,7 +951,7 @@ Vec *sort_by_category(FILE *fptr, Vec *pidx, Vec *plines, int yr, int mo)
 			if (token == NULL) {
 				free(prsc);
 				prsc = NULL;
-				goto ERR_NULL;
+				goto err_null;
 			}
 			if (strcmp(token, pc->categories[i]) == 0) {
 				prsc->data[prsc->size] = pidx->data[plines->data[j]];
@@ -961,7 +960,7 @@ Vec *sort_by_category(FILE *fptr, Vec *pidx, Vec *plines, int yr, int mo)
 		}
 	}
 
-ERR_NULL:
+err_null:
 	free_categories(pc);
 	return prsc;
 }
@@ -1160,7 +1159,7 @@ void nc_add_transaction(int year, int month) {
 	uld->day = nc_input_day(uld->month, uld->year);
 	uld->category = nc_select_category(uld->month, uld->year);
 	if (uld->category == NULL) {
-		goto CLEANUP;
+		goto cleanup;
 	}
 	uld->desc = nc_input_string("Enter Description");
 	uld->transtype = nc_input_transaction_type();
@@ -1169,15 +1168,15 @@ void nc_add_transaction(int year, int month) {
 	int result = nc_confirm_record(uld);
 
 	if (result == 0) {
-		goto CLEANUP;
+		goto cleanup;
 	}
 
 	unsigned int resultline = sort_record_csv(uld->month, uld->day, uld->year);
 
 	add_csv_record(resultline, uld);
 
-CLEANUP:
-	if (debug) puts("CLEANUP");
+cleanup:
+	if (debug) puts("cleanup");
 	free(pidx);
 	free(uld->category);
 	free(uld->desc);
@@ -1198,7 +1197,7 @@ void add_transaction(void) {
 	uld->month = input_month();
 	uld->day = input_day(uld->month, uld->year);
 	uld->category = input_category(uld->month, uld->year);
-	if (uld->category == NULL) goto CLEANUP;
+	if (uld->category == NULL) goto cleanup;
 	uld->desc = input_str_retry("Description:");
 	uld->transtype = input_transaction_type();
 	uld->amount = input_amount();
@@ -1212,24 +1211,24 @@ void add_transaction(void) {
 		if (debug) puts("TRUE");
 	} else if (result == 0) {
 		if (debug) puts("FALSE");
-		goto CLEANUP;
+		goto cleanup;
 	} else {
 		puts("Invalid answer");
-		goto CLEANUP;
+		goto cleanup;
 	}
 
 	unsigned int resultline = sort_record_csv(uld->month, uld->day, uld->year);
 	if (resultline < 0) {
 		puts("Failed to find where to add this record");
-		goto CLEANUP;
+		goto cleanup;
 	}
 
 	if (debug) printf("Result line: %d\n", resultline);
 
 	add_csv_record(resultline, uld);
 
-CLEANUP:
-	if (debug) puts("CLEANUP");
+cleanup:
+	if (debug) puts("cleanup");
 	free(pidx);
 	free(uld->category);
 	free(uld->desc);
@@ -1287,7 +1286,7 @@ int edit_csv_record(int linetoreplace, struct LineData *ld, int field) {
 			ld->month = nc_input_month();
 			ld->day = nc_input_day(ld->month, ld->year);
 			if (nc_confirm_record(ld) <= 0) {
-				goto FAIL;
+				goto err_fail;
 			}
 		}
 
@@ -1303,7 +1302,7 @@ int edit_csv_record(int linetoreplace, struct LineData *ld, int field) {
 		} else {
 			ld->category = nc_select_category(ld->month, ld->year);
 			if (ld->category == NULL) {
-				goto FAIL;
+				goto err_fail;
 			}
 		}
 		break;
@@ -1320,7 +1319,7 @@ int edit_csv_record(int linetoreplace, struct LineData *ld, int field) {
 		} else {
 			ld->transtype = nc_input_transaction_type();
 			if (ld->transtype == -1) {
-				goto FAIL;
+				goto err_fail;
 			}
 		}
 		break;
@@ -1340,7 +1339,7 @@ int edit_csv_record(int linetoreplace, struct LineData *ld, int field) {
 		if (nc_confirm_record(ld) <= 0) {
 			if (field == 2) free(ld->category);
 			if (field == 3) free(ld->desc);
-			goto FAIL;
+			goto err_fail;
 		}
 	}
 
@@ -1377,7 +1376,7 @@ int edit_csv_record(int linetoreplace, struct LineData *ld, int field) {
 	if (field == 3) free(ld->desc);
 	return 0;
 
-FAIL:
+err_fail:
 	return -1;
 }
 
@@ -3030,10 +3029,10 @@ void nc_read_setup(int sel_year, int sel_month, int sort) {
 		mvwxcprintw(wptr_parent, max_y / 2, 
 			  "No records exist, add (F1) to get started");
 		wgetch(wptr_parent);
-		goto SELECT_DATE_FAIL;
+		goto err_select_date_fail;
 	} else if (sel_year < 0) {
 		sr->flag = -(sel_year);
-		goto SELECT_DATE_FAIL;
+		goto err_select_date_fail;
 	}
 
 	if (!sel_month) {
@@ -3041,7 +3040,7 @@ void nc_read_setup(int sel_year, int sel_month, int sort) {
 	}
 	if (sel_month < 0) {
 		sr->flag = -(sel_month);
-		goto SELECT_DATE_FAIL;
+		goto err_select_date_fail;
 	}
 
 	wclear(wptr_parent);
@@ -3094,7 +3093,7 @@ void nc_read_setup(int sel_year, int sel_month, int sort) {
 	free(plines);
 	plines = NULL;
 
-SELECT_DATE_FAIL:
+err_select_date_fail:
 	free(pidx);
 	pidx = NULL;
 	fclose(fptr);
