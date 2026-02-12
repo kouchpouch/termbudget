@@ -1,12 +1,11 @@
 ### Todo
     - (*) Break out user input into separate functions
     - Features: 
-        - ( ) Categories
-            - ( ) View transactions based on category
+        - (*) Categories
+            - (*) View transactions based on category
             - (*) Add categories
-            - (*) Delete categories NOTE: User must delete all transactions
-                    assoc. with the category for it to be deleted.
-            - ( ) Allocate monthly budget by category
+            - (*) Delete categories
+            - (*) Allocate monthly budget by category
             - (*) List Categories
         - (*) Ability to edit a specific field
         - (*) Command line arguments
@@ -36,16 +35,16 @@
     - ( ) Add ability to escape the menu when accepting a user input
     - (*) Add page up/page down/end/home keys for navigating lists
     - (*) Add sort by feature
-    - ( ) Dim menu options in the footer if they are not available to use
+    - (*) Dim menu options in the footer if they are not available to use
     - ( ) Overview can be selected on nc_select_year
     - (*) Make index_csv function in parser.c amortize memory allocation
-    - ( ) Create methods for managing the actual budgeting system of the
+    - (*) Create methods for managing the actual budgeting system of the
             program. This concerns budget.csv, defining budget category
             money allocation, file verification, user input, and an easy to
             use and view interface.
         - (*) Budget CSV parsing
-        - ( ) Sorting by Category should be the default behavior
-        - ( ) Show each category in the read loop and it's associated planned
+        - (*) Sorting by Category should be the default behavior
+        - (*) Show each category in the read loop and it's associated planned
                 amount for each category and how much is remaining.
         - ( ) Allow budget planning, I.E. making categories where no record
                 currently exists.
@@ -85,7 +84,7 @@
     - (*) Basic Bar Graph Trends
 
 #### Refactors
-    - ( ) Replace any function which dynamically allocates memory into a
+    - (*) Replace any function which dynamically allocates memory into a
             dynamically sized array with type Vec. This will prevent having
             to create the local realloc_counter that i've been using. It's
             not great.
@@ -112,4 +111,4 @@
             doesn't work as intended. If January has 2 records in it and a
             new record is added, like a record in May, the may record will be
             inserted between the two records in January.
-    - ( ) Budget sorter is jank, doesn't work
+    - (*) Budget sorter is jank, doesn't work
