@@ -423,8 +423,7 @@ int nc_input_month(void) {
 	mvwxcprintw(wptr_input, INPUT_MSG_Y_OFFSET, "Enter Month");
 	wrefresh(wptr_input);
 
-	int month;
-	month = nc_input_n_digits(wptr_input, MAX_LEN_DAY_MON, 1);
+	int month = nc_input_n_digits(wptr_input, MAX_LEN_DAY_MON, 1);
 	while(month <= 0 || month > 12) {
 		clear_input_error_message(wptr_input);
 		mvwxcprintw(wptr_input, getmaxy(wptr_input) - BOX_OFFSET, "Invalid Month");
@@ -598,7 +597,7 @@ int nc_input_transaction_type(void) {
 	mvwxcprintw(wptr_input, INPUT_MSG_Y_OFFSET, "Choose Expense/Income");
 	mvwxcprintw(wptr_input, INPUT_MSG_Y_OFFSET + 2, "(1)Expense (2)Income");
 	keypad(wptr_input, true);
-	int t = 0;
+	int t = 0; // Transaction type 0 = expense, 1 = income.
 
 	while(t != '1' && t != '2') {
 		t = wgetch(wptr_input);	
@@ -613,8 +612,7 @@ int nc_input_transaction_type(void) {
 	 * having to do an integer/char conversion */
 	if (t == '1') {
 		return 0;
-	}
-	if (t == '2') {
+	} else if (t == '2') {
 		return 1;
 	}
 	
