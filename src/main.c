@@ -3443,7 +3443,7 @@ int main(int argc, char **argv) {
 	}
 
 	if (debug) {
-//		printf("Corrected %d records\n", corrected);
+		printf("Corrected %d records\n", corrected);
 		printf("Press enter to continue");
 		getc(stdin);
 	}

@@ -459,8 +459,6 @@ double get_amount(long b) {
 	FILE *fptr = open_record_csv("r");
 	char linebuff[LINE_BUFFER];
 	char *str;
-	int i = 0;
-	double retval;
 	int transtype;
 
 	fseek(fptr, b, SEEK_SET);
