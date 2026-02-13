@@ -59,6 +59,12 @@ struct FlexArr {
 	long data[];
 };
 
+struct ScrollCursorSimple {
+	int displayed;
+	int select;
+	int cur_y;
+};
+
 struct ScrollCursor {
 	int total_rows;
 	int displayed;
