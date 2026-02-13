@@ -53,6 +53,7 @@
         - ( ) Orphaned categories handling
         - (*) Verify data between files and in the files themselves (The CSVs)
     - (*) Create data structures to handle budget planning by category
+    - (*) Add confirmation prompts when editing a category line
 
 #### Main Feature Set
     - (*) Create a transaction
@@ -115,3 +116,5 @@
     - ( ) refresh_on_detail_close_uniform in main.c when sorted by category doesn't
             re-color the categories, which isn't really a bug, but a new func
             needs to be made to handle this.
+    - ( ) When selecting a category in ncurses, empty categories are not shown.
+            The way the function retrieves categories needs to be changed.
