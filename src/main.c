@@ -21,6 +21,7 @@
 #include <ctype.h>
 #include <ncurses.h>
 #include "fileintegrity.h"
+#include "filemanagement.h"
 #include "helper.h"
 #include "sorter.h"
 #include "tui.h"
@@ -846,38 +847,38 @@ duplicate_exists:
  * Returns a Vec containing byte offset data for records in RECORDS_DIR that
  * match a given year y and month m.
  */
-Vec *get_matching_bo(int m, int y) {
-	Vec *pbo = malloc(sizeof(*pbo) + (sizeof(long) * REALLOC_INCR));
-	if (pbo == NULL) {
-		return NULL;
-	}
-
-	pbo->capacity = REALLOC_INCR;
-	pbo->size = 0;
-	FILE *fptr = open_record_csv("r");
-	Vec *pidx = index_csv(fptr);
-	Vec *plines = get_matching_line_nums(fptr, m, y);
-
-	for (size_t i = 0; i < plines->size; i++) {
-		if (pbo->size >= pbo->capacity) {
-			pbo->capacity += REALLOC_INCR;
-			Vec *tmp = 
-				realloc(pbo, sizeof(*pbo) + (sizeof(long) * pbo->capacity));
-			if (tmp == NULL) {
-				free(pbo);
-				return NULL;
-			}
-			pbo = tmp;
-		}
-		pbo->data[i] = pidx->data[plines->data[i]];
-		pbo->size++;
-	}
-
-	free(pidx);
-	free(plines);
-	fclose(fptr);
-	return pbo;
-}
+//Vec *get_matching_bo(int m, int y) {
+//	Vec *pbo = malloc(sizeof(*pbo) + (sizeof(long) * REALLOC_INCR));
+//	if (pbo == NULL) {
+//		return NULL;
+//	}
+//
+//	pbo->capacity = REALLOC_INCR;
+//	pbo->size = 0;
+//	FILE *fptr = open_record_csv("r");
+//	Vec *pidx = index_csv(fptr);
+//	Vec *plines = get_matching_line_nums(fptr, m, y);
+//
+//	for (size_t i = 0; i < plines->size; i++) {
+//		if (pbo->size >= pbo->capacity) {
+//			pbo->capacity += REALLOC_INCR;
+//			Vec *tmp = 
+//				realloc(pbo, sizeof(*pbo) + (sizeof(long) * pbo->capacity));
+//			if (tmp == NULL) {
+//				free(pbo);
+//				return NULL;
+//			}
+//			pbo = tmp;
+//		}
+//		pbo->data[i] = pidx->data[plines->data[i]];
+//		pbo->size++;
+//	}
+//
+//	free(pidx);
+//	free(plines);
+//	fclose(fptr);
+//	return pbo;
+//}
 
 /*
  * Returns an vector of byte offsets sorted by date. No actual sorting is done
@@ -1504,7 +1505,7 @@ void nc_print_overview_graphs(WINDOW *wptr, int *months, int year) {
 
 	for (int i = 0; i < 12 && mo <= 12; i++, mo++) {
 		if (months[i] == mo) {
-			Vec *pbo = get_matching_bo(months[i], year);
+			Vec *pbo = get_records_by_mo_yr(months[i], year);
 			calculate_balance(pb, pbo);
 			if (pb->income == 0) { // Prevent a div by zero
 				ratios[mo - 1] = NO_INCOME;
@@ -1597,7 +1598,7 @@ void nc_print_overview_balances(WINDOW *wptr, int *months, int year) {
 	for (int i = 0; i < 12 && mo <= 12; i++, mo++) {
 		tmpx = 0;
 		if (months[i] == mo) {
-			Vec *pbo = get_matching_bo(months[i], year);
+			Vec *pbo = get_records_by_mo_yr(months[i], year);
 			calculate_balance(pb, pbo);
 			tmpx = intlen(pb->income) / 2;
 			wmove(wptr, y, cur - tmpx);
@@ -2597,6 +2598,11 @@ void nc_print_initial_read_budget_loop(WINDOW *wptr, struct ScrollCursor *sc,
 	char linebuff[LINE_BUFFER];
 	struct LineData ld;
 
+	/* 
+	 * For each category print the budget line and the records that match 
+	 * the category. Increment displayed to keep track of how many lines are
+	 * displayed (this is to keep track of scrolling).
+	 */
 	for (int i = 0; sc->displayed < max_y && sc->displayed < sc->total_rows 
 		 && i < total_nodes; i++) {
 
@@ -2951,7 +2957,7 @@ void init_category_nodes(CategoryNode *node, Vec *chunk, int m, int y) {
  */
 CategoryNode **create_category_nodes(int m, int y) {
 	Vec *pcbo = get_budget_catg_by_date_bo(m, y);
-	Vec *chunk = get_matching_bo(m, y);
+	Vec *chunk = get_records_by_mo_yr(m, y);
 	unsigned long n = pcbo->size;
 	CategoryNode **pnode = malloc(sizeof(CategoryNode *) * n);
 	if (pnode == NULL) {

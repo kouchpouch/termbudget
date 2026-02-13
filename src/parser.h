@@ -22,6 +22,8 @@
 #include <stdlib.h>
 #include "main.h"
 
+#define CSV_FIELDS 7
+
 struct BudgetTokens {
 	int m;
 	int y;
@@ -49,6 +51,9 @@ extern FILE *open_budget_csv(char *mode);
 /* Opens file located at TMP_DIR in w+ mode. Exits on failure */
 extern FILE *open_temp_csv(void);
 
+/* Returns total lines in the CSV */
+extern int get_total_csv_lines(void);
+
 /* Returns the line number of byte-offset b in file CSV_DIR */
 extern unsigned int boff_to_linenum(long b);
 
@@ -66,6 +71,10 @@ extern int get_num_fields(FILE *fptr);
 
 /* Frees the struct and any applicable members */
 extern void free_budget_tokens(struct BudgetTokens *pbt);
+
+/* Uses get_records_by_any with all parameters except month and year as NULL
+ * or -1, omitting the search for other fields */
+extern Vec *get_records_by_mo_yr(int month, int year);
 
 /* Generic function for getting record byte offsets by some parameter.
  * To disregard an argument, pass a negative value for any int or double and

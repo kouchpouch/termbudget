@@ -21,12 +21,7 @@
 #define INDEX_ALLOC 1024
 #define MAX_ALLOC 1024 * 1024
 
-#define RECORD_DIR "./data.csv"
-#define RECORD_BAK_DIR "./data.csv.bak"
 #define CSV_FIELDS 7
-#define TEMP_FILE_DIR "./tmp"
-#define BUDGET_DIR "./budget.csv"
-#define BUDGET_BAK_DIR "./budget.csv.bak"
 #define LINE_BUFFER 200
 #define STDIN_LARGE_BUFF 64
 #define STDIN_SMALL_BUFF 8

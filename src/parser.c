@@ -18,34 +18,16 @@
 #include "parser.h"
 #include "main.h"
 #include "tui.h"
+#include "filemanagement.h"
 
-FILE *open_file(char *mode, char *dir) {
-	FILE *fptr = fopen(dir, mode);
-	if (fptr == NULL) {
-		perror("Failed to open file");
-		exit(1);
-	} else {
-		return fptr;
+int get_total_csv_lines() {
+	FILE *fptr = fopen(RECORD_DIR, "r");
+	int lines = 0;
+	char buff[256];
+	while (fgets(buff, sizeof(buff), fptr) != NULL) {
+		lines++;
 	}
-}
-
-FILE *open_budget_csv(char *mode) {
-	FILE *f = open_file(mode, BUDGET_DIR);
-	return f;
-}
-
-FILE *open_record_csv(char *mode) {
-	FILE *f = open_file(mode, RECORD_DIR);
-	return f;
-}
-
-FILE *open_temp_csv(void) {
-	FILE *tmpfptr = fopen(TEMP_FILE_DIR, "w+");
-	if (tmpfptr == NULL) {
-		perror("Failed to open file");
-		exit(1);
-	}
-	return tmpfptr;
+	return lines;
 }
 
 unsigned int boff_to_linenum(long b) {
@@ -120,6 +102,10 @@ int get_num_fields(FILE *fptr) {
 void free_budget_tokens(struct BudgetTokens *pbt) {
 	free(pbt->catg);
 	free(pbt);
+}
+
+Vec *get_records_by_mo_yr(int month, int year) {
+	return get_records_by_any(month, -1, year, NULL, NULL, -1, -1, NULL);
 }
 
 Vec *get_records_by_any(int month, int day, int year, char *category, 

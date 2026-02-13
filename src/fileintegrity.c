@@ -13,6 +13,7 @@
  * with this program. If not, see <https://www.gnu.org/licenses/>. 
  */
 #include "fileintegrity.h"
+#include "filemanagement.h"
 #include "helper.h"
 #include "main.h"
 #include "parser.h"

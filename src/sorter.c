@@ -20,16 +20,7 @@
 #include "sorter.h"
 #include "main.h"
 #include "parser.h"
-
-int get_total_csv_lines() {
-	FILE *fptr = fopen(RECORD_DIR, "r");
-	int lines = 0;
-	char buff[256];
-	while (fgets(buff, sizeof(buff), fptr) != NULL) {
-		lines++;
-	}
-	return lines;
-}
+#include "filemanagement.h"
 
 /* We assume that the CSV is sorted by date already. Because every operation
  * to edit or add a transaction will go through the sorting function to
