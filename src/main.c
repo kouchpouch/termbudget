@@ -638,7 +638,7 @@ double nc_input_amount(void) {
 }
 
 //---------------------------------------------------------------------------//
-//--------------------------USER INPUT ABOVE---------------------------------//
+//---------------------------USER INPUT ABOVE--------------------------------//
 //---------------------------------------------------------------------------//
 
 void memory_allocate_fail(void) {
@@ -687,9 +687,9 @@ int nc_select_category_field_to_edit(long b) {
 	WINDOW *wptr = create_input_subwindow();
 	int c = 0;
 	int select = 0;
-	int displayed = 2;
-	int cur_y = 3;
-	int x_reverse = getmaxx(wptr) - BOX_OFFSET * 2;
+	int displayed = 2; // There are two options in nc_print_edit_category_options
+	int cur_y = 3; // The first option is at y=3;
+	int x_traverse = getmaxx(wptr) - BOX_OFFSET * 2; // How many units x to highlight
 	nc_print_edit_category_options(wptr);
 	mvwchgat(wptr, cur_y, BOX_OFFSET, getmaxx(wptr) - BOX_OFFSET * 2, A_REVERSE, 0, NULL); 
 
@@ -700,31 +700,34 @@ int nc_select_category_field_to_edit(long b) {
 		case('j'):
 		case(KEY_DOWN):
 			if (select + 1 < displayed) {
-				mvwchgat(wptr, cur_y, BOX_OFFSET, x_reverse, A_NORMAL, 0, NULL); 
+				mvwchgat(wptr, cur_y, BOX_OFFSET, x_traverse, A_NORMAL, 0, NULL); 
 				cur_y++;
 				select++;
-				mvwchgat(wptr, cur_y, BOX_OFFSET, x_reverse, A_REVERSE, 0, NULL); 
+				mvwchgat(wptr, cur_y, BOX_OFFSET, x_traverse, A_REVERSE, 0, NULL); 
 			}
 			break;
 		case('k'):
 		case(KEY_UP):
 			if (select - 1 >= 0) {
-				mvwchgat(wptr, cur_y, BOX_OFFSET, x_reverse, A_NORMAL, 0, NULL); 
+				mvwchgat(wptr, cur_y, BOX_OFFSET, x_traverse, A_NORMAL, 0, NULL); 
 				cur_y--;
 				select--;
-				mvwchgat(wptr, cur_y, BOX_OFFSET, x_reverse, A_REVERSE, 0, NULL); 
+				mvwchgat(wptr, cur_y, BOX_OFFSET, x_traverse, A_REVERSE, 0, NULL); 
 			}
 			break;
 		case('\n'):
 		case('\r'):
+			nc_exit_window(wptr);
 			return select;
 		case('q'):
 		case(KEY_F(QUIT)):
+			nc_exit_window(wptr);
 			return -1;
 		default:
 			break;
 		}
 	}
+	nc_exit_window(wptr);
 	return -1;
 }
 
@@ -1245,12 +1248,14 @@ int nc_confirm_record(struct LineData *ld) {
 		switch(c) {
 		case('y'):
 		case('Y'):
+			nc_exit_window_key(wptr);
 			return 1;
 		case('n'):
 		case('N'):
 		case(KEY_F(QUIT)):
 		case('q'):
 		case('Q'):
+			nc_exit_window_key(wptr);
 			return 0;
 		default:
 			break;
@@ -2071,6 +2076,7 @@ double get_expenditures_per_category(struct BudgetTokens *bt) {
 	for (size_t i = 0; i < pr->size; i++) {
 		expenses += get_amount(pr->data[i]);
 	}
+	free(pr);
 	return expenses;
 }
 
@@ -2237,6 +2243,7 @@ void nc_edit_transaction(unsigned int linenum) {
 		free(pidx);
 		fclose(fptr);
 		memory_allocate_fail();
+		nc_exit_window(wptr_edit);
 		return;
 	}
 
@@ -2356,7 +2363,8 @@ void show_detail_subwindow(char *line) {
  * where the window was. This loops through each line and changes it attr
  * back to A_NORMAL and then re-reverse-video's the original line. Cursor
  * position is NOT changed.
- * Refreshed n number of lines
+ *
+ * Refreshes n number of lines.
  */
 void refresh_on_detail_close_uniform(WINDOW *wptr, WINDOW *wptr_parent, int n) 
 {
@@ -2460,6 +2468,93 @@ int get_total_displayed_rows(CategoryNode **nodes) {
 	return rows;
 }
 
+void nc_scroll_prev_category(WINDOW *wptr, CategoryNode **nodes,
+							 struct ScrollCursor *sc, struct ColWidth *cw,
+							 FILE *rfptr, FILE *bfptr)
+{
+
+	if (sc->catg_data < 0) {
+		mvwchgat(wptr, sc->cur_y, 0, -1, A_NORMAL, 1, NULL); 
+		sc->catg_node--;
+		sc->catg_data = nodes[sc->catg_node]->data->size - 1;
+	} else if (sc->catg_data >= 0) {
+		mvwchgat(wptr, sc->cur_y, 0, -1, A_NORMAL, 0, NULL); 
+		sc->catg_data--;
+	} else if (sc->catg_data == 0) {
+		mvwchgat(wptr, sc->cur_y, 0, -1, A_NORMAL, 0, NULL); 
+		sc->catg_data = -1;
+		sc->catg_node--;
+	}
+
+	sc->cur_y--;
+	sc->select--;
+	mvwchgat(wptr, sc->cur_y, 0, -1, A_REVERSE, 0, NULL); 
+
+	if (sc->select >= 0 && sc->displayed < sc->total_rows && sc->cur_y < 0) {
+		sc->cur_y = -1;
+		if (sc->catg_data == -1) {
+			nc_scroll_prev(nodes[sc->catg_node]->catg_fp, 
+						   bfptr, wptr, cw, true);
+		} else if (sc->catg_data >= 0) {
+			nc_scroll_prev(nodes[sc->catg_node]->data->data[sc->catg_data], 
+						   rfptr, wptr, cw, false);
+		}
+		sc->cur_y = getcury(wptr);
+		mvwchgat(wptr, sc->cur_y, 0, -1, A_REVERSE, 0, NULL); 
+	}
+}
+
+void nc_scroll_next_category(WINDOW *wptr, CategoryNode **nodes,
+							 struct ScrollCursor *sc, struct ColWidth *cw,
+							 FILE *rfptr, FILE *bfptr)
+{
+
+	if (sc->catg_data < 0 && nodes[sc->catg_node]->data->size > 0) {
+		mvwchgat(wptr, sc->cur_y, 0, -1, A_NORMAL, 1, NULL); 
+		sc->catg_data = 0;
+	} else if (sc->catg_data >= 0 && 
+			   sc->catg_data < nodes[sc->catg_node]->data->size - 1) {
+		mvwchgat(wptr, sc->cur_y, 0, -1, A_NORMAL, 0, NULL); 
+		sc->catg_data++;
+	} else if (sc->catg_data == nodes[sc->catg_node]->data->size - 1) {
+		if (nodes[sc->catg_node]->data->size == 0) {
+			mvwchgat(wptr, sc->cur_y, 0, -1, A_NORMAL, 1, NULL); 
+		} else {
+			mvwchgat(wptr, sc->cur_y, 0, -1, A_NORMAL, 0, NULL); 
+		}
+		sc->catg_data = -1;
+		sc->catg_node++;
+	}
+
+	sc->cur_y++;
+	sc->select++;
+	mvwchgat(wptr, sc->cur_y, 0, -1, A_REVERSE, 0, NULL); 
+
+	if (sc->displayed < sc->total_rows && sc->cur_y == getmaxy(wptr)) {
+		if (sc->catg_data == -1) {
+			nc_scroll_next(nodes[sc->catg_node]->catg_fp, 
+						   bfptr, wptr, cw, true);
+		} else {
+			nc_scroll_next(nodes[sc->catg_node]->data->data[sc->catg_data],
+						   rfptr, wptr, cw, false);
+		}
+		sc->cur_y = getcury(wptr);
+		mvwchgat(wptr, sc->cur_y, 0, -1, A_REVERSE, 0, NULL); 
+	}
+}
+
+void init_scroll_cursor(struct ScrollCursor *sc, CategoryNode **nodes) 
+{
+	sc->total_rows = get_total_displayed_rows(nodes);
+	sc->displayed = 0;
+	sc->select = 0; // Tracks selection for indexing
+	sc->cur_y = 0; // Tracks cursor position in window
+	sc->catg_node = 0; // Tracks which node the cursor is on
+	/* Tracks which member record the cursor is on, begins at -1 to mark that
+	 * the first cursor position is a node. */
+	sc->catg_data = -1;
+}
+
 /*
  * Main loop for the user to interact with when selecting the read menu option.
  * If sorted by anything other than 'Category', nc_read_loop will be used.
@@ -2468,26 +2563,23 @@ int get_total_displayed_rows(CategoryNode **nodes) {
  * Categories will have their own row in the data with a user-modifiable value
  * retrived from BUDGET_DIR.
  */
-void nc_read_budget_loop(WINDOW *wptr_parent, WINDOW *wptr, FILE *rfptr,
-						 struct SelRecord *sr, Vec *psc, CategoryNode **nodes)
+void nc_read_budget_loop(WINDOW *wptr_parent, WINDOW *wptr, 
+						 FILE *rfptr, FILE *bfptr, struct SelRecord *sr, 
+						 Vec *psc, CategoryNode **nodes)
 {
 	struct ColWidth cw_, *cw = &cw_;
 	struct LineData ld_, *ld = &ld_;
-	struct BudgetTokens bt_, *bt = &bt_;
-	int total_rows = get_total_displayed_rows(nodes);
+	struct BudgetTokens *bt;
 	int total_nodes = get_total_nodes(nodes);
 	int max_y, max_x;
 	getmaxyx(wptr, max_y, max_x);
-	int displayed = 0;
+
 	char *line_str;
 	char linebuff[LINE_BUFFER];
-	int select = 0; // Tracks selection for indexing
-	int cur_y = 0; // Tracks cursor position in window
-	int catg_node = 0; // Tracks which node the cursor is on
 
-	/* Tracks which member record the cursor is on, begins at -1 to mark that
-	 * the first cursor position is a node. */
-	int catg_data = -1;
+	struct ScrollCursor sc;
+	init_scroll_cursor(&sc, nodes);
+
 	int c = 0;
 	init_pair(1, COLOR_CYAN, -1); // Categories are displayed in cyan
 
@@ -2496,27 +2588,29 @@ void nc_read_budget_loop(WINDOW *wptr_parent, WINDOW *wptr, FILE *rfptr,
 	nc_print_read_footer(stdscr);
 
 	/* Print initial lines based on screen size */
-	for (int i = 0; displayed < max_y && displayed < total_rows && i < total_nodes; i++) {
-		bt = tokenize_budget_byte_offset(nodes[i]->catg_fp);
-		nc_print_category_hr(wptr, cw, bt, displayed);
-		mvwchgat(wptr, displayed, 0, -1, A_NORMAL, 1, NULL); 
-		displayed++;
+	for (int i = 0; sc.displayed < max_y && sc.displayed < sc.total_rows 
+		 && i < total_nodes; i++) {
 
-		for (int j = 0; displayed < max_y && displayed < total_rows && 
+		bt = tokenize_budget_byte_offset(nodes[i]->catg_fp);
+		nc_print_category_hr(wptr, cw, bt, sc.displayed);
+		mvwchgat(wptr, sc.displayed, 0, -1, A_NORMAL, 1, NULL); 
+		sc.displayed++;
+
+		for (int j = 0; sc.displayed < max_y && sc.displayed < sc.total_rows && 
 			 j < nodes[i]->data->size; j++)
 		{
 			fseek(rfptr, nodes[i]->data->data[j], SEEK_SET);
 			line_str = fgets(linebuff, sizeof(linebuff), rfptr);
 			tokenize_record(ld, &line_str);
-			nc_print_record_hr(wptr, cw, ld, displayed);
-			displayed++;
+			nc_print_record_hr(wptr, cw, ld, sc.displayed);
+			sc.displayed++;
 		}
 		free_budget_tokens(bt);
 	}
 
 	/* Move cursor to first line of data and set that line to reverse video */
 	wmove(wptr, 0, 0);
-	mvwchgat(wptr, select, 0, -1, A_REVERSE, 0, NULL); 
+	mvwchgat(wptr, sc.select, 0, -1, A_REVERSE, 0, NULL); 
 
 	if (debug) {
 		curs_set(1);
@@ -2527,121 +2621,62 @@ void nc_read_budget_loop(WINDOW *wptr_parent, WINDOW *wptr, FILE *rfptr,
 	while (c != KEY_F(QUIT) && c != '\n' && c != '\r') {
 		wrefresh(wptr);
 		if (debug) {
-			nc_print_debug_line(wptr_parent, catg_node, catg_data);
+			nc_print_debug_line(wptr_parent, sc.catg_node, sc.catg_data);
 		}
 		c = wgetch(wptr);
 		switch(c) {
 		case('j'):
 		case(KEY_DOWN):
-			if (select + 1 < total_rows) {
-
-				if (catg_data < 0 && nodes[catg_node]->data->size > 0) {
-					mvwchgat(wptr, cur_y, 0, -1, A_NORMAL, 1, NULL); 
-					catg_data = 0;
-					cur_y++;
-					select++;
-					mvwchgat(wptr, cur_y, 0, -1, A_REVERSE, 0, NULL); 
-				} else if (catg_data >= 0 && catg_data < nodes[catg_node]->data->size - 1) {
-					mvwchgat(wptr, cur_y, 0, -1, A_NORMAL, 0, NULL); 
-					catg_data++;
-					cur_y++;
-					select++;
-					mvwchgat(wptr, cur_y, 0, -1, A_REVERSE, 0, NULL); 
-				} else if (catg_data == nodes[catg_node]->data->size - 1) {
-					if (nodes[catg_node]->data->size == 0) {
-						mvwchgat(wptr, cur_y, 0, -1, A_NORMAL, 1, NULL); 
-					} else {
-						mvwchgat(wptr, cur_y, 0, -1, A_NORMAL, 0, NULL); 
-					}
-					catg_data = -1;
-					catg_node++;
-					cur_y++;
-					select++;
-					mvwchgat(wptr, cur_y, 0, -1, A_REVERSE, 0, NULL); 
-				}
-
-				if (displayed < total_rows && cur_y == max_y) {
-					if (catg_data == -1) {
-						FILE *bfptr = open_budget_csv("r");
-						nc_scroll_next(nodes[catg_node]->catg_fp, 
-					 				   bfptr, wptr, cw, true);
-						fclose(bfptr);
-					} else {
-						nc_scroll_next(nodes[catg_node]->data->data[catg_data], 
-					 				   rfptr, wptr, cw, false);
-					}
-					cur_y = getcury(wptr);
-					mvwchgat(wptr, cur_y, 0, -1, A_REVERSE, 0, NULL); 
-				}
+			if (sc.select + 1 < sc.total_rows) {
+				nc_scroll_next_category(wptr, nodes, &sc, cw, rfptr, bfptr);
 			}
-
 			break;
 
 		case('k'):
 		case(KEY_UP):
-			if (select - 1 >= 0) {
-
-				if (catg_data < 0) {
-					mvwchgat(wptr, cur_y, 0, -1, A_NORMAL, 1, NULL); 
-					catg_node--;
-					catg_data = nodes[catg_node]->data->size - 1;
-					cur_y--;
-					select--;
-					mvwchgat(wptr, cur_y, 0, -1, A_REVERSE, 0, NULL); 
-				} else if (catg_data >= 0) {
-					mvwchgat(wptr, cur_y, 0, -1, A_NORMAL, 0, NULL); 
-					catg_data--;
-					cur_y--;
-					select--;
-					mvwchgat(wptr, cur_y, 0, -1, A_REVERSE, 0, NULL); 
-				} else if (catg_data == 0) {
-					mvwchgat(wptr, cur_y, 0, -1, A_NORMAL, 0, NULL); 
-					catg_data = -1;
-					catg_node--;
-					cur_y--;
-					select--;
-					mvwchgat(wptr, cur_y, 0, -1, A_REVERSE, 0, NULL); 
-				}
-
-				if (select >= 0 && displayed < total_rows && cur_y < 0) {
-					cur_y = -1;
-					if (catg_data == -1) {
-						FILE *bfptr = open_budget_csv("r");
-						nc_scroll_prev(nodes[catg_node]->catg_fp, 
-					                   bfptr, wptr, cw, true);
-						fclose(bfptr);
-					} else if (catg_data >= 0) {
-						nc_scroll_prev(nodes[catg_node]->data->data[catg_data], 
-					                   rfptr, wptr, cw, false);
-					}
-					cur_y = getcury(wptr);
-					mvwchgat(wptr, cur_y, 0, -1, A_REVERSE, 0, NULL); 
-				}
+			if (sc.select - 1 >= 0) {
+				nc_scroll_prev_category(wptr, nodes, &sc, cw, rfptr, bfptr);
 			}
 			break;
 
 		case('\n'):
 		case('\r'):
-			if (catg_data >= 0) {
-				fseek(rfptr, nodes[catg_node]->data->data[catg_data], SEEK_SET);
+			if (sc.catg_data >= 0) {
+				fseek(rfptr, nodes[sc.catg_node]->data->data[sc.catg_data], SEEK_SET);
 				char *line = fgets(linebuff, sizeof(linebuff), rfptr);
 				show_detail_subwindow(line);
-				refresh_on_detail_close_uniform(wptr, wptr_parent, displayed);
+				refresh_on_detail_close_uniform(wptr, wptr_parent, sc.displayed);
 				c = 0;
 			}
 			break;
 
-//		case(KEY_NPAGE): // PAGE DOWN
-//			break;
-//
-//		case(KEY_PPAGE): // PAGE UP
-//			break;
-//
-//		case(KEY_END):
-//			break;
-//
-//		case(KEY_HOME):
-//			break;
+		case(KEY_NPAGE): // PAGE DOWN
+			for (int i = 0; i < 10; i++) {
+				if (sc.select + 1 < sc.total_rows) {
+					nc_scroll_next_category(wptr, nodes, &sc, cw, rfptr, bfptr);
+				}
+			}
+			break;
+
+		case(KEY_PPAGE): // PAGE UP
+			for (int i = 0; i < 10; i++) {
+				if (sc.select - 1 >= 0) {
+					nc_scroll_prev_category(wptr, nodes, &sc, cw, rfptr, bfptr);
+				}
+			}
+			break;
+
+		case(KEY_END):
+			while (sc.select + 1 < sc.total_rows) {
+				nc_scroll_next_category(wptr, nodes, &sc, cw, rfptr, bfptr);
+			}
+			break;
+
+		case(KEY_HOME):
+			while (sc.select - 1 >= 0) {
+				nc_scroll_prev_category(wptr, nodes, &sc, cw, rfptr, bfptr);
+			}
+			break;
 
 		case('A'):
 		case('a'):
@@ -2649,41 +2684,47 @@ void nc_read_budget_loop(WINDOW *wptr_parent, WINDOW *wptr, FILE *rfptr,
 			sr->flag = ADD;
 			sr->index = 0;
 			return;
+
 		case('E'):
 		case('e'):
 		case(KEY_F(EDIT)):
-			if (catg_data < 0) { 
+			if (sc.catg_data < 0) { 
 				sr->flag = EDIT_CATG;
-				sr->index = nodes[catg_node]->catg_fp;
+				sr->index = nodes[sc.catg_node]->catg_fp;
 			} else {
 				sr->flag = EDIT;
-				sr->index = nodes[catg_node]->data->data[catg_data];
+				sr->index = nodes[sc.catg_node]->data->data[sc.catg_data];
 			}
 			return;
+
 		case('R'):
 		case('r'):
 		case(KEY_F(READ)):
 			sr->flag = READ;
 			sr->index = 0;
 			return;
+
 		case('Q'):
 		case('q'):
 		case(KEY_F(QUIT)):
 			sr->flag = QUIT;
 			sr->index = 0;
 			return;
+
 		case('S'):
 		case('s'):
 		case(KEY_F(SORT)):
 			sr->flag = SORT;
 			sr->index = 0;
 			return;
+
 		case('O'):
 		case('o'):
 		case(KEY_F(OVERVIEW)):
 			sr->flag = OVERVIEW;
 			sr->index = 0;
 			return;
+
 		case(KEY_RESIZE):
 			sr->flag = RESIZE;
 			sr->index = 0;
@@ -3082,7 +3123,9 @@ void nc_read_setup(int sel_year, int sel_month, int sort) {
 	if (sort == DATE) {
 		nc_read_loop(wptr_parent, wptr_data, fptr, sr, psc);
 	} else if (sort == CATEGORY) {
-		nc_read_budget_loop(wptr_parent, wptr_data, fptr, sr, psc, nodes);
+		FILE *bfptr = open_budget_csv("r");
+		nc_read_budget_loop(wptr_parent, wptr_data, fptr, bfptr, sr, psc, nodes);
+		fclose(bfptr);
 		free_category_nodes(nodes);
 	}
 
