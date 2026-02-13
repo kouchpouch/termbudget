@@ -111,4 +111,7 @@
             doesn't work as intended. If January has 2 records in it and a
             new record is added, like a record in May, the may record will be
             inserted between the two records in January.
-    - (*) Budget sorter is jank, doesn't work
+    - (*) Budget sorter is jank, doesn't work.
+    - ( ) refresh_on_detail_close_uniform in main.c when sorted by category doesn't
+            re-color the categories, which isn't really a bug, but a new func
+            needs to be made to handle this.
