@@ -70,6 +70,7 @@ const char *months[] = {
 struct SelRecord {
 	unsigned int flag;
 	long index;
+	long opt; // Optional flag
 };
 
 struct Balances {
@@ -281,16 +282,16 @@ int confirm_input(void) {
 	return -1;
 }
 
-int nc_confirm_input(void) {
-	WINDOW *wptr_input = create_input_subwindow();
-	mvwxcprintw(wptr_input, INPUT_MSG_Y_OFFSET, "Confirm");
-	mvwxcprintw(wptr_input, INPUT_MSG_Y_OFFSET + 2, "(Y/N)");
-	wrefresh(wptr_input);
+int nc_confirm_input(char *msg) {
+	WINDOW *wptr = create_input_subwindow();
+	mvwxcprintw(wptr, 3, msg);
+	mvwxcprintw(wptr, getmaxy(wptr) - BOX_OFFSET, "(Y)es  /  (N)o");
+	wrefresh(wptr);
 
-	char confirm = wgetch(wptr_input);
+	char confirm = wgetch(wptr);
 	confirm = (char)upper(&confirm);
 
-	nc_exit_window(wptr_input);
+	nc_exit_window(wptr);
 
 	if (confirm == 'Y') {
 		return 1;	
@@ -572,7 +573,6 @@ manual_selection:
 		case('q'):
 		case(KEY_F(QUIT)):
 			goto cleanup;
-			break;
 		}
 	}
 
@@ -639,7 +639,7 @@ double nc_input_amount(void) {
 }
 
 //---------------------------------------------------------------------------//
-//---------------------------USER INPUT ABOVE--------------------------------//
+//----------------------------USER INPUT ABOVE-------------------------------//
 //---------------------------------------------------------------------------//
 
 void memory_allocate_fail(void) {
@@ -732,15 +732,72 @@ int nc_select_category_field_to_edit(long b) {
 	return -1;
 }
 
+bool nc_confirm_amount(double amt) {
+	WINDOW *wptr = create_input_subwindow();
+	mvwxcprintw(wptr, 0, "Confirm Amount");
+	mvwxcprintw(wptr, 3, "Is this amount correct?");
+	mvwprintw(wptr, 4, (getmaxx(wptr) / 2) - (intlen((int)amt) / 2) - 2, "$%.2f", amt);
+	mvwxcprintw(wptr, getmaxy(wptr) - BOX_OFFSET, "(Y)es  /  (N)o");
+	int c = 0;
+	while (c != KEY_F(QUIT) && c != 'q') {
+		c = wgetch(wptr);
+		switch(c) {
+		case('y'):
+		case('Y'):
+			nc_exit_window(wptr);
+			return true;
+		case('n'):
+		case('N'):
+		case(KEY_F(QUIT)):
+		case('q'):
+		case('Q'):
+			nc_exit_window(wptr);
+			return false;
+		default:
+			break;
+		}
+	}
+	return false;
+}
+
+/*
+ * If the user tries to delete a category that contains members, this warns
+ * the user that the action cannot be completed.
+ */
+void nc_print_category_member_warning() {
+	WINDOW *wptr = create_input_subwindow();
+	mvwxcprintw(wptr, 3, "Cannot delete a category");
+	mvwxcprintw(wptr, 4, "which contains records");
+	nc_exit_window_key(wptr);
+}
+
 /*
  * Allows the user to change the amount of money allocated to the category at
  * file position b.
  */
-void nc_edit_category(long b) {
+void nc_edit_category(long b, long nmembers) {
 	int select = nc_select_category_field_to_edit(b);
+	double amt = 0;
+
 	if (select == -1) {
 		return;
+	} else if (select == 1 && nmembers > 0) {
+		nc_print_category_member_warning();
+		return;
+	} else if (select == 1) {
+		if (nc_confirm_input("Confirm Delete") != 1) {
+			return;
+		}
 	}
+
+	if (select == 0) {
+		amt = nc_input_amount();
+		bool conf = nc_confirm_amount(amt);
+		if (!conf) {
+			return;
+		}
+	}
+
 	FILE *fptr = open_budget_csv("r");
 	FILE *tmpfptr = open_temp_csv();
 	unsigned int line = boff_to_linenum_budget(b) + 2;
@@ -748,12 +805,12 @@ void nc_edit_category(long b) {
 	if (bt == NULL) {
 		return;
 	}
+
 	char linebuff[LINE_BUFFER * 2];
 	char *str;
 	int linenum = 0;
 
 	if (select == 0) { // EDIT AMOUNT
-		double amt = nc_input_amount();
 		do {
 			str = fgets(linebuff, sizeof(linebuff), fptr);
 			linenum++;	
@@ -766,6 +823,7 @@ void nc_edit_category(long b) {
 				fprintf(tmpfptr, "%d,%d,%s,%.2f\n", bt->m, bt->y, bt->catg, amt);
 			}
 		} while(str != NULL);
+
 	} else if (select == 1) { // DELETE
 		do {
 			str = fgets(linebuff, sizeof(linebuff), fptr);
@@ -1161,27 +1219,29 @@ void nc_add_transaction(int year, int month, int sort) {
 	uld->day = nc_input_day(uld->month, uld->year);
 	uld->category = nc_select_category(uld->month, uld->year);
 	if (uld->category == NULL) {
-		goto cleanup;
+		printw("ERR_CATEGORY. YEAR: %d, MONTH %d, SORT: %d\n", 
+		 	   uld->year, uld->month, sort);
+		getch();
+		goto err_category;
 	}
 	uld->desc = nc_input_string("Enter Description");
 	uld->transtype = nc_input_transaction_type();
 	uld->amount = nc_input_amount();
-
 	int result = nc_confirm_record(uld);
 
 	if (result == 0) {
-		goto cleanup;
+		goto err_confirm;
 	}
 
 	unsigned int resultline = sort_record_csv(uld->month, uld->day, uld->year);
 
 	add_csv_record(resultline, uld);
 
-cleanup:
-	if (debug) puts("cleanup");
-	free(pidx);
+err_confirm:
 	free(uld->category);
 	free(uld->desc);
+err_category:
+	free(pidx);
 	nc_read_setup(uld->year, uld->month, sort);
 }
 
@@ -1199,7 +1259,9 @@ void add_transaction(void) {
 	uld->month = input_month();
 	uld->day = input_day(uld->month, uld->year);
 	uld->category = input_category(uld->month, uld->year);
-	if (uld->category == NULL) goto cleanup;
+	if (uld->category == NULL) {
+		goto err_category;
+	}
 	uld->desc = input_str_retry("Description:");
 	uld->transtype = input_transaction_type();
 	uld->amount = input_amount();
@@ -1209,31 +1271,27 @@ void add_transaction(void) {
 	printf("Y/N:  ");
 
 	int result = confirm_input();
-	if (result == 1) {
-		if (debug) puts("TRUE");
-	} else if (result == 0) {
-		if (debug) puts("FALSE");
-		goto cleanup;
-	} else {
-		puts("Invalid answer");
-		goto cleanup;
+	if (result != 1) {
+		goto err_confirm;
 	}
 
 	unsigned int resultline = sort_record_csv(uld->month, uld->day, uld->year);
 	if (resultline < 0) {
 		puts("Failed to find where to add this record");
-		goto cleanup;
+		goto err_confirm;
 	}
 
-	if (debug) printf("Result line: %d\n", resultline);
+	if (debug) {
+		printf("Result line: %d\n", resultline);
+	}
 
 	add_csv_record(resultline, uld);
 
-cleanup:
-	if (debug) puts("cleanup");
-	free(pidx);
+err_confirm:
 	free(uld->category);
 	free(uld->desc);
+err_category:
+	free(pidx);
 }
 
 int nc_confirm_record(struct LineData *ld) {
@@ -2287,7 +2345,7 @@ void nc_edit_transaction(unsigned int linenum) {
 		break;
 	case 6:
 		nc_print_input_footer(stdscr);
-		if (nc_confirm_input() == 1) {
+		if (nc_confirm_input("Confirm Delete") == 1) {
 			if (delete_csv_record(linenum + 1) == 0) {
 				nc_message("Successfully Deleted");
 			}
@@ -2611,8 +2669,8 @@ void nc_print_initial_read_budget_loop(WINDOW *wptr, struct ScrollCursor *sc,
 		mvwchgat(wptr, sc->displayed, 0, -1, A_NORMAL, 1, NULL); 
 		sc->displayed++;
 
-		for (int j = 0; sc->displayed < max_y && sc->displayed < sc->total_rows && 
-			 j < nodes[i]->data->size; j++)
+		for (int j = 0; sc->displayed < max_y && sc->displayed < sc->total_rows 
+		     && j < nodes[i]->data->size; j++)
 		{
 			fseek(fptr, nodes[i]->data->data[j], SEEK_SET);
 			line_str = fgets(linebuff, sizeof(linebuff), fptr);
@@ -2687,6 +2745,8 @@ void nc_read_budget_loop(WINDOW *wptr_parent, WINDOW *wptr,
 				show_detail_subwindow(line);
 				refresh_on_detail_close_uniform(wptr, wptr_parent, sc->displayed);
 				c = 0;
+			} else {
+				c = 0;
 			}
 			break;
 
@@ -2726,6 +2786,7 @@ void nc_read_budget_loop(WINDOW *wptr_parent, WINDOW *wptr,
 		case(KEY_F(EDIT)):
 			if (sc->catg_data < 0) { 
 				sr->flag = EDIT_CATG;
+				sr->opt = nodes[sc->catg_node]->data->size;
 				sr->index = nodes[sc->catg_node]->catg_fp;
 			} else {
 				sr->flag = EDIT;
@@ -3119,7 +3180,7 @@ err_select_date_fail:
 		if (sel_year < 0 || sel_month < 0) {
 			nc_add_transaction_default();
 		} else {
-			nc_add_transaction(sel_year, sel_month, sr->index);
+			nc_add_transaction(sel_year, sel_month, sort);
 		}
 		break;
 	case(EDIT):
@@ -3140,7 +3201,7 @@ err_select_date_fail:
 		nc_overview_setup(sel_year);
 		break;
 	case(EDIT_CATG):
-		nc_edit_category(sr->index); 
+		nc_edit_category(sr->index, sr->opt); 
 		nc_read_setup(sel_year, sel_month, sort);
 		break;
 	case(RESIZE):
