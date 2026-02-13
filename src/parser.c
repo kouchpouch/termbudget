@@ -232,8 +232,6 @@ Vec *get_records_by_any(int month, int day, int year, char *category,
 				i++;
 			}
 		}
-
-
 	}
 
 	fclose(fptr);
