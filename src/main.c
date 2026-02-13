@@ -47,8 +47,8 @@ enum MenuKeys {
 } menukeys;
 
 enum SortBy {
-	DATE = 0,
-	CATEGORY = 1
+	SORT_DATE = 0,
+	SORT_CATG = 1
 } sortby;
 
 const char *months[] = {
@@ -1148,7 +1148,7 @@ void add_csv_record(int linetoadd, struct LineData *ld) {
 
 /* Optional parameters int month, year. If add transaction is selected while
  * on the read screen these will be auto-filled. */
-void nc_add_transaction(int year, int month) {
+void nc_add_transaction(int year, int month, int sort) {
 	struct LineData userlinedata_, *uld = &userlinedata_;
 	FILE *fptr = open_record_csv("r");
 	Vec *pidx = index_csv(fptr);
@@ -1181,11 +1181,11 @@ cleanup:
 	free(pidx);
 	free(uld->category);
 	free(uld->desc);
-	nc_read_setup(uld->year, uld->month, 0);
+	nc_read_setup(uld->year, uld->month, sort);
 }
 
 void nc_add_transaction_default(void) {
-	nc_add_transaction(0, 0);
+	nc_add_transaction(0, 0, SORT_CATG);
 }
 
 void add_transaction(void) {
@@ -1248,14 +1248,14 @@ int nc_confirm_record(struct LineData *ld) {
 		switch(c) {
 		case('y'):
 		case('Y'):
-			nc_exit_window_key(wptr);
+			nc_exit_window(wptr);
 			return 1;
 		case('n'):
 		case('N'):
 		case(KEY_F(QUIT)):
 		case('q'):
 		case('Q'):
-			nc_exit_window_key(wptr);
+			nc_exit_window(wptr);
 			return 0;
 		default:
 			break;
@@ -2714,7 +2714,6 @@ void nc_read_budget_loop(WINDOW *wptr_parent, WINDOW *wptr,
 		case('a'):
 		case(KEY_F(ADD)):
 			sr->flag = ADD;
-			sr->index = 0;
 			return;
 		case('E'):
 		case('e'):
@@ -2918,17 +2917,6 @@ void nc_read_loop(WINDOW *wptr_parent, WINDOW *wptr, FILE *fptr,
 	return;
 }
 
-void nc_read_cleanup(WINDOW *wp, WINDOW *wc, Vec *psc, Vec *plines, Vec *pidx,
-					 FILE *fptr)
-{
-	nc_exit_window(wp);
-	nc_exit_window(wc);
-	free(psc);
-	free(plines);
-	free(pidx);
-	fclose(fptr);
-}
-
 void free_category_nodes(CategoryNode **nodes) {
 	int i = 0;
 	while (1) {
@@ -2998,11 +2986,11 @@ CategoryNode **create_category_nodes(int m, int y) {
 }
 
 void nc_read_setup_default(void) {
-	nc_read_setup(0, 0, CATEGORY);
+	nc_read_setup(0, 0, SORT_CATG);
 }
 
 void nc_read_setup_year(int sel_year) {
-	nc_read_setup(sel_year, 0, CATEGORY);
+	nc_read_setup(sel_year, 0, SORT_CATG);
 }
 
 void nc_read_setup(int sel_year, int sel_month, int sort) {
@@ -3068,11 +3056,11 @@ void nc_read_setup(int sel_year, int sel_month, int sort) {
 	CategoryNode **nodes;
 
 	switch(sort) {
-	case(DATE):
+	case(SORT_DATE):
 		psc = sort_by_date(fptr, pidx, plines);	
 		sort_text = "Date";
 		break;
-	case(CATEGORY):
+	case(SORT_CATG):
 		psc = sort_by_category(fptr, pidx, plines, sel_year, sel_month);
 		nodes = create_category_nodes(sel_month, sel_year);
 		sort_text = "Category";
@@ -3092,9 +3080,9 @@ void nc_read_setup(int sel_year, int sel_month, int sort) {
 			  "Sort By: %s", sort_text);
 	wrefresh(wptr_parent);
 
-	if (sort == DATE) {
+	if (sort == SORT_DATE) {
 		nc_read_loop(wptr_parent, wptr_data, fptr, sr, psc);
-	} else if (sort == CATEGORY) {
+	} else if (sort == SORT_CATG) {
 		FILE *bfptr = open_budget_csv("r");
 		nc_read_budget_loop(wptr_parent, wptr_data, fptr, bfptr, sr, psc, nodes);
 		fclose(bfptr);
@@ -3125,13 +3113,13 @@ err_select_date_fail:
 		if (sel_year < 0 || sel_month < 0) {
 			nc_add_transaction_default();
 		} else {
-			nc_add_transaction(sel_year, sel_month);
+			nc_add_transaction(sel_year, sel_month, sr->index);
 		}
 		break;
 	case(EDIT):
 		nc_print_quit_footer(stdscr);
 		nc_edit_transaction(boff_to_linenum(sr->index));
-		nc_read_setup(sel_year, sel_month, 0);
+		nc_read_setup(sel_year, sel_month, sort);
 		break;
 	case(READ):
 		nc_read_setup_default();
@@ -3147,14 +3135,14 @@ err_select_date_fail:
 		break;
 	case(EDIT_CATG):
 		nc_edit_category(sr->index); 
-		nc_read_setup(sel_year, sel_month, CATEGORY);
+		nc_read_setup(sel_year, sel_month, sort);
 		break;
 	case(RESIZE):
 		while (test_terminal_size() == -1) {
 			getch();
 		}
 		if (sel_month > 0 && sel_year > 0) {
-			nc_read_setup(sel_year, sel_month, 0);
+			nc_read_setup(sel_year, sel_month, sort);
 		} else {
 			nc_read_setup_default();
 		}
