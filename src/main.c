@@ -2587,6 +2587,46 @@ void init_scroll_cursor(struct ScrollCursor *sc, CategoryNode **nodes)
 	sc->catg_data = -1;
 }
 
+void nc_print_initial_read_budget_loop(WINDOW *wptr, struct ScrollCursor *sc,
+									   CategoryNode **nodes, struct ColWidth *cw,
+									   FILE *fptr)
+{
+	int max_y = getmaxy(wptr);
+	int total_nodes = get_total_nodes(nodes);
+	char *line_str;
+	char linebuff[LINE_BUFFER];
+	struct LineData ld;
+
+	for (int i = 0; sc->displayed < max_y && sc->displayed < sc->total_rows 
+		 && i < total_nodes; i++) {
+
+		struct BudgetTokens *bt = tokenize_budget_byte_offset(nodes[i]->catg_fp);
+		nc_print_category_hr(wptr, cw, bt, sc->displayed);
+		mvwchgat(wptr, sc->displayed, 0, -1, A_NORMAL, 1, NULL); 
+		sc->displayed++;
+
+		for (int j = 0; sc->displayed < max_y && sc->displayed < sc->total_rows && 
+			 j < nodes[i]->data->size; j++)
+		{
+			fseek(fptr, nodes[i]->data->data[j], SEEK_SET);
+			line_str = fgets(linebuff, sizeof(linebuff), fptr);
+			tokenize_record(&ld, &line_str);
+			nc_print_record_hr(wptr, cw, &ld, sc->displayed);
+			sc->displayed++;
+		}
+		free_budget_tokens(bt);
+	}
+
+	wmove(wptr, 0, 0);
+	mvwchgat(wptr, sc->select, 0, -1, A_REVERSE, 0, NULL); 
+
+	if (debug) {
+		curs_set(1);
+	}
+
+	wrefresh(wptr);
+}
+
 /*
  * Main loop for the user to interact with when selecting the read menu option.
  * If sorted by anything other than 'Category', nc_read_loop will be used.
@@ -2600,110 +2640,73 @@ void nc_read_budget_loop(WINDOW *wptr_parent, WINDOW *wptr,
 						 Vec *psc, CategoryNode **nodes)
 {
 	struct ColWidth cw_, *cw = &cw_;
-	struct LineData ld_, *ld = &ld_;
-	struct BudgetTokens *bt;
-	int total_nodes = get_total_nodes(nodes);
-	int max_y, max_x;
-	getmaxyx(wptr, max_y, max_x);
-
-	char *line_str;
+	struct ScrollCursor sc_, *sc = &sc_;
 	char linebuff[LINE_BUFFER];
 
-	struct ScrollCursor sc;
-	init_scroll_cursor(&sc, nodes);
+	init_scroll_cursor(sc, nodes);
 
 	int c = 0;
 	init_pair(1, COLOR_CYAN, -1); // Categories are displayed in cyan
 
-	calculate_columns(cw, max_x + BOX_OFFSET);
+	calculate_columns(cw, getmaxx(wptr) + BOX_OFFSET);
 	nc_print_balances_text(wptr_parent, psc);
 	nc_print_read_footer(stdscr);
-
-	/* Print initial lines based on screen size */
-	for (int i = 0; sc.displayed < max_y && sc.displayed < sc.total_rows 
-		 && i < total_nodes; i++) {
-
-		bt = tokenize_budget_byte_offset(nodes[i]->catg_fp);
-		nc_print_category_hr(wptr, cw, bt, sc.displayed);
-		mvwchgat(wptr, sc.displayed, 0, -1, A_NORMAL, 1, NULL); 
-		sc.displayed++;
-
-		for (int j = 0; sc.displayed < max_y && sc.displayed < sc.total_rows && 
-			 j < nodes[i]->data->size; j++)
-		{
-			fseek(rfptr, nodes[i]->data->data[j], SEEK_SET);
-			line_str = fgets(linebuff, sizeof(linebuff), rfptr);
-			tokenize_record(ld, &line_str);
-			nc_print_record_hr(wptr, cw, ld, sc.displayed);
-			sc.displayed++;
-		}
-		free_budget_tokens(bt);
-	}
-
-	/* Move cursor to first line of data and set that line to reverse video */
-	wmove(wptr, 0, 0);
-	mvwchgat(wptr, sc.select, 0, -1, A_REVERSE, 0, NULL); 
-
-	if (debug) {
-		curs_set(1);
-	}
-
-	wrefresh(wptr);
+	nc_print_initial_read_budget_loop(wptr, sc, nodes, cw, rfptr);
 
 	while (c != KEY_F(QUIT) && c != '\n' && c != '\r') {
 		wrefresh(wptr);
 		if (debug) {
-			nc_print_debug_line(wptr_parent, sc.catg_node, sc.catg_data);
+			nc_print_debug_line(wptr_parent, sc->catg_node, sc->catg_data);
 		}
 		c = wgetch(wptr);
 		switch(c) {
 		case('j'):
 		case(KEY_DOWN):
-			if (sc.select + 1 < sc.total_rows) {
-				nc_scroll_next_category(wptr, nodes, &sc, cw, rfptr, bfptr);
+			if (sc->select + 1 < sc->total_rows) {
+				nc_scroll_next_category(wptr, nodes, sc, cw, rfptr, bfptr);
 			}
 			break;
 		case('k'):
 		case(KEY_UP):
-			if (sc.select - 1 >= 0) {
-				nc_scroll_prev_category(wptr, nodes, &sc, cw, rfptr, bfptr);
+			if (sc->select - 1 >= 0) {
+				nc_scroll_prev_category(wptr, nodes, sc, cw, rfptr, bfptr);
 			}
 			break;
 
 		case('\n'):
 		case('\r'):
-			if (sc.catg_data >= 0) {
-				fseek(rfptr, nodes[sc.catg_node]->data->data[sc.catg_data], SEEK_SET);
+			if (sc->catg_data >= 0) {
+				fseek(rfptr, nodes[sc->catg_node]->data->data[sc->catg_data], SEEK_SET);
 				char *line = fgets(linebuff, sizeof(linebuff), rfptr);
 				show_detail_subwindow(line);
-				refresh_on_detail_close_uniform(wptr, wptr_parent, sc.displayed);
+				refresh_on_detail_close_uniform(wptr, wptr_parent, sc->displayed);
 				c = 0;
 			}
 			break;
 
 		case(KEY_NPAGE): // PAGE DOWN
 			for (int i = 0; i < 10; i++) {
-				if (sc.select + 1 < sc.total_rows) {
-					nc_scroll_next_category(wptr, nodes, &sc, cw, rfptr, bfptr);
+				if (sc->select + 1 < sc->total_rows) {
+					nc_scroll_next_category(wptr, nodes, sc, cw, rfptr, bfptr);
 				}
 			}
 			break;
 		case(KEY_PPAGE): // PAGE UP
 			for (int i = 0; i < 10; i++) {
-				if (sc.select - 1 >= 0) {
-					nc_scroll_prev_category(wptr, nodes, &sc, cw, rfptr, bfptr);
+				if (sc->select - 1 >= 0) {
+					nc_scroll_prev_category(wptr, nodes, sc, cw, rfptr, bfptr);
 				}
 			}
 			break;
 
 		case(KEY_END):
-			while (sc.select + 1 < sc.total_rows) {
-				nc_scroll_next_category(wptr, nodes, &sc, cw, rfptr, bfptr);
+			while (sc->select + 1 < sc->total_rows) {
+				nc_scroll_next_category(wptr, nodes, sc, cw, rfptr, bfptr);
 			}
 			break;
 		case(KEY_HOME):
-			while (sc.select - 1 >= 0) {
-				nc_scroll_prev_category(wptr, nodes, &sc, cw, rfptr, bfptr);
+			while (sc->select - 1 >= 0) {
+				nc_scroll_prev_category(wptr, nodes, sc, cw, rfptr, bfptr);
 			}
 			break;
 
@@ -2716,12 +2719,12 @@ void nc_read_budget_loop(WINDOW *wptr_parent, WINDOW *wptr,
 		case('E'):
 		case('e'):
 		case(KEY_F(EDIT)):
-			if (sc.catg_data < 0) { 
+			if (sc->catg_data < 0) { 
 				sr->flag = EDIT_CATG;
-				sr->index = nodes[sc.catg_node]->catg_fp;
+				sr->index = nodes[sc->catg_node]->catg_fp;
 			} else {
 				sr->flag = EDIT;
-				sr->index = nodes[sc.catg_node]->data->data[sc.catg_data];
+				sr->index = nodes[sc->catg_node]->data->data[sc->catg_data];
 			}
 			return;
 		case('R'):
@@ -2800,69 +2803,69 @@ void nc_read_loop(WINDOW *wptr_parent, WINDOW *wptr, FILE *fptr,
 				  struct SelRecord *sr, Vec *psc)
 {
 	struct ColWidth cw_, *cw = &cw_;
-	struct ScrollCursorSimple sc;
+	struct ScrollCursorSimple sc_, *sc = &sc_;
 	char linebuff[LINE_BUFFER];
 
-	init_scroll_cursor_simple(&sc);
+	init_scroll_cursor_simple(sc);
 	calculate_columns(cw, getmaxx(wptr) + BOX_OFFSET);
 	nc_print_balances_text(wptr_parent, psc);
 	nc_print_read_footer(stdscr);
-	nc_print_initial_read_loop(wptr, &sc, cw, fptr, psc);
+	nc_print_initial_read_loop(wptr, sc, cw, fptr, psc);
 
 	int c = 0;
 	while (c != KEY_F(QUIT) && c != '\n' && c != '\r') {
 		wrefresh(wptr);
 		if (debug) {
-			nc_print_debug_line(wptr_parent, psc->data[sc.select], sc.select);
+			nc_print_debug_line(wptr_parent, psc->data[sc->select], sc->select);
 		}
 		c = wgetch(wptr);
 
 		switch(c) {
 		case('j'):
 		case(KEY_DOWN):
-			if (sc.select + 1 < psc->size) {
-				nc_scroll_next_read_loop(wptr, &sc, cw, fptr, psc);
+			if (sc->select + 1 < psc->size) {
+				nc_scroll_next_read_loop(wptr, sc, cw, fptr, psc);
 			}
 			break;
 		case('k'):
 		case(KEY_UP):
-			if (sc.select - 1 >= 0) {
-				nc_scroll_prev_read_loop(wptr, &sc, cw, fptr, psc);
+			if (sc->select - 1 >= 0) {
+				nc_scroll_prev_read_loop(wptr, sc, cw, fptr, psc);
 			}
 			break;
 
 		case('\n'):
 		case('\r'):
-			fseek(fptr, psc->data[sc.select], SEEK_SET);
+			fseek(fptr, psc->data[sc->select], SEEK_SET);
 			char *line = fgets(linebuff, sizeof(linebuff), fptr);
 			show_detail_subwindow(line);
-			refresh_on_detail_close_uniform(wptr, wptr_parent, sc.displayed);
+			refresh_on_detail_close_uniform(wptr, wptr_parent, sc->displayed);
 			c = 0;
 			break;
 
 		case(KEY_NPAGE): // PAGE DOWN
 			for(int i = 0; i < 10; i++) {
-				if (sc.select + 1 < psc->size) {
-					nc_scroll_next_read_loop(wptr, &sc, cw, fptr, psc);
+				if (sc->select + 1 < psc->size) {
+					nc_scroll_next_read_loop(wptr, sc, cw, fptr, psc);
 				}
 			}
 			break;
 		case(KEY_PPAGE): // PAGE UP
 			for (int i = 0; i < 10; i++) {
-				if (sc.select - 1 >= 0) {
-					nc_scroll_prev_read_loop(wptr, &sc, cw, fptr, psc);
+				if (sc->select - 1 >= 0) {
+					nc_scroll_prev_read_loop(wptr, sc, cw, fptr, psc);
 				}
 			}
 			break;
 
 		case(KEY_END):
-			while(sc.select + 1 < psc->size) {
-				nc_scroll_next_read_loop(wptr, &sc, cw, fptr, psc);
+			while(sc->select + 1 < psc->size) {
+				nc_scroll_next_read_loop(wptr, sc, cw, fptr, psc);
 			}
 			break;
 		case(KEY_HOME):
-			while(sc.select - 1 >= 0) {
-				nc_scroll_prev_read_loop(wptr, &sc, cw, fptr, psc);
+			while(sc->select - 1 >= 0) {
+				nc_scroll_prev_read_loop(wptr, sc, cw, fptr, psc);
 			}
 			break;
 
@@ -2870,13 +2873,13 @@ void nc_read_loop(WINDOW *wptr_parent, WINDOW *wptr, FILE *fptr,
 		case('a'):
 		case(KEY_F(ADD)):
 			sr->flag = ADD;
-			sr->index = psc->data[sc.select];
+			sr->index = psc->data[sc->select];
 			return;
 		case('E'):
 		case('e'):
 		case(KEY_F(EDIT)):
 			sr->flag = EDIT;
-			sr->index = psc->data[sc.select];
+			sr->index = psc->data[sc->select];
 			return;
 		case('R'):
 		case('r'):
