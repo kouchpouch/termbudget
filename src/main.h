@@ -59,6 +59,15 @@ struct FlexArr {
 	long data[];
 };
 
+struct ScrollCursor {
+	int total_rows;
+	int displayed;
+	int select;
+	int cur_y;
+	int catg_node;
+	int catg_data;
+};
+
 /* Exits the program with "exit(1)" and prints the error message. */
 extern void memory_allocate_fail(void);
 
