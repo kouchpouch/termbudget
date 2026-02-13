@@ -96,7 +96,7 @@ extern Vec *get_records_by_any(int month, int day, int year, char *category,
 							   Vec *chunk);
 
 /* Returns number of categories and the string literal categories of given
- * month and year in BUDGET_DIR(main.h) */
+ * month and year in BUDGET_DIR */
 extern struct Categories *get_budget_catg_by_date(int month, int year);
 
 /* Returns Vec containing byte offsets of each category that matches month,
