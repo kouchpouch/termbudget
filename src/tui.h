@@ -18,6 +18,7 @@
 #ifndef TUI_H
 #define TUI_H
 #include <ncurses.h>
+#include "helper.h"
 
 /* Minimum length to display the full names of each field
  * on the X axis */
@@ -97,6 +98,9 @@ extern int mvwxctr(WINDOW *wptr, int y, int len);
 /* Prints str centered on the X axis of wptr and y-coord
  * of y */
 extern int mvwxcprintw(WINDOW *wptr, int y, char *str);
+
+/* Same as mvwxcprintw but for a digit value */
+extern int mvwxcprintw_digit(WINDOW *wptr, int y, int d);
 
 /* Creates the subwindow for the read function */
 extern WINDOW *create_lines_subwindow(int max_y, int max_x, int y_off, int x_off);

@@ -155,6 +155,12 @@ int mvwxcprintw(WINDOW *wptr, int y, char *str) {
 	return ret;
 }
 
+int mvwxcprintw_digit(WINDOW *wptr, int y, int d) {
+	if (mvwxctr(wptr, y, intlen(d)) < 0) return -1;
+	int ret = wprintw(wptr, "%d", d);
+	return ret;
+}
+
 WINDOW *create_lines_subwindow(int max_y, int max_x, int y_off, int x_off) {
 	WINDOW *wptr = newwin(max_y - y_off * 2, max_x - x_off * 2, y_off + 1, x_off);
 	if (wptr == NULL) {
