@@ -282,24 +282,32 @@ int confirm_input(void) {
 	return -1;
 }
 
-int nc_confirm_input(char *msg) {
+bool nc_confirm_input(char *msg) {
 	WINDOW *wptr = create_input_subwindow();
 	mvwxcprintw(wptr, 3, msg);
 	mvwxcprintw(wptr, getmaxy(wptr) - BOX_OFFSET, "(Y)es  /  (N)o");
 	wrefresh(wptr);
 
-	char confirm = wgetch(wptr);
-	confirm = (char)upper(&confirm);
+	int c = 0;
 
-	nc_exit_window(wptr);
-
-	if (confirm == 'Y') {
-		return 1;	
-	} else if (confirm == 'N') {
-		return 0;
+	while (c != KEY_F(QUIT)) {
+		c = wgetch(wptr);
+		switch(c) {
+		case('y'):
+		case('Y'):
+			nc_exit_window(wptr);
+			return true;	
+		case('n'):
+		case('N'):
+			nc_exit_window(wptr);
+			return false;
+		default:
+			break;
+		}
 	}
 
-	return -1;
+	nc_exit_window(wptr);
+	return false;
 }
 
 int input_month(void) {
@@ -738,8 +746,10 @@ bool nc_confirm_amount(double amt) {
 	mvwxcprintw(wptr, 3, "Is this amount correct?");
 	mvwprintw(wptr, 4, (getmaxx(wptr) / 2) - (intlen((int)amt) / 2) - 2, "$%.2f", amt);
 	mvwxcprintw(wptr, getmaxy(wptr) - BOX_OFFSET, "(Y)es  /  (N)o");
+
 	int c = 0;
-	while (c != KEY_F(QUIT) && c != 'q') {
+
+	while (c != KEY_F(QUIT)) {
 		c = wgetch(wptr);
 		switch(c) {
 		case('y'):
@@ -748,15 +758,14 @@ bool nc_confirm_amount(double amt) {
 			return true;
 		case('n'):
 		case('N'):
-		case(KEY_F(QUIT)):
-		case('q'):
-		case('Q'):
 			nc_exit_window(wptr);
 			return false;
 		default:
 			break;
 		}
 	}
+
+	nc_exit_window(wptr);
 	return false;
 }
 
@@ -785,7 +794,7 @@ void nc_edit_category(long b, long nmembers) {
 		nc_print_category_member_warning();
 		return;
 	} else if (select == 1) {
-		if (nc_confirm_input("Confirm Delete") != 1) {
+		if (nc_confirm_input("Confirm Delete")) {
 			return;
 		}
 	}
@@ -841,6 +850,7 @@ void nc_edit_category(long b, long nmembers) {
 
 	mv_tmp_to_budget_file(tmpfptr, fptr);
 }
+
 /*
  * For a given month and year, return an array of strings from the category
  * field of the RECORD_DIR csv file.
@@ -1064,14 +1074,6 @@ bool category_exists_in_budget(char *catg, int month, int year) {
 		i++;
 	}
 	return false;
-}
-
-/*
- * Delete records at FPI b
- */
-int delete_category_orphans(long b) {
-
-	return 0;
 }
 
 /* 
@@ -2345,7 +2347,7 @@ void nc_edit_transaction(unsigned int linenum) {
 		break;
 	case 6:
 		nc_print_input_footer(stdscr);
-		if (nc_confirm_input("Confirm Delete") == 1) {
+		if (nc_confirm_input("Confirm Delete")) {
 			if (delete_csv_record(linenum + 1) == 0) {
 				nc_message("Successfully Deleted");
 			}
