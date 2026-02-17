@@ -152,8 +152,54 @@ char *nc_user_input(int n, WINDOW *wptr) {
 	wrefresh(wptr);
 
 	char temp[buffersize];
-	wgetnstr(wptr, temp, n);
 
+	/* New way to accept input and have the menu escapeable with F(QUIT) key */
+	int c = 0;
+	int idx = 0;
+	int xcursor = center;
+	wmove(wptr, max_y - 4, center);
+	while (c != '\n' && c != '\r') {
+		wrefresh(wptr);
+		if (idx < n) {
+			echo();
+		} else {
+			noecho();
+		}
+		c = wgetch(wptr);
+		switch (c) {
+		case('\n'):
+		case('\r'):
+			temp[idx] = '\0';
+			break;
+		case(KEY_F(QUIT)):
+			return NULL;
+			break;
+		case(KEY_BACKSPACE):
+			if (xcursor > center) {
+				idx--;
+				xcursor--;
+				temp[idx] = '\0';
+				wmove(wptr, max_y - 4, xcursor);
+				wprintw(wptr, "%c", '_');
+				wmove(wptr, max_y - 4, xcursor);
+			} else {
+				wmove(wptr, max_y - 4, xcursor);
+			}
+			break;
+		default:
+			if (idx < n) { 
+				temp[idx] = c;
+				idx++;
+				xcursor++;
+			} else {
+				erasechar();
+				wmove(wptr, max_y - 4, xcursor);
+			}
+			break;
+		}
+	}
+
+	// wgetnstr(wptr, temp, n);
 	noecho();
 
 	char *buffer = malloc(buffersize);
@@ -191,7 +237,7 @@ err_fail:
 	curs_set(0);
 	free(buffer);
 	buffer = NULL;
-	return buffer;
+	return NULL;
 }
 
 int input_n_digits(size_t max_len, size_t min_len) {
@@ -1657,6 +1703,7 @@ void nc_print_overview_balances(WINDOW *wptr, int *months, int year) {
 	struct Balances pb_, *pb = &pb_;
 	for (int i = 0; i < 12 && mo <= 12; i++, mo++) {
 		tmpx = 0;
+
 		if (months[i] == mo) {
 			Vec *pbo = get_records_by_mo_yr(months[i], year);
 			calculate_balance(pb, pbo);
@@ -1716,24 +1763,28 @@ unsigned int nc_overview_loop(WINDOW *wptr, int *months, int year) {
 		nc_print_overview_months(wptr);
 		nc_print_overview_balances(wptr, months, year);
 		nc_print_overview_graphs(wptr, months, year);
+		nc_print_quit_footer(stdscr);
 		wrefresh(wptr);
-		c = wgetch(wptr);
+//		c = wgetch(wptr);
 	} else {
 		wprintw(wptr, "Terminal is too small");
 		wrefresh(wptr);
-		c = wgetch(wptr);
+//		c = wgetch(wptr);
 	}
 
-	switch(c) {
-	case(KEY_RESIZE):
-		flag = RESIZE;
-		break;
-	case(KEY_F(QUIT)):
-		flag = QUIT;
-		break;
-	default:
-		flag = NO_SELECT;
-		break;
+	while (1) {
+		c = wgetch(wptr);
+		switch(c) {
+		case(KEY_RESIZE):
+			return RESIZE;
+		case('Q'):
+		case('q'):
+		case(KEY_F(QUIT)):
+			return QUIT;
+		default:
+			flag = NO_SELECT;
+			break;
+		}
 	}
 
 	return flag;
@@ -1746,6 +1797,7 @@ void nc_overview_setup(int year) {
 	init_pair(1, COLOR_RED, -1);
 	init_pair(2, COLOR_GREEN, -1);
 	box(wptr_parent, 0, 0);
+	mvwxcprintw_digit(wptr_parent, 0, year);
 	wrefresh(wptr_parent);
 	
 	FILE *fptr = open_record_csv("r");
