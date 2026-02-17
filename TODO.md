@@ -48,7 +48,7 @@
                 amount for each category and how much is remaining.
         - ( ) Allow budget planning, I.E. making categories where no record
                 currently exists.
-        - ( ) Handle deleting categories, possibly renaming as well. But
+        - (*) Handle deleting categories, possibly renaming as well. But
                 probably not.
         - ( ) Orphaned categories handling
         - (*) Verify data between files and in the files themselves (The CSVs)
