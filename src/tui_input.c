@@ -40,8 +40,8 @@ static void init_input_window(int n, WINDOW *wptr) {
 	wrefresh(wptr);
 }
 
-static bool validate_input_len(char *input, WINDOW *wptr) {
-	int length = strnlen(pui->str, buffersize);
+static bool validate_input_len(size_t buffer, char *input, WINDOW *wptr) {
+	size_t length = strnlen(input, buffer);
 
 	if (input[length] != '\0') {
 		mvwxcprintw(wptr, getmaxy(wptr) - BOX_OFFSET, "Input is too long");
@@ -49,29 +49,31 @@ static bool validate_input_len(char *input, WINDOW *wptr) {
 		while (c != '\n') {
 			c = getchar();
 		}
-		goto err_fail;
+		return false;
 	}
 
 	if (length < 1) {
 		mvwxcprintw(wptr, getmaxy(wptr) - BOX_OFFSET, "Input is too short");
-		goto err_fail;
+		return false;
 	}
 
 	if (strstr(input, ",")) {
 		mvwxcprintw(wptr, getmaxy(wptr) - BOX_OFFSET, "No commas allowed");
-		goto err_fail;
+		return false;
 	}
+
+	return true;
 }
 
 void nc_user_input(int n, WINDOW *wptr, struct UserInput *pui) {
 	init_input_window(n, wptr);
+	pui->flag = 0;
 	int max_y, max_x;
 	getmaxyx(wptr, max_y, max_x);
-	int buffersize = n + 1; // Plus 1 to hold null terminator
+	size_t buffersize = n + 1; // Plus 1 to hold null terminator
 	int center = max_x / 2 - n / 2;
 
 	char temp[buffersize];
-
 	int c = 0;
 	int idx = 0;
 	int xcursor = center;
@@ -118,9 +120,6 @@ void nc_user_input(int n, WINDOW *wptr, struct UserInput *pui) {
 		}
 	}
 
-	// wgetnstr(wptr, temp, n);
-	noecho();
-
 	pui->str = malloc(buffersize);
 	if (pui->str == NULL) {
 		pui->flag = -1;
@@ -129,36 +128,14 @@ void nc_user_input(int n, WINDOW *wptr, struct UserInput *pui) {
 
 	strncpy(pui->str, temp, buffersize);
 
-	int length = strnlen(pui->str, buffersize);
-
-	if (pui->str[length] != '\0') {
-		mvwxcprintw(wptr, max_y - BOX_OFFSET, "Input is too long");
-		int c = 0;
-		while (c != '\n') {
-			c = getchar();
-		}
-		goto err_fail;
-	}
-
-	if (length < 1) {
-		mvwxcprintw(wptr, max_y - BOX_OFFSET, "Input is too short");
-		goto err_fail;
-	}
-
-	if (strstr(pui->str, ",")) {
-		mvwxcprintw(wptr, max_y - BOX_OFFSET, "No commas allowed");
-		goto err_fail;
-	}
-
+	noecho();
 	curs_set(0);
-	return; // Must be free'd
-
-err_fail:
-	curs_set(0);
-	pui->flag = -1;
-	free(pui->str);
-	pui->str = NULL;
-	return;
+	if (!validate_input_len(buffersize, pui->str, wptr)) {
+		pui->flag = -1;
+		free(pui->str);
+		pui->str = NULL;
+		return;
+	}
 }
 
 int nc_input_n_digits(WINDOW *wptr, size_t max_len, size_t min_len) {
