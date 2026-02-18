@@ -26,8 +26,8 @@
 #define STDIN_LARGE_BUFF 64
 #define STDIN_SMALL_BUFF 8
 
-#define MIN_YEAR 1000
-#define MAX_YEAR 9999
+#define MIN_YEAR 2000
+#define MAX_YEAR 2100
 
 #define MAX_LEN_AMOUNT 9
 #define MAX_LEN_DAY_MON 2
@@ -47,11 +47,6 @@ struct Categories {
 	size_t capacity;
 	size_t size;
 	char *categories[];
-};
-
-struct FlexArr {
-	long lines;
-	long data[];
 };
 
 struct ScrollCursorSimple {
