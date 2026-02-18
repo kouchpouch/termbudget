@@ -58,6 +58,18 @@ struct ColWidth {
 	int amnt;
 };
 
+enum MenuKeys {
+	NO_SELECT = 0,
+	ADD = 1,
+	EDIT = 2,
+	READ = 3,
+	QUIT = 4,
+	SORT = 5,
+	OVERVIEW = 6,
+	EDIT_CATG = 7,
+	RESIZE = 13,
+	NO_RCRD = 14
+};
 
 /* Tests that the stdscr is big enough to handle this program */
 extern int test_terminal_size(void);
