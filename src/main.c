@@ -458,6 +458,7 @@ int nc_select_category_field_to_edit(long b) {
 	int x_traverse = getmaxx(wptr) - BOX_OFFSET * 2; // How many units x to highlight
 	nc_print_edit_category_options(wptr);
 	mvwchgat(wptr, cur_y, BOX_OFFSET, getmaxx(wptr) - BOX_OFFSET * 2, A_REVERSE, 0, NULL); 
+	keypad(wptr, true);
 
 	while (c != KEY_F(QUIT) && c != '\n' && c != '\r') {
 		wrefresh(wptr);
