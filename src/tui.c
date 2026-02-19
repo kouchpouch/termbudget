@@ -413,6 +413,6 @@ void nc_print_input_footer(WINDOW *wptr) {
 	pf->add = DIM;
 	pf->edit = DIM;
 	pf->read = DIM;
-	pf->quit = DIM;
+	pf->quit = ON;
 	nc_print_footer(wptr, pf);
 }
