@@ -92,6 +92,7 @@ void nc_user_input(int n, WINDOW *wptr, struct UserInput *pui) {
 			temp[idx] = '\0';
 			break;
 		case(KEY_F(QUIT)):
+			noecho();
 			pui->flag = QUIT;
 			pui->str = NULL;
 			return;
@@ -138,23 +139,28 @@ void nc_user_input(int n, WINDOW *wptr, struct UserInput *pui) {
 	}
 }
 
-int nc_input_n_digits(WINDOW *wptr, size_t max_len, size_t min_len) {
+void nc_input_n_digits(struct UserInputDigit *puid, 
+					   WINDOW *wptr, size_t max_len, size_t min_len) 
+{
 	struct UserInput pui_, *pui = &pui_;
+	puid->flag = 0;
 	nc_user_input(max_len, wptr, pui);
 	while (pui->str == NULL && pui->flag != QUIT) {
 		nc_user_input(max_len, wptr, pui);
 	}
 
 	if (pui->flag == QUIT) {
-		return -1;
+		puid->flag = QUIT;
+		puid->data = -1;
+		return;
 	}
 
 	if (strlen(pui->str) < min_len) {
 		mvwxcprintw(wptr, getmaxy(wptr) - BOX_OFFSET, "Input is too short");
 		wrefresh(wptr);
 		free(pui->str);
-		pui->str = NULL;
-		return -1;
+		puid->data = -1;
+		return;
 	}
 
 	for (size_t i = 0; i < strlen(pui->str); i++) {
@@ -165,19 +171,16 @@ int nc_input_n_digits(WINDOW *wptr, size_t max_len, size_t min_len) {
 			mvwxcprintw(wptr, getmaxy(wptr) - BOX_OFFSET, 
 			   "Invalid character, must be digits");
 			wrefresh(wptr);
-			free(pui->str);
-			pui->str = NULL;
-			return -1;
+			puid->data = -1;
+			return;
 		}
 	}
 
 	wrefresh(wptr);
 
-	int digits = atoi(pui->str);
+	puid->data = atoi(pui->str);
 	free(pui->str);
 	pui->str = NULL;
-
-	return digits;
 }
 
 bool nc_confirm_input(char *msg) {
@@ -210,63 +213,82 @@ bool nc_confirm_input(char *msg) {
 
 int nc_input_month(void) {
 	WINDOW *wptr_input = create_input_subwindow();
+	struct UserInputDigit puid_, *puid = &puid_;
 	mvwxcprintw(wptr_input, INPUT_MSG_Y_OFFSET, "Enter Month");
 	wrefresh(wptr_input);
 
-	int month = nc_input_n_digits(wptr_input, MAX_LEN_DAY_MON, 1);
-	while(month <= 0 || month > 12) {
+	nc_input_n_digits(puid, wptr_input, MAX_LEN_DAY_MON, 1);
+	while(puid->flag != QUIT && (puid->data <= 0 || puid->data > 12)) {
 		clear_input_error_message(wptr_input);
 		mvwxcprintw(wptr_input, getmaxy(wptr_input) - BOX_OFFSET, "Invalid Month");
-		month = nc_input_n_digits(wptr_input, MAX_LEN_DAY_MON, 1);
+		nc_input_n_digits(puid, wptr_input, MAX_LEN_DAY_MON, 1);
 	} 
 
 	nc_exit_window(wptr_input);
 
-	return month;
+	if (puid->flag == QUIT) {
+		return -1;
+	} else {
+		return puid->data;
+	}
 }
 
+// Returns -1 on quit
 int nc_input_year(void) {
 	WINDOW *wptr_input = create_input_subwindow();
+	struct UserInputDigit puid_, *puid = &puid_;
 	mvwxcprintw(wptr_input, INPUT_MSG_Y_OFFSET, "Enter Year");
 	wrefresh(wptr_input);
 
-	int year;
 	do {
-		year = nc_input_n_digits(wptr_input, MAX_LEN_YEAR, MIN_LEN_YEAR);
-	} while(year < 0);
+		nc_input_n_digits(puid, wptr_input, MAX_LEN_YEAR, MIN_LEN_YEAR);
+	} while (puid->data < 0 && puid->flag != QUIT);
 
 	nc_exit_window(wptr_input);
 
-	return year;
+	if (puid->flag == QUIT) {
+		return -1;
+	} else {
+		return puid->data;
+	}
 }
 
+// Returns -1 on quit
 int nc_input_day(int month, int year) {
 	WINDOW *wptr_input = create_input_subwindow();
+	struct UserInputDigit puid_, *puid = &puid_;
 	mvwxcprintw(wptr_input, INPUT_MSG_Y_OFFSET, "Enter Day");
 	wrefresh(wptr_input);
 
-	int day = nc_input_n_digits(wptr_input, MAX_LEN_DAY_MON, MIN_LEN_DAY_MON);
-	while(day == -1 || dayexists(day, month, year) == false) {
+	nc_input_n_digits(puid, wptr_input, MAX_LEN_DAY_MON, MIN_LEN_DAY_MON);
+	while(puid->flag != QUIT && 
+		(puid->data == -1 || dayexists(puid->data, month, year) == false)) 
+	{
 		clear_input_error_message(wptr_input);
-		if (dayexists(day, month, year) == false) { 
+		if (dayexists(puid->data, month, year) == false) { 
 			mvwxcprintw(wptr_input, getmaxy(wptr_input) - BOX_OFFSET, "Not a valid day");
 			wrefresh(wptr_input);
 		}
-		day = nc_input_n_digits(wptr_input, MAX_LEN_DAY_MON, MIN_LEN_DAY_MON);
+		nc_input_n_digits(puid, wptr_input, MAX_LEN_DAY_MON, MIN_LEN_DAY_MON);
 	}
 
 	nc_exit_window(wptr_input);
 
-	return day;
+	if (puid->flag == QUIT) {
+		return -1;
+	} else {
+		return puid->data;
+	}
 }
 
+// Returns NULL on quit
 char *nc_input_string(char *msg) {
 	WINDOW *wptr_input = create_input_subwindow();
 	struct UserInput pui_, *pui = &pui_;
 	mvwxcprintw(wptr_input, INPUT_MSG_Y_OFFSET, msg);
 	do {
 		nc_user_input(STDIN_LARGE_BUFF, wptr_input, pui);
-	} while(pui->str == NULL);
+	} while(pui->str == NULL && pui->flag != QUIT);
 	wrefresh(wptr_input);
 	nc_exit_window(wptr_input);
 	return pui->str;
@@ -277,11 +299,13 @@ int nc_input_transaction_type(void) {
 	mvwxcprintw(wptr_input, INPUT_MSG_Y_OFFSET, "Choose Expense/Income");
 	mvwxcprintw(wptr_input, INPUT_MSG_Y_OFFSET + 2, "(1)Expense (2)Income");
 	keypad(wptr_input, true);
-	int t = 0; // Transaction type 0 = expense, 1 = income.
+
+	/* Transaction type 0 = expense, 1 = income. */
+	int t = 0; 
 
 	while(t != '1' && t != '2') {
 		t = wgetch(wptr_input);	
-		if (t == 'q' || t == KEY_F(QUIT)) {
+		if (t == KEY_EXIT || t == KEY_F(QUIT)) {
 			return -1;
 		}
 	}
@@ -304,6 +328,7 @@ double nc_input_amount(void) {
 	struct UserInput pui_, *pui = &pui_;
 	mvwxcprintw(wptr_input, INPUT_MSG_Y_OFFSET, "Enter Amount");
 	keypad(wptr_input, true);
+	double amount;
 
 	nc_user_input(MAX_LEN_AMOUNT, wptr_input, pui);
 	while (pui->str == NULL && pui->flag != QUIT) {
@@ -312,8 +337,11 @@ double nc_input_amount(void) {
 
 	nc_exit_window(wptr_input);
 
-	double amount = atof(pui->str);
-	free(pui->str);
-
-	return amount;
+	if (pui->str != NULL) {
+		amount = atof(pui->str);
+		free(pui->str);
+		return amount;
+	} else {
+		return -1;
+	}
 }

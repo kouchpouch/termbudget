@@ -390,11 +390,9 @@ manual_selection:
 
 	if (select >= 0) {
 		char *tmp = strdup(pc->categories[select]); // Must be free'd
-
 		free_categories(pc);
 		nc_exit_window(wptr_parent);
 		nc_exit_window(wptr);
-
 		return tmp; // Will return NULL if stdup failed, callee checks
 	}
 
@@ -970,39 +968,57 @@ void add_csv_record(int linetoadd, struct LineData *ld) {
  * on the read screen these will be auto-filled. */
 void nc_add_transaction(int year, int month, int sort) {
 	struct LineData userlinedata_, *uld = &userlinedata_;
-	FILE *fptr = open_record_csv("r");
-	Vec *pidx = index_csv(fptr);
-	fclose(fptr);
 	nc_print_input_footer(stdscr);
 
 	year > 0 ? (uld->year = year) : (uld->year = nc_input_year());
+	if (uld->year < 0) {
+		return;
+	}
+
 	month > 0 ? (uld->month = month) : (uld->month = nc_input_month());
+	if (uld->month < 0) {
+		return;
+	}
+
 	uld->day = nc_input_day(uld->month, uld->year);
+	if (uld->day < 0) {
+		return;
+	}
+
 	uld->category = nc_select_category(uld->month, uld->year);
 	if (uld->category == NULL) {
-		printw("ERR_CATEGORY. YEAR: %d, MONTH %d, SORT: %d\n", 
-		 	   uld->year, uld->month, sort);
-		getch();
-		goto err_category;
+		return;
 	}
+
 	uld->desc = nc_input_string("Enter Description");
+	if (uld->desc == NULL) {
+		free(uld->category);
+		return;
+	}
+
 	uld->transtype = nc_input_transaction_type();
+	if (uld->transtype < 0) {
+		goto input_quit;
+	}
+
 	uld->amount = nc_input_amount();
+	if (uld->amount < 0) {
+		goto input_quit;
+	}
+
 	int result = nc_confirm_record(uld);
 
 	if (result == 0) {
-		goto err_confirm;
+		goto input_quit;
 	}
 
 	unsigned int resultline = sort_record_csv(uld->month, uld->day, uld->year);
 
 	add_csv_record(resultline, uld);
 
-err_confirm:
+input_quit:
 	free(uld->category);
 	free(uld->desc);
-err_category:
-	free(pidx);
 	nc_read_setup(uld->year, uld->month, sort);
 }
 
@@ -1086,6 +1102,114 @@ int nc_confirm_record(struct LineData *ld) {
 	return 0;
 }
 
+int nc_edit_csv_record(int replaceln, int field, struct LineData *ld) {
+	if (replaceln == 0) {
+		puts("Cannot delete line 0");
+		return -1;
+	}
+
+	replaceln += 1;
+
+	char linebuff[LINE_BUFFER];
+	char *line;
+	int linenum = 0;
+
+	switch(field) {
+	case 1:
+		ld->year = nc_input_year();
+		if (ld->year < 0) {
+			goto err_fail;
+		}
+		ld->month = nc_input_month();
+		if (ld->month < 0) {
+			goto err_fail;
+		}
+		ld->day = nc_input_day(ld->month, ld->year);
+		if (ld->day < 0) {
+			goto err_fail;
+		}
+		if (nc_confirm_record(ld) <= 0) {
+			goto err_fail;
+		}
+
+		/* Have to add and delete here because the record will be placed
+		 * in a new position when the date changes */
+		delete_csv_record(replaceln - 1);
+		add_csv_record(sort_record_csv(ld->month, ld->day, ld->year), ld);
+		return 0;
+
+	case 2:
+		ld->category = nc_select_category(ld->month, ld->year);
+		if (ld->category == NULL) {
+			goto err_fail;
+		}
+		break;
+	case 3:
+		ld->desc = nc_input_string("Enter Description");
+		if (ld->desc == NULL) {
+			goto err_fail;
+		}
+		break;
+	case 4:
+		ld->transtype = nc_input_transaction_type();
+		if (ld->transtype == -1) {
+			goto err_fail;
+		}
+		break;
+	case 5:
+		ld->amount = nc_input_amount();
+		if (ld->amount < 0) {
+			goto err_fail;
+		}
+		break;
+	default:
+		puts("Not a valid choice, exiting");
+		return -1;
+	}
+
+	if (nc_confirm_record(ld) <= 0) {
+		if (field == 2) free(ld->category);
+		if (field == 3) free(ld->desc);
+		goto err_fail;
+	}
+
+	FILE *fptr = open_record_csv("r");
+	FILE *tmpfptr = open_temp_csv();
+
+	do {
+		line = fgets(linebuff, sizeof(linebuff), fptr);
+
+		if (line == NULL) {
+			break;
+		}
+
+		linenum++;	
+		if (linenum != replaceln) {
+			fputs(line, tmpfptr);
+		} else if (linenum == replaceln) {
+			fprintf(tmpfptr, "%d,%d,%d,%s,%s,%d,%.2f\n",
+			ld->month, 
+			ld->day, 
+			ld->year, 
+			ld->category, 
+			ld->desc, 
+			ld->transtype, 
+			ld->amount
+		   );
+		}
+	} while(line != NULL);
+
+	/* mv_tmp_to_record_file() closes the file pointers */
+	mv_tmp_to_record_file(tmpfptr, fptr);
+
+	if (field == 2) free(ld->category);
+	if (field == 3) free(ld->desc);
+	return 0;
+
+err_fail:
+	return -1;
+}
+
 int edit_csv_record(int linetoreplace, struct LineData *ld, int field) {
 	if (linetoreplace == 0) {
 		puts("Cannot delete line 0");
@@ -1100,18 +1224,9 @@ int edit_csv_record(int linetoreplace, struct LineData *ld, int field) {
 
 	switch(field) {
 	case 1:
-		if (cli_mode) {
-			ld->year = input_year();
-			ld->month = input_month();
-			ld->day = input_day(ld->month, ld->year);
-		} else {
-			ld->year = nc_input_year();
-			ld->month = nc_input_month();
-			ld->day = nc_input_day(ld->month, ld->year);
-			if (nc_confirm_record(ld) <= 0) {
-				goto err_fail;
-			}
-		}
+		ld->year = input_year();
+		ld->month = input_month();
+		ld->day = input_day(ld->month, ld->year);
 
 		/* Have to add and delete here because the record will be placed
 		 * in a new position when the date changes */
@@ -1120,50 +1235,20 @@ int edit_csv_record(int linetoreplace, struct LineData *ld, int field) {
 		return 0;
 
 	case 2:
-		if (cli_mode) {
-			ld->category = input_category(ld->month, ld->year);
-		} else {
-			ld->category = nc_select_category(ld->month, ld->year);
-			if (ld->category == NULL) {
-				goto err_fail;
-			}
-		}
+		ld->category = input_category(ld->month, ld->year);
 		break;
 	case 3:
-		if (cli_mode) {
-			ld->desc = input_str_retry("Enter Description");	
-		} else {
-			ld->desc = nc_input_string("Enter Description");
-		}
+		ld->desc = input_str_retry("Enter Description");	
 		break;
 	case 4:
-		if (cli_mode) {
-			ld->transtype = input_transaction_type();
-		} else {
-			ld->transtype = nc_input_transaction_type();
-			if (ld->transtype == -1) {
-				goto err_fail;
-			}
-		}
+		ld->transtype = input_transaction_type();
 		break;
 	case 5:
-		if (cli_mode) {
-			ld->amount = input_amount();
-		} else {
-			ld->amount = nc_input_amount();
-		}
+		ld->amount = input_amount();
 		break;
 	default:
 		puts("Not a valid choice, exiting");
 		return -1;
-	}
-
-	if (!cli_mode) {
-		if (nc_confirm_record(ld) <= 0) {
-			if (field == 2) free(ld->category);
-			if (field == 3) free(ld->desc);
-			goto err_fail;
-		}
 	}
 
 	FILE *fptr = open_record_csv("r");
@@ -1198,9 +1283,6 @@ int edit_csv_record(int linetoreplace, struct LineData *ld, int field) {
 	if (field == 2) free(ld->category);
 	if (field == 3) free(ld->desc);
 	return 0;
-
-err_fail:
-	return -1;
 }
 
 /* Returns an malloc'd array of integers containing the years in which records
@@ -2063,29 +2145,27 @@ void nc_edit_transaction(unsigned int linenum) {
 
 	tokenize_record(ld, &line);
 
-	struct LineData *pLd = malloc(sizeof(*ld));
+	struct LineData *pld = malloc(sizeof(*ld));
 
-	if (pLd == NULL) {
+	if (pld == NULL) {
 		free(pidx);
 		fclose(fptr);
-		memory_allocate_fail();
 		nc_exit_window(wptr_edit);
+		memory_allocate_fail();
 		return;
 	}
 
-	memcpy(pLd, ld, sizeof(*ld));
+	memcpy(pld, ld, sizeof(*ld));
 
 	nc_print_record_vert(wptr_edit, ld, BOX_OFFSET);
 
 	mvwprintw(wptr_edit, INPUT_WIN_ROWS - BOX_OFFSET, BOX_OFFSET, "%s", "Delete");
-
 	box(wptr_edit, 0, 0);
 	wrefresh(wptr_edit);
 
 	int field_to_edit = nc_select_field_to_edit(wptr_edit);
 
 	fclose(fptr);
-
 	nc_exit_window(wptr_edit);
 
 	switch(field_to_edit) {
@@ -2093,22 +2173,22 @@ void nc_edit_transaction(unsigned int linenum) {
 		break;
 	case 1:
 		nc_print_input_footer(stdscr);
-		edit_csv_record(linenum + 1, pLd, 1);
+		nc_edit_csv_record(linenum + 1, 1, pld);
 		break;
 	case 2:
-		edit_csv_record(linenum + 1, pLd, 2);
+		nc_edit_csv_record(linenum + 1, 2, pld);
 		break;
 	case 3:
 		nc_print_input_footer(stdscr);
-		edit_csv_record(linenum + 1, pLd, 3);
+		nc_edit_csv_record(linenum + 1, 3, pld);
 		break;
 	case 4:
 		nc_print_input_footer(stdscr);
-		edit_csv_record(linenum + 1, pLd, 4);
+		nc_edit_csv_record(linenum + 1, 4, pld);
 		break;
 	case 5:
 		nc_print_input_footer(stdscr);
-		edit_csv_record(linenum + 1, pLd, 5);
+		nc_edit_csv_record(linenum + 1, 5, pld);
 		break;
 	case 6:
 		nc_print_input_footer(stdscr);
@@ -2122,8 +2202,8 @@ void nc_edit_transaction(unsigned int linenum) {
 		return;
 	}
 
-	free(pLd);
-	pLd = NULL;
+	free(pld);
+	pld = NULL;
 	free(pidx);
 	pidx = NULL;
 }
@@ -2949,6 +3029,7 @@ err_select_date_fail:
 		} else {
 			nc_add_transaction(sel_year, sel_month, sort);
 		}
+		nc_read_setup(sel_year, sel_month, sort);
 		break;
 	case(EDIT):
 		nc_print_quit_footer(stdscr);

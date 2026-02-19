@@ -23,9 +23,15 @@ struct UserInput {
 	int flag;
 };
 
+struct UserInputDigit {
+	int data;
+	int flag;
+};
+
 void nc_user_input(int n, WINDOW *wptr, struct UserInput *pui);
 
-int nc_input_n_digits(WINDOW *wptr, size_t max_len, size_t min_len);
+void nc_input_n_digits(struct UserInputDigit *puid, WINDOW *wptr, 
+					  size_t max_len, size_t min_len);
 
 bool nc_confirm_input(char *msg);
 
