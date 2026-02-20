@@ -68,7 +68,8 @@ struct Balances {
 
 void free_categories(struct Categories *pc);
 int *list_records_by_month(FILE *fptr, int matchyear);
-int *list_records_by_year(FILE *fptr);
+Vec *list_records_by_year(FILE *fptr);
+int *list_records_by_year_old(FILE *fptr);
 void memory_allocate_fail(void);
 int mv_tmp_to_budget_file(FILE *tmp, FILE* main);
 void nc_read_setup_default(void);
@@ -297,7 +298,8 @@ retry_input:
 }
 
 char *nc_select_category(int month, int year) {
-	struct Categories *pc = list_categories(month, year);
+	//struct Categories *pc = list_categories(month, year);
+	struct Categories *pc = get_budget_catg_by_date(month, year);
 	WINDOW *wptr_parent = create_category_select_parent(pc->size);
 	WINDOW *wptr = create_category_select_subwindow(wptr_parent);
 
@@ -329,7 +331,6 @@ char *nc_select_category(int month, int year) {
 	int c = 0;
 
 	int max_y = getmaxy(wptr);
-	char *manual_entry;
 	keypad(wptr, true);
 
 	while (c != '\n' && c != '\r') {
@@ -376,8 +377,7 @@ manual_selection:
 			nc_exit_window(wptr_parent);
 			nc_exit_window(wptr);
 			nc_print_input_footer(stdscr);
-			manual_entry = nc_input_string("Enter Category");
-			return manual_entry;
+			return nc_input_string("Enter Category");
 		case('\n'):
 		case('\r'):
 		case(KEY_ENTER):
@@ -559,6 +559,9 @@ void nc_edit_category(long b, long nmembers) {
 
 	if (select == 0) {
 		amt = nc_input_amount();
+		if (amt < 0) {
+			return;
+		}
 		bool conf = nc_confirm_amount(amt);
 		if (!conf) {
 			return;
@@ -903,7 +906,7 @@ int verify_categories_exist_in_budget(void) {
 
 	struct Categories prc_, *prc = &prc_;
 	struct Categories pbc_, *pbc = &pbc_;
-	int *years = list_records_by_year(rfptr);
+	int *years = list_records_by_year_old(rfptr);
 	if (years == NULL) {
 		return 0;
 	}
@@ -1286,9 +1289,63 @@ int edit_csv_record(int linetoreplace, struct LineData *ld, int field) {
 	return 0;
 }
 
+Vec *list_records_by_year(FILE *fptr) {
+	Vec *pr = malloc(sizeof(Vec) + sizeof(long) * REALLOC_INCR);
+	if (pr == NULL) {
+		memory_allocate_fail();
+	}
+
+	pr->size = 0;
+	pr->capacity = REALLOC_INCR;
+
+	char linebuff[LINE_BUFFER];
+	char *str;
+	int prevyear = 0;
+	int tempyear;
+
+	if (seek_beyond_header(fptr) == -1) {
+		puts("Failed to read header");
+		free(pr);
+		return NULL;
+	}
+
+	/* Check first record outside of the loop to check if no records exist.
+	 * If none exists, the function returns NULL */
+	str = fgets(linebuff, sizeof(linebuff), fptr);
+	if (str == NULL) {
+		free(pr);
+		return NULL;
+	}
+	seek_n_fields(&str, 2);
+	tempyear = atoi(strsep(&str, ","));
+	prevyear = tempyear;
+	pr->data[pr->size] = tempyear;
+	pr->size++;
+
+	while ((str = fgets(linebuff, sizeof(linebuff), fptr)) != NULL) {
+		if (pr->size >= pr->capacity) {
+			pr->capacity += REALLOC_INCR;
+			Vec *tmp = realloc(pr, sizeof(*pr) + (sizeof(long) * pr->capacity));
+			if (tmp == NULL) {
+				free(pr);
+				memory_allocate_fail();
+			}
+			pr = tmp;
+		}
+		seek_n_fields(&str, 2);
+		tempyear = atoi(strsep(&str, ","));
+		if (tempyear != prevyear) {
+			prevyear = tempyear;
+			pr->data[pr->size] = tempyear;
+			pr->size++;
+		}
+	}
+
+	return pr;
+}
 /* Returns an malloc'd array of integers containing the years in which records
  * are found in fptr. A '0' marks the end of the array. */
-int *list_records_by_year(FILE *fptr) {
+int *list_records_by_year_old(FILE *fptr) {
 	char linebuff[LINE_BUFFER];
 	char *str;
 	int *years = calloc(1, sizeof(int));
@@ -1674,7 +1731,7 @@ void legacy_read_csv(void) {
 
 	struct LineData linedata_, *ld = &linedata_;
 
-	yearsarr = list_records_by_year(fptr);
+	yearsarr = list_records_by_year_old(fptr);
 	rewind(fptr);
 
 	while (year_record_exists == false) {
@@ -1753,8 +1810,8 @@ int nc_read_select_year(WINDOW *wptr, FILE *fptr) {
 
 	keypad(wptr, true);	
 
-	int *years_arr = list_records_by_year(fptr);
-	if (years_arr == NULL) {
+	Vec *years = list_records_by_year(fptr);
+	if (years == NULL) {
 		return -(NO_RCRD);
 	}
 	int selected_year = 0;
@@ -1766,15 +1823,14 @@ int nc_read_select_year(WINDOW *wptr, FILE *fptr) {
 	wmove(wptr, print_y, print_x);
 
 	int scr_idx = 0;
-	int i = 0;
+	//int i = 0;
 	int flag = -1;
-	while (years_arr[i] != 0) {
-		if (years_arr[i] == CURRENT_YEAR) {
+	for (int i = 0; i < years->size; i++) {
+		if (years->data[i] == CURRENT_YEAR) {
 			flag = i;
 		}
-		wprintw(wptr, "%d ", years_arr[i]);
+		wprintw(wptr, "%ld ", years->data[i]);
 		wrefresh(wptr);
-		i++; // i stores the number of years with records
 	}
 
 	/* Initially highlight the current year and move cursor to it */
@@ -1805,7 +1861,7 @@ int nc_read_select_year(WINDOW *wptr, FILE *fptr) {
 			break;
 		case('l'):
 		case(KEY_RIGHT):
-			if (temp_x + 5 <= (i * 4) + i) {
+			if (temp_x + 5 <= (years->size * 4) + years->size) {
 				mvwchgat(wptr, print_y, temp_x, 4, A_NORMAL, 0, NULL);
 				mvwchgat(wptr, print_y, temp_x + 5, 4, A_REVERSE, 0, NULL);
 				wrefresh(wptr);
@@ -1814,20 +1870,20 @@ int nc_read_select_year(WINDOW *wptr, FILE *fptr) {
 			break;
 		case('a'):
 		case(KEY_F(ADD)):
-			free(years_arr);
-			years_arr = NULL;
+			free(years);
+			years = NULL;
 			return -(ADD);
 		case(KEY_RESIZE):
-			free(years_arr);
-			years_arr = NULL;
+			free(years);
+			years = NULL;
 			return -(RESIZE);
 		case('\n'):
 		case('\r'):
-			selected_year = years_arr[scr_idx];
+			selected_year = years->data[scr_idx];
 			break;
 		case('q'):
 		case(KEY_F(QUIT)):
-			free(years_arr);
+			free(years);
 			return -(QUIT);
 		default: 
 			break;
@@ -1836,8 +1892,8 @@ int nc_read_select_year(WINDOW *wptr, FILE *fptr) {
 
 	wrefresh(wptr);
 
-	free(years_arr);
-	years_arr = NULL;
+	free(years);
+	years = NULL;
 
 	return selected_year;
 }
