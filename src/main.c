@@ -673,43 +673,6 @@ duplicate_exists:
 }
 
 /*
- * Returns a Vec containing byte offset data for records in RECORDS_DIR that
- * match a given year y and month m.
- */
-//Vec *get_matching_bo(int m, int y) {
-//	Vec *pbo = malloc(sizeof(*pbo) + (sizeof(long) * REALLOC_INCR));
-//	if (pbo == NULL) {
-//		return NULL;
-//	}
-//
-//	pbo->capacity = REALLOC_INCR;
-//	pbo->size = 0;
-//	FILE *fptr = open_record_csv("r");
-//	Vec *pidx = index_csv(fptr);
-//	Vec *plines = get_matching_line_nums(fptr, m, y);
-//
-//	for (size_t i = 0; i < plines->size; i++) {
-//		if (pbo->size >= pbo->capacity) {
-//			pbo->capacity += REALLOC_INCR;
-//			Vec *tmp = 
-//				realloc(pbo, sizeof(*pbo) + (sizeof(long) * pbo->capacity));
-//			if (tmp == NULL) {
-//				free(pbo);
-//				return NULL;
-//			}
-//			pbo = tmp;
-//		}
-//		pbo->data[i] = pidx->data[plines->data[i]];
-//		pbo->size++;
-//	}
-//
-//	free(pidx);
-//	free(plines);
-//	fclose(fptr);
-//	return pbo;
-//}
-
-/*
  * Returns an vector of byte offsets sorted by date. No actual sorting is done
  * in this function, it is assumed the CSV is already sorted. This is basically
  * just moving memory around for the sake of portability and other sorting
@@ -836,23 +799,6 @@ bool category_exists_in_budget(char *catg, int month, int year) {
 	}
 	return false;
 }
-
-/* 
- * This is basically the opposite of category_exists_in_budget(). Checking
- * BUDGET_DIR against RECORD_DIR and find any orphaned categories.
- * Returns 0 on success, -1 on error. I'll implement this later, it might not
- * actually be required.
- */
-
-//bool find_category_orphans(int month, int year) {
-//	struct BudgetTokens bt, *pbt = &bt;
-//	struct Categories *pc = list_categories(month, year);
-//
-//	unsigned int i = 1;
-//
-//
-//	return 0;
-//}
 
 void free_categories(struct Categories *pc) {
 	for (size_t i = 0; i < pc->size; i++) {
