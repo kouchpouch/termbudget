@@ -29,4 +29,10 @@ extern bool dayexists(int d, int m, int y);
 /* Returns the len of n */
 extern int intlen(int n);
 
+/* Returns the larger of a or b, or a if a == b */
+extern long max_val(long a, long b);
+
+/* Returns the smaller of a or b, or b if a == b */
+extern long min_val(long a, long b);
+
 #endif

@@ -1242,16 +1242,36 @@ Vec *consolidate_years(Vec *record_years, Vec *budget_years) {
 
 	pr->size = 0;
 	pr->capacity = record_years->size + budget_years->size;
-	size_t max;
 
-	if (record_years->size >= budget_years->size) {
-		max = record_years->size;
-	} else {
-		max = budget_years->size;
-	}
+	size_t tmp1;
+	size_t tmp2;
+	size_t max = max_val(record_years->size, budget_years->size);
 
 	for (size_t i = 0; i < max; i++) {
-		;
+		if (i < budget_years->size) {
+			tmp1 = budget_years->data[i];
+		} else {
+			tmp1 = 0;
+		}
+
+		if (i < record_years->size) {
+			tmp2 = record_years->data[i];
+		} else {
+			tmp2 = 0;
+		}
+
+		if (tmp1 > 0 && tmp2 > 0) {
+			pr->data[i] = min_val(tmp1, tmp2);
+			pr->size++;
+			if (tmp1 == tmp2) {
+				;	
+			} else {
+				pr->data[i] = max_val(tmp1, tmp2);
+			}
+		} else if (tmp1 > 0) {
+			;
+		}
+
 	}
 
 	return pr;

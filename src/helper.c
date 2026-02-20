@@ -90,3 +90,11 @@ int intlen(int n) {
 	}
 	return len;
 }
+
+long max_val(long a, long b) {
+	return a >= b ? a : b;
+}
+
+long min_val(long a, long b) {
+	return a >= b ? b : a;
+}
