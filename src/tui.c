@@ -236,6 +236,7 @@ WINDOW *create_input_subwindow(void) {
 	}
 
 	box(wptr, 0, 0);
+	keypad(wptr, true);
 	return wptr;
 }
 

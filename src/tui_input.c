@@ -191,7 +191,7 @@ bool nc_confirm_input(char *msg) {
 
 	int c = 0;
 
-	while (c != KEY_F(QUIT)) {
+	while (1) {
 		c = wgetch(wptr);
 		switch(c) {
 		case('y'):
@@ -201,6 +201,10 @@ bool nc_confirm_input(char *msg) {
 		case('n'):
 		case('N'):
 			nc_exit_window(wptr);
+			return false;
+		case('q'):
+		case('Q'):
+		case(KEY_F(QUIT)):
 			return false;
 		default:
 			break;
@@ -298,7 +302,6 @@ int nc_input_transaction_type(void) {
 	WINDOW *wptr_input = create_input_subwindow();
 	mvwxcprintw(wptr_input, INPUT_MSG_Y_OFFSET, "Choose Expense/Income");
 	mvwxcprintw(wptr_input, INPUT_MSG_Y_OFFSET + 2, "(1)Expense (2)Income");
-	keypad(wptr_input, true);
 
 	/* Transaction type 0 = expense, 1 = income. */
 	int t = 0; 
