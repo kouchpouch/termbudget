@@ -1289,6 +1289,28 @@ int edit_csv_record(int linetoreplace, struct LineData *ld, int field) {
 	return 0;
 }
 
+/* Returns a Vec of deduplicated data from record_years and budget_years */
+Vec *consolidate_years(Vec *record_years, Vec *budget_years) {
+	Vec *pr = malloc(sizeof(Vec) + (sizeof(long) * record_years->size) +
+				  	 sizeof(long) * budget_years->size);
+
+	pr->size = 0;
+	pr->capacity = record_years->size + budget_years->size;
+	size_t max;
+
+	if (record_years->size >= budget_years->size) {
+		max = record_years->size;
+	} else {
+		max = budget_years->size;
+	}
+
+	for (size_t i = 0; i < max; i++) {
+		;
+	}
+
+	return pr;
+}
+
 Vec *list_records_by_year(FILE *fptr) {
 	Vec *pr = malloc(sizeof(Vec) + sizeof(long) * REALLOC_INCR);
 	if (pr == NULL) {
@@ -1807,13 +1829,13 @@ void legacy_read_csv(void) {
 /* On a non-select, the return value is the inverted menukeys value */
 int nc_read_select_year(WINDOW *wptr, FILE *fptr) {
 	rewind(fptr);
-
 	keypad(wptr, true);	
 
 	Vec *years = list_records_by_year(fptr);
 	if (years == NULL) {
 		return -(NO_RCRD);
 	}
+
 	int selected_year = 0;
 	int print_y = 1;
 	int print_x = 2;
@@ -1823,7 +1845,6 @@ int nc_read_select_year(WINDOW *wptr, FILE *fptr) {
 	wmove(wptr, print_y, print_x);
 
 	int scr_idx = 0;
-	//int i = 0;
 	int flag = -1;
 	for (int i = 0; i < years->size; i++) {
 		if (years->data[i] == CURRENT_YEAR) {
@@ -1841,7 +1862,6 @@ int nc_read_select_year(WINDOW *wptr, FILE *fptr) {
 	}
 	
 	mvwchgat(wptr, print_y, init_rv_x, 4, A_REVERSE, 0, NULL);
-
 	wrefresh(wptr);
 
 	int c = 0;
