@@ -45,9 +45,9 @@ FILE *open_temp_csv(void) {
 	return tmpfptr;
 }
 
-int delete_category_orphans(long b) {
-	FILE *fptr = open_budget_csv("r");
-
-
-	return 0;
-}
+//int delete_category_orphans(long b) {
+//	FILE *fptr = open_budget_csv("r");
+//
+//
+//	return 0;
+//}
