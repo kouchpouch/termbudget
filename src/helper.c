@@ -98,3 +98,7 @@ long max_val(long a, long b) {
 long min_val(long a, long b) {
 	return a >= b ? b : a;
 }
+
+int compare_for_sort(const void *a, const void *b) {
+	return (*(long *)a - *(long *)b);
+}

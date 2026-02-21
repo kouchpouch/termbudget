@@ -35,4 +35,6 @@ extern long max_val(long a, long b);
 /* Returns the smaller of a or b, or b if a == b */
 extern long min_val(long a, long b);
 
+extern int compare_for_sort(const void *a, const void *b);
+
 #endif
