@@ -68,7 +68,7 @@ struct Balances {
 
 void free_categories(struct Categories *pc);
 int *list_records_by_month(FILE *fptr, int matchyear);
-Vec *list_records_by_year(FILE *fptr);
+Vec *list_records_by_year(FILE *fptr, int field);
 int *list_records_by_year_old(FILE *fptr);
 void memory_allocate_fail(void);
 int mv_tmp_to_budget_file(FILE *tmp, FILE* main);
@@ -1235,6 +1235,15 @@ int edit_csv_record(int linetoreplace, struct LineData *ld, int field) {
 	return 0;
 }
 
+bool duplicate_year_exists(Vec *years, long y) {
+	for (size_t i = 0; i < years->size; i++) {
+		if (years->data[i] == y) {
+			return true;
+		}
+	}
+	return false;
+}
+
 /* Returns a Vec of deduplicated data from record_years and budget_years */
 Vec *consolidate_years(Vec *record_years, Vec *budget_years) {
 	Vec *pr = malloc(sizeof(Vec) + (sizeof(long) * record_years->size) +
@@ -1261,23 +1270,49 @@ Vec *consolidate_years(Vec *record_years, Vec *budget_years) {
 		}
 
 		if (tmp1 > 0 && tmp2 > 0) {
-			pr->data[i] = min_val(tmp1, tmp2);
-			pr->size++;
 			if (tmp1 == tmp2) {
-				;	
+				pr->data[pr->size] = tmp1;
+				pr->size++;
 			} else {
-				pr->data[i] = max_val(tmp1, tmp2);
+				pr->data[pr->size] = tmp1;
+				pr->size++;
+				pr->data[pr->size] = tmp2;
+				pr->size++;
 			}
-		} else if (tmp1 > 0) {
-			;
+		} else if (tmp1 > 0 && tmp2 == 0) {
+			if (!duplicate_year_exists(pr, tmp1)) {
+				pr->data[pr->size] = tmp1;
+				pr->size++;
+			}
+		} else if (tmp2 > 0 && tmp1 == 0) {
+			if (!duplicate_year_exists(pr, tmp2)) {
+				pr->data[pr->size] = tmp2;
+				pr->size++;
+			}
 		}
+	}
 
+	if (debug) {
+		for (size_t i = 0; i < pr->size; i++) {
+			printw("%ld ", pr->data[i]);
+		}
+		printw("\n");
+		getch();
+	}
+
+	qsort(pr->data, pr->size, sizeof(pr->data[0]), compare_for_sort);
+
+	if (debug) {
+		for (size_t i = 0; i < pr->size; i++) {
+			printw("%ld ", pr->data[i]);
+		}
+		getch();
 	}
 
 	return pr;
 }
 
-Vec *list_records_by_year(FILE *fptr) {
+Vec *list_records_by_year(FILE *fptr, int field) {
 	Vec *pr = malloc(sizeof(Vec) + sizeof(long) * REALLOC_INCR);
 	if (pr == NULL) {
 		memory_allocate_fail();
@@ -1304,7 +1339,7 @@ Vec *list_records_by_year(FILE *fptr) {
 		free(pr);
 		return NULL;
 	}
-	seek_n_fields(&str, 2);
+	seek_n_fields(&str, field);
 	tempyear = atoi(strsep(&str, ","));
 	prevyear = tempyear;
 	pr->data[pr->size] = tempyear;
@@ -1320,7 +1355,7 @@ Vec *list_records_by_year(FILE *fptr) {
 			}
 			pr = tmp;
 		}
-		seek_n_fields(&str, 2);
+		seek_n_fields(&str, field);
 		tempyear = atoi(strsep(&str, ","));
 		if (tempyear != prevyear) {
 			prevyear = tempyear;
@@ -1797,10 +1832,19 @@ int nc_read_select_year(WINDOW *wptr, FILE *fptr) {
 	rewind(fptr);
 	keypad(wptr, true);	
 
-	Vec *years = list_records_by_year(fptr);
+	Vec *record_years = list_records_by_year(fptr, 2);
+	FILE *bfptr = open_budget_csv("r");
+	Vec *budget_years = list_records_by_year(bfptr, 1);
+	fclose(bfptr);
+
+	Vec *years = consolidate_years(record_years, budget_years);
 	if (years == NULL) {
 		return -(NO_RCRD);
 	}
+	free(record_years);
+	record_years = NULL;
+	free(budget_years);
+	budget_years = NULL;
 
 	int selected_year = 0;
 	int print_y = 1;
