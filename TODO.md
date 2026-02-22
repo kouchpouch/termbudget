@@ -54,6 +54,8 @@
         - (*) Verify data between files and in the files themselves (The CSVs)
     - (*) Create data structures to handle budget planning by category
     - (*) Add confirmation prompts when editing a category line
+    - ( ) Add initialization function to handle opening files and getting
+            vectors, deduplicating, and sorting for nc_select_year/month
 
 #### Main Feature Set
     - (*) Create a transaction
