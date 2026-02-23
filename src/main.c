@@ -2155,10 +2155,6 @@ Vec *get_matching_line_nums(FILE *fptr, int month, int year) {
 		linenumber++;
 	}
 
-//	if (pl->size >= 0) {
-//		return pl;
-//	}
-
 	return pl;
 }
 
@@ -3144,7 +3140,7 @@ void nc_read_setup(int sel_year, int sel_month, int sort) {
 	wclear(wptr_parent);
 
 	plines = get_matching_line_nums(fptr, sel_month, sel_year);
-	if (plines->size == 0) {
+	if (plines == NULL) {
 		free(pidx);
 		fclose(fptr);
 		return;
