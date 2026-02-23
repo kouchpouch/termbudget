@@ -134,9 +134,15 @@ Vec *get_records_by_any(int month, int day, int year, char *category,
 	seek_beyond_header(fptr);
 	
 	unsigned int i = 0;
-	if (chunk != NULL) {
+
+	if (chunk == NULL) {
+		;
+	} else if (chunk != NULL && chunk->size > 0) {
 		fseek(fptr, chunk->data[i], SEEK_SET);
 		i++;
+	} else if (chunk->size == 0) {
+		fclose(fptr);
+		return prbc;
 	}
 
 	while (1) {
