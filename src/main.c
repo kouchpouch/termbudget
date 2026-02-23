@@ -40,7 +40,7 @@ enum SortBy {
 	SORT_CATG = 1
 } sortby;
 
-const char *months[] = {
+const char *abbr_months[] = {
 	"JAN", 
 	"FEB", 
 	"MAR", 
@@ -67,7 +67,7 @@ struct Balances {
 };
 
 void free_categories(struct Categories *pc);
-int *list_records_by_month(FILE *fptr, int matchyear);
+int *list_records_by_month_old(FILE *fptr, int matchyear);
 Vec *list_records_by_year(FILE *fptr, int field);
 int *list_records_by_year_old(FILE *fptr);
 void memory_allocate_fail(void);
@@ -573,6 +573,8 @@ void nc_edit_category(long b, long nmembers) {
 	unsigned int line = boff_to_linenum_budget(b) + 2;
 	struct BudgetTokens *bt = tokenize_budget_byte_offset(b);
 	if (bt == NULL) {
+		fclose(fptr);
+		fclose(tmpfptr);
 		return;
 	}
 
@@ -860,7 +862,7 @@ int verify_categories_exist_in_budget(void) {
 
 	while (years[i] != 0) {
 		rewind(rfptr);
-		int *months = list_records_by_month(rfptr, years[i]);
+		int *months = list_records_by_month_old(rfptr, years[i]);
 		for (int j = 0; j < 12; j++) {
 			if (months[j] != 0) {
 				prc = list_categories(months[j], years[i]);
@@ -1235,9 +1237,9 @@ int edit_csv_record(int linetoreplace, struct LineData *ld, int field) {
 	return 0;
 }
 
-bool duplicate_year_exists(Vec *years, long y) {
-	for (size_t i = 0; i < years->size; i++) {
-		if (years->data[i] == y) {
+bool duplicate_vector_data(Vec *vec, long y) {
+	for (size_t i = 0; i < vec->size; i++) {
+		if (vec->data[i] == y) {
 			return true;
 		}
 	}
@@ -1245,26 +1247,31 @@ bool duplicate_year_exists(Vec *years, long y) {
 }
 
 /* Returns a Vec of deduplicated data from record_years and budget_years */
-Vec *consolidate_years(Vec *record_years, Vec *budget_years) {
-	Vec *pr = malloc(sizeof(Vec) + (sizeof(long) * record_years->size) +
-				  	 sizeof(long) * budget_years->size);
+Vec *consolidate_year_vectors(Vec *vec1, Vec *vec2) {
+	Vec *pr = malloc(sizeof(Vec) + (sizeof(long) * vec1->size) +
+				  	 sizeof(long) * vec2->size);
+	if (pr == NULL) {
+		free(vec1);
+		free(vec2);
+		memory_allocate_fail();
+	}
 
 	pr->size = 0;
-	pr->capacity = record_years->size + budget_years->size;
+	pr->capacity = vec1->size + vec2->size;
 
 	size_t tmp1;
 	size_t tmp2;
-	size_t max = max_val(record_years->size, budget_years->size);
+	size_t max = max_val(vec1->size, vec2->size);
 
 	for (size_t i = 0; i < max; i++) {
-		if (i < budget_years->size) {
-			tmp1 = budget_years->data[i];
+		if (i < vec2->size) {
+			tmp1 = vec2->data[i];
 		} else {
 			tmp1 = 0;
 		}
 
-		if (i < record_years->size) {
-			tmp2 = record_years->data[i];
+		if (i < vec1->size) {
+			tmp2 = vec1->data[i];
 		} else {
 			tmp2 = 0;
 		}
@@ -1280,12 +1287,12 @@ Vec *consolidate_years(Vec *record_years, Vec *budget_years) {
 				pr->size++;
 			}
 		} else if (tmp1 > 0 && tmp2 == 0) {
-			if (!duplicate_year_exists(pr, tmp1)) {
+			if (!duplicate_vector_data(pr, tmp1)) {
 				pr->data[pr->size] = tmp1;
 				pr->size++;
 			}
 		} else if (tmp2 > 0 && tmp1 == 0) {
-			if (!duplicate_year_exists(pr, tmp2)) {
+			if (!duplicate_vector_data(pr, tmp2)) {
 				pr->data[pr->size] = tmp2;
 				pr->size++;
 			}
@@ -1366,6 +1373,7 @@ Vec *list_records_by_year(FILE *fptr, int field) {
 
 	return pr;
 }
+
 /* Returns an malloc'd array of integers containing the years in which records
  * are found in fptr. A '0' marks the end of the array. */
 int *list_records_by_year_old(FILE *fptr) {
@@ -1416,10 +1424,62 @@ int *list_records_by_year_old(FILE *fptr) {
 	return years;
 }
 
+void init_data_array(Vec *vec) {
+	for (size_t i = 0; i < vec->size; i++) {
+		vec->data[i] = 0;
+	}
+}
+
+/*
+ * Returns a malloc'd vector containing all months with records in file 'fptr',
+ * which match the year 'matchyear'. Pass the parameter 'fields' to tell
+ * the function how many CSV fields to skip ahead. This 'fields' passing is
+ * temporary and a new function will be added to find which fields to read
+ * based on the header.
+ */
+Vec *get_months_with_data(FILE *fptr, int matchyear, int fields) {
+	char linebuff[LINE_BUFFER];
+	char *str;
+	Vec *months = malloc(sizeof(Vec) + (sizeof(long) * MONTHS_IN_YEAR));
+
+	if (months == NULL) {
+		memory_allocate_fail();
+	}
+
+	months->size = MONTHS_IN_YEAR;
+	init_data_array(months);
+
+	int year;
+	int month;
+	int i = 0;
+
+	if (seek_beyond_header(fptr) == -1) {
+		puts("Failed to read header");
+	}
+
+	while((str = fgets(linebuff, sizeof(linebuff), fptr)) != NULL) {
+		month = atol(strsep(&str, ","));
+		seek_n_fields(&str, fields);
+		year = atol(strsep(&str, ","));
+		if (matchyear == year) {
+			if (months->data[0] == 0) {
+				months->data[0] = month;
+			} else if (month != months->data[i]) {
+				i++;
+				months->data[i] = month;
+			}
+		} else if (matchyear < year) {
+			break;
+		}
+	}
+
+	return months;
+}
+
 /* Returns a calloc'd array of months in which records exist in fptr which
  * match the year of matchyear. The month value is '0' if that month doesn't
  * exist. The size of the array is always 12. */
-int *list_records_by_month(FILE *fptr, int matchyear) {
+int *list_records_by_month_old(FILE *fptr, int matchyear) {
 	char linebuff[LINE_BUFFER];
 	char *str;
 	int *months = calloc(12, sizeof(int));
@@ -1626,7 +1686,7 @@ void nc_print_overview_months(WINDOW *wptr) {
 
 	for (int i = 0; i < 12; i++) {
 		wmove(wptr, y, cur);
-		wprintw(wptr, "%s", months[i]);
+		wprintw(wptr, "%s", abbr_months[i]);
 		cur += space;
 	}
 }
@@ -1677,7 +1737,7 @@ void nc_overview_setup(int year) {
 	wrefresh(wptr_parent);
 	
 	FILE *fptr = open_record_csv("r");
-	int *months = list_records_by_month(fptr, year);
+	int *months = list_records_by_month_old(fptr, year);
 	fclose(fptr);
 
 	unsigned int flag = nc_overview_loop(wptr_data, months, year);
@@ -1775,7 +1835,7 @@ void legacy_read_csv(void) {
 	yearsarr = NULL;
 	rewind(fptr);
 
-	int *monthsarr = list_records_by_month(fptr, useryear);
+	int *monthsarr = list_records_by_month_old(fptr, useryear);
 	i = 0;
 
 	while (month_record_exists == false) {
@@ -1837,7 +1897,7 @@ int nc_read_select_year(WINDOW *wptr, FILE *fptr) {
 	Vec *budget_years = list_records_by_year(bfptr, 1);
 	fclose(bfptr);
 
-	Vec *years = consolidate_years(record_years, budget_years);
+	Vec *years = consolidate_year_vectors(record_years, budget_years);
 	if (years == NULL) {
 		return -(NO_RCRD);
 	}
@@ -1928,13 +1988,86 @@ int nc_read_select_year(WINDOW *wptr, FILE *fptr) {
 	return selected_year;
 }
 
+Vec *consolidate_month_vectors(Vec *vec1, Vec *vec2) {
+	Vec *pr = malloc(sizeof(Vec) + (sizeof(long) + MONTHS_IN_YEAR));
+	if (pr == NULL) {
+		free(vec1);
+		free(vec2);
+		memory_allocate_fail();
+	}
+	pr->size = 0;
+	pr->capacity = MONTHS_IN_YEAR;
+
+	size_t tmp1;
+	size_t tmp2;
+
+	for (size_t i = 0; i < pr->capacity; i++) {
+		if (i < vec2->size) {
+			tmp1 = vec2->data[i];
+		} else {
+			tmp1 = 0;
+		}
+
+		if (i < vec1->size) {
+			tmp2 = vec1->data[i];
+		} else {
+			tmp2 = 0;
+		}
+
+		if (tmp1 > 0 && tmp2 > 0) {
+			if (tmp1 == tmp2) {
+				pr->data[pr->size] = tmp1;
+				pr->size++;
+			} else {
+				pr->data[pr->size] = tmp1;
+				pr->size++;
+				pr->data[pr->size] = tmp2;
+				pr->size++;
+			}
+		} else if (tmp1 > 0 && tmp2 == 0) {
+			if (!duplicate_vector_data(pr, tmp1)) {
+				pr->data[pr->size] = tmp1;
+				pr->size++;
+			}
+		} else if (tmp2 > 0 && tmp1 == 0) {
+			if (!duplicate_vector_data(pr, tmp2)) {
+				pr->data[pr->size] = tmp2;
+				pr->size++;
+			}
+		}
+	}
+
+	return pr;
+}
+
+Vec *init_nc_read_select_month(int year) {
+	FILE *rfptr = open_record_csv("r");
+	FILE *bfptr = open_budget_csv("r");
+
+	Vec *pr = get_months_with_data(rfptr, year, 1);
+	Vec *pb = get_months_with_data(bfptr, year, 0);
+
+	fclose(rfptr);
+	fclose(bfptr);
+
+	Vec *retval = consolidate_month_vectors(pr, pb);
+
+	free(pr);
+	pr = NULL;
+	free(pb);
+	pb = NULL;
+
+	return retval;
+}
+
 /* On a non-select, the return value is the inverted menukeys value */
 int nc_read_select_month(WINDOW *wptr, FILE* fptr, int year) {
 	rewind(fptr);
 
-	int *months_arr = list_records_by_month(fptr, year);
+	Vec *months_data = init_nc_read_select_month(year);
+
 	int selected_month = 0;
-	int monlen = strlen(months[0]);
+	int monlen = strlen(abbr_months[0]);
 
 	int temp_y = 0;
 	int scr_idx = 0;
@@ -1943,9 +2076,9 @@ int nc_read_select_month(WINDOW *wptr, FILE* fptr, int year) {
 	wmove(wptr, BOX_OFFSET, BOX_OFFSET);
 	for (int i = 0; i < 12; i++) {
 		temp_y = getcury(wptr);
-		if (months_arr[i] != 0) {
+		if (months_data[i] != 0) {
 			wmove(wptr, temp_y, BOX_OFFSET);
-			wprintw(wptr, "%s\n", months[months_arr[i] - 1]);
+			wprintw(wptr, "%s\n", abbr_months[months_data[i] - 1]);
 			scr_idx++;
 		}
 	}

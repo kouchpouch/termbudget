@@ -28,6 +28,7 @@
 
 #define MIN_YEAR 2000
 #define MAX_YEAR 2100
+#define MONTHS_IN_YEAR 12
 
 #define MAX_LEN_AMOUNT 9
 #define MAX_LEN_DAY_MON 2
