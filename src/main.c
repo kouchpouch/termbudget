@@ -965,7 +965,6 @@ void nc_add_transaction(int year, int month, int sort) {
 	}
 
 	unsigned int resultline = sort_record_csv(uld->month, uld->day, uld->year);
-
 	add_csv_record(resultline, uld);
 
 input_quit:
@@ -2002,6 +2001,7 @@ int nc_read_select_year(WINDOW *wptr, FILE *fptr) {
 			free(years);
 			years = NULL;
 			return -(ADD);
+			break;
 		case(KEY_RESIZE):
 			free(years);
 			years = NULL;
@@ -3122,6 +3122,7 @@ void nc_read_setup(int sel_year, int sel_month, int sort) {
 	if (!sel_year) {
 		sel_year = nc_read_select_year(wptr_parent, fptr);
 	}
+
 	if (sel_year == -(NO_RCRD)) {
 		mvwxcprintw(wptr_parent, max_y / 2, 
 			  "No records exist, add (F1) to get started");
@@ -3143,7 +3144,7 @@ void nc_read_setup(int sel_year, int sel_month, int sort) {
 	wclear(wptr_parent);
 
 	plines = get_matching_line_nums(fptr, sel_month, sel_year);
-	if (plines == NULL) {
+	if (plines->size == 0) {
 		free(pidx);
 		fclose(fptr);
 		return;
@@ -3210,10 +3211,11 @@ err_select_date_fail:
 		nc_print_input_footer(stdscr);
 		if (sel_year < 0 || sel_month < 0) {
 			nc_add_transaction_default();
+			nc_read_setup_default();
 		} else {
 			nc_add_transaction(sel_year, sel_month, sort);
+			nc_read_setup(sel_year, sel_month, sort);
 		}
-		nc_read_setup(sel_year, sel_month, sort);
 		break;
 	case(EDIT):
 		nc_print_quit_footer(stdscr);
