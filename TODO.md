@@ -32,7 +32,7 @@
     - ( ) Move to integer/fixed point arithmetic for financial calculations
     - (*) *n/a* Use realloc in sorter.c (sort_csv()) instead of having a fixed
             number of lines to index
-    - ( ) Add ability to escape the menu when accepting a user input
+    - (*) Add ability to escape the menu when accepting a user input
     - (*) Add page up/page down/end/home keys for navigating lists
     - (*) Add sort by feature
     - (*) Dim menu options in the footer if they are not available to use
@@ -54,7 +54,7 @@
         - (*) Verify data between files and in the files themselves (The CSVs)
     - (*) Create data structures to handle budget planning by category
     - (*) Add confirmation prompts when editing a category line
-    - ( ) Add initialization function to handle opening files and getting
+    - (*) Add initialization function to handle opening files and getting
             vectors, deduplicating, and sorting for nc_select_year/month
 
 #### Main Feature Set
@@ -120,3 +120,5 @@
             needs to be made to handle this.
     - ( ) When selecting a category in ncurses, empty categories are not shown.
             The way the function retrieves categories needs to be changed.
+    - ( ) Seg fault when deleting a category and that category is the only
+            data to exist for a given month and year.
