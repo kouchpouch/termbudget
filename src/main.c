@@ -552,7 +552,7 @@ void nc_edit_category(long b, long nmembers) {
 		nc_print_category_member_warning();
 		return;
 	} else if (select == 1) {
-		if (nc_confirm_input("Confirm Delete")) {
+		if (!nc_confirm_input("Confirm Delete")) {
 			return;
 		}
 	}
