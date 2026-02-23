@@ -2155,18 +2155,11 @@ Vec *get_matching_line_nums(FILE *fptr, int month, int year) {
 		linenumber++;
 	}
 
-	if (pl->size >= 0) {
-		return pl;
-	}
-
-//	if (pl->size > 0) { // KEEP TRACK OF THIS!
+//	if (pl->size >= 0) {
 //		return pl;
-//	} else {
-//		free(pl);
-//		pl = NULL;
-//		return NULL;
 //	}
-	return NULL;
+
+	return pl;
 }
 
 double get_expenditures_per_category(struct BudgetTokens *bt) {
