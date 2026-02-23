@@ -1246,19 +1246,7 @@ bool duplicate_vector_data(Vec *vec, long y) {
 	return false;
 }
 
-/* Returns a Vec of deduplicated data from record_years and budget_years */
-Vec *consolidate_year_vectors(Vec *vec1, Vec *vec2) {
-	Vec *pr = malloc(sizeof(Vec) + (sizeof(long) * vec1->size) +
-				  	 sizeof(long) * vec2->size);
-	if (pr == NULL) {
-		free(vec1);
-		free(vec2);
-		memory_allocate_fail();
-	}
-
-	pr->size = 0;
-	pr->capacity = vec1->size + vec2->size;
-
+void combine_dedup_vectors(Vec *vec1, Vec *vec2, Vec *result) {
 	size_t tmp1;
 	size_t tmp2;
 	size_t max = max_val(vec1->size, vec2->size);
@@ -1278,45 +1266,46 @@ Vec *consolidate_year_vectors(Vec *vec1, Vec *vec2) {
 
 		if (tmp1 > 0 && tmp2 > 0) {
 			if (tmp1 == tmp2) {
-				pr->data[pr->size] = tmp1;
-				pr->size++;
+				result->data[result->size] = tmp1;
+				result->size++;
 			} else {
-				pr->data[pr->size] = tmp1;
-				pr->size++;
-				pr->data[pr->size] = tmp2;
-				pr->size++;
+				result->data[result->size] = tmp1;
+				result->size++;
+				result->data[result->size] = tmp2;
+				result->size++;
 			}
 		} else if (tmp1 > 0 && tmp2 == 0) {
-			if (!duplicate_vector_data(pr, tmp1)) {
-				pr->data[pr->size] = tmp1;
-				pr->size++;
+			if (!duplicate_vector_data(result, tmp1)) {
+				result->data[result->size] = tmp1;
+				result->size++;
 			}
 		} else if (tmp2 > 0 && tmp1 == 0) {
-			if (!duplicate_vector_data(pr, tmp2)) {
-				pr->data[pr->size] = tmp2;
-				pr->size++;
+			if (!duplicate_vector_data(result, tmp2)) {
+				result->data[result->size] = tmp2;
+				result->size++;
 			}
 		}
 	}
+}
 
-	if (debug) {
-		for (size_t i = 0; i < pr->size; i++) {
-			printw("%ld ", pr->data[i]);
-		}
-		printw("\n");
-		getch();
+/* Returns a Vec of deduplicated data from record_years and budget_years */
+Vec *consolidate_year_vectors(Vec *vec1, Vec *vec2) {
+	Vec *result = malloc(sizeof(Vec) + (sizeof(long) * vec1->size) +
+				  	 sizeof(long) * vec2->size);
+	if (result == NULL) {
+		free(vec1);
+		free(vec2);
+		memory_allocate_fail();
 	}
 
-	qsort(pr->data, pr->size, sizeof(pr->data[0]), compare_for_sort);
+	result->size = 0;
+	result->capacity = vec1->size + vec2->size;
 
-	if (debug) {
-		for (size_t i = 0; i < pr->size; i++) {
-			printw("%ld ", pr->data[i]);
-		}
-		getch();
-	}
+	combine_dedup_vectors(vec1, vec2, result);
 
-	return pr;
+	qsort(result->data, result->size, sizeof(result->data[0]), compare_for_sort);
+
+	return result;
 }
 
 Vec *list_records_by_year(FILE *fptr, int field) {
@@ -1887,24 +1876,74 @@ void legacy_read_csv(void) {
 	fptr = NULL;
 }
 
+Vec *consolidate_month_vectors(Vec *vec1, Vec *vec2) {
+	Vec *result = malloc(sizeof(Vec) + (sizeof(long) * MONTHS_IN_YEAR));
+	if (result == NULL) {
+		free(vec1);
+		free(vec2);
+		memory_allocate_fail();
+	}
+
+	result->size = 0;
+	result->capacity = MONTHS_IN_YEAR;
+
+	combine_dedup_vectors(vec1, vec2, result);
+
+	qsort(result->data, result->size, sizeof(result->data[0]), compare_for_sort);
+
+	return result;
+}
+
+Vec *init_nc_read_select_year(void) {
+	FILE *rfptr = open_record_csv("r");
+	FILE *bfptr = open_budget_csv("r");
+
+	Vec *pr = list_records_by_year(rfptr, 2);
+	Vec *pb = list_records_by_year(bfptr, 1);
+
+	fclose(rfptr);
+	fclose(bfptr);
+
+	Vec *retval = consolidate_month_vectors(pr, pb);
+
+	free(pr);
+	pr = NULL;
+	free(pb);
+	pb = NULL;
+
+	return retval;
+}
+
+Vec *init_nc_read_select_month(int year) {
+	FILE *rfptr = open_record_csv("r");
+	FILE *bfptr = open_budget_csv("r");
+
+	Vec *pr = get_months_with_data(rfptr, year, 1);
+	Vec *pb = get_months_with_data(bfptr, year, 0);
+
+	fclose(rfptr);
+	fclose(bfptr);
+
+	Vec *retval = consolidate_month_vectors(pr, pb);
+
+	free(pr);
+	pr = NULL;
+	free(pb);
+	pb = NULL;
+
+	return retval;
+}
+
 /* On a non-select, the return value is the inverted menukeys value */
 int nc_read_select_year(WINDOW *wptr, FILE *fptr) {
 	rewind(fptr);
 	keypad(wptr, true);	
 
-	Vec *record_years = list_records_by_year(fptr, 2);
-	FILE *bfptr = open_budget_csv("r");
-	Vec *budget_years = list_records_by_year(bfptr, 1);
-	fclose(bfptr);
+	Vec *years = init_nc_read_select_year();
 
-	Vec *years = consolidate_year_vectors(record_years, budget_years);
 	if (years == NULL) {
 		return -(NO_RCRD);
 	}
-	free(record_years);
-	record_years = NULL;
-	free(budget_years);
-	budget_years = NULL;
 
 	int selected_year = 0;
 	int print_y = 1;
@@ -1988,78 +2027,6 @@ int nc_read_select_year(WINDOW *wptr, FILE *fptr) {
 	return selected_year;
 }
 
-Vec *consolidate_month_vectors(Vec *vec1, Vec *vec2) {
-	Vec *pr = malloc(sizeof(Vec) + (sizeof(long) + MONTHS_IN_YEAR));
-	if (pr == NULL) {
-		free(vec1);
-		free(vec2);
-		memory_allocate_fail();
-	}
-	pr->size = 0;
-	pr->capacity = MONTHS_IN_YEAR;
-
-	size_t tmp1;
-	size_t tmp2;
-
-	for (size_t i = 0; i < pr->capacity; i++) {
-		if (i < vec2->size) {
-			tmp1 = vec2->data[i];
-		} else {
-			tmp1 = 0;
-		}
-
-		if (i < vec1->size) {
-			tmp2 = vec1->data[i];
-		} else {
-			tmp2 = 0;
-		}
-
-		if (tmp1 > 0 && tmp2 > 0) {
-			if (tmp1 == tmp2) {
-				pr->data[pr->size] = tmp1;
-				pr->size++;
-			} else {
-				pr->data[pr->size] = tmp1;
-				pr->size++;
-				pr->data[pr->size] = tmp2;
-				pr->size++;
-			}
-		} else if (tmp1 > 0 && tmp2 == 0) {
-			if (!duplicate_vector_data(pr, tmp1)) {
-				pr->data[pr->size] = tmp1;
-				pr->size++;
-			}
-		} else if (tmp2 > 0 && tmp1 == 0) {
-			if (!duplicate_vector_data(pr, tmp2)) {
-				pr->data[pr->size] = tmp2;
-				pr->size++;
-			}
-		}
-	}
-
-	return pr;
-}
-
-Vec *init_nc_read_select_month(int year) {
-	FILE *rfptr = open_record_csv("r");
-	FILE *bfptr = open_budget_csv("r");
-
-	Vec *pr = get_months_with_data(rfptr, year, 1);
-	Vec *pb = get_months_with_data(bfptr, year, 0);
-
-	fclose(rfptr);
-	fclose(bfptr);
-
-	Vec *retval = consolidate_month_vectors(pr, pb);
-
-	free(pr);
-	pr = NULL;
-	free(pb);
-	pb = NULL;
-
-	return retval;
-}
-
 /* On a non-select, the return value is the inverted menukeys value */
 int nc_read_select_month(WINDOW *wptr, FILE* fptr, int year) {
 	rewind(fptr);
@@ -2074,11 +2041,11 @@ int nc_read_select_month(WINDOW *wptr, FILE* fptr, int year) {
 	int cur_idx = 0;
 
 	wmove(wptr, BOX_OFFSET, BOX_OFFSET);
-	for (int i = 0; i < 12; i++) {
+	for (int i = 0; i < months_data->size; i++) {
 		temp_y = getcury(wptr);
-		if (months_data[i] != 0) {
+		if (months_data->data[i] != 0) {
 			wmove(wptr, temp_y, BOX_OFFSET);
-			wprintw(wptr, "%s\n", abbr_months[months_data[i] - 1]);
+			wprintw(wptr, "%s\n", abbr_months[months_data->data[i] - 1]);
 			scr_idx++;
 		}
 	}
@@ -2112,8 +2079,8 @@ int nc_read_select_month(WINDOW *wptr, FILE* fptr, int year) {
 			}
 			break;
 		case(KEY_RESIZE):
-			free(months_arr);
-			months_arr = NULL;
+			free(months_data);
+			months_data = NULL;
 
 			/* This RESIZE macro has to be greater than 12, which I have no
 			 * intention of changing. I hate this. However--I'm lazy. Plus,
@@ -2122,21 +2089,21 @@ int nc_read_select_month(WINDOW *wptr, FILE* fptr, int year) {
 			break;
 		case('\n'):
 		case('\r'):
-			selected_month = months_arr[cur_idx];
+			selected_month = months_data->data[cur_idx];
 			wrefresh(wptr);
 			break;
 		case('q'):
 		case(KEY_F(QUIT)):
-			free(months_arr);
-			months_arr = NULL;
+			free(months_data);
+			months_data = NULL;
 			return -(QUIT);
 		default: 
 			break;
 		}
 	}
 
-	free(months_arr);
-	months_arr = NULL;
+	free(months_data);
+	months_data = NULL;
 
 	return selected_month;
 }
@@ -2188,13 +2155,17 @@ Vec *get_matching_line_nums(FILE *fptr, int month, int year) {
 		linenumber++;
 	}
 
-	if (pl->size > 0) {
+	if (pl->size >= 0) {
 		return pl;
-	} else {
-		free(pl);
-		pl = NULL;
-		return NULL;
 	}
+
+//	if (pl->size > 0) { // KEEP TRACK OF THIS!
+//		return pl;
+//	} else {
+//		free(pl);
+//		pl = NULL;
+//		return NULL;
+//	}
 	return NULL;
 }
 
@@ -3208,7 +3179,7 @@ void nc_read_setup(int sel_year, int sel_month, int sort) {
 	print_column_headers(wptr_parent, BOX_OFFSET);
 	box(wptr_parent, 0, 0);
 	mvwprintw(wptr_parent, 0, BOX_OFFSET, "%d %s", sel_year, 
-		  	  months[sel_month - 1]);
+		  	  abbr_months[sel_month - 1]);
 	mvwprintw(wptr_parent, 0, 
 			  max_x - strlen(sort_text) - strlen("Sort By: ") - BOX_OFFSET, 
 			  "Sort By: %s", sort_text);
