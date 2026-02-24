@@ -10,4 +10,5 @@ termbudget:
 		src/parser.c \
 		src/fileintegrity.c \
 		src/filemanagement.c \
+		src/tui_input_menu.c \
 		-lncurses -o termbudget
