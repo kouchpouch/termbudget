@@ -56,6 +56,7 @@
     - (*) Add confirmation prompts when editing a category line
     - (*) Add initialization function to handle opening files and getting
             vectors, deduplicating, and sorting for nc_select_year/month
+    - ( ) nc_edit_transaction function is ugly, it must be changed.
 
 #### Main Feature Set
     - (*) Create a transaction
@@ -124,3 +125,5 @@
     - ( ) There is nothing to handle the case where there are so many years
             with records that the terminal is not large enough to display
             them all. Years should horizontally scroll.
+    - ( ) Cannot add a transaction if the user is inside of the nc_select_month
+            loop.
