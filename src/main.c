@@ -26,6 +26,7 @@
 #include "sorter.h"
 #include "tui.h"
 #include "tui_input.h"
+#include "tui_input_menu.h"
 #include "parser.h"
 #include "main.h"
 #include "categories.h"
@@ -443,59 +444,21 @@ void print_record_hr(struct LineData *ld) {
 	 );
 }
 
-void nc_print_edit_category_options(WINDOW *wptr) {
-	mvwxcprintw(wptr, 0, "Editing Category");
-	mvwxcprintw(wptr, 3, "Edit Amount");
-	mvwxcprintw(wptr, 4, "Delete");
-}
-
-int nc_select_category_field_to_edit(long b) {
-	WINDOW *wptr = create_input_subwindow();
-	int c = 0;
-	int select = 0;
-	int displayed = 2; // There are two options in nc_print_edit_category_options
-	int cur_y = 3; // The first option is at y=3;
-	int x_traverse = getmaxx(wptr) - BOX_OFFSET * 2; // How many units x to highlight
-	nc_print_edit_category_options(wptr);
-	mvwchgat(wptr, cur_y, BOX_OFFSET, getmaxx(wptr) - BOX_OFFSET * 2, A_REVERSE, 0, NULL); 
-	keypad(wptr, true);
-
-	while (c != KEY_F(QUIT) && c != '\n' && c != '\r') {
-		wrefresh(wptr);
-		c = wgetch(wptr);
-		switch (c) {
-		case('j'):
-		case(KEY_DOWN):
-			if (select + 1 < displayed) {
-				mvwchgat(wptr, cur_y, BOX_OFFSET, x_traverse, A_NORMAL, 0, NULL); 
-				cur_y++;
-				select++;
-				mvwchgat(wptr, cur_y, BOX_OFFSET, x_traverse, A_REVERSE, 0, NULL); 
-			}
-			break;
-		case('k'):
-		case(KEY_UP):
-			if (select - 1 >= 0) {
-				mvwchgat(wptr, cur_y, BOX_OFFSET, x_traverse, A_NORMAL, 0, NULL); 
-				cur_y--;
-				select--;
-				mvwchgat(wptr, cur_y, BOX_OFFSET, x_traverse, A_REVERSE, 0, NULL); 
-			}
-			break;
-		case('\n'):
-		case('\r'):
-			nc_exit_window(wptr);
-			return select;
-		case('q'):
-		case(KEY_F(QUIT)):
-			nc_exit_window(wptr);
-			return -1;
-		default:
-			break;
-		}
+int nc_select_category_field_to_edit(void) {
+	struct MenuParams *mp = malloc(sizeof(struct MenuParams) + (sizeof(char *) * 2));
+	if (mp == NULL) {
+		memory_allocate_fail();
 	}
-	nc_exit_window(wptr);
-	return -1;
+
+	mp->items = 2;
+	mp->title = "Editing Category";
+	mp->strings[0] = "Edit Amount";
+	mp->strings[1] = "Delete";
+
+	int retval = nc_input_menu(mp);
+
+	free(mp);
+	return retval;
 }
 
 bool nc_confirm_amount(double amt) {
@@ -543,7 +506,7 @@ void nc_print_category_member_warning() {
  * file position b.
  */
 void nc_edit_category(long b, long nmembers) {
-	int select = nc_select_category_field_to_edit(b);
+	int select = nc_select_category_field_to_edit();
 	double amt = 0;
 
 	if (select == -1) {
@@ -846,11 +809,8 @@ int verify_categories_exist_in_budget(void) {
 	FILE *rfptr = open_record_csv("r");
 	int corrected = 0;
 
-	/* 
-	 * Go through each year and find the matching months, then find the
-	 * matching categories, then compare.. Lotta work! Good thing this only
-	 * runs once at startup. 
-	 */
+	/* Go through each year and find the matching months, then find the
+	 * matching categories, then compare. */
 
 	struct Categories prc_, *prc = &prc_;
 	struct Categories pbc_, *pbc = &pbc_;
@@ -914,6 +874,11 @@ void add_csv_record(int linetoadd, struct LineData *ld) {
 	}
 	
 	mv_tmp_to_record_file(tmpfptr, fptr);
+}
+
+/* For a la carte budget category creation */
+void nc_add_budget_category(int month, int year) {
+
 }
 
 /* Optional parameters int month, year. If add transaction is selected while
