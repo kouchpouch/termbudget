@@ -1268,10 +1268,14 @@ void combine_dedup_vectors(Vec *vec1, Vec *vec2, Vec *result) {
 				result->data[result->size] = tmp1;
 				result->size++;
 			} else {
-				result->data[result->size] = tmp1;
-				result->size++;
-				result->data[result->size] = tmp2;
-				result->size++;
+				if (!duplicate_vector_data(result, tmp1)) {
+					result->data[result->size] = tmp1;
+					result->size++;
+				}
+				if (!duplicate_vector_data(result, tmp2)) {
+					result->data[result->size] = tmp2;
+					result->size++;
+				}
 			}
 		} else if (tmp1 > 0 && tmp2 == 0) {
 			if (!duplicate_vector_data(result, tmp1)) {
@@ -1903,7 +1907,7 @@ Vec *init_nc_read_select_year(void) {
 	fclose(rfptr);
 	fclose(bfptr);
 
-	Vec *retval = consolidate_month_vectors(pr, pb);
+	Vec *retval = consolidate_year_vectors(pr, pb);
 
 	free(pr);
 	pr = NULL;
@@ -3139,6 +3143,9 @@ void nc_read_setup(int sel_year, int sel_month, int sort) {
 
 	wclear(wptr_parent);
 
+	/* If plines->size is zero, whatever function cannot return to an
+	 * nc_read_setup with month and year parameters, as these dates no longer
+	 * hold any records. */
 	plines = get_matching_line_nums(fptr, sel_month, sel_year);
 	if (plines == NULL) {
 		free(pidx);
@@ -3146,9 +3153,14 @@ void nc_read_setup(int sel_year, int sel_month, int sort) {
 		return;
 	}
 
+	size_t n_records = plines->size;
 	Vec *psc;
 	char *sort_text;
 	CategoryNode **nodes;
+
+	if (plines->size == 0 && sort == SORT_DATE) {
+		sort = SORT_CATG;
+	}
 
 	switch(sort) {
 	case(SORT_DATE):
@@ -3224,7 +3236,14 @@ err_select_date_fail:
 	case(QUIT):
 		break;
 	case(SORT):
-		(sort == 0) ? (sort = 1) : (sort = 0);
+		if (sort == SORT_CATG && n_records == 0) {
+			nc_message("Cannot sort by date, no records exist");
+			sort = SORT_CATG;
+		} else if (sort == SORT_CATG) {
+			sort = SORT_DATE;
+		} else {
+			sort = SORT_CATG;
+		}
 		nc_read_setup(sel_year, sel_month, sort);
 		break;
 	case(OVERVIEW):
@@ -3232,7 +3251,11 @@ err_select_date_fail:
 		break;
 	case(EDIT_CATG):
 		nc_edit_category(sr->index, sr->opt); 
-		nc_read_setup(sel_year, sel_month, sort);
+		if (n_records > 0) {
+			nc_read_setup(sel_year, sel_month, sort);
+		} else {
+			nc_read_setup_default();
+		}
 		break;
 	case(RESIZE):
 		while (test_terminal_size() == -1) {
