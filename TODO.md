@@ -116,9 +116,11 @@
             inserted between the two records in January.
     - (*) Budget sorter is jank, doesn't work.
     - ( ) refresh_on_detail_close_uniform in main.c when sorted by category doesn't
-            re-color the categories, which isn't really a bug, but a new func
-            needs to be made to handle this.
-    - ( ) When selecting a category in ncurses, empty categories are not shown.
+            re-color the categories, a new func needs to be made to handle this.
+    - (*) When selecting a category in ncurses, empty categories are not shown.
             The way the function retrieves categories needs to be changed.
-    - ( ) Seg fault when deleting a category and that category is the only
+    - (*) Seg fault when deleting a category and that category is the only
             data to exist for a given month and year.
+    - ( ) There is nothing to handle the case where there are so many years
+            with records that the terminal is not large enough to display
+            them all. Years should horizontally scroll.
