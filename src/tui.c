@@ -266,7 +266,7 @@ WINDOW *nc_init_stdscr(void) {
 
 void nc_print_welcome(WINDOW *wptr) {
 	curs_set(0);
-	mvwxcprintw(wptr, getmaxy(wptr) / 2, "Welcome to termBudget");
+	mvwxcprintw(wptr, getmaxy(wptr) / 2, "termBudget");
 	mvwxcprintw(wptr, getmaxy(wptr) / 2 + 1, "github.com/kouchpouch");
 }
 
