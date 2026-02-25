@@ -125,5 +125,5 @@
     - 13 ( ) There is nothing to handle the case where there are so many years
             with records that the terminal is not large enough to display
             them all. Years should horizontally scroll.
-    - 14 ( ) Cannot add a transaction if the user is inside of the nc_select_month
+    - 14 (*) Cannot add a transaction if the user is inside of the nc_select_month
             loop.
