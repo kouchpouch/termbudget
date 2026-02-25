@@ -24,6 +24,9 @@ struct MenuParams {
 	char *strings[];
 };
 
+/* Creates an input ncurses window (window dimensions are defined in tui.h)
+ * With data defined in parameter mp. Does not support off-window scrolling.
+ * returns array index of selected element in mp->strings. */
 int nc_input_menu(struct MenuParams *mp);
 
 #endif

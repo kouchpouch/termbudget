@@ -40,7 +40,8 @@ int nc_input_menu(struct MenuParams *mp) {
 	int displayed = mp->items;
 	int cur_y = first_y_pos(mp->items, getmaxy(wptr) - BOX_OFFSET);
 	int first_y = cur_y;
-	int x_traverse = getmaxx(wptr) - BOX_OFFSET * 2; // How many units x to highlight
+	/* Units on the x axis to change for mvwchgat() */
+	int x_traverse = getmaxx(wptr) - BOX_OFFSET * 2;
 
 	print_items(mp, wptr, cur_y);
 	mvwchgat(wptr, cur_y, BOX_OFFSET, getmaxx(wptr) - BOX_OFFSET * 2, A_REVERSE, 0, NULL); 
