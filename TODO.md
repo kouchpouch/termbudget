@@ -94,36 +94,36 @@
             not great.
 
 #### Bugs
-    - (*) A line number is able to be selected (line 1) and it will edit the
+    - 1 (*) A line number is able to be selected (line 1) and it will edit the
             header line. Also line 1 is displayed as line 2. Probably something
             to do with the humanreadable target variable being subtracted by 2
-    - (*) *n/a* Sorter places a previous year on line 3 when a more recent year is on
+    - 2 (*) *n/a* Sorter places a previous year on line 3 when a more recent year is on
             line 2.
-    - (*) Sorter edge case on adding a transaction to a month which does not
+    - 3 (*) Sorter edge case on adding a transaction to a month which does not
             match and is not greater than the target month. If the months in
             the CSV are all less than the target, the record will be 
             erroneously be added out of chronological order.
-    - (*) Edge case where trying to access read via the TUI, fgets fails to
+    - 4 (*) Edge case where trying to access read via the TUI, fgets fails to
             read the line (because it doesn't exist).
-    - (*) If editing a record's date causing no more records to exist for that
+    - 5 (*) If editing a record's date causing no more records to exist for that
             year and month, the TUI doesn't refresh properly.
-    - (*) *n/a* Sorter function can't handle adding a record between two years which
+    - 6 (*) *n/a* Sorter function can't handle adding a record between two years which
             doesn't already exist.
-    - ( ) Input too short warning when entering a single digit line number in 
+    - 7 ( ) Input too short warning when entering a single digit line number in 
             CLI mode
-    - (*) *n/a* Sorter still doesn't completely work. Adding months between months
+    - 8 (*) *n/a* Sorter still doesn't completely work. Adding months between months
             doesn't work as intended. If January has 2 records in it and a
             new record is added, like a record in May, the may record will be
             inserted between the two records in January.
-    - (*) Budget sorter is jank, doesn't work.
-    - ( ) refresh_on_detail_close_uniform in main.c when sorted by category doesn't
+    - 9 (*) Budget sorter is jank, doesn't work.
+    - 10 ( ) refresh_on_detail_close_uniform in main.c when sorted by category doesn't
             re-color the categories, a new func needs to be made to handle this.
-    - (*) When selecting a category in ncurses, empty categories are not shown.
+    - 11 (*) When selecting a category in ncurses, empty categories are not shown.
             The way the function retrieves categories needs to be changed.
-    - (*) Seg fault when deleting a category and that category is the only
+    - 12 (*) Seg fault when deleting a category and that category is the only
             data to exist for a given month and year.
-    - ( ) There is nothing to handle the case where there are so many years
+    - 13 ( ) There is nothing to handle the case where there are so many years
             with records that the terminal is not large enough to display
             them all. Years should horizontally scroll.
-    - ( ) Cannot add a transaction if the user is inside of the nc_select_month
+    - 14 ( ) Cannot add a transaction if the user is inside of the nc_select_month
             loop.
