@@ -1977,7 +1977,9 @@ int nc_read_select_year(WINDOW *wptr, FILE *fptr) {
 		case('\n'):
 		case('\r'):
 			selected_year = years->data[scr_idx];
-			break;
+			free(years);
+			years = NULL;
+			return selected_year;
 		case('Q'):
 		case('q'):
 		case(KEY_F(QUIT)):
@@ -1987,8 +1989,6 @@ int nc_read_select_year(WINDOW *wptr, FILE *fptr) {
 			break;
 		}
 	}
-
-	wrefresh(wptr);
 
 	free(years);
 	years = NULL;
@@ -2047,6 +2047,11 @@ int nc_read_select_month(WINDOW *wptr, FILE* fptr, int year) {
 				cur_idx--;
 			}
 			break;
+		case('a'):
+		case(KEY_F(ADD)):
+			free(months_data);
+			months_data = NULL;
+			return -(ADD);
 		case(KEY_RESIZE):
 			free(months_data);
 			months_data = NULL;
@@ -3103,6 +3108,9 @@ void nc_read_setup(int sel_year, int sel_month, int sort) {
 		sel_month = nc_read_select_month(wptr_parent, fptr, sel_year);
 	}
 	if (sel_month < 0) {
+		sr->flag = -(sel_month);
+		goto err_select_date_fail;
+	} else if (sel_month < 0) {
 		sr->flag = -(sel_month);
 		goto err_select_date_fail;
 	}
