@@ -1943,7 +1943,7 @@ int nc_read_select_year(WINDOW *wptr, FILE *fptr) {
 
 	int c = 0;
 	int temp_x;
-	while (c != '\r' && c != '\n' && c != KEY_F(QUIT)) {
+	while (c != KEY_F(QUIT) && c != 'q') {
 		c = wgetch(wptr);
 		temp_x = getcurx(wptr);
 		switch(c) {
@@ -1970,7 +1970,6 @@ int nc_read_select_year(WINDOW *wptr, FILE *fptr) {
 			free(years);
 			years = NULL;
 			return -(ADD);
-			break;
 		case(KEY_RESIZE):
 			free(years);
 			years = NULL;
@@ -1979,6 +1978,7 @@ int nc_read_select_year(WINDOW *wptr, FILE *fptr) {
 		case('\r'):
 			selected_year = years->data[scr_idx];
 			break;
+		case('Q'):
 		case('q'):
 		case(KEY_F(QUIT)):
 			free(years);
@@ -2025,7 +2025,7 @@ int nc_read_select_month(WINDOW *wptr, FILE* fptr, int year) {
 	wrefresh(wptr);
 
 	int c = 0;
-	while (c != '\r' && c != '\n' && c != KEY_F(QUIT) && c != KEY_RESIZE) {
+	while (c != KEY_F(QUIT) && c != 'q') {
 		c = wgetch(wptr);
 		temp_y = getcury(wptr);
 		switch(c) {
@@ -2055,12 +2055,13 @@ int nc_read_select_month(WINDOW *wptr, FILE* fptr, int year) {
 			 * intention of changing. I hate this. However--I'm lazy. Plus,
 			 * all of the resizes in this program suck. */
 			return -(RESIZE);
-			break;
 		case('\n'):
 		case('\r'):
 			selected_month = months_data->data[cur_idx];
-			wrefresh(wptr);
-			break;
+			free(months_data);
+			months_data = NULL;
+			return selected_month;
+		case('Q'):
 		case('q'):
 		case(KEY_F(QUIT)):
 			free(months_data);
@@ -2235,7 +2236,7 @@ int nc_select_field_to_edit(WINDOW *wptr) {
 	box(wptr, 0, 0);
 	mvwxcprintw(wptr, 0, "Select Field to Edit");
 	wrefresh(wptr);
-	while(c != KEY_F(QUIT) && c != '\n' && c != '\r') {
+	while(c != KEY_F(QUIT) && c != 'q') { 
 		box(wptr, 0, 0);
 		mvwxcprintw(wptr, 0, "Select Field to Edit");
 		wrefresh(wptr);
