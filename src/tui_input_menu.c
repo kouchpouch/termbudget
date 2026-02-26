@@ -14,7 +14,6 @@
  */
 
 #include "tui.h"
-#include "tui_input.h"
 #include "tui_input_menu.h"
 
 #include <ncurses.h>
