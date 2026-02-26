@@ -104,6 +104,27 @@ void free_budget_tokens(struct BudgetTokens *pbt) {
 	free(pbt);
 }
 
+bool month_or_year_exists(int m, int y) {
+	FILE *bfptr = open_budget_csv("r");
+	char linebuff[LINE_BUFFER];
+	char *str;
+	bool mo_exists = false;
+	while ((str = fgets(linebuff, sizeof(linebuff), bfptr)) != NULL) {
+		mo_exists = false;
+		if (atoi(strsep(&str, ",")) == m) {
+			mo_exists = true;
+		}
+		if (atoi(strsep(&str, ",")) == y && mo_exists) {
+			return true;
+		}
+	}
+	return false;
+}
+
+Vec *get_records_by_yr(int year) {
+	return get_records_by_any(-1, -1, year, NULL, NULL, -1, -1, NULL);
+}
+
 Vec *get_records_by_mo_yr(int month, int year) {
 	return get_records_by_any(month, -1, year, NULL, NULL, -1, -1, NULL);
 }
