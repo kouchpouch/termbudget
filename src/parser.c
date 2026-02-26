@@ -115,9 +115,11 @@ bool month_or_year_exists(int m, int y) {
 			mo_exists = true;
 		}
 		if (atoi(strsep(&str, ",")) == y && mo_exists) {
+			fclose(bfptr);
 			return true;
 		}
 	}
+	fclose(bfptr);
 	return false;
 }
 
