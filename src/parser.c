@@ -20,7 +20,7 @@
 #include "tui.h"
 #include "filemanagement.h"
 
-int get_total_csv_lines() {
+int get_total_csv_lines(void) {
 	FILE *fptr = fopen(RECORD_DIR, "r");
 	int lines = 0;
 	char buff[256];

@@ -494,7 +494,7 @@ bool nc_confirm_amount(double amt) {
  * If the user tries to delete a category that contains members, this warns
  * the user that the action cannot be completed.
  */
-void nc_print_category_member_warning() {
+void nc_print_category_member_warning(void) {
 	WINDOW *wptr = create_input_subwindow();
 	mvwxcprintw(wptr, 3, "Cannot delete a category");
 	mvwxcprintw(wptr, 4, "which contains records");

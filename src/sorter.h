@@ -25,8 +25,4 @@ extern unsigned int sort_budget_csv(int month, int year);
 /* A new version of sort_csv() with less chaos */
 extern unsigned int sort_record_csv(int month, int day, int year);
 
-/* Returns a the line in the CSV to insert the data sorted by date,
- * assumes the CSV is already sorted by date */
-[[deprecated]]extern int sort_csv(int month, int day, int year); 
-
 #endif
