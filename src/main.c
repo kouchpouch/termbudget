@@ -183,7 +183,7 @@ int confirm_input(void) {
 int input_month(void) {
 	int month;
 	puts("Enter Month");
-	while((month = input_n_digits(MAX_LEN_DAY_MON, MIN_LEN_DAY_MON)) == -1
+	while ((month = input_n_digits(MAX_LEN_DAY_MON, MIN_LEN_DAY_MON)) == -1
 		|| month <= 0
 		|| month > 12) {
 		puts("Enter a Vaid Month");
@@ -196,7 +196,7 @@ int input_year(void) {
 	if (cli_mode == true) {
 		puts("Enter Year");
 	}
-	while((year = input_n_digits(MAX_LEN_YEAR, MIN_LEN_YEAR)) == -1);
+	while ((year = input_n_digits(MAX_LEN_YEAR, MIN_LEN_YEAR)) == -1);
 	return year;
 }
 
@@ -204,7 +204,7 @@ int input_day(int month, int year) {
 	int day;
 	puts("Enter Day");
 
-	while((day = input_n_digits(MAX_LEN_DAY_MON, MIN_LEN_DAY_MON)) == -1 ||
+	while ((day = input_n_digits(MAX_LEN_DAY_MON, MIN_LEN_DAY_MON)) == -1 ||
 			dayexists(day, month, year) == false) {
 		if (dayexists(day, month, year) == false) { 
 			puts("Invalid Day");
@@ -221,7 +221,7 @@ int input_transaction_type(void) {
 	puts("1. Expense");
 	puts("2. Income");
 
-	while((t = input_n_digits(1, 1)) == -1 || (t != 1 && t != 2)) {
+	while ((t = input_n_digits(1, 1)) == -1 || (t != 1 && t != 2)) {
 		puts("Invalid");
 	}
 	return t - 1; // sub 1 to convert human readable to CSV format
@@ -733,7 +733,7 @@ void add_budget_category(char *catg, int m, int y) {
 	char *line;
 	int linenum = 0;
 
-	while((line = fgets(linebuff, sizeof(linebuff), fptr)) != NULL) {
+	while ((line = fgets(linebuff, sizeof(linebuff), fptr)) != NULL) {
 		linenum++;	
 		if (linenum != linetoadd) {
 			fputs(line, tmpfptr);
@@ -754,7 +754,7 @@ bool category_exists_in_budget(char *catg, int month, int year) {
 	struct BudgetTokens bt, *pbt = &bt;
 	int i = 1;
 
-	while((pbt = tokenize_budget_line(i)) != NULL) {
+	while ((pbt = tokenize_budget_line(i)) != NULL) {
 		if (pbt->y == year && pbt->m == month && strcmp(pbt->catg, catg) == 0) {
 			free_budget_tokens(pbt);
 			return true;
@@ -855,7 +855,7 @@ void add_csv_record(int linetoadd, struct LineData *ld) {
 	char *line;
 	int linenum = 0;
 
-	while((line = fgets(linebuff, sizeof(linebuff), fptr)) != NULL) {
+	while ((line = fgets(linebuff, sizeof(linebuff), fptr)) != NULL) {
 		linenum++;	
 		if (linenum != linetoadd) {
 			fputs(line, tmpfptr);
@@ -1354,7 +1354,7 @@ int *list_records_by_year_old(FILE *fptr) {
 	seek_n_fields(&str, 2);
 	years[i] = atoi(strsep(&str, ",")); // year
 
-	while((str = fgets(linebuff, sizeof(linebuff), fptr)) != NULL) {
+	while ((str = fgets(linebuff, sizeof(linebuff), fptr)) != NULL) {
 		seek_n_fields(&str, 2);
 		year = atoi(strsep(&str, ",")); // year
 		if (year != years[i]) {
@@ -1414,7 +1414,7 @@ Vec *get_months_with_data(FILE *fptr, int matchyear, int fields) {
 		puts("Failed to read header");
 	}
 
-	while((str = fgets(linebuff, sizeof(linebuff), fptr)) != NULL) {
+	while ((str = fgets(linebuff, sizeof(linebuff), fptr)) != NULL) {
 		month = atol(strsep(&str, ","));
 		seek_n_fields(&str, fields);
 		year = atol(strsep(&str, ","));
@@ -1448,7 +1448,7 @@ int *list_records_by_month_old(FILE *fptr, int matchyear) {
 		puts("Failed to read header");
 	}
 
-	while((str = fgets(linebuff, sizeof(linebuff), fptr)) != NULL) {
+	while ((str = fgets(linebuff, sizeof(linebuff), fptr)) != NULL) {
 		month = atoi(strsep(&str, ","));
 		seek_n_fields(&str, 1);
 		year = atoi(strsep(&str, ","));
