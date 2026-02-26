@@ -222,7 +222,7 @@ int nc_input_month(void) {
 	wrefresh(wptr_input);
 
 	nc_input_n_digits(puid, wptr_input, MAX_LEN_DAY_MON, 1);
-	while(puid->flag != QUIT && (puid->data <= 0 || puid->data > 12)) {
+	while (puid->flag != QUIT && (puid->data <= 0 || puid->data > 12)) {
 		clear_input_error_message(wptr_input);
 		mvwxcprintw(wptr_input, getmaxy(wptr_input) - BOX_OFFSET, "Invalid Month");
 		nc_input_n_digits(puid, wptr_input, MAX_LEN_DAY_MON, 1);
@@ -265,7 +265,7 @@ int nc_input_day(int month, int year) {
 	wrefresh(wptr_input);
 
 	nc_input_n_digits(puid, wptr_input, MAX_LEN_DAY_MON, MIN_LEN_DAY_MON);
-	while(puid->flag != QUIT && 
+	while (puid->flag != QUIT && 
 		(puid->data == -1 || dayexists(puid->data, month, year) == false)) 
 	{
 		clear_input_error_message(wptr_input);
@@ -292,7 +292,7 @@ char *nc_input_string(char *msg) {
 	mvwxcprintw(wptr_input, INPUT_MSG_Y_OFFSET, msg);
 	do {
 		nc_user_input(STDIN_LARGE_BUFF, wptr_input, pui);
-	} while(pui->str == NULL && pui->flag != QUIT);
+	} while (pui->str == NULL && pui->flag != QUIT);
 	wrefresh(wptr_input);
 	nc_exit_window(wptr_input);
 	return pui->str;
@@ -306,7 +306,7 @@ int nc_input_transaction_type(void) {
 	/* Transaction type 0 = expense, 1 = income. */
 	int t = 0; 
 
-	while(t != '1' && t != '2') {
+	while (t != '1' && t != '2') {
 		t = wgetch(wptr_input);	
 		if (t == KEY_EXIT || t == KEY_F(QUIT)) {
 			return -1;

@@ -557,7 +557,7 @@ void nc_edit_category(long b, long nmembers) {
 			} else if (linenum == line) {
 				fprintf(tmpfptr, "%d,%d,%s,%.2f\n", bt->m, bt->y, bt->catg, amt);
 			}
-		} while(str != NULL);
+		} while (str != NULL);
 
 	} else if (select == 1) { // DELETE
 		do {
@@ -569,7 +569,7 @@ void nc_edit_category(long b, long nmembers) {
 			if (linenum != line) {
 				fputs(str, tmpfptr);
 			}
-		} while(str != NULL);
+		} while (str != NULL);
 	}
 
 	free_budget_tokens(bt);
@@ -1113,7 +1113,7 @@ int nc_edit_csv_record(int replaceln, int field, struct LineData *ld) {
 			ld->amount
 		   );
 		}
-	} while(line != NULL);
+	} while (line != NULL);
 
 	/* mv_tmp_to_record_file() closes the file pointers */
 	mv_tmp_to_record_file(tmpfptr, fptr);
@@ -1191,7 +1191,7 @@ int edit_csv_record(int linetoreplace, struct LineData *ld, int field) {
 			ld->amount
 		   );
 		}
-	} while(line != NULL);
+	} while (line != NULL);
 
 	/* mv_tmp_to_record_file() closes the file pointers */
 	mv_tmp_to_record_file(tmpfptr, fptr);
@@ -2254,7 +2254,7 @@ int nc_select_field_to_edit(WINDOW *wptr) {
 	box(wptr, 0, 0);
 	mvwxcprintw(wptr, 0, "Select Field to Edit");
 	wrefresh(wptr);
-	while(c != KEY_F(QUIT) && c != 'q') { 
+	while (c != KEY_F(QUIT) && c != 'q') { 
 		box(wptr, 0, 0);
 		mvwxcprintw(wptr, 0, "Select Field to Edit");
 		wrefresh(wptr);
@@ -2940,12 +2940,12 @@ void nc_read_loop(WINDOW *wptr_parent, WINDOW *wptr, FILE *fptr,
 			break;
 
 		case(KEY_END):
-			while(sc->select + 1 < psc->size) {
+			while (sc->select + 1 < psc->size) {
 				nc_scroll_next_read_loop(wptr, sc, cw, fptr, psc);
 			}
 			break;
 		case(KEY_HOME):
-			while(sc->select - 1 >= 0) {
+			while (sc->select - 1 >= 0) {
 				nc_scroll_prev_read_loop(wptr, sc, cw, fptr, psc);
 			}
 			break;
@@ -3316,7 +3316,7 @@ int delete_csv_record(int linetodelete) {
 			fputs(line, tmpfptr);
 		}
 		linenum++;	
-	} while(line != NULL);
+	} while (line != NULL);
 	mv_tmp_to_record_file(tmpfptr, fptr);
 	return 0;
 }

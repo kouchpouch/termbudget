@@ -44,7 +44,7 @@ unsigned int sort_budget_csv(int month, int year) {
 	bool matchingyear = false;
 	bool lesseryear = false;
 
-	while((str = fgets(linebuff, sizeof(linebuff), fptr)) != NULL) {
+	while ((str = fgets(linebuff, sizeof(linebuff), fptr)) != NULL) {
 		line++;
 
 		monthtok = atoi(strsep(&str, ","));
@@ -117,7 +117,7 @@ unsigned int sort_record_csv(int month, int day, int year) {
 //	bool lessermonth = false;
 	bool lesserday = false;
 
-	while((str = fgets(linebuff, sizeof(linebuff), fptr)) != NULL) {
+	while ((str = fgets(linebuff, sizeof(linebuff), fptr)) != NULL) {
 		line++;
 
 		monthtok = atoi(strsep(&str, ","));

@@ -35,7 +35,7 @@ unsigned int boff_to_linenum(long b) {
 	char linebuff[LINE_BUFFER];
 	int linenum = 0;
 	
-	while(fgets(linebuff, sizeof(linebuff), fptr) != NULL) {
+	while (fgets(linebuff, sizeof(linebuff), fptr) != NULL) {
 		if (ftell(fptr) == b) {
 			break;
 		}
@@ -52,7 +52,7 @@ unsigned int boff_to_linenum_budget(long b) {
 	char linebuff[LINE_BUFFER];
 	int linenum = 0;
 	
-	while(fgets(linebuff, sizeof(linebuff), fptr) != NULL) {
+	while (fgets(linebuff, sizeof(linebuff), fptr) != NULL) {
 		if (ftell(fptr) == b) {
 			break;
 		}
