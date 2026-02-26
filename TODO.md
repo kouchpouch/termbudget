@@ -127,3 +127,4 @@
             them all. Years should horizontally scroll.
     - 14 (*) Cannot add a transaction if the user is inside of the nc_select_month
             loop.
+    - 15 ( ) Seg fault after selecting "READ" function from nc_main_menu in main.c
