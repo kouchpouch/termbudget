@@ -3086,6 +3086,10 @@ void nc_read_setup(int sel_year, int sel_month, int sort) {
 
 	WINDOW *wptr_data;
 	Vec *plines;
+	if (!month_or_year_exists(sel_month, sel_year)) {
+		sel_year = 0;
+		sel_month = 0;
+	}
 
 	wptr_data = create_lines_subwindow(max_y - 1, max_x, 1, BOX_OFFSET);
 	wrefresh(wptr_data);
