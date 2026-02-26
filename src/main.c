@@ -1868,6 +1868,19 @@ Vec *init_nc_read_select_year(void) {
 
 	Vec *pr = get_years_with_data(rfptr, 2);
 	Vec *pb = get_years_with_data(bfptr, 1);
+	if (pr == NULL && pb != NULL) {
+		fclose(rfptr);
+		fclose(bfptr);
+		return pb;
+	} else if (pb == NULL && pr != NULL) {
+		fclose(rfptr);
+		fclose(bfptr);
+		return pr;
+	} else if (pr == NULL && pb == NULL) {
+		fclose(rfptr);
+		fclose(bfptr);
+		return NULL;
+	}
 
 	fclose(rfptr);
 	fclose(bfptr);
