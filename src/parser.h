@@ -72,6 +72,15 @@ extern int get_num_fields(FILE *fptr);
 /* Frees the struct and any applicable members */
 extern void free_budget_tokens(struct BudgetTokens *pbt);
 
+/* Returns bool if a month or year exists. Only checks BUDGET_DIR, as any
+ * record there must either contain records or categories. Month parameter
+ * is optional, call function with the month paramater <= 0*/
+extern bool month_or_year_exists(int m, int y);
+
+/* Uses get_records_by_any with all parameters except year as NULL
+ * or -1, omitting the search for other fields */
+extern Vec *get_records_by_yr(int year);
+
 /* Uses get_records_by_any with all parameters except month and year as NULL
  * or -1, omitting the search for other fields */
 extern Vec *get_records_by_mo_yr(int month, int year);
