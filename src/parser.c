@@ -109,7 +109,11 @@ bool month_or_year_exists(int m, int y) {
 	char linebuff[LINE_BUFFER];
 	char *str;
 	bool mo_exists = false;
-	while ((str = fgets(linebuff, sizeof(linebuff), bfptr)) != NULL) {
+	while (1) {
+		str = fgets(linebuff, sizeof(linebuff), bfptr);
+		if (str == NULL) {
+			break;
+		}
 		mo_exists = false;
 		if (atoi(strsep(&str, ",")) == m) {
 			mo_exists = true;
