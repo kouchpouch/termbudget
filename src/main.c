@@ -69,7 +69,7 @@ struct Balances {
 
 void free_categories(struct Categories *pc);
 int *list_records_by_month_old(FILE *fptr, int matchyear);
-Vec *list_records_by_year(FILE *fptr, int field);
+Vec *get_years_with_data(FILE *fptr, int field);
 int *list_records_by_year_old(FILE *fptr);
 void memory_allocate_fail(void);
 int mv_tmp_to_budget_file(FILE *tmp, FILE* main);
@@ -1276,7 +1276,7 @@ Vec *consolidate_year_vectors(Vec *vec1, Vec *vec2) {
 	return result;
 }
 
-Vec *list_records_by_year(FILE *fptr, int field) {
+Vec *get_years_with_data(FILE *fptr, int field) {
 	Vec *pr = malloc(sizeof(Vec) + sizeof(long) * REALLOC_INCR);
 	if (pr == NULL) {
 		memory_allocate_fail();
@@ -1866,8 +1866,8 @@ Vec *init_nc_read_select_year(void) {
 	FILE *rfptr = open_record_csv("r");
 	FILE *bfptr = open_budget_csv("r");
 
-	Vec *pr = list_records_by_year(rfptr, 2);
-	Vec *pb = list_records_by_year(bfptr, 1);
+	Vec *pr = get_years_with_data(rfptr, 2);
+	Vec *pb = get_years_with_data(bfptr, 1);
 
 	fclose(rfptr);
 	fclose(bfptr);
