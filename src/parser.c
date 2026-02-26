@@ -109,6 +109,12 @@ bool month_or_year_exists(int m, int y) {
 	char linebuff[LINE_BUFFER];
 	char *str;
 	bool mo_exists = false;
+
+	if (seek_beyond_header(bfptr) == -1) {
+		perror("Unable to read header");
+		return false;
+	}
+
 	while (1) {
 		str = fgets(linebuff, sizeof(linebuff), bfptr);
 		if (str == NULL) {
