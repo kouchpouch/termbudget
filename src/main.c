@@ -76,7 +76,7 @@ int mv_tmp_to_budget_file(FILE *tmp, FILE* main);
 void nc_read_setup_default(void);
 void calculate_balance(struct Balances *pb, Vec *pbo);
 void nc_read_setup(int sel_year, int sel_month, int sort);
-int nc_confirm_record(struct LineData *ld);
+bool nc_confirm_record(struct LineData *ld);
 void nc_print_record_hr(WINDOW *wptr, struct ColWidth *cw, struct LineData *ld, int y);
 void nc_print_record_vert(WINDOW *wptr, struct LineData *ld, int x_off);
 struct Categories *list_categories(int month, int year);
@@ -923,9 +923,7 @@ void nc_add_transaction(int year, int month, int sort) {
 		goto input_quit;
 	}
 
-	int result = nc_confirm_record(uld);
-
-	if (result == 0) {
+	if (!nc_confirm_record(uld)) {
 		goto input_quit;
 	}
 
@@ -987,7 +985,7 @@ err_category:
 	free(pidx);
 }
 
-int nc_confirm_record(struct LineData *ld) {
+bool nc_confirm_record(struct LineData *ld) {
 	WINDOW *wptr = create_input_subwindow();
 	mvwxcprintw(wptr, 0, "Confirm Record");
 	nc_print_record_vert(wptr, ld, BOX_OFFSET);
@@ -1001,21 +999,21 @@ int nc_confirm_record(struct LineData *ld) {
 		case('y'):
 		case('Y'):
 			nc_exit_window(wptr);
-			return 1;
+			return true;
 		case('n'):
 		case('N'):
 		case(KEY_F(QUIT)):
 		case('q'):
 		case('Q'):
 			nc_exit_window(wptr);
-			return 0;
+			return false;
 		default:
 			break;
 		}
 	}
 
 	nc_exit_window_key(wptr);
-	return 0;
+	return false;
 }
 
 int nc_edit_csv_record(int replaceln, int field, struct LineData *ld) {
@@ -1044,7 +1042,7 @@ int nc_edit_csv_record(int replaceln, int field, struct LineData *ld) {
 		if (ld->day < 0) {
 			goto err_fail;
 		}
-		if (nc_confirm_record(ld) <= 0) {
+		if (!nc_confirm_record(ld)) {
 			goto err_fail;
 		}
 
@@ -1083,7 +1081,7 @@ int nc_edit_csv_record(int replaceln, int field, struct LineData *ld) {
 		return -1;
 	}
 
-	if (nc_confirm_record(ld) <= 0) {
+	if (!nc_confirm_record(ld)) {
 		if (field == 2) free(ld->category);
 		if (field == 3) free(ld->desc);
 		goto err_fail;
