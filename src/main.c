@@ -445,7 +445,8 @@ void print_record_hr(struct LineData *ld) {
 }
 
 int nc_select_category_field_to_edit(void) {
-	struct MenuParams *mp = malloc(sizeof(struct MenuParams) + (sizeof(char *) * 2));
+	struct MenuParams *mp = malloc(sizeof(*mp) + (sizeof(char *) * 2));
+
 	if (mp == NULL) {
 		memory_allocate_fail();
 	}
@@ -586,8 +587,7 @@ struct Categories *list_categories(int month, int year) {
 	char *line;
 	char *token;
 	char linebuff[LINE_BUFFER];
-	struct Categories *pc = 
-		malloc(sizeof(struct Categories) + (sizeof(char *) * REALLOC_INCR));
+	struct Categories *pc = malloc(sizeof(*pc) + (sizeof(char *) * REALLOC_INCR));
 	pc->size = 0;
 	pc->capacity = REALLOC_INCR;
 
@@ -1066,7 +1066,7 @@ int nc_edit_csv_record(int replaceln, int field, struct LineData *ld) {
 		break;
 	case 4:
 		ld->transtype = nc_input_transaction_type();
-		if (ld->transtype == -1) {
+		if (ld->transtype < 0) {
 			goto err_fail;
 		}
 		break;
@@ -1256,7 +1256,7 @@ void combine_dedup_vectors(Vec *vec1, Vec *vec2, Vec *result) {
 
 /* Returns a Vec of deduplicated data from record_years and budget_years */
 Vec *consolidate_year_vectors(Vec *vec1, Vec *vec2) {
-	Vec *result = malloc(sizeof(Vec) + (sizeof(long) * vec1->size) +
+	Vec *result = malloc(sizeof(*result) + (sizeof(long) * vec1->size) +
 				  	 sizeof(long) * vec2->size);
 	if (result == NULL) {
 		free(vec1);
@@ -1275,7 +1275,7 @@ Vec *consolidate_year_vectors(Vec *vec1, Vec *vec2) {
 }
 
 Vec *get_years_with_data(FILE *fptr, int field) {
-	Vec *pr = malloc(sizeof(Vec) + sizeof(long) * REALLOC_INCR);
+	Vec *pr = malloc(sizeof(*pr) + sizeof(long) * REALLOC_INCR);
 	if (pr == NULL) {
 		memory_allocate_fail();
 	}
@@ -1395,7 +1395,7 @@ void init_data_array(Vec *vec) {
 Vec *get_months_with_data(FILE *fptr, int matchyear, int fields) {
 	char linebuff[LINE_BUFFER];
 	char *str;
-	Vec *months = malloc(sizeof(Vec) + (sizeof(long) * MONTHS_IN_YEAR));
+	Vec *months = malloc(sizeof(*months) + (sizeof(long) * MONTHS_IN_YEAR));
 
 	if (months == NULL) {
 		memory_allocate_fail();
@@ -1843,7 +1843,7 @@ void legacy_read_csv(void) {
 }
 
 Vec *consolidate_month_vectors(Vec *vec1, Vec *vec2) {
-	Vec *result = malloc(sizeof(Vec) + (sizeof(long) * MONTHS_IN_YEAR));
+	Vec *result = malloc(sizeof(*result) + (sizeof(long) * MONTHS_IN_YEAR));
 	if (result == NULL) {
 		free(vec1);
 		free(vec2);
