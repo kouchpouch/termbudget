@@ -2296,13 +2296,20 @@ int nc_select_field_to_edit(WINDOW *wptr) {
 	return 0;
 }
 
-void nc_edit_transaction(unsigned int linenum) {
+void nc_edit_transaction(long b) {
 	struct LineData linedata, *ld = &linedata;
+	struct LineData *pld = malloc(sizeof(*ld));
+
+	if (pld == NULL) {
+		memory_allocate_fail();
+		return;
+	}
 
 	WINDOW *wptr_edit = create_input_subwindow();
 	FILE *fptr = open_record_csv("r+");
-	Vec *pidx = index_csv(fptr);
-	fseek(fptr, pidx->data[linenum], SEEK_SET);
+	fseek(fptr, b, SEEK_SET);
+	unsigned int linenum = boff_to_linenum(b);
+	int edit_field;
 
 	char linebuff[LINE_BUFFER];
 	char *line = fgets(linebuff, sizeof(linebuff), fptr);
@@ -2313,16 +2320,6 @@ void nc_edit_transaction(unsigned int linenum) {
 
 	tokenize_record(ld, &line);
 
-	struct LineData *pld = malloc(sizeof(*ld));
-
-	if (pld == NULL) {
-		free(pidx);
-		fclose(fptr);
-		nc_exit_window(wptr_edit);
-		memory_allocate_fail();
-		return;
-	}
-
 	memcpy(pld, ld, sizeof(*ld));
 
 	nc_print_record_vert(wptr_edit, ld, BOX_OFFSET);
@@ -2331,12 +2328,12 @@ void nc_edit_transaction(unsigned int linenum) {
 	box(wptr_edit, 0, 0);
 	wrefresh(wptr_edit);
 
-	int field_to_edit = nc_select_field_to_edit(wptr_edit);
+	edit_field = nc_select_field_to_edit(wptr_edit);
 
 	fclose(fptr);
 	nc_exit_window(wptr_edit);
 
-	switch(field_to_edit) {
+	switch(edit_field) {
 	case 0:
 		break;
 	case 1:
@@ -2372,8 +2369,6 @@ void nc_edit_transaction(unsigned int linenum) {
 
 	free(pld);
 	pld = NULL;
-	free(pidx);
-	pidx = NULL;
 }
 
 void nc_print_debug_line(WINDOW *wptr, int line, int b) {
@@ -3218,7 +3213,7 @@ err_select_date_fail:
 		break;
 	case(EDIT):
 		nc_print_quit_footer(stdscr);
-		nc_edit_transaction(boff_to_linenum(sr->index));
+		nc_edit_transaction(sr->index);
 		nc_read_setup(sel_year, sel_month, sort);
 		break;
 	case(READ):
