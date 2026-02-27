@@ -56,7 +56,7 @@
     - (*) Add confirmation prompts when editing a category line
     - (*) Add initialization function to handle opening files and getting
             vectors, deduplicating, and sorting for nc_select_year/month
-    - ( ) nc_edit_transaction function is ugly, it must be changed.
+    - (*) nc_edit_transaction function is ugly, it must be changed.
 
 #### Main Feature Set
     - (*) Create a transaction
