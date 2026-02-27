@@ -19,6 +19,7 @@
 #include <ctype.h>
 #include "tui.h"
 #include "tui_input.h"
+#include "tui_input_menu.h"
 #include "main.h"
 #include "helper.h"
 
@@ -80,11 +81,7 @@ void nc_user_input(int n, WINDOW *wptr, struct UserInput *pui) {
 	wmove(wptr, max_y - 4, center);
 	while (c != '\n' && c != '\r') {
 		wrefresh(wptr);
-		if (idx < n) {
-			echo();
-		} else {
-			noecho();
-		}
+		noecho();
 		c = wgetch(wptr);
 		switch (c) {
 		case('\n'):
@@ -97,6 +94,8 @@ void nc_user_input(int n, WINDOW *wptr, struct UserInput *pui) {
 			pui->str = NULL;
 			return;
 		case(KEY_BACKSPACE):
+		case(127):
+		case('\b'):
 			if (xcursor > center) {
 				idx--;
 				xcursor--;
@@ -110,6 +109,7 @@ void nc_user_input(int n, WINDOW *wptr, struct UserInput *pui) {
 			break;
 		default:
 			if (idx < n) { 
+				wprintw(wptr, "%c", c);
 				temp[idx] = c;
 				idx++;
 				xcursor++;
@@ -299,31 +299,22 @@ char *nc_input_string(char *msg) {
 }
 
 int nc_input_transaction_type(void) {
-	WINDOW *wptr_input = create_input_subwindow();
-	mvwxcprintw(wptr_input, INPUT_MSG_Y_OFFSET, "Choose Expense/Income");
-	mvwxcprintw(wptr_input, INPUT_MSG_Y_OFFSET + 2, "(1)Expense (2)Income");
+	struct MenuParams *mp = malloc(sizeof(*mp) + (sizeof(char *) * 2));
+	if (mp == NULL) {
+		memory_allocate_fail();
+	}
+
+	mp->title = "Select Transaction Type";
+	mp->items = 2;
+	mp->strings[0] = "Expense";
+	mp->strings[1] = "Income";
 
 	/* Transaction type 0 = expense, 1 = income. */
-	int t = 0; 
+	int retval = nc_input_menu(mp);
 
-	while (t != '1' && t != '2') {
-		t = wgetch(wptr_input);	
-		if (t == KEY_EXIT || t == KEY_F(QUIT)) {
-			return -1;
-		}
-	}
+	free(mp);
 
-	nc_exit_window(wptr_input);
-
-	/* Have these statements here to explictly return a 0 or 1 without
-	 * having to do an integer/char conversion */
-	if (t == '1') {
-		return 0;
-	} else if (t == '2') {
-		return 1;
-	}
-	
-	return -1;
+	return retval;
 }
 
 double nc_input_amount(void) {
