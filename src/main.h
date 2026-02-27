@@ -51,15 +51,15 @@ struct Categories {
 };
 
 struct ScrollCursorSimple {
-	int displayed;
-	int select;
+	size_t displayed;
+	size_t select_idx;
 	int cur_y;
 };
 
 struct ScrollCursor {
 	int total_rows;
 	int displayed;
-	int select;
+	int select_idx;
 	int cur_y;
 	int catg_node;
 	int catg_data;
