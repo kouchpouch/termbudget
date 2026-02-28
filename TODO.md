@@ -129,3 +129,5 @@
             loop.
     - 15 (*) Seg fault after selecting "READ" function from nc_main_menu in main.c
     - 16 ( ) Several different integer type cmp's that need to be resolved.
+    - 17 ( ) On some systems the function that is clearing the footer on stdscr
+                is being displayed as a question mark
