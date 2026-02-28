@@ -319,14 +319,8 @@ char *nc_select_category(int month, int year) {
 		displayed++;
 	}
 
-	if (debug) {
-		mvwprintw(wptr_parent, 0, 0, "N CATG: %ld N DISP: %d", pc->size, displayed);
-	}
-
 	wrefresh(wptr);
-
 	mvwchgat(wptr, 0, 0, -1, A_REVERSE, 0, NULL);
-
 	int cur = 0; // Y=0 is the box and title, datalines start at 1.
 	size_t selection_idx = 0;
 	int c = 0;
