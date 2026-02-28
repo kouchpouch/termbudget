@@ -285,7 +285,8 @@ static void nc_print_footer(WINDOW *wptr, struct Footer *pf) {
 	//mvwchgat(wptr, max_y - 1, 0, getmaxx(wptr), A_INVIS, 0, NULL);
 
 	/* Clear the footer line of any old menu items */
-	mvwhline(wptr, max_y - 1, 0, A_INVIS, getmaxx(wptr) - 1);
+	wmove(wptr, max_y - 1, 0);	
+	wclrtoeol(wptr);
 
 	cur = 0;
 	curs_set(0);
