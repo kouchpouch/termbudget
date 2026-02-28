@@ -285,25 +285,25 @@ static void nc_print_footer(WINDOW *wptr, struct Footer *pf) {
 	//mvwchgat(wptr, max_y - 1, 0, getmaxx(wptr), A_INVIS, 0, NULL);
 
 	/* Clear the footer line of any old menu items */
-	wmove(wptr, max_y - 1, 0);	
+	wmove(wptr, max_y - 1, 0);
 	wclrtoeol(wptr);
 
 	cur = 0;
 	curs_set(0);
 
-	char add_key[] = "F1 ";
-	char add_text[] = "(A)dd";
-	char edit_key[] = " F2 ";
-	char edit_text[] = "(E)dit";
-	char read_key[] = " F3 ";
-	char read_text[] = "(R)ead";
-	char quit_key[] = " F4 ";
-	char quit_text[] = "(Q)uit";
+	char *add_key = "F1 ";
+	char *add_text = "(A)dd";
+	char *edit_key = " F2 ";
+	char *edit_text = "(E)dit";
+	char *read_key = " F3 ";
+	char *read_text = "(R)ead";
+	char *quit_key = " F4 ";
+	char *quit_text = "(Q)uit";
 	/* Extended */
-	char sort_key[] = " F5 ";
-	char sort_text[] = "(S)ort";
-	char overview_key[] = " F6 ";
-	char overview_text[] = "(O)verview";
+	char *sort_key = " F5 ";
+	char *sort_text = "(S)ort";
+	char *overview_key = " F6 ";
+	char *overview_text = "(O)verview";
 
 	if (pf->add == OFF) {
 		wattron(wptr, A_INVIS);
