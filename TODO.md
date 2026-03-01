@@ -58,6 +58,10 @@
             vectors, deduplicating, and sorting for nc_select_year/month
     - (*) nc_edit_transaction function is ugly, it must be changed.
     - ( ) Have option to roll categories from previous month to the next month
+    - ( ) Annotate tui_input.h
+    - ( ) Menu key to (A)dd (F1) on main menu should allow the user to select
+            creating a new transaction, creating a new category, roll over
+            previous month's data to the target month, or exit.
 
 #### Main Feature Set
     - (*) Create a transaction
