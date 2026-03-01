@@ -718,7 +718,7 @@ err_null:
 	return prsc;
 }
 
-void add_budget_category(char *catg, int m, int y) {
+void add_budget_category(char *catg, int m, int y, double amt) {
 	unsigned int linetoadd = sort_budget_csv(m, y);
 	FILE *fptr = open_budget_csv("r");
 	FILE *tmpfptr = open_temp_csv();
@@ -733,7 +733,7 @@ void add_budget_category(char *catg, int m, int y) {
 			fputs(line, tmpfptr);
 		} else if (linenum == linetoadd) {
 			fputs(line, tmpfptr);
-			fprintf(tmpfptr, "%d,%d,%s,%d\n", m, y, catg, 0);
+			fprintf(tmpfptr, "%d,%d,%s,%.2f\n", m, y, catg, amt);
 		}
 	}
 
@@ -779,7 +779,7 @@ int cmp_catg_and_fix(struct Categories *prc, struct Categories *pbc,
 			}
 		}
 		if (!cat_exists) {
-			add_budget_category(prc->categories[i], m, y);
+			add_budget_category(prc->categories[i], m, y, 0.0);
 			corrected++;
 		};
 	}
@@ -839,7 +839,7 @@ int verify_categories_exist_in_budget(void) {
 /* Adds a record to the CSV on line linetoadd */
 void add_csv_record(int linetoadd, struct LineData *ld) {
 	if (!category_exists_in_budget(ld->category, ld->month, ld->year)) {
-		add_budget_category(ld->category, ld->month, ld->year);
+		add_budget_category(ld->category, ld->month, ld->year, 0.0);
 	} 
 
 	FILE *fptr = open_record_csv("r");
@@ -870,9 +870,49 @@ void add_csv_record(int linetoadd, struct LineData *ld) {
 	mv_tmp_to_record_file(tmpfptr, fptr);
 }
 
-/* For a la carte budget category creation */
-void nc_add_budget_category(int month, int year) {
+bool check_dup_catg(struct Categories *psc, char *catg) {
+	for (size_t i = 0; i < psc->size; i++) {
+		if (strcmp(psc->categories[i], catg) == 0) {
+			return true;
+		}
+	}
+	return false;
+}
 
+bool nc_confirm_budget_category(char *catg, double amt) {
+	WINDOW *wptr = create_input_subwindow();
+	int maxy = getmaxy(wptr);
+	int maxx = getmaxx(wptr);
+	char *msg = "Confirm Category";
+	mvwprintw(wptr, 0, (maxx / 2 - strlen(msg) / 2), "%s", msg);
+	mvwprintw(wptr, 3, (maxx / 2 - strlen(catg) / 2), "%s", catg);
+	mvwprintw(wptr, 4, (maxx / 2 - intlen(amt) / 2) - 2, "$%.2f", amt);
+	mvwxcprintw(wptr, maxy - BOX_OFFSET, "(Y)es  /  (N)o");
+
+	bool retval = nc_confirm_input_loop(wptr);
+
+	nc_exit_window(wptr);
+	return retval;
+}
+
+/* For a la carte budget category creation */
+void nc_add_budget_category(int mo, int yr) {
+	char *catg = nc_input_string("Enter Category");
+	if (catg == NULL) {
+		return;
+	}
+	double amt = nc_input_amount();
+
+	struct Categories *psc = get_budget_catg_by_date(mo, yr);
+	if (!check_dup_catg(psc, catg) && nc_confirm_budget_category(catg, amt)) {
+		add_budget_category(catg, mo, yr, amt);
+	} else {
+		;
+	}
+
+	free(catg);
+	free_categories(psc);
+	return;
 }
 
 /* Optional parameters int month, year. If add transaction is selected while
@@ -2783,6 +2823,10 @@ void nc_read_budget_loop(WINDOW *wptr_parent, WINDOW *wptr,
 		case(KEY_F(ADD)):
 			sr->flag = ADD;
 			return;
+		case(KEY_F(8)):
+			sr->flag = 8;
+			sr->index = 0;
+			return;
 		case('E'):
 		case('e'):
 		case(KEY_F(EDIT)):
@@ -3234,6 +3278,9 @@ err_select_date_fail:
 		} else {
 			nc_read_setup_default();
 		}
+		break;
+	case(8):
+		nc_add_budget_category(sel_month, sel_year);
 		break;
 	case(RESIZE):
 		while (test_terminal_size() == -1) {
