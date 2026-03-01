@@ -57,9 +57,11 @@
     - (*) Add initialization function to handle opening files and getting
             vectors, deduplicating, and sorting for nc_select_year/month
     - (*) nc_edit_transaction function is ugly, it must be changed.
+    - ( ) Have option to roll categories from previous month to the next month
 
 #### Main Feature Set
     - (*) Create a transaction
+    - ( ) Create a category
     - (*) View     " "
     - (*) Update   " "
     - (*) Delete   " "
