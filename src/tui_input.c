@@ -183,24 +183,16 @@ void nc_input_n_digits(struct UserInputDigit *puid,
 	pui->str = NULL;
 }
 
-bool nc_confirm_input(char *msg) {
-	WINDOW *wptr = create_input_subwindow();
-	mvwxcprintw(wptr, 3, msg);
-	mvwxcprintw(wptr, getmaxy(wptr) - BOX_OFFSET, "(Y)es  /  (N)o");
-	wrefresh(wptr);
-
+bool nc_confirm_input_loop(WINDOW *wptr) {
 	int c = 0;
-
 	while (1) {
 		c = wgetch(wptr);
 		switch(c) {
 		case('y'):
 		case('Y'):
-			nc_exit_window(wptr);
 			return true;	
 		case('n'):
 		case('N'):
-			nc_exit_window(wptr);
 			return false;
 		case('q'):
 		case('Q'):
@@ -210,9 +202,19 @@ bool nc_confirm_input(char *msg) {
 			break;
 		}
 	}
+}
+
+bool nc_confirm_input(char *msg) {
+	WINDOW *wptr = create_input_subwindow();
+	mvwxcprintw(wptr, 3, msg);
+	mvwxcprintw(wptr, getmaxy(wptr) - BOX_OFFSET, "(Y)es  /  (N)o");
+	wrefresh(wptr);
+
+	int c = 0;
+	bool retval = nc_confirm_input_loop(wptr);
 
 	nc_exit_window(wptr);
-	return false;
+	return retval;
 }
 
 int nc_input_month(void) {

@@ -33,6 +33,8 @@ void nc_user_input(int n, WINDOW *wptr, struct UserInput *pui);
 void nc_input_n_digits(struct UserInputDigit *puid, WINDOW *wptr, 
 					  size_t max_len, size_t min_len);
 
+bool nc_confirm_input_loop(WINDOW *wptr);
+
 bool nc_confirm_input(char *msg);
 
 int nc_input_month(void);
