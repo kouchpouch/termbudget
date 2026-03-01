@@ -58,7 +58,7 @@ struct ColWidth {
 	int amnt;
 };
 
-enum MenuKeys {
+enum menukeys {
 	NO_SELECT = 0,
 	ADD = 1,
 	EDIT = 2,
