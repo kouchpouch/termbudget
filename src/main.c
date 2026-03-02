@@ -3109,6 +3109,20 @@ CategoryNode **create_category_nodes(int m, int y) {
 	return pnode;
 }
 
+struct MenuParams *init_add_main_menu(void) {
+	struct MenuParams *mp = malloc(sizeof(*mp) + (sizeof(char *) * 3));
+	if (mp == NULL) {
+		memory_allocate_fail();
+	}
+	mp->items = 3;
+	mp->title = "Select Data Type to Add";
+	mp->strings[0] = "Add Transaction";
+	mp->strings[1] = "Add Category";
+	mp->strings[2] = "Create New Budget";
+
+	return mp;
+}
+
 struct MenuParams *init_add_menu(void) {
 	struct MenuParams *mp = malloc(sizeof(*mp) + (sizeof(char *) * 2));
 	if (mp == NULL) {
@@ -3497,11 +3511,27 @@ int nc_main_menu(WINDOW *wptr) {
 		}
 		wrefresh(wptr);
 		c = getch();
+
 		switch(c) {
 		case('a'):
 		case (KEY_F(ADD)):
 			wclear(wptr);
-			nc_add_transaction_default();
+			struct MenuParams *mp = init_add_main_menu();
+			int r = nc_input_menu(mp);
+			free(mp);
+			switch(r) {
+				case 0:
+					nc_add_transaction_default();
+					break;
+				case 1:
+					nc_add_budget_category(0, 0);
+					break;
+				case 2:
+					nc_message("Create New Budget Placeholder");
+					break;
+				default:
+					break;
+			}
 			break;
 		case('e'):
 		case(KEY_F(EDIT)):
