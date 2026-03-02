@@ -279,7 +279,7 @@ retry_input:
 	str = input_str_retry("Enter Category:");
 
 	for (size_t i = 0; i < pc->size; i++) {
-		if (strcmp(str, pc->categories[i]) == 0) {
+		if (strcasecmp(str, pc->categories[i]) == 0) {
 			cat_exists = true;
 			break;
 		}
@@ -603,7 +603,7 @@ struct Categories *list_categories(int month, int year) {
 
 		if (pc->size != 0) { // Duplicate Check
 			for (size_t i = 0; i < pc->size; i++) {
-				if (strcmp(pc->categories[i], token) == 0) {
+				if (strcasecmp(pc->categories[i], token) == 0) {
 					goto duplicate_exists;
 				}
 			}
@@ -706,7 +706,7 @@ Vec *sort_by_category(FILE *fptr, Vec *pidx, Vec *plines, int yr, int mo)
 				prsc = NULL;
 				goto err_null;
 			}
-			if (strcmp(token, pc->categories[i]) == 0) {
+			if (strcasecmp(token, pc->categories[i]) == 0) {
 				prsc->data[prsc->size] = pidx->data[plines->data[j]];
 				prsc->size++;
 			}
@@ -749,7 +749,7 @@ bool category_exists_in_budget(char *catg, int month, int year) {
 	int i = 1;
 
 	while ((pbt = tokenize_budget_line(i)) != NULL) {
-		if (pbt->y == year && pbt->m == month && strcmp(pbt->catg, catg) == 0) {
+		if (pbt->y == year && pbt->m == month && strcasecmp(pbt->catg, catg) == 0) {
 			free_budget_tokens(pbt);
 			return true;
 		}
@@ -774,7 +774,7 @@ int cmp_catg_and_fix(struct Categories *prc, struct Categories *pbc,
 	for (size_t i = 0; i < prc->size; i++) {
 		cat_exists = false;
 		for (size_t j = 0; j < pbc->size; j++) {
-			if (strcmp(prc->categories[i], pbc->categories[j]) == 0) {
+			if (strcasecmp(prc->categories[i], pbc->categories[j]) == 0) {
 				cat_exists = true;
 			}
 		}
@@ -872,7 +872,7 @@ void add_csv_record(int linetoadd, struct LineData *ld) {
 
 bool check_dup_catg(struct Categories *psc, char *catg) {
 	for (size_t i = 0; i < psc->size; i++) {
-		if (strcmp(psc->categories[i], catg) == 0) {
+		if (strcasecmp(psc->categories[i], catg) == 0) {
 			return true;
 		}
 	}
@@ -897,17 +897,31 @@ bool nc_confirm_budget_category(char *catg, double amt) {
 
 /* For a la carte budget category creation */
 void nc_add_budget_category(int mo, int yr) {
+	if (mo == 0 || yr == 0) {
+		yr = nc_input_year();
+		if (yr == -1) {
+			return;
+		}
+		mo = nc_input_month();
+		if (mo == -1) {
+			return;
+		}
+	}
 	char *catg = nc_input_string("Enter Category");
 	if (catg == NULL) {
 		return;
 	}
-	double amt = nc_input_amount();
-
 	struct Categories *psc = get_budget_catg_by_date(mo, yr);
-	if (!check_dup_catg(psc, catg) && nc_confirm_budget_category(catg, amt)) {
+	if (check_dup_catg(psc, catg)) {
+		nc_message("That Category Already Exists");
+		free(catg);
+		free_categories(psc);
+		return;
+	}
+
+	double amt = nc_input_amount();
+	if (nc_confirm_budget_category(catg, amt)) {
 		add_budget_category(catg, mo, yr, amt);
-	} else {
-		;
 	}
 
 	free(catg);
