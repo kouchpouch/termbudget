@@ -214,6 +214,44 @@ WINDOW *create_category_select_subwindow(WINDOW *wptr_parent) {
 	return wptr;
 }
 
+WINDOW *create_input_subwindow_n_rows(int n) {
+	int max_y, max_x;
+	getmaxyx(stdscr, max_y, max_x);
+	int win_y, win_x;
+	
+	if (n <= INPUT_WIN_ROWS + BOX_OFFSET) {
+		if (n % 2 == 0) {
+			win_y = INPUT_WIN_ROWS;
+		} else {
+			win_y = INPUT_WIN_ROWS + 1;
+		}
+	} else {
+		if (n % 2 == 0) {
+			win_y = n + BOX_OFFSET;
+		} else {
+			win_y = n + BOX_OFFSET + 1;
+		}
+	}
+
+	if (max_x >= MIN_COLUMNS + 20) {
+		win_x = MIN_COLUMNS + 20;
+	} else {
+		win_x = max_x;
+	}
+
+	WINDOW *wptr = newwin(win_y, win_x, 
+					   	 (max_y / 2) - win_y / 2, 
+					   	 (max_x / 2) - win_x / 2);
+
+	if (wptr == NULL) {
+		window_creation_fail();
+	}
+
+	box(wptr, 0, 0);
+	keypad(wptr, true);
+	return wptr;
+}
+
 WINDOW *create_input_subwindow(void) {
 	int max_y, max_x;
 	getmaxyx(stdscr, max_y, max_x);

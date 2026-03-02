@@ -124,6 +124,9 @@ extern WINDOW *create_category_select_parent(int n);
 /* Creates the subwindow inside of wptr_parent for holding data */
 extern WINDOW *create_category_select_subwindow(WINDOW *wptr_parent);
 
+/* Creates a subwindow for user input with dimensions based on parameter n */
+extern WINDOW *create_input_subwindow_n_rows(int n);
+
 /* Creates a subwindow for user input with dimensions based on stdscr */
 extern WINDOW *create_input_subwindow(void);
 
