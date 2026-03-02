@@ -124,7 +124,10 @@ extern WINDOW *create_category_select_parent(int n);
 /* Creates the subwindow inside of wptr_parent for holding data */
 extern WINDOW *create_category_select_subwindow(WINDOW *wptr_parent);
 
-/* Creates a subwindow for user input with dimensions based on parameter n */
+/* Creates a subwindow for user input with dimensions based on parameter n,
+ * this function ensures that the window can center the data in the window. 
+ * n is the number of menu items the window should hold. The window will at
+ * least be y INPUT_WIN_ROWS units long. */
 extern WINDOW *create_input_subwindow_n_rows(int n);
 
 /* Creates a subwindow for user input with dimensions based on stdscr */
