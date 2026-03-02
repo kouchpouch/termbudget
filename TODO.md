@@ -22,7 +22,7 @@
     - (*) Show selected month and year at the top of the screen after
             selection on read
     - (*) Remove all reallocarray() functions for portability
-    - ( ) Suggested to me that the user should be able to see all months,
+    - (X) Suggested to me that the user should be able to see all months,
             regardless if there's a record in that date range or not. Maybe
             throw an asterisk on the month if it contains records/vice versa
     - ( ) After main feature set is done and working, refactor to make main.c
@@ -62,7 +62,7 @@
     - ( ) Menu key to (A)dd (F1) on main menu should allow the user to select
             creating a new transaction, creating a new category, roll over
             previous month's data to the target month, or exit.
-    - ( ) Add alerter when adding a category that already exists
+    - (*) Add alerter when adding a category that already exists
 
 #### Main Feature Set
     - (*) Create a transaction
