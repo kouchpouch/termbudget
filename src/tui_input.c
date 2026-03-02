@@ -238,7 +238,6 @@ int nc_input_month(void) {
 	}
 }
 
-// Returns -1 on quit
 int nc_input_year(void) {
 	WINDOW *wptr_input = create_input_subwindow();
 	struct UserInputDigit puid_, *puid = &puid_;
@@ -258,7 +257,6 @@ int nc_input_year(void) {
 	}
 }
 
-// Returns -1 on quit
 int nc_input_day(int month, int year) {
 	WINDOW *wptr_input = create_input_subwindow();
 	struct UserInputDigit puid_, *puid = &puid_;

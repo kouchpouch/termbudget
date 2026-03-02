@@ -37,10 +37,16 @@ bool nc_confirm_input_loop(WINDOW *wptr);
 
 bool nc_confirm_input(char *msg);
 
+/* Creates and destroys an ncurses input window and validates the input with
+ * retries. Returns -1 on quit */
 int nc_input_month(void);
 
+/* Creates and destroys an ncurses input window and validates the input with
+ * retries. Returns -1 on quit */
 int nc_input_year(void);
 
+/* Creates and destroys an ncurses input window and validates the input with
+ * retries. Returns -1 on quit */
 int nc_input_day(int month, int year);
 
 char *nc_input_string(char *msg);
