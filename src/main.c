@@ -2752,7 +2752,7 @@ void nc_read_budget_loop(WINDOW *wptr_parent, WINDOW *wptr,
 	init_scroll_cursor(sc, nodes);
 
 	int c = 0;
-	init_pair(1, COLOR_CYAN, -1); // Categories are displayed in cyan
+	init_pair(1, COLOR_GREEN, -1); // Categories are displayed in cyan
 
 	calculate_columns(cw, getmaxx(wptr) + BOX_OFFSET);
 	nc_print_balances_text(wptr_parent, psc);
@@ -2822,10 +2822,6 @@ void nc_read_budget_loop(WINDOW *wptr_parent, WINDOW *wptr,
 		case('a'):
 		case(KEY_F(ADD)):
 			sr->flag = ADD;
-			return;
-		case(KEY_F(8)):
-			sr->flag = 8;
-			sr->index = 0;
 			return;
 		case('E'):
 		case('e'):
@@ -3098,6 +3094,19 @@ CategoryNode **create_category_nodes(int m, int y) {
 	return pnode;
 }
 
+struct MenuParams *init_add_menu(void) {
+	struct MenuParams *mp = malloc(sizeof(*mp) + (sizeof(char *) * 2));
+	if (mp == NULL) {
+		memory_allocate_fail();
+	}
+	mp->items = 2;
+	mp->title = "Select Data Type to Add";
+	mp->strings[0] = "Add Transaction";
+	mp->strings[1] = "Add Category";
+
+	return mp;
+}
+
 void nc_read_setup_default(void) {
 	nc_read_setup(0, 0, SORT_CATG);
 }
@@ -3240,10 +3249,24 @@ err_select_date_fail:
 	case(ADD):
 		nc_print_input_footer(stdscr);
 		if (sel_year < 0 || sel_month < 0) {
-			nc_add_transaction_default();
+			struct MenuParams *mp = init_add_menu();
+			int c = nc_input_menu(mp);
+			if (c == 0) {
+				nc_add_transaction_default();
+			} else if (c == 1) {
+				nc_add_budget_category(0, 0);
+			}
+			free(mp);
 			nc_read_setup_default();
 		} else {
-			nc_add_transaction(sel_year, sel_month, sort);
+			struct MenuParams *mp = init_add_menu();
+			int c = nc_input_menu(mp);
+			if (c == 0) {
+				nc_add_transaction(sel_year, sel_month, sort);
+			} else if (c == 1) {
+				nc_add_budget_category(sel_month, sel_year);
+			}
+			free(mp);
 			nc_read_setup(sel_year, sel_month, sort);
 		}
 		break;
@@ -3278,9 +3301,6 @@ err_select_date_fail:
 		} else {
 			nc_read_setup_default();
 		}
-		break;
-	case(8):
-		nc_add_budget_category(sel_month, sel_year);
 		break;
 	case(RESIZE):
 		while (test_terminal_size() == -1) {
