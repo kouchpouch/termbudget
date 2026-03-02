@@ -206,13 +206,12 @@ bool nc_confirm_input_loop(WINDOW *wptr) {
 
 bool nc_confirm_input(char *msg) {
 	WINDOW *wptr = create_input_subwindow();
+
 	mvwxcprintw(wptr, 3, msg);
 	mvwxcprintw(wptr, getmaxy(wptr) - BOX_OFFSET, "(Y)es  /  (N)o");
 	wrefresh(wptr);
 
-	int c = 0;
 	bool retval = nc_confirm_input_loop(wptr);
-
 	nc_exit_window(wptr);
 	return retval;
 }
