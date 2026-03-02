@@ -33,7 +33,8 @@ int first_y_pos(int items, int max_items) {
 }
 
 int nc_input_menu(struct MenuParams *mp) {
-	WINDOW *wptr = create_input_subwindow();
+//	WINDOW *wptr = create_input_subwindow();
+	WINDOW *wptr = create_input_subwindow_n_rows(mp->items);
 	int c = 0;
 	int selection_idx = 0;
 	int displayed = mp->items;
