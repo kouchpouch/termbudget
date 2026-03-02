@@ -299,7 +299,6 @@ retry_input:
 }
 
 char *nc_select_category(int month, int year) {
-	//struct Categories *pc = list_categories(month, year);
 	struct Categories *pc = get_budget_catg_by_date(month, year);
 	WINDOW *wptr_parent = create_category_select_parent(pc->size);
 	WINDOW *wptr = create_category_select_subwindow(wptr_parent);
@@ -2008,7 +2007,8 @@ int nc_read_select_year(WINDOW *wptr, FILE *fptr) {
 		switch(c) {
 		case('h'):
 		case(KEY_LEFT):
-			if (temp_x - 5 >= print_x) {
+			if (scr_idx - 1 >= 0) {
+			//if (temp_x - 5 >= print_x) {
 				mvwchgat(wptr, print_y, temp_x, 4, A_NORMAL, 0, NULL);
 				mvwchgat(wptr, print_y, temp_x - 5, 4, A_REVERSE, 0, NULL);
 				wrefresh(wptr);
@@ -2017,7 +2017,8 @@ int nc_read_select_year(WINDOW *wptr, FILE *fptr) {
 			break;
 		case('l'):
 		case(KEY_RIGHT):
-			if (temp_x + 5 <= (years->size * 4) + years->size) {
+			if (scr_idx + 1 < years->size) {
+			//if (temp_x + 5 <= (years->size * 4) + years->size) {
 				mvwchgat(wptr, print_y, temp_x, 4, A_NORMAL, 0, NULL);
 				mvwchgat(wptr, print_y, temp_x + 5, 4, A_REVERSE, 0, NULL);
 				wrefresh(wptr);
