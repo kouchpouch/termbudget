@@ -22,9 +22,6 @@
     - [X] Show selected month and year at the top of the screen after
             selection on read
     - [X] Remove all reallocarray() functions for portability
-    - (X) Suggested to me that the user should be able to see all months,
-            regardless if there's a record in that date range or not. Maybe
-            throw an asterisk on the month if it contains records/vice versa
     - [ ] After main feature set is done and working, refactor to make main.c
             have a clearer control flow purpose
     - [X] Implement visual truncation when there are not enough columns to
@@ -36,7 +33,6 @@
     - [X] Add page up/page down/end/home keys for navigating lists
     - [X] Add sort by feature
     - [X] Dim menu options in the footer if they are not available to use
-    - [ ] Overview can be selected on nc_select_year
     - [X] Make index_csv function in parser.c amortize memory allocation
     - [X] Create methods for managing the actual budgeting system of the
             program. This concerns budget.csv, defining budget category
@@ -46,7 +42,7 @@
         - [X] Sorting by Category should be the default behavior
         - [X] Show each category in the read loop and it's associated planned
                 amount for each category and how much is remaining.
-        - [ ] Allow budget planning, I.E. making categories where no record
+        - [X] Allow budget planning, I.E. making categories where no record
                 currently exists.
         - [X] Handle deleting categories, possibly renaming as well. But
                 probably not.
@@ -66,7 +62,7 @@
 
 #### Main Feature Set
     - [X] Create a transaction
-    - [ ] Create a category
+    - [X] Create a category
     - [X] View     " "
     - [X] Update   " "
     - [X] Delete   " "
@@ -135,6 +131,6 @@
     - 14 [X] Cannot add a transaction if the user is inside of the nc_select_month
             loop.
     - 15 [X] Seg fault after selecting "READ" function from nc_main_menu in main.c
-    - 16 [ ] Several different integer type cmp's that need to be resolved.
+    - 16 [X] Several different integer type cmp's that need to be resolved.
     - 17 [X] On some systems the function that is clearing the footer on stdscr
                 is being displayed as a question mark
