@@ -515,7 +515,7 @@ void nc_edit_category(long b, long nmembers) {
 	}
 
 	if (select == 0) {
-		amt = nc_input_amount();
+		amt = nc_input_budget_amount();
 		if (amt < 0) {
 			return;
 		}
@@ -918,7 +918,7 @@ void nc_add_budget_category(int mo, int yr) {
 		return;
 	}
 
-	double amt = nc_input_amount();
+	double amt = nc_input_budget_amount();
 	if (nc_confirm_budget_category(catg, amt)) {
 		add_budget_category(catg, mo, yr, amt);
 	}
@@ -926,6 +926,17 @@ void nc_add_budget_category(int mo, int yr) {
 	free(catg);
 	free_categories(psc);
 	return;
+}
+
+void nc_create_new_budget(void) {
+	int yr = nc_input_year();
+	int mo = nc_input_month();
+	if (month_or_year_exists(mo, yr)) {
+		nc_message("A budget already exists for that month");
+		return;
+	}
+	nc_add_budget_category(mo, yr);
+	nc_read_setup(yr, mo, SORT_CATG);
 }
 
 /* Optional parameters int month, year. If add transaction is selected while
@@ -3287,12 +3298,18 @@ err_select_date_fail:
 	case(ADD):
 		nc_print_input_footer(stdscr);
 		if (sel_year < 0 || sel_month < 0) {
-			struct MenuParams *mp = init_add_menu();
+			struct MenuParams *mp = init_add_main_menu();
 			int c = nc_input_menu(mp);
-			if (c == 0) {
+			switch (c) {
+			case 0:
 				nc_add_transaction_default();
-			} else if (c == 1) {
+				break;
+			case 1:
 				nc_add_budget_category(0, 0);
+				break;
+			case 2:
+				nc_create_new_budget();
+				break;
 			}
 			free(mp);
 			nc_read_setup_default();
@@ -3537,7 +3554,7 @@ int nc_main_menu(WINDOW *wptr) {
 					nc_add_budget_category(0, 0);
 					break;
 				case 2:
-					nc_message("Create New Budget Placeholder");
+					nc_create_new_budget();
 					break;
 				default:
 					break;
