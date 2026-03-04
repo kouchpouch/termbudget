@@ -338,3 +338,26 @@ double nc_input_amount(void) {
 		return -1;
 	}
 }
+
+double nc_input_budget_amount(void) {
+	WINDOW *wptr_input = create_input_subwindow();
+	struct UserInput pui_, *pui = &pui_;
+	mvwxcprintw(wptr_input, INPUT_MSG_Y_OFFSET, "Enter Planned Amount for this Category");
+	keypad(wptr_input, true);
+	double amount;
+
+	nc_user_input(MAX_LEN_AMOUNT, wptr_input, pui);
+	while (pui->str == NULL && pui->flag != QUIT) {
+		nc_user_input(MAX_LEN_AMOUNT, wptr_input, pui);
+	}
+
+	nc_exit_window(wptr_input);
+
+	if (pui->str != NULL) {
+		amount = atof(pui->str);
+		free(pui->str);
+		return amount;
+	} else {
+		return -1;
+	}
+}

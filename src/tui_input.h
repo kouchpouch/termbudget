@@ -55,4 +55,6 @@ int nc_input_transaction_type(void);
 
 double nc_input_amount(void);
 
+double nc_input_budget_amount(void);
+
 #endif
