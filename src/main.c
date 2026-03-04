@@ -1703,11 +1703,9 @@ unsigned int nc_overview_loop(WINDOW *wptr, int *months, int year) {
 		nc_print_overview_graphs(wptr, months, year);
 		nc_print_quit_footer(stdscr);
 		wrefresh(wptr);
-//		c = wgetch(wptr);
 	} else {
 		wprintw(wptr, "Terminal is too small");
 		wrefresh(wptr);
-//		c = wgetch(wptr);
 	}
 
 	while (1) {
@@ -3322,6 +3320,7 @@ err_select_date_fail:
 		break;
 	case(OVERVIEW):
 		nc_overview_setup(sel_year);
+		nc_read_setup(sel_year, sel_month, sort);
 		break;
 	case(EDIT_CATG):
 		nc_edit_category(sr->index, sr->opt); 
