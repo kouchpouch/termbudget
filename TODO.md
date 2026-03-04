@@ -119,7 +119,7 @@
             new record is added, like a record in May, the may record will be
             inserted between the two records in January.
     - 9 [X] Budget sorter is jank, doesn't work.
-    - 10 [ ] refresh_on_detail_close_uniform in main.c when sorted by category doesn't
+    - 10 [X] refresh_on_detail_close_uniform in main.c when sorted by category doesn't
             re-color the categories, a new func needs to be made to handle this.
     - 11 [X] When selecting a category in ncurses, empty categories are not shown.
             The way the function retrieves categories needs to be changed.

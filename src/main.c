@@ -2761,6 +2761,7 @@ void nc_read_budget_loop(WINDOW *wptr_parent, WINDOW *wptr,
 	struct ColWidth cw_, *cw = &cw_;
 	struct ScrollCursor sc_, *sc = &sc_;
 	char linebuff[LINE_BUFFER];
+	int tmp_idx;
 
 	init_scroll_cursor(sc, nodes);
 
@@ -2799,6 +2800,16 @@ void nc_read_budget_loop(WINDOW *wptr_parent, WINDOW *wptr,
 				char *line = fgets(linebuff, sizeof(linebuff), rfptr);
 				show_detail_subwindow(line);
 				refresh_on_detail_close_uniform(wptr, wptr_parent, sc->displayed);
+				tmp_idx = sc->select_idx;
+				while (sc->select_idx - 1 >= 0) {
+					nc_scroll_prev_category(wptr, nodes, sc, cw, rfptr, bfptr);
+				}
+				while (sc->select_idx + 1 < sc->total_rows) {
+					nc_scroll_next_category(wptr, nodes, sc, cw, rfptr, bfptr);
+				}
+				while (sc->select_idx != tmp_idx) {
+					nc_scroll_prev_category(wptr, nodes, sc, cw, rfptr, bfptr);
+				}
 				c = 0;
 			} else {
 				c = 0;
