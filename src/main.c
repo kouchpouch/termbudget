@@ -20,6 +20,7 @@
 #include <assert.h>
 #include <ctype.h>
 #include <ncurses.h>
+#include <limits.h>
 #include "fileintegrity.h"
 #include "filemanagement.h"
 #include "helper.h"
@@ -302,6 +303,7 @@ char *nc_select_category(int month, int year) {
 	struct Categories *pc = get_budget_catg_by_date(month, year);
 	WINDOW *wptr_parent = create_category_select_parent(pc->size);
 	WINDOW *wptr = create_category_select_subwindow(wptr_parent);
+	int sz;
 
 	if (debug) {
 		curs_set(1);
@@ -311,17 +313,23 @@ char *nc_select_category(int month, int year) {
 		goto manual_selection;
 	}
 
-	size_t displayed = 0;
+	if (pc->size > INT_MAX) {
+		return NULL;
+	} else {
+		sz = (int)pc->size;
+	}
+
+	int displayed = 0;
 	/* Print intital data based on window size */
-	for (size_t i = 0; i < (size_t)getmaxy(wptr) && i < pc->size; i++) {
-		mvwxcprintw(wptr, (int)i, pc->categories[i]);
+	for (int i = 0; i < getmaxy(wptr) && i < sz; i++) {
+		mvwxcprintw(wptr, i, pc->categories[i]);
 		displayed++;
 	}
 
 	wrefresh(wptr);
 	mvwchgat(wptr, 0, 0, -1, A_REVERSE, 0, NULL);
 	int cur = 0; // Y=0 is the box and title, datalines start at 1.
-	size_t selection_idx = 0;
+	int selection_idx = 0;
 	int c = 0;
 
 	int max_y = getmaxy(wptr);
@@ -333,12 +341,12 @@ char *nc_select_category(int month, int year) {
 		switch(c) {
 		case('j'):
 		case(KEY_DOWN):
-			if (selection_idx + 1 < pc->size) {
+			if (selection_idx + 1 < sz) {
 				mvwchgat(wptr, cur, 0, -1, A_NORMAL, 0, NULL);
 				cur++;
 				selection_idx++;
 
-				if (displayed < pc->size && cur == max_y) {
+				if (displayed < sz && cur == max_y) {
 					wmove(wptr, 0, 0);
 					wdeleteln(wptr);
 					mvwxcprintw(wptr, max_y - 1, pc->categories[selection_idx]);
@@ -355,7 +363,7 @@ char *nc_select_category(int month, int year) {
 				cur--;
 				selection_idx--;
 
-				if (selection_idx >= 0 && displayed < pc->size && cur == -1) {
+				if (selection_idx >= 0 && displayed < sz && cur == -1) {
 					wmove(wptr, 0, 0);
 					winsertln(wptr);
 					mvwxcprintw(wptr, 0, pc->categories[selection_idx]);
