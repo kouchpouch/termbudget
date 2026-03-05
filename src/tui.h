@@ -42,6 +42,7 @@
 #define DESC_X 14
 
 #define MIN_COLUMNS (DATE_X + TRNS_X + AMNT_X + CATG_X + DESC_X)
+#define MIN_COLUMNS_SIDEBAR MIN_COLUMNS + 20;
 #define MIN_ROWS 20
 #define INPUT_WIN_ROWS 8
 #define BOX_OFFSET 2
