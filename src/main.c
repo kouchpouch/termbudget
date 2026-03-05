@@ -3156,6 +3156,19 @@ struct MenuParams *init_add_menu(void) {
 	return mp;
 }
 
+int nc_read_setup_input_year(WINDOW *wptr, FILE *fptr) {
+	int yr = nc_read_select_year(wptr, fptr);
+	if (yr == -(NO_RCRD)) {
+		mvwxcprintw(wptr, getmaxy(wptr) / 2, 
+			  "No records exist, add (F1) to get started");
+		wgetch(wptr);
+		return -1;
+	} else if (yr < 0) {
+		return yr;
+	};
+	return yr;
+}
+
 void nc_read_setup_default(void) {
 	nc_read_setup(0, 0, SORT_CATG);
 }
@@ -3197,28 +3210,19 @@ void nc_read_setup(int sel_year, int sel_month, int sort) {
 	wrefresh(wptr_data);
 
 	if (!sel_year) {
-		sel_year = nc_read_select_year(wptr_parent, fptr);
-	}
-
-	if (sel_year == -(NO_RCRD)) {
-		mvwxcprintw(wptr_parent, max_y / 2, 
-			  "No records exist, add (F1) to get started");
-		wgetch(wptr_parent);
-		goto err_select_date_fail;
-	} else if (sel_year < 0) {
-		sr->flag = -(sel_year);
-		goto err_select_date_fail;
+		sel_year = nc_read_setup_input_year(wptr_parent, fptr);
+		if (sel_year < 0) {
+			sr->flag = -(sel_year);
+			goto err_select_date_fail;
+		}
 	}
 
 	if (!sel_month) {
 		sel_month = nc_read_select_month(wptr_parent, fptr, sel_year);
-	}
-	if (sel_month < 0) {
-		sr->flag = -(sel_month);
-		goto err_select_date_fail;
-	} else if (sel_month < 0) {
-		sr->flag = -(sel_month);
-		goto err_select_date_fail;
+		if (sel_month < 0) {
+			sr->flag = -(sel_month);
+			goto err_select_date_fail;
+		}
 	}
 
 	wclear(wptr_parent);
