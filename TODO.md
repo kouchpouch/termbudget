@@ -139,6 +139,6 @@
     - 16 [X] Several different integer type cmp's that need to be resolved.
     - 17 [X] On some systems the function that is clearing the footer on stdscr
                 is being displayed as a question mark
-    - 18 [ ] After adding a transaction it requires two presses of the quit menu
+    - 18 [X] After adding a transaction it requires two presses of the quit menu
                 key to exit. Each subsequent transaction added requires +1 key
                 presses.

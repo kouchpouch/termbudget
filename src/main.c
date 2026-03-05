@@ -941,7 +941,7 @@ void nc_create_new_budget(void) {
 
 /* Optional parameters int month, year. If add transaction is selected while
  * on the read screen these will be auto-filled. */
-void nc_add_transaction(int year, int month, int sort) {
+void nc_add_transaction(int year, int month) {
 	struct LineData userlinedata_, *uld = &userlinedata_;
 	nc_print_input_footer(stdscr);
 
@@ -991,11 +991,12 @@ void nc_add_transaction(int year, int month, int sort) {
 input_quit:
 	free(uld->category);
 	free(uld->desc);
-	nc_read_setup(uld->year, uld->month, sort);
+// 	This was causing the nc_read_setup function to be called twice
+//	nc_read_setup(uld->year, uld->month, sort);
 }
 
 void nc_add_transaction_default(void) {
-	nc_add_transaction(0, 0, SORT_CATG);
+	nc_add_transaction(0, 0);
 }
 
 void add_transaction(void) {
@@ -3321,7 +3322,7 @@ err_select_date_fail:
 			struct MenuParams *mp = init_add_menu();
 			int c = nc_input_menu(mp);
 			if (c == 0) {
-				nc_add_transaction(sel_year, sel_month, sort);
+				nc_add_transaction(sel_year, sel_month);
 			} else if (c == 1) {
 				nc_add_budget_category(sel_month, sel_year);
 			}
