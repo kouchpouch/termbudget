@@ -1034,10 +1034,6 @@ void add_transaction(void) {
 	}
 
 	unsigned int resultline = sort_record_csv(uld->month, uld->day, uld->year);
-	if (resultline < 0) {
-		puts("Failed to find where to add this record");
-		goto err_confirm;
-	}
 
 	if (debug) {
 		printf("Result line: %d\n", resultline);
@@ -1792,14 +1788,14 @@ void print_bar_graph(double expense, double income) {
 		double diff = expense / income;
 		diff *= 10;
 		for (size_t i = 0; i < sizeof(expense_bar); i++) {
-			i < (size_t)diff ? 
+			i < diff ? 
 			(expense_bar[i] = '#') : (expense_bar[i] = '-');
 		}
 	} else {
 		double diff = income / expense;
 		diff *= 10;
 		for (size_t i = 0; i < sizeof(income_bar); i++) {
-			i < (size_t)diff ? 
+			i < diff ? 
 			(income_bar[i] = '#') : (income_bar[i] = '-');
 		}
 	}
@@ -1984,22 +1980,30 @@ int nc_read_select_year(WINDOW *wptr, FILE *fptr) {
 	keypad(wptr, true);	
 
 	Vec *years = init_nc_read_select_year();
+	int sz;
 
 	if (years == NULL) {
 		return -(NO_RCRD);
 	}
 
+	if (years->size > INT_MAX) {
+		//fail
+		;
+	} else {
+		sz = (int)years->size;
+	};
+
 	int selected_year = 0;
-	size_t print_y = 1;
-	size_t print_x = 2;
+	int print_y = 1;
+	int print_x = 2;
 
 	box(wptr, 0, 0);
 	wrefresh(wptr);
 	wmove(wptr, print_y, print_x);
 
 	int scr_idx = 0;
-	size_t flag = -1;
-	for (size_t i = 0; i < years->size; i++) {
+	int flag = -1;
+	for (int i = 0; i < sz; i++) {
 		if (years->data[i] == CURRENT_YEAR) {
 			flag = i;
 		}
@@ -2008,7 +2012,7 @@ int nc_read_select_year(WINDOW *wptr, FILE *fptr) {
 	}
 
 	/* Initially highlight the current year and move cursor to it */
-	size_t init_rv_x = print_x;
+	int init_rv_x = print_x;
 	if (flag > 0) {
 		init_rv_x += (4 * flag) + flag;
 		scr_idx = flag;
@@ -2018,7 +2022,7 @@ int nc_read_select_year(WINDOW *wptr, FILE *fptr) {
 	wrefresh(wptr);
 
 	int c = 0;
-	size_t temp_x;
+	int temp_x;
 	while (c != KEY_F(QUIT) && c != 'q') {
 		c = wgetch(wptr);
 		temp_x = getcurx(wptr);
@@ -2035,8 +2039,8 @@ int nc_read_select_year(WINDOW *wptr, FILE *fptr) {
 			break;
 		case('l'):
 		case(KEY_RIGHT):
-			if (scr_idx + 1 < years->size) {
-			//if (temp_x + 5 <= (years->size * 4) + years->size) {
+			if (scr_idx + 1 < sz) {
+			//if (temp_x + 5 <= (sz * 4) + sz) {
 				mvwchgat(wptr, print_y, temp_x, 4, A_NORMAL, 0, NULL);
 				mvwchgat(wptr, print_y, temp_x + 5, 4, A_REVERSE, 0, NULL);
 				wrefresh(wptr);

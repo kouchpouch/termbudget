@@ -52,7 +52,7 @@ struct Categories {
 
 struct ScrollCursorSimple {
 	size_t displayed;
-	size_t select_idx;
+	int select_idx;
 	int cur_y;
 };
 
