@@ -59,6 +59,11 @@
             creating a new transaction, creating a new category, roll over
             previous month's data to the target month, or exit.
     - [X] Add alerter when adding a category that already exists
+    - [ ] Add a sidebar or somewhere to put info such as: money remaining,
+            money left to still budget (zero dollar based budgeting), total
+            income, etc.
+    - [ ] Create a color palette and assign different colors to
+            different categories.
 
 #### Main Feature Set
     - [X] Create a transaction
@@ -134,3 +139,6 @@
     - 16 [X] Several different integer type cmp's that need to be resolved.
     - 17 [X] On some systems the function that is clearing the footer on stdscr
                 is being displayed as a question mark
+    - 18 [ ] After adding a transaction it requires two presses of the quit menu
+                key to exit. Each subsequent transaction added requires +1 key
+                presses.
