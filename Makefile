@@ -1,7 +1,7 @@
 .PHONY: termbudget
 
 termbudget:
-	gcc -g -Wall \
+	gcc -g -Wall -Wextra -Wpedantic \
 		src/main.c \
 		src/tui.c \
 		src/tui_input.c \
@@ -11,4 +11,5 @@ termbudget:
 		src/fileintegrity.c \
 		src/filemanagement.c \
 		src/tui_input_menu.c \
+		src/get_date.c \
 		-lncurses -o termbudget
