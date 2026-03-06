@@ -2077,11 +2077,11 @@ int nc_read_select_year(WINDOW *wptr, FILE *fptr) {
 	return selected_year;
 }
 
-int get_current_mo_idx(Vec *months, int mo) {
+int get_current_mo_idx(Vec *months) {
+	int mo = get_current_month();
 	// months->size can never be more than MONTHS_IN_YEAR so this cast is
-	// safe
 	for (int i = 0; i < (int)months->size; i++) {
-		if (months->data[i] == mo) {
+		if (months->data[i] - 1 == mo) {
 			return i;
 		}
 	}
@@ -2100,8 +2100,7 @@ int nc_read_select_month(WINDOW *wptr, FILE* fptr, int year) {
 	int temp_y = 0;
 	int scr_idx = 0;
 	int cur_idx = 0;
-
-	int current_mo = get_current_month();
+	int current_mo_idx = get_current_mo_idx(months_data);
 
 	wmove(wptr, BOX_OFFSET, BOX_OFFSET);
 	for (size_t i = 0; i < months_data->size; i++) {
@@ -2113,8 +2112,9 @@ int nc_read_select_month(WINDOW *wptr, FILE* fptr, int year) {
 		}
 	}
 
-	if (year == get_current_year() && get_current_mo_idx(months_data, current_mo) != -1) {
-		wmove(wptr, BOX_OFFSET + current_mo, BOX_OFFSET);
+	if (year == get_current_year() && current_mo_idx != -1) {
+		wmove(wptr, BOX_OFFSET + current_mo_idx, BOX_OFFSET);
+		cur_idx = current_mo_idx;
 		wchgat(wptr, monlen, A_REVERSE, 0, NULL);
 	} else {
 		wmove(wptr, BOX_OFFSET, BOX_OFFSET);
