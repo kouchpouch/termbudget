@@ -1979,18 +1979,15 @@ int nc_read_select_year(WINDOW *wptr, FILE *fptr) {
 	keypad(wptr, true);	
 
 	Vec *years = init_nc_read_select_year();
-	int sz;
+	int sz = 0;
 
 	if (years == NULL) {
 		return -(NO_RCRD);
 	}
 
-	if (years->size > INT_MAX) {
-		//fail
-		;
-	} else {
-		sz = (int)years->size;
-	};
+	/* This cast is safe because years->size's maximum value is 9999, as only
+	 * 4 digits can be used for a year's input. */
+	sz = (int)years->size;
 
 	int selected_year = 0;
 	int print_y = 1;
