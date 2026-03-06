@@ -21,6 +21,7 @@
 #include <ctype.h>
 #include <ncurses.h>
 #include <limits.h>
+#include "get_date.h"
 #include "fileintegrity.h"
 #include "filemanagement.h"
 #include "helper.h"
@@ -31,8 +32,6 @@
 #include "parser.h"
 #include "main.h"
 #include "categories.h"
-
-#define CURRENT_YEAR 2026 // FIX This is to not be hard coded
 
 bool debug;
 bool cli_mode;
@@ -2004,7 +2003,7 @@ int nc_read_select_year(WINDOW *wptr, FILE *fptr) {
 	int scr_idx = 0;
 	int flag = -1;
 	for (int i = 0; i < sz; i++) {
-		if (years->data[i] == CURRENT_YEAR) {
+		if (years->data[i] == get_current_year()) {
 			flag = i;
 		}
 		wprintw(wptr, "%ld ", years->data[i]);
@@ -2078,6 +2077,17 @@ int nc_read_select_year(WINDOW *wptr, FILE *fptr) {
 	return selected_year;
 }
 
+int get_current_mo_idx(Vec *months, int mo) {
+	// months->size can never be more than MONTHS_IN_YEAR so this cast is
+	// safe
+	for (int i = 0; i < (int)months->size; i++) {
+		if (months->data[i] == mo) {
+			return i;
+		}
+	}
+	return -1;
+}
+
 /* On a non-select, the return value is the inverted menukeys value */
 int nc_read_select_month(WINDOW *wptr, FILE* fptr, int year) {
 	rewind(fptr);
@@ -2091,6 +2101,8 @@ int nc_read_select_month(WINDOW *wptr, FILE* fptr, int year) {
 	int scr_idx = 0;
 	int cur_idx = 0;
 
+	int current_mo = get_current_month();
+
 	wmove(wptr, BOX_OFFSET, BOX_OFFSET);
 	for (size_t i = 0; i < months_data->size; i++) {
 		temp_y = getcury(wptr);
@@ -2101,8 +2113,14 @@ int nc_read_select_month(WINDOW *wptr, FILE* fptr, int year) {
 		}
 	}
 
-	wmove(wptr, BOX_OFFSET, BOX_OFFSET);
-	wchgat(wptr, monlen, A_REVERSE, 0, NULL);
+	if (year == get_current_year() && get_current_mo_idx(months_data, current_mo) != -1) {
+		wmove(wptr, BOX_OFFSET + current_mo, BOX_OFFSET);
+		wchgat(wptr, monlen, A_REVERSE, 0, NULL);
+	} else {
+		wmove(wptr, BOX_OFFSET, BOX_OFFSET);
+		wchgat(wptr, monlen, A_REVERSE, 0, NULL);
+	}
+
 	box(wptr, 0, 0);
 	wrefresh(wptr);
 
