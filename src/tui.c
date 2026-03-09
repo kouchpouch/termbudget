@@ -214,6 +214,9 @@ struct ReadWins *create_read_windows(void) {
 		window_creation_fail();
 	}
 
+	keypad(wins->parent, true);
+	keypad(wins->data, true);
+
 	return wins;
 }
 
@@ -345,6 +348,7 @@ WINDOW *nc_init_stdscr(void) {
 	}
 	start_color();
 	use_default_colors();
+	init_pair(REVERSE_COLOR, 251, -1);
 	noecho(); cbreak(); keypad(stdscr, true);
 	return stdscr;
 }
