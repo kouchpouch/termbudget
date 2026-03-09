@@ -161,6 +161,13 @@ int mvwxcprintw_digit(WINDOW *wptr, int y, int d) {
 	return ret;
 }
 
+static bool verify_sidebar_width(WINDOW *wptr) {
+	if (getmaxx(wptr) >= MIN_COLUMNS_SIDEBAR) {
+		return true;
+	}
+	return false;
+}
+
 WINDOW *create_lines_subwindow(int max_y, int max_x, int y_off, int x_off) {
 	WINDOW *wptr = newwin(max_y - y_off * 2, max_x - x_off * 2, y_off + 1, x_off);
 	if (wptr == NULL) {
@@ -168,6 +175,46 @@ WINDOW *create_lines_subwindow(int max_y, int max_x, int y_off, int x_off) {
 	}
 	keypad(wptr, true);
 	return wptr;
+}
+
+struct ReadWins *create_read_windows(void) {
+	struct ReadWins *wins = malloc(sizeof(*wins));
+	int parent_y, parent_x;
+	int x, y;
+	getmaxyx(stdscr, y, x);
+	bool width = verify_sidebar_width(stdscr);
+	int y_off = 1;
+	int x_off = BOX_OFFSET;
+
+	if (width) {
+		wins->parent = newwin(y - 1, x - SIDEBAR_COLUMNS, 0, 0);
+		if (wins->parent == NULL) {
+			window_creation_fail();
+		}
+	} else {
+		wins->parent = newwin(y - 1, 0, 0, 0);
+	}
+
+	getmaxyx(wins->parent, parent_y, parent_x);
+
+	if (width) {
+		wins->sidebar = newwin(y - 1, x - parent_x + 1, 0, parent_x - 1);
+		if (wins->sidebar == NULL) {
+			window_creation_fail();
+		}
+		box(wins->sidebar, 0, 0);
+		wrefresh(wins->sidebar);
+	} else {
+		nc_exit_window(wins->sidebar);
+		wins->sidebar = NULL;
+	}
+
+	wins->data = newwin(parent_y - 1 - y_off * 2, parent_x - x_off * 2, y_off + 1, x_off);
+	if (wins->data == NULL) {
+		window_creation_fail();
+	}
+
+	return wins;
 }
 
 WINDOW *create_category_select_parent(int n) {
