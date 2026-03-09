@@ -65,6 +65,11 @@ struct ScrollCursor {
 	int catg_data;
 };
 
+struct Datevals {
+	int year;
+	int month;
+};
+
 /* Exits the program with "exit(1)" and prints the error message. */
 extern void memory_allocate_fail(void);
 
