@@ -2651,7 +2651,7 @@ int get_total_displayed_rows(CategoryNode **nodes) {
 }
 
 int category_color(int x) {
-	return x % 10 + 1;
+	return x % 10 + 11;
 }
 
 void nc_scroll_prev_category(WINDOW *wptr, CategoryNode **nodes,
@@ -2786,21 +2786,6 @@ void nc_print_initial_read_budget_loop(WINDOW *wptr, struct ScrollCursor *sc,
 	wrefresh(wptr);
 }
 
-void init_color_palette(void) {
-	// These colors were picked by a clanker, the only thing in the entire
-	// program that used the devil.
-	init_pair(1, 75, -1);  // soft blue
-	init_pair(2, 69, -1);  // muted indigo
-	init_pair(3, 111, -1); // lavender
-	init_pair(4, 147, -1); // soft violet
-	init_pair(5, 121, -1); // mint
-	init_pair(6, 79, -1);  // seafoam
-	init_pair(7, 108, -1); // sage
-	init_pair(8, 216, -1); // peach
-	init_pair(9, 215, -1); // soft orange
-	init_pair(10, 222, -1); // light gold
-}
-
 /*
  * Main loop for the user to interact with when selecting the read menu option.
  * If sorted by anything other than 'Category', nc_read_loop will be used.
@@ -2821,7 +2806,6 @@ void nc_read_budget_loop(WINDOW *wptr_parent, WINDOW *wptr,
 	init_scroll_cursor(sc, nodes);
 
 	int c = 0;
-	init_color_palette();
 	calculate_columns(cw, getmaxx(wptr) + BOX_OFFSET);
 	nc_print_balances_text(wptr_parent, psc);
 	nc_print_read_footer(stdscr);
@@ -3247,6 +3231,15 @@ void get_dates(struct SelRecord *sr, struct Datevals *dates) {
 	nc_exit_window(wptr);
 }
 
+void free_windows(struct ReadWins *wins) {
+	nc_exit_window(wins->data);
+	nc_exit_window(wins->parent);
+	if (wins->sidebar != NULL) {
+		nc_exit_window(wins->sidebar);
+	}
+	free(wins);
+}
+
 void nc_read_setup_default(void) {
 	nc_read_setup(0, 0, SORT_CATG);
 }
@@ -3285,7 +3278,7 @@ void nc_read_setup(int sel_year, int sel_month, int sort) {
 	if (wins->sidebar == NULL) {
 		sidebar_exists = false;
 	} else {
-		mvwxcprintw(wins->sidebar, 0, "Category Breakdown");
+		mvwxcprintw(wins->sidebar, 0, "Summary");
 		wrefresh(wins->sidebar);
 		sidebar_exists = true;
 	}
@@ -3301,26 +3294,18 @@ void nc_read_setup(int sel_year, int sel_month, int sort) {
 	}
 
 	n_records = plines->size;
-
 	if (plines->size == 0 && sort == SORT_DATE) {
 		sort = SORT_CATG;
 	}
 
-	switch(sort) {
-	case(SORT_DATE):
+	if (sort == SORT_DATE) {
 		psc = sort_by_date(fptr, pidx, plines);	
 		sort_text = "Date";
-		break;
-	case(SORT_CATG):
+	} else {
 		psc = sort_by_category(fptr, pidx, plines, dates->year, dates->month);
-		nodes = create_category_nodes(dates->month, dates->year);
 		sort_text = "Category";
-		break;
-	default:
-		psc = sort_by_date(fptr, pidx, plines);	
-		sort_text = "Date";
-		break;
 	}
+	nodes = create_category_nodes(dates->month, dates->year);
 
 	print_column_headers(wins->parent, BOX_OFFSET);
 	if (sidebar_exists) {
@@ -3333,8 +3318,8 @@ void nc_read_setup(int sel_year, int sel_month, int sort) {
 	mvwprintw(wins->parent, 0, BOX_OFFSET, "%d %s", dates->year, 
 		  	  abbr_months[dates->month - 1]);
 	mvwprintw(wins->parent, 0, 
-			  getmaxx(wins->parent) - strlen(sort_text) - strlen("Sort By: ") - BOX_OFFSET, 
-			  "Sort By: %s", sort_text);
+			  getmaxx(wins->parent) - strlen(sort_text) - strlen("Sort By: ") - 
+		   BOX_OFFSET, "Sort By: %s", sort_text);
 	wrefresh(wins->parent);
 
 	if (sort == SORT_DATE) {
@@ -3343,26 +3328,22 @@ void nc_read_setup(int sel_year, int sel_month, int sort) {
 		FILE *bfptr = open_budget_csv("r");
 		nc_read_budget_loop(wins->parent, wins->data, fptr, bfptr, sr, psc, nodes);
 		fclose(bfptr);
-		free_category_nodes(nodes);
 	}
 
 	free(psc);
 	psc = NULL;
 	free(plines);
 	plines = NULL;
+	free_category_nodes(nodes);
+	nodes = NULL;
+	free_windows(wins);
+	wins = NULL;
 
 err_select_date_fail:
 	free(pidx);
 	pidx = NULL;
 	fclose(fptr);
 	fptr = NULL;
-
-	nc_exit_window(wins->data);
-	nc_exit_window(wins->parent);
-	if (sidebar_exists) {
-		nc_exit_window(wins->sidebar);
-	}
-	free(wins);
 
 	switch(sr->flag) {
 	case(NO_SELECT):
