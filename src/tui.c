@@ -335,6 +335,22 @@ void nc_message(char *str) {
 	nc_exit_window_key(wptr_msg);
 }
 
+static void init_color_palette(void) {
+	// These colors were picked by a clanker, the only thing in the entire
+	// program that used the devil.
+	init_pair(11, 75, -1);  // soft blue
+	init_pair(12, 69, -1);  // muted indigo
+	init_pair(13, 111, -1); // lavender
+	init_pair(14, 147, -1); // soft violet
+	init_pair(15, 121, -1); // mint
+	init_pair(16, 79, -1);  // seafoam
+	init_pair(17, 108, -1); // sage
+	init_pair(18, 216, -1); // peach
+	init_pair(19, 215, -1); // soft orange
+	init_pair(20, 222, -1); // light gold
+	init_pair(REVERSE_COLOR, 251, -1);
+}
+
 WINDOW *nc_init_stdscr(void) {
 	stdscr = initscr(); 
 	if (stdscr == NULL) {
@@ -348,7 +364,7 @@ WINDOW *nc_init_stdscr(void) {
 	}
 	start_color();
 	use_default_colors();
-	init_pair(REVERSE_COLOR, 251, -1);
+	init_color_palette();
 	noecho(); cbreak(); keypad(stdscr, true);
 	return stdscr;
 }
