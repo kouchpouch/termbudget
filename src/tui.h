@@ -73,6 +73,12 @@ enum menukeys {
 	NO_RCRD = 14
 };
 
+struct ReadWins {
+	WINDOW *parent;
+	WINDOW *sidebar;
+	WINDOW *data;
+};
+
 /* Tests that the stdscr is big enough to handle this program */
 extern int test_terminal_size(void);
 
@@ -115,6 +121,11 @@ extern int mvwxcprintw(WINDOW *wptr, int y, char *str);
 
 /* Same as mvwxcprintw but for a digit value */
 extern int mvwxcprintw_digit(WINDOW *wptr, int y, int d);
+
+/* Creates all three (or two, if the sidebar width check does not return true),
+ * for the nc_read_setup function in main.c. If the sidebar window is not
+ * created, it is closed with delwin() and the pointer is set to NULL. */
+extern struct ReadWins *create_read_windows(void);
 
 /* Creates the subwindow for the read function */
 extern WINDOW *create_lines_subwindow(int max_y, int max_x, int y_off, int x_off);
