@@ -44,7 +44,7 @@ int nc_input_menu(struct MenuParams *mp) {
 	int x_traverse = getmaxx(wptr) - BOX_OFFSET * 2;
 
 	print_items(mp, wptr, cur_y);
-	mvwchgat(wptr, cur_y, BOX_OFFSET, getmaxx(wptr) - BOX_OFFSET * 2, A_REVERSE, 0, NULL); 
+	mvwchgat(wptr, cur_y, BOX_OFFSET, getmaxx(wptr) - BOX_OFFSET * 2, A_REVERSE, REVERSE_COLOR, NULL); 
 	keypad(wptr, true);
 
 	while (c != KEY_F(QUIT) && c != '\n' && c != '\r') {
@@ -57,12 +57,12 @@ int nc_input_menu(struct MenuParams *mp) {
 				mvwchgat(wptr, cur_y, BOX_OFFSET, x_traverse, A_NORMAL, 0, NULL); 
 				cur_y++;
 				selection_idx++;
-				mvwchgat(wptr, cur_y, BOX_OFFSET, x_traverse, A_REVERSE, 0, NULL); 
+				mvwchgat(wptr, cur_y, BOX_OFFSET, x_traverse, A_REVERSE, REVERSE_COLOR, NULL); 
 			} else {
 				mvwchgat(wptr, cur_y, BOX_OFFSET, x_traverse, A_NORMAL, 0, NULL);
 				selection_idx = 0;
 				cur_y = first_y;
-				mvwchgat(wptr, cur_y, BOX_OFFSET, x_traverse, A_REVERSE, 0, NULL);
+				mvwchgat(wptr, cur_y, BOX_OFFSET, x_traverse, A_REVERSE, REVERSE_COLOR, NULL);
 			}
 			break;
 		case('k'):
@@ -71,12 +71,12 @@ int nc_input_menu(struct MenuParams *mp) {
 				mvwchgat(wptr, cur_y, BOX_OFFSET, x_traverse, A_NORMAL, 0, NULL); 
 				cur_y--;
 				selection_idx--;
-				mvwchgat(wptr, cur_y, BOX_OFFSET, x_traverse, A_REVERSE, 0, NULL); 
+				mvwchgat(wptr, cur_y, BOX_OFFSET, x_traverse, A_REVERSE, REVERSE_COLOR, NULL); 
 			} else {
 				mvwchgat(wptr, cur_y, BOX_OFFSET, x_traverse, A_NORMAL, 0, NULL);
 				selection_idx = mp->items - 1;
 				cur_y = first_y + mp->items - 1;
-				mvwchgat(wptr, cur_y, BOX_OFFSET, x_traverse, A_REVERSE, 0, NULL);
+				mvwchgat(wptr, cur_y, BOX_OFFSET, x_traverse, A_REVERSE, REVERSE_COLOR, NULL);
 			}
 			break;
 		case('\n'):

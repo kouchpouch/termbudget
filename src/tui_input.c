@@ -88,6 +88,7 @@ void nc_user_input(int n, WINDOW *wptr, struct UserInput *pui) {
 		case('\r'):
 			temp[idx] = '\0';
 			break;
+		case(27):
 		case(KEY_F(QUIT)):
 			noecho();
 			pui->flag = QUIT;

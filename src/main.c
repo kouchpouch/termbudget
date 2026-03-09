@@ -326,7 +326,7 @@ char *nc_select_category(int month, int year) {
 	}
 
 	wrefresh(wptr);
-	mvwchgat(wptr, 0, 0, -1, A_REVERSE, 0, NULL);
+	mvwchgat(wptr, 0, 0, -1, A_REVERSE, REVERSE_COLOR, NULL);
 	int cur = 0; // Y=0 is the box and title, datalines start at 1.
 	int selection_idx = 0;
 	int c = 0;
@@ -352,7 +352,7 @@ char *nc_select_category(int month, int year) {
 					cur = max_y - 1;
 				}
 
-				mvwchgat(wptr, cur, 0, -1, A_REVERSE, 0, NULL);
+				mvwchgat(wptr, cur, 0, -1, A_REVERSE, REVERSE_COLOR, NULL);
 			}
 			break;
 		case('k'):
@@ -369,7 +369,7 @@ char *nc_select_category(int month, int year) {
 					cur = 0;
 				}
 
-				mvwchgat(wptr, cur, 0, -1, A_REVERSE, 0, NULL);
+				mvwchgat(wptr, cur, 0, -1, A_REVERSE, REVERSE_COLOR, NULL);
 			}
 			break;
 		case('c'):
@@ -2013,7 +2013,7 @@ int nc_read_select_year(WINDOW *wptr) {
 		scr_idx = flag;
 	}
 	
-	mvwchgat(wptr, print_y, init_rv_x, 4, A_REVERSE, 0, NULL);
+	mvwchgat(wptr, print_y, init_rv_x, 4, A_REVERSE, REVERSE_COLOR, NULL);
 	wrefresh(wptr);
 
 	int c = 0;
@@ -2027,7 +2027,7 @@ int nc_read_select_year(WINDOW *wptr) {
 			if (scr_idx - 1 >= 0) {
 			//if (temp_x - 5 >= print_x) {
 				mvwchgat(wptr, print_y, temp_x, 4, A_NORMAL, 0, NULL);
-				mvwchgat(wptr, print_y, temp_x - 5, 4, A_REVERSE, 0, NULL);
+				mvwchgat(wptr, print_y, temp_x - 5, 4, A_REVERSE, REVERSE_COLOR, NULL);
 				wrefresh(wptr);
 				scr_idx--;
 			}
@@ -2037,7 +2037,7 @@ int nc_read_select_year(WINDOW *wptr) {
 			if (scr_idx + 1 < sz) {
 			//if (temp_x + 5 <= (sz * 4) + sz) {
 				mvwchgat(wptr, print_y, temp_x, 4, A_NORMAL, 0, NULL);
-				mvwchgat(wptr, print_y, temp_x + 5, 4, A_REVERSE, 0, NULL);
+				mvwchgat(wptr, print_y, temp_x + 5, 4, A_REVERSE, REVERSE_COLOR, NULL);
 				wrefresh(wptr);
 				scr_idx++;
 			}
@@ -2109,10 +2109,10 @@ int nc_read_select_month(WINDOW *wptr, int year) {
 	if (year == get_current_year() && current_mo_idx != -1) {
 		wmove(wptr, BOX_OFFSET + current_mo_idx, BOX_OFFSET);
 		cur_idx = current_mo_idx;
-		wchgat(wptr, monlen, A_REVERSE, 0, NULL);
+		wchgat(wptr, monlen, A_REVERSE, REVERSE_COLOR, NULL);
 	} else {
 		wmove(wptr, BOX_OFFSET, BOX_OFFSET);
-		wchgat(wptr, monlen, A_REVERSE, 0, NULL);
+		wchgat(wptr, monlen, A_REVERSE, REVERSE_COLOR, NULL);
 	}
 
 	box(wptr, 0, 0);
@@ -2127,7 +2127,7 @@ int nc_read_select_month(WINDOW *wptr, int year) {
 		case(KEY_DOWN):
 			if (temp_y - BOX_OFFSET + 1 < scr_idx) {
 				mvwchgat(wptr, temp_y, BOX_OFFSET, monlen, A_NORMAL, 0, NULL);
-				mvwchgat(wptr, temp_y + 1, BOX_OFFSET, monlen, A_REVERSE, 0, NULL);
+				mvwchgat(wptr, temp_y + 1, BOX_OFFSET, monlen, A_REVERSE, REVERSE_COLOR, NULL);
 				wrefresh(wptr);
 				cur_idx++;
 			}
@@ -2136,7 +2136,7 @@ int nc_read_select_month(WINDOW *wptr, int year) {
 		case(KEY_UP):
 			if (temp_y - 1 >= BOX_OFFSET) {
 				mvwchgat(wptr, temp_y, BOX_OFFSET, monlen, A_NORMAL, 0, NULL);
-				mvwchgat(wptr, temp_y - 1, BOX_OFFSET, monlen, A_REVERSE, 0, NULL);
+				mvwchgat(wptr, temp_y - 1, BOX_OFFSET, monlen, A_REVERSE, REVERSE_COLOR, NULL);
 				wrefresh(wptr);
 				cur_idx--;
 			}
@@ -2327,7 +2327,7 @@ void nc_print_record_vert(WINDOW *wptr, struct LineData *ld, int x_off) {
 }
 
 int nc_select_field_to_edit(WINDOW *wptr) {
-	mvwchgat(wptr, 1, 0, -1, A_REVERSE, 0, NULL);
+	mvwchgat(wptr, 1, 0, -1, A_REVERSE, REVERSE_COLOR, NULL);
 	keypad(wptr, true);
 	int select = 1;
 	int c = 0;
@@ -2347,11 +2347,11 @@ int nc_select_field_to_edit(WINDOW *wptr) {
 			if (select + 1 <= (INPUT_WIN_ROWS - BOX_OFFSET)) {
 				mvwchgat(wptr, select, 0, -1, A_NORMAL, 0, NULL);
 				select++;
-				mvwchgat(wptr, select, 0, -1, A_REVERSE, 0, NULL);
+				mvwchgat(wptr, select, 0, -1, A_REVERSE, REVERSE_COLOR, NULL);
 			} else {
 				mvwchgat(wptr, select, 0, -1, A_NORMAL, 0, NULL);
 				select = 1;
-				mvwchgat(wptr, select, 0, -1, A_REVERSE, 0, NULL);
+				mvwchgat(wptr, select, 0, -1, A_REVERSE, REVERSE_COLOR, NULL);
 			}
 			break;
 		case('k'):
@@ -2359,11 +2359,11 @@ int nc_select_field_to_edit(WINDOW *wptr) {
 			if (select - 1 > 0) {
 				mvwchgat(wptr, select, 0, -1, A_NORMAL, 0, NULL);
 				select--;
-				mvwchgat(wptr, select, 0, -1, A_REVERSE, 0, NULL);
+				mvwchgat(wptr, select, 0, -1, A_REVERSE, REVERSE_COLOR, NULL);
 			} else {
 				mvwchgat(wptr, select, 0, -1, A_NORMAL, 0, NULL);
 				select = INPUT_WIN_ROWS - BOX_OFFSET;
-				mvwchgat(wptr, select, 0, -1, A_REVERSE, 0, NULL);
+				mvwchgat(wptr, select, 0, -1, A_REVERSE, REVERSE_COLOR, NULL);
 			}
 			break;
 		case('\n'):
@@ -2527,7 +2527,7 @@ void refresh_on_detail_close_uniform(WINDOW *wptr, WINDOW *wptr_parent, int n)
 	}
 
 	wmove(wptr, temp_y, temp_x);
-	wchgat(wptr, -1, A_REVERSE, 0, NULL); 
+	wchgat(wptr, -1, A_REVERSE, REVERSE_COLOR, NULL); 
 	mvwvline(wptr_parent, 1, 0, 0, getmaxy(wptr_parent) - 2);
 	mvwvline(wptr_parent, 1, getmaxx(wptr_parent) - 1, 0, getmaxy(wptr_parent) - 2);
 	wrefresh(wptr_parent);
@@ -2601,7 +2601,7 @@ void nc_scroll_prev_read_loop(WINDOW *wptr, struct ScrollCursorSimple *sc,
 		nc_scroll_prev(psc->data[sc->select_idx], fptr, wptr, cw, false);
 		sc->cur_y = getcury(wptr);
 	}
-	mvwchgat(wptr, sc->cur_y, 0, -1, A_REVERSE, 0, NULL); 
+	mvwchgat(wptr, sc->cur_y, 0, -1, A_REVERSE, REVERSE_COLOR, NULL); 
 }
 
 void nc_scroll_next_read_loop(WINDOW *wptr, struct ScrollCursorSimple *sc,
@@ -2615,7 +2615,7 @@ void nc_scroll_next_read_loop(WINDOW *wptr, struct ScrollCursorSimple *sc,
 		nc_scroll_next(psc->data[sc->select_idx], fptr, wptr, cw, false);
 		sc->cur_y = getcury(wptr);
 	}
-	mvwchgat(wptr, sc->cur_y, 0, -1, A_REVERSE, 0, NULL); 
+	mvwchgat(wptr, sc->cur_y, 0, -1, A_REVERSE, REVERSE_COLOR, NULL); 
 }
 
 int get_total_nodes(CategoryNode **nodes) {
@@ -2674,7 +2674,7 @@ void nc_scroll_prev_category(WINDOW *wptr, CategoryNode **nodes,
 
 	sc->cur_y--;
 	sc->select_idx--;
-	mvwchgat(wptr, sc->cur_y, 0, -1, A_REVERSE, 0, NULL); 
+	mvwchgat(wptr, sc->cur_y, 0, -1, A_REVERSE, REVERSE_COLOR, NULL); 
 
 	if (sc->select_idx >= 0 && sc->displayed < sc->total_rows && sc->cur_y < 0) {
 		sc->cur_y = -1;
@@ -2686,7 +2686,7 @@ void nc_scroll_prev_category(WINDOW *wptr, CategoryNode **nodes,
 						   rfptr, wptr, cw, false);
 		}
 		sc->cur_y = getcury(wptr);
-		mvwchgat(wptr, sc->cur_y, 0, -1, A_REVERSE, 0, NULL); 
+		mvwchgat(wptr, sc->cur_y, 0, -1, A_REVERSE, REVERSE_COLOR, NULL); 
 	}
 }
 
@@ -2714,7 +2714,7 @@ void nc_scroll_next_category(WINDOW *wptr, CategoryNode **nodes,
 
 	sc->cur_y++;
 	sc->select_idx++;
-	mvwchgat(wptr, sc->cur_y, 0, -1, A_REVERSE, 0, NULL); 
+	mvwchgat(wptr, sc->cur_y, 0, -1, A_REVERSE, REVERSE_COLOR, NULL); 
 
 	if (sc->displayed < sc->total_rows && sc->cur_y == getmaxy(wptr)) {
 		if (sc->catg_data == -1) {
@@ -2725,7 +2725,7 @@ void nc_scroll_next_category(WINDOW *wptr, CategoryNode **nodes,
 						   rfptr, wptr, cw, false);
 		}
 		sc->cur_y = getcury(wptr);
-		mvwchgat(wptr, sc->cur_y, 0, -1, A_REVERSE, 0, NULL); 
+		mvwchgat(wptr, sc->cur_y, 0, -1, A_REVERSE, REVERSE_COLOR, NULL); 
 	}
 }
 
@@ -2777,13 +2777,28 @@ void nc_print_initial_read_budget_loop(WINDOW *wptr, struct ScrollCursor *sc,
 	}
 
 	wmove(wptr, 0, 0);
-	mvwchgat(wptr, sc->select_idx, 0, -1, A_REVERSE, 0, NULL); 
+	mvwchgat(wptr, sc->select_idx, 0, -1, A_REVERSE, REVERSE_COLOR, NULL); 
 
 	if (debug) {
 		curs_set(1);
 	}
 
 	wrefresh(wptr);
+}
+
+void init_color_palette(void) {
+	// These colors were picked by a clanker, the only thing in the entire
+	// program that used the devil.
+	init_pair(1, 75, -1);  // soft blue
+	init_pair(2, 69, -1);  // muted indigo
+	init_pair(3, 111, -1); // lavender
+	init_pair(4, 147, -1); // soft violet
+	init_pair(5, 121, -1); // mint
+	init_pair(6, 79, -1);  // seafoam
+	init_pair(7, 108, -1); // sage
+	init_pair(8, 216, -1); // peach
+	init_pair(9, 215, -1); // soft orange
+	init_pair(10, 222, -1); // light gold
 }
 
 /*
@@ -2806,19 +2821,7 @@ void nc_read_budget_loop(WINDOW *wptr_parent, WINDOW *wptr,
 	init_scroll_cursor(sc, nodes);
 
 	int c = 0;
-	// These colors were picked by a clanker, the only thing in the entire
-	// program that used the devil.
-	init_pair(1, 75, -1);  // soft blue
-	init_pair(2, 69, -1);  // muted indigo
-	init_pair(3, 111, -1); // lavender
-	init_pair(4, 147, -1); // soft violet
-	init_pair(5, 121, -1); // mint
-	init_pair(6, 79, -1);  // seafoam
-	init_pair(7, 108, -1); // sage
-	init_pair(8, 216, -1); // peach
-	init_pair(9, 215, -1); // soft orange
-	init_pair(10, 222, -1); // light gold
-
+	init_color_palette();
 	calculate_columns(cw, getmaxx(wptr) + BOX_OFFSET);
 	nc_print_balances_text(wptr_parent, psc);
 	nc_print_read_footer(stdscr);
@@ -2970,7 +2973,7 @@ void nc_print_initial_read_loop(WINDOW *wptr, struct ScrollCursorSimple *sc,
 	}
 
 	wmove(wptr, 0, 0);
-	mvwchgat(wptr, sc->select_idx, 0, -1, A_REVERSE, 0, NULL); 
+	mvwchgat(wptr, sc->select_idx, 0, -1, A_REVERSE, REVERSE_COLOR, NULL); 
 	if (debug) {
 		curs_set(1);
 	}
@@ -3282,6 +3285,8 @@ void nc_read_setup(int sel_year, int sel_month, int sort) {
 	if (wins->sidebar == NULL) {
 		sidebar_exists = false;
 	} else {
+		mvwxcprintw(wins->sidebar, 0, "Category Breakdown");
+		wrefresh(wins->sidebar);
 		sidebar_exists = true;
 	}
 
