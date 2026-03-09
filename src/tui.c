@@ -124,22 +124,22 @@ void calculate_columns(struct ColWidth *cw, int max_x) {
 void print_column_headers(WINDOW *wptr, int x_off) {
 	struct ColWidth column_width, *cw = &column_width;
 	
-
 	int cur = x_off;
+	int y = 1;
 
 	calculate_columns(cw, getmaxx(wptr) - x_off);
 
-	mvwprintw(wptr, 1, cur, "DATE");
+	mvwprintw(wptr, y, cur, "DATE");
 
 	if (cw->catg <= CATG_X) {
-		mvwprintw(wptr, 1, cur += cw->date, "CAT.");
+		mvwprintw(wptr, y, cur += cw->date, "CAT.");
 	} else {
-		mvwprintw(wptr, 1, cur += cw->date, "CATEGORY");
+		mvwprintw(wptr, y, cur += cw->date, "CATEGORY");
 	}
-	mvwprintw(wptr, 1, cur += cw->catg, "DESCRIPTION");
-	mvwprintw(wptr, 1, cur += cw->desc, "TYPE");
-	mvwprintw(wptr, 1, cur += cw->trns, "AMOUNT");
-	mvwchgat(wptr, 1, x_off, getmaxx(wptr) - x_off * 2, A_REVERSE, 0, NULL);
+	mvwprintw(wptr, y, cur += cw->catg, "DESCRIPTION");
+	mvwprintw(wptr, y, cur += cw->desc, "TYPE");
+	mvwprintw(wptr, y, cur += cw->trns, "AMOUNT");
+	mvwchgat(wptr, y, x_off, getmaxx(wptr) - x_off * 2, A_REVERSE, 0, NULL);
 
 	wrefresh(wptr);
 }
