@@ -62,7 +62,7 @@
     - [ ] Add a sidebar or somewhere to put info such as: money remaining,
             money left to still budget (zero dollar based budgeting), total
             income, etc.
-    - [ ] Create a color palette and assign different colors to
+    - [X] Create a color palette and assign different colors to
             different categories.
 
 #### Main Feature Set
@@ -142,3 +142,5 @@
     - 18 [X] After adding a transaction it requires two presses of the quit menu
                 key to exit. Each subsequent transaction added requires +1 key
                 presses.
+    - 19 [ ] The overview window position is off, it looks weird. Not centered
+                correctly.
