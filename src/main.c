@@ -2245,7 +2245,7 @@ void nc_print_category_hr(WINDOW *wptr, struct ColWidth *cw,
 {
 	char *etc = ". ";
 	int x = 0;
-	int print_offset = 2;
+	int print_offset = 1;
 	double e = get_expenditures_per_category(bt);
 	double remaining = 0;
 	if (e <= 0) {
@@ -2785,6 +2785,17 @@ void nc_print_initial_read_budget_loop(WINDOW *wptr, struct ScrollCursor *sc,
 	wrefresh(wptr);
 }
 
+bool verify_sidebar_width(WINDOW *wptr) {
+	if (getmaxx(wptr) >= MIN_COLUMNS_SIDEBAR) {
+		return true;
+	}
+	return false;
+}
+
+void nc_print_sidebar(void) {
+	;
+}
+
 /*
  * Main loop for the user to interact with when selecting the read menu option.
  * If sorted by anything other than 'Category', nc_read_loop will be used.
@@ -3197,6 +3208,10 @@ int nc_read_setup_input_year(WINDOW *wptr, FILE *fptr) {
 	return yr;
 }
 
+void draw_parent_box_with_sidebar(WINDOW *wptr) {
+	wborder(wptr, 0, 0, 0, 0, 0, ACS_TTEE, 0, ACS_BTEE);
+}
+
 void nc_read_setup_default(void) {
 	nc_read_setup(0, 0, SORT_CATG);
 }
@@ -3216,25 +3231,36 @@ void nc_read_setup(int sel_year, int sel_month, int sort) {
 	sr->flag = -1;
 	FILE *fptr = open_record_csv("r");
 	Vec *pidx = index_csv(fptr);
+	WINDOW *wptr_parent;
+	WINDOW *wptr_data;
+	WINDOW *wptr_sidebar;
+	int max_y, max_x;
+	bool sidebar = verify_sidebar_width(stdscr);
 
-	WINDOW *wptr_parent = newwin(LINES - 1, 0, 0, 0);
+	if (sidebar) {
+		wptr_parent = newwin(LINES - 1, COLS - SIDEBAR_COLUMNS, 0, 0);
+		wptr_sidebar = newwin(LINES - 1, COLS - getmaxx(wptr_parent) + 1, 0, getmaxx(wptr_parent) - 1);
+		box(wptr_sidebar, 0, 0);
+		wrefresh(wptr_sidebar);
+	} else {
+		wptr_parent = newwin(LINES - 1, 0, 0, 0);
+	}
+
+	getmaxyx(wptr_parent, max_y, max_x);
+	wptr_data = create_lines_subwindow(max_y - 1, max_x, 1, BOX_OFFSET);
+
 	if (wptr_parent == NULL) {
 		perror("Failed to create ncurses window");
 		fclose(fptr);
 		return;
 	}
 
-	int max_y, max_x;
-	getmaxyx(wptr_parent, max_y, max_x);
-
-	WINDOW *wptr_data;
 	Vec *plines;
 	if (!month_or_year_exists(sel_month, sel_year)) {
 		sel_year = 0;
 		sel_month = 0;
 	}
 
-	wptr_data = create_lines_subwindow(max_y - 1, max_x, 1, BOX_OFFSET);
 	wrefresh(wptr_data);
 
 	if (!sel_year) {
@@ -3291,7 +3317,12 @@ void nc_read_setup(int sel_year, int sel_month, int sort) {
 	}
 
 	print_column_headers(wptr_parent, BOX_OFFSET);
-	box(wptr_parent, 0, 0);
+	if (sidebar) {
+		draw_parent_box_with_sidebar(wptr_parent);
+	} else {
+		box(wptr_parent, 0, 0);
+	}
+
 	mvwprintw(wptr_parent, 0, BOX_OFFSET, "%d %s", sel_year, 
 		  	  abbr_months[sel_month - 1]);
 	mvwprintw(wptr_parent, 0, 
@@ -3321,6 +3352,9 @@ err_select_date_fail:
 
 	nc_exit_window(wptr_data);
 	nc_exit_window(wptr_parent);
+	if (sidebar) {
+		nc_exit_window(wptr_sidebar);
+	}
 //	nc_print_main_menu_footer(stdscr);
 
 	switch(sr->flag) {
