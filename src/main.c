@@ -902,7 +902,7 @@ bool nc_confirm_budget_category(char *catg, double amt) {
 }
 
 /* For a la carte budget category creation */
-void nc_add_budget_category(int mo, int yr) {
+void nc_add_budget_category(int yr, int mo) {
 	if (mo == 0 || yr == 0) {
 		yr = nc_input_year();
 		if (yr == -1) {
@@ -942,7 +942,7 @@ void nc_create_new_budget(void) {
 		nc_message("A budget already exists for that month");
 		return;
 	}
-	nc_add_budget_category(mo, yr);
+	nc_add_budget_category(yr, mo);
 	nc_read_setup(yr, mo, SORT_CATG);
 }
 
@@ -1974,8 +1974,7 @@ Vec *init_nc_read_select_month(int year) {
 }
 
 /* On a non-select, the return value is the inverted menukeys value */
-int nc_read_select_year(WINDOW *wptr, FILE *fptr) {
-	rewind(fptr);
+int nc_read_select_year(WINDOW *wptr) {
 	keypad(wptr, true);	
 
 	Vec *years = init_nc_read_select_year();
@@ -2086,9 +2085,7 @@ int get_current_mo_idx(Vec *months) {
 }
 
 /* On a non-select, the return value is the inverted menukeys value */
-int nc_read_select_month(WINDOW *wptr, FILE* fptr, int year) {
-	rewind(fptr);
-
+int nc_read_select_month(WINDOW *wptr, int year) {
 	Vec *months_data = init_nc_read_select_month(year);
 
 	int selected_month = 0;
@@ -2653,13 +2650,17 @@ int get_total_displayed_rows(CategoryNode **nodes) {
 	return rows;
 }
 
+int category_color(int x) {
+	return x % 10 + 1;
+}
+
 void nc_scroll_prev_category(WINDOW *wptr, CategoryNode **nodes,
 							 struct ScrollCursor *sc, struct ColWidth *cw,
 							 FILE *rfptr, FILE *bfptr)
 {
 
 	if (sc->catg_data < 0) {
-		mvwchgat(wptr, sc->cur_y, 0, -1, A_NORMAL, 1, NULL); 
+		mvwchgat(wptr, sc->cur_y, 0, -1, A_NORMAL, category_color(sc->catg_node), NULL); 
 		sc->catg_node--;
 		sc->catg_data = nodes[sc->catg_node]->data->size - 1;
 	} else if (sc->catg_data >= 0) {
@@ -2695,7 +2696,7 @@ void nc_scroll_next_category(WINDOW *wptr, CategoryNode **nodes,
 {
 
 	if (sc->catg_data < 0 && nodes[sc->catg_node]->data->size > 0) {
-		mvwchgat(wptr, sc->cur_y, 0, -1, A_NORMAL, 1, NULL); 
+		mvwchgat(wptr, sc->cur_y, 0, -1, A_NORMAL, category_color(sc->catg_node), NULL); 
 		sc->catg_data = 0;
 	} else if (sc->catg_data >= 0 && 
 			   sc->catg_data < nodes[sc->catg_node]->data->size - 1) {
@@ -2703,7 +2704,7 @@ void nc_scroll_next_category(WINDOW *wptr, CategoryNode **nodes,
 		sc->catg_data++;
 	} else if (sc->catg_data == nodes[sc->catg_node]->data->size - 1) {
 		if (nodes[sc->catg_node]->data->size == 0) {
-			mvwchgat(wptr, sc->cur_y, 0, -1, A_NORMAL, 1, NULL); 
+			mvwchgat(wptr, sc->cur_y, 0, -1, A_NORMAL, category_color(sc->catg_node), NULL); 
 		} else {
 			mvwchgat(wptr, sc->cur_y, 0, -1, A_NORMAL, 0, NULL); 
 		}
@@ -2760,7 +2761,7 @@ void nc_print_initial_read_budget_loop(WINDOW *wptr, struct ScrollCursor *sc,
 
 		struct BudgetTokens *bt = tokenize_budget_byte_offset(nodes[i]->catg_fp);
 		nc_print_category_hr(wptr, cw, bt, sc->displayed);
-		mvwchgat(wptr, sc->displayed, 0, -1, A_NORMAL, 1, NULL); 
+		mvwchgat(wptr, sc->displayed, 0, -1, A_NORMAL, category_color(i), NULL); 
 		sc->displayed++;
 
 		for (size_t j = 0; sc->displayed < max_y && sc->displayed < sc->total_rows 
@@ -2785,17 +2786,6 @@ void nc_print_initial_read_budget_loop(WINDOW *wptr, struct ScrollCursor *sc,
 	wrefresh(wptr);
 }
 
-bool verify_sidebar_width(WINDOW *wptr) {
-	if (getmaxx(wptr) >= MIN_COLUMNS_SIDEBAR) {
-		return true;
-	}
-	return false;
-}
-
-void nc_print_sidebar(void) {
-	;
-}
-
 /*
  * Main loop for the user to interact with when selecting the read menu option.
  * If sorted by anything other than 'Category', nc_read_loop will be used.
@@ -2816,7 +2806,18 @@ void nc_read_budget_loop(WINDOW *wptr_parent, WINDOW *wptr,
 	init_scroll_cursor(sc, nodes);
 
 	int c = 0;
-	init_pair(1, COLOR_GREEN, -1); // Categories are displayed in cyan
+	// These colors were picked by a clanker, the only thing in the entire
+	// program that used the devil.
+	init_pair(1, 75, -1);  // soft blue
+	init_pair(2, 69, -1);  // muted indigo
+	init_pair(3, 111, -1); // lavender
+	init_pair(4, 147, -1); // soft violet
+	init_pair(5, 121, -1); // mint
+	init_pair(6, 79, -1);  // seafoam
+	init_pair(7, 108, -1); // sage
+	init_pair(8, 216, -1); // peach
+	init_pair(9, 215, -1); // soft orange
+	init_pair(10, 222, -1); // light gold
 
 	calculate_columns(cw, getmaxx(wptr) + BOX_OFFSET);
 	nc_print_balances_text(wptr_parent, psc);
@@ -3195,8 +3196,8 @@ struct MenuParams *init_add_menu(void) {
 	return mp;
 }
 
-int nc_read_setup_input_year(WINDOW *wptr, FILE *fptr) {
-	int yr = nc_read_select_year(wptr, fptr);
+int nc_read_setup_input_year(WINDOW *wptr) {
+	int yr = nc_read_select_year(wptr);
 	if (yr == -(NO_RCRD)) {
 		mvwxcprintw(wptr, getmaxy(wptr) / 2, 
 			  "No records exist, add (F1) to get started");
@@ -3210,6 +3211,37 @@ int nc_read_setup_input_year(WINDOW *wptr, FILE *fptr) {
 
 void draw_parent_box_with_sidebar(WINDOW *wptr) {
 	wborder(wptr, 0, 0, 0, 0, 0, ACS_TTEE, 0, ACS_BTEE);
+}
+
+void get_dates(struct SelRecord *sr, struct Datevals *dates) {
+	WINDOW *wptr = newwin(LINES - 1, 0, 0, 0);
+	box(wptr, 0, 0);
+
+	if (!month_or_year_exists(dates->month, dates->year)) {
+		dates->month = 0;
+		dates->year = 0;
+	}
+
+	if (!dates->year) {
+		dates->year = nc_read_setup_input_year(wptr);
+		if (dates->year < 0) {
+			dates->month = -1;
+			sr->flag = -(dates->year);
+			nc_exit_window(wptr);
+			return;
+		}
+	}
+
+	if (!dates->month) {
+		dates->month = nc_read_select_month(wptr, dates->year);
+		if (dates->month < 0) {
+			sr->flag = -(dates->month);
+			nc_exit_window(wptr);
+			return;
+		}
+	}
+	
+	nc_exit_window(wptr);
 }
 
 void nc_read_setup_default(void) {
@@ -3227,74 +3259,43 @@ void nc_read_setup(int sel_year, int sel_month, int sort) {
 	}
 	refresh();
 
-	struct SelRecord sr_ , *sr = &sr_;
+	CategoryNode **nodes;
+	struct SelRecord sr_, *sr = &sr_;
+	struct Datevals dv_, *dates = &dv_;
+	dates->month = sel_month;
+	dates->year = sel_year;
 	sr->flag = -1;
 	FILE *fptr = open_record_csv("r");
 	Vec *pidx = index_csv(fptr);
-	WINDOW *wptr_parent;
-	WINDOW *wptr_data;
-	WINDOW *wptr_sidebar;
-	int max_y, max_x;
-	bool sidebar = verify_sidebar_width(stdscr);
-
-	if (sidebar) {
-		wptr_parent = newwin(LINES - 1, COLS - SIDEBAR_COLUMNS, 0, 0);
-		wptr_sidebar = newwin(LINES - 1, COLS - getmaxx(wptr_parent) + 1, 0, getmaxx(wptr_parent) - 1);
-		box(wptr_sidebar, 0, 0);
-		wrefresh(wptr_sidebar);
-	} else {
-		wptr_parent = newwin(LINES - 1, 0, 0, 0);
-	}
-
-	getmaxyx(wptr_parent, max_y, max_x);
-	wptr_data = create_lines_subwindow(max_y - 1, max_x, 1, BOX_OFFSET);
-
-	if (wptr_parent == NULL) {
-		perror("Failed to create ncurses window");
-		fclose(fptr);
-		return;
-	}
-
 	Vec *plines;
-	if (!month_or_year_exists(sel_month, sel_year)) {
-		sel_year = 0;
-		sel_month = 0;
+	Vec *psc;
+	size_t n_records;
+	char *sort_text;
+	bool sidebar_exists;
+
+	get_dates(sr, dates);
+	if (dates->year < 0 || dates->month < 0) {
+		goto err_select_date_fail;
 	}
 
-	wrefresh(wptr_data);
-
-	if (!sel_year) {
-		sel_year = nc_read_setup_input_year(wptr_parent, fptr);
-		if (sel_year < 0) {
-			sr->flag = -(sel_year);
-			goto err_select_date_fail;
-		}
+	struct ReadWins *wins = create_read_windows();
+	if (wins->sidebar == NULL) {
+		sidebar_exists = false;
+	} else {
+		sidebar_exists = true;
 	}
-
-	if (!sel_month) {
-		sel_month = nc_read_select_month(wptr_parent, fptr, sel_year);
-		if (sel_month < 0) {
-			sr->flag = -(sel_month);
-			goto err_select_date_fail;
-		}
-	}
-
-	wclear(wptr_parent);
 
 	/* If plines->size is zero, whatever function cannot return to an
 	 * nc_read_setup with month and year parameters, as these dates no longer
 	 * hold any records. */
-	plines = get_matching_line_nums(fptr, sel_month, sel_year);
+	plines = get_matching_line_nums(fptr, dates->month, dates->year);
 	if (plines == NULL) {
 		free(pidx);
 		fclose(fptr);
 		return;
 	}
 
-	size_t n_records = plines->size;
-	Vec *psc;
-	char *sort_text;
-	CategoryNode **nodes;
+	n_records = plines->size;
 
 	if (plines->size == 0 && sort == SORT_DATE) {
 		sort = SORT_CATG;
@@ -3306,8 +3307,8 @@ void nc_read_setup(int sel_year, int sel_month, int sort) {
 		sort_text = "Date";
 		break;
 	case(SORT_CATG):
-		psc = sort_by_category(fptr, pidx, plines, sel_year, sel_month);
-		nodes = create_category_nodes(sel_month, sel_year);
+		psc = sort_by_category(fptr, pidx, plines, dates->year, dates->month);
+		nodes = create_category_nodes(dates->month, dates->year);
 		sort_text = "Category";
 		break;
 	default:
@@ -3316,25 +3317,26 @@ void nc_read_setup(int sel_year, int sel_month, int sort) {
 		break;
 	}
 
-	print_column_headers(wptr_parent, BOX_OFFSET);
-	if (sidebar) {
-		draw_parent_box_with_sidebar(wptr_parent);
+	print_column_headers(wins->parent, BOX_OFFSET);
+	if (sidebar_exists) {
+		draw_parent_box_with_sidebar(wins->parent);
 	} else {
-		box(wptr_parent, 0, 0);
+		box(wins->parent, 0, 0);
 	}
+	wrefresh(wins->parent);
 
-	mvwprintw(wptr_parent, 0, BOX_OFFSET, "%d %s", sel_year, 
-		  	  abbr_months[sel_month - 1]);
-	mvwprintw(wptr_parent, 0, 
-			  max_x - strlen(sort_text) - strlen("Sort By: ") - BOX_OFFSET, 
+	mvwprintw(wins->parent, 0, BOX_OFFSET, "%d %s", dates->year, 
+		  	  abbr_months[dates->month - 1]);
+	mvwprintw(wins->parent, 0, 
+			  getmaxx(wins->parent) - strlen(sort_text) - strlen("Sort By: ") - BOX_OFFSET, 
 			  "Sort By: %s", sort_text);
-	wrefresh(wptr_parent);
+	wrefresh(wins->parent);
 
 	if (sort == SORT_DATE) {
-		nc_read_loop(wptr_parent, wptr_data, fptr, sr, psc);
+		nc_read_loop(wins->parent, wins->data, fptr, sr, psc);
 	} else if (sort == SORT_CATG) {
 		FILE *bfptr = open_budget_csv("r");
-		nc_read_budget_loop(wptr_parent, wptr_data, fptr, bfptr, sr, psc, nodes);
+		nc_read_budget_loop(wins->parent, wins->data, fptr, bfptr, sr, psc, nodes);
 		fclose(bfptr);
 		free_category_nodes(nodes);
 	}
@@ -3350,12 +3352,12 @@ err_select_date_fail:
 	fclose(fptr);
 	fptr = NULL;
 
-	nc_exit_window(wptr_data);
-	nc_exit_window(wptr_parent);
-	if (sidebar) {
-		nc_exit_window(wptr_sidebar);
+	nc_exit_window(wins->data);
+	nc_exit_window(wins->parent);
+	if (sidebar_exists) {
+		nc_exit_window(wins->sidebar);
 	}
-//	nc_print_main_menu_footer(stdscr);
+	free(wins);
 
 	switch(sr->flag) {
 	case(NO_SELECT):
@@ -3363,7 +3365,7 @@ err_select_date_fail:
 		break;
 	case(ADD):
 		nc_print_input_footer(stdscr);
-		if (sel_year < 0 || sel_month < 0) {
+		if (dates->year < 0 || dates->month < 0) {
 			struct MenuParams *mp = init_add_main_menu();
 			int c = nc_input_menu(mp);
 			switch (c) {
@@ -3383,18 +3385,18 @@ err_select_date_fail:
 			struct MenuParams *mp = init_add_menu();
 			int c = nc_input_menu(mp);
 			if (c == 0) {
-				nc_add_transaction(sel_year, sel_month);
+				nc_add_transaction(dates->year, dates->month);
 			} else if (c == 1) {
-				nc_add_budget_category(sel_month, sel_year);
+				nc_add_budget_category(dates->year, dates->month);
 			}
 			free(mp);
-			nc_read_setup(sel_year, sel_month, sort);
+			nc_read_setup(dates->year, dates->month, sort);
 		}
 		break;
 	case(EDIT):
 		nc_print_quit_footer(stdscr);
 		nc_edit_transaction(sr->index);
-		nc_read_setup(sel_year, sel_month, sort);
+		nc_read_setup(dates->year, dates->month, sort);
 		break;
 	case(READ):
 		nc_read_setup_default();
@@ -3410,16 +3412,16 @@ err_select_date_fail:
 		} else {
 			sort = SORT_CATG;
 		}
-		nc_read_setup(sel_year, sel_month, sort);
+		nc_read_setup(dates->year, dates->month, sort);
 		break;
 	case(OVERVIEW):
-		nc_overview_setup(sel_year);
-		nc_read_setup(sel_year, sel_month, sort);
+		nc_overview_setup(dates->year);
+		nc_read_setup(dates->year, dates->month, sort);
 		break;
 	case(EDIT_CATG):
 		nc_edit_category(sr->index, sr->opt); 
 		if (n_records > 0) {
-			nc_read_setup(sel_year, sel_month, sort);
+			nc_read_setup(dates->year, dates->month, sort);
 		} else {
 			nc_read_setup_default();
 		}
@@ -3428,8 +3430,8 @@ err_select_date_fail:
 		while (test_terminal_size() == -1) {
 			getch();
 		}
-		if (sel_month > 0 && sel_year > 0) {
-			nc_read_setup(sel_year, sel_month, sort);
+		if (dates->month > 0 && dates->year > 0) {
+			nc_read_setup(dates->year, dates->month, sort);
 		} else {
 			nc_read_setup_default();
 		}
