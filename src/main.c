@@ -2741,13 +2741,17 @@ void init_scroll_cursor(struct ScrollCursor *sc, CategoryNode **nodes)
 	sc->catg_data = -1;
 }
 
+void sidebar_body_border(WINDOW *wptr) {
+	wborder(wptr, 0, 0, 0, 0, ACS_LTEE, ACS_RTEE, ACS_BTEE, 0);
+	wrefresh(wptr);
+}
+
 WINDOW *nc_print_initial_sidebar_body
 (WINDOW *wptr_sidebar, CategoryNode **nodes, int y, int x)
 {
 	WINDOW *wptr = 
 		newwin(getmaxy(wptr_sidebar) - y, SIDEBAR_COLUMNS + 1, y, x); 
-	wborder(wptr, 0, 0, 0, 0, ACS_LTEE, ACS_RTEE, 0, 0);
-	wrefresh(wptr);
+	sidebar_body_border(wptr);
 	return wptr;
 }
 
@@ -3273,6 +3277,7 @@ void free_windows(struct ReadWins *wins) {
 	nc_exit_window(wins->parent);
 	if (wins->sidebar != NULL) {
 		nc_exit_window(wins->sidebar);
+		nc_exit_window(wins->sidebar_body);
 	}
 	free(wins);
 }
@@ -3292,12 +3297,18 @@ void nc_read_setup(int sel_year, int sel_month, int sort) {
 	}
 	refresh();
 
-	CategoryNode **nodes;
 	struct SelRecord sr_, *sr = &sr_;
 	struct Datevals dv_, *dates = &dv_;
 	dates->month = sel_month;
 	dates->year = sel_year;
 	sr->flag = -1;
+
+	get_dates(sr, dates);
+	if (dates->year < 0 || dates->month < 0) {
+		goto err_select_date_fail;
+	}
+
+	CategoryNode **nodes;
 	FILE *fptr = open_record_csv("r");
 	Vec *pidx = index_csv(fptr);
 	Vec *plines;
@@ -3307,10 +3318,6 @@ void nc_read_setup(int sel_year, int sel_month, int sort) {
 	char *sort_text;
 	bool sidebar_exists;
 
-	get_dates(sr, dates);
-	if (dates->year < 0 || dates->month < 0) {
-		goto err_select_date_fail;
-	}
 
 	struct ReadWins *wins = create_read_windows();
 	if (wins->sidebar == NULL) {
@@ -3349,7 +3356,7 @@ void nc_read_setup(int sel_year, int sel_month, int sort) {
 	if (sidebar_exists) {
 		draw_parent_box_with_sidebar(wins->parent);
 		sidebar_head_y = nc_print_sidebar_head(wins->sidebar, psc);
-		nc_print_initial_sidebar_body(wins->sidebar, nodes, sidebar_head_y, getmaxx(wins->parent) - 1);
+		wins->sidebar_body = nc_print_initial_sidebar_body(wins->sidebar, nodes, sidebar_head_y, getmaxx(wins->parent) - 1);
 	} else {
 		box(wins->parent, 0, 0);
 	}
@@ -3360,6 +3367,7 @@ void nc_read_setup(int sel_year, int sel_month, int sort) {
 			  getmaxx(wins->parent) - strlen(sort_text) - strlen("Sort By: ") - 
 		   BOX_OFFSET, "Sort By: %s", sort_text);
 	wrefresh(wins->parent);
+	sidebar_body_border(wins->sidebar_body);
 
 	if (sort == SORT_DATE) {
 		nc_read_loop(wins->parent, wins->data, fptr, sr, psc);
@@ -3377,13 +3385,12 @@ void nc_read_setup(int sel_year, int sel_month, int sort) {
 	nodes = NULL;
 	free_windows(wins);
 	wins = NULL;
-
-err_select_date_fail:
 	free(pidx);
 	pidx = NULL;
 	fclose(fptr);
 	fptr = NULL;
 
+err_select_date_fail:
 	switch(sr->flag) {
 	case(NO_SELECT):
 		nc_read_setup_default();
