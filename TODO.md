@@ -152,3 +152,5 @@
     - 20 [X] When editing a transaction and creating a new category the category
                 is not actually created but the record in data.csv is updated
                 correctly.
+    - 21 [ ] Sidebar does not refresh when transaction detail window opens.
+    - 22 [ ] Left to budget value in sidebar is incorrect.
