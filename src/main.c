@@ -2754,16 +2754,59 @@ void init_scroll_cursor(struct ScrollCursor *sc, CategoryNode **nodes)
 
 void sidebar_body_border(WINDOW *wptr) {
 	wborder(wptr, 0, 0, 0, 0, ACS_LTEE, ACS_RTEE, ACS_BTEE, 0);
+	mvwxcprintw(wptr, 0, "Categories");
 	wrefresh(wptr);
 }
 
-WINDOW *nc_print_initial_sidebar_body
-(WINDOW *wptr_sidebar, CategoryNode **nodes, int y, int x)
-{
-	WINDOW *wptr = 
-		newwin(getmaxy(wptr_sidebar) - y, SIDEBAR_COLUMNS + 1, y, x); 
-	sidebar_body_border(wptr);
+WINDOW *create_sidebar_body(WINDOW *wptr_sidebar, int y, int x) {
+	WINDOW *wptr = newwin(getmaxy(wptr_sidebar) - y, SIDEBAR_COLUMNS + 1, y, x); 
+	if (wptr == NULL) {
+		window_creation_fail();
+	}
 	return wptr;
+}
+
+bool verify_sidebar_strlen(char *str, WINDOW *wptr) {
+	if (strlen(str) > getmaxx(wptr) - BOX_OFFSET) {
+		return false;
+	} else {
+		return true;
+	}
+}
+
+/* Prints the string 'str' and returns the number of rows printed to */
+int print_sidebar_category_string(char *str, WINDOW *wptr, int y, int x, int i) {
+	wattron(wptr, COLOR_PAIR(category_color(i)));
+	if (!verify_sidebar_strlen(str, wptr)) {
+		mvwprintw(wptr, y, x, "%.*s%s", getmaxx(wptr) - (BOX_OFFSET + 2), str, "..");
+	} else {
+		mvwprintw(wptr, y, x, "%s", str);
+	}
+	wattroff(wptr, COLOR_PAIR(category_color(i)));
+	return 1;
+}
+
+void init_sidebar_body(WINDOW *wptr, CategoryNode **nodes) {
+	sidebar_body_border(wptr);
+	int i = 0;
+	int y = 1;
+	int x = 1;
+	char *etc = "..";
+	while (1) {
+		struct BudgetTokens *bt = tokenize_budget_byte_offset(nodes[i]->catg_fp);
+		if (nodes[i]->next == NULL) {
+			y += print_sidebar_category_string(bt->catg, wptr, y, x, i);
+			free_budget_tokens(bt);
+			bt = NULL;
+			break;
+		} else {
+			y += print_sidebar_category_string(bt->catg, wptr, y, x, i);
+			free_budget_tokens(bt);
+			bt = NULL;
+		}
+		i++;
+	}
+
 }
 
 int nc_print_sidebar_head(WINDOW *wptr, Vec *psc) {
@@ -3374,7 +3417,10 @@ void nc_read_setup(int sel_year, int sel_month, int sort) {
 	if (sidebar_exists) {
 		draw_parent_box_with_sidebar(wins->parent);
 		sidebar_head_y = nc_print_sidebar_head(wins->sidebar, psc);
-		wins->sidebar_body = nc_print_initial_sidebar_body(wins->sidebar, nodes, sidebar_head_y, getmaxx(wins->parent) - 1);
+		wins->sidebar_body = 
+			create_sidebar_body(
+				wins->sidebar, sidebar_head_y, getmaxx(wins->parent) - 1);
+		init_sidebar_body(wins->sidebar_body, nodes);
 	} else {
 		box(wins->parent, 0, 0);
 	}
