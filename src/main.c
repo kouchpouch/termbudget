@@ -2901,7 +2901,7 @@ int nc_print_sidebar_head(WINDOW *wptr, Vec *psc, int total_planned) {
 	y++;
 
 	mvwprintw(wptr, y, x, "Left to Budget:");
-	mvwprintw(wptr, y, max_x - (finlen(total_planned) + BOX_OFFSET), "$%.2f", pb.income - total_planned);
+	mvwprintw(wptr, y, max_x - (finlen(pb.income - total_planned) + BOX_OFFSET), "$%.2f", pb.income - total_planned);
 	y++;
 
 	wrefresh(wptr);
