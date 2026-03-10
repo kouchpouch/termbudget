@@ -144,3 +144,6 @@
                 presses.
     - 19 [ ] The overview window position is off, it looks weird. Not centered
                 correctly.
+    - 20 [X] When editing a transaction and creating a new category the category
+                is not actually created but the record in data.csv is updated
+                correctly.
