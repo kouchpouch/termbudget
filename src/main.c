@@ -2786,21 +2786,68 @@ int print_sidebar_category_string(char *str, WINDOW *wptr, int y, int x, int i) 
 	return 1;
 }
 
+int print_sidebar_category_values(double inc, double exp, WINDOW *wptr, int y, int i) {
+	char graph[30];
+	for (int i = 0; i < 30; i++) {
+		graph[i] = ' ';
+	}
+	graph[29] = '\0';
+	double remaining = 0;
+	if (exp <= 0) {
+		remaining = inc + exp;
+	} else {
+		remaining = inc - exp;
+	}
+
+	int graph_len = (sizeof(graph) - 1) * (1 - (remaining / inc));
+	if (graph_len > sizeof(graph) - 1) {
+		graph_len = sizeof(graph) - 1;
+	}
+	int fill_graph;
+	int graph_x_begin = ((getmaxx(wptr) - sizeof(graph)) / 2);
+	int remain_x_begin = (getmaxx(wptr) - graph_x_begin - strlen(" Remaining") - finlen(remaining) - BOX_OFFSET - 4);
+	int tracked_x_begin = BOX_OFFSET + 6;
+
+	mvwaddch(wptr, y, getmaxx(wptr) - 5 - BOX_OFFSET, ACS_URCORNER);
+	mvwaddch(wptr, y, getmaxx(wptr) - 5 - BOX_OFFSET - 1, ACS_HLINE);
+	mvwprintw(wptr, y, remain_x_begin, " $%.2f Remaining", remaining);
+	y++;
+
+	wattron(wptr, COLOR_PAIR(category_color(i)));
+	mvwprintw(wptr, y, graph_x_begin, "[%s]", graph);
+	mvwchgat(wptr, y, graph_x_begin + 1, graph_len, A_REVERSE, category_color(i), NULL);
+	//wattroff(wptr, COLOR_PAIR(category_color(i)));
+	fill_graph = graph_x_begin + 1 + graph_len;
+	for (int j = fill_graph; j < getmaxx(wptr) - graph_x_begin - 1; j++) {
+		mvwaddch(wptr, y, j, ACS_BULLET);
+	}
+	wattroff(wptr, COLOR_PAIR(category_color(i)));
+	y++;
+
+	mvwaddch(wptr, y, BOX_OFFSET + 4, ACS_LLCORNER);
+	mvwaddch(wptr, y, BOX_OFFSET + 5, ACS_HLINE);
+	mvwprintw(wptr, y, tracked_x_begin, " $%.2f Tracked", inc - remaining);
+	return 4;
+}
+
 void init_sidebar_body(WINDOW *wptr, CategoryNode **nodes) {
 	sidebar_body_border(wptr);
 	int i = 0;
 	int y = 1;
 	int x = 1;
-	char *etc = "..";
+	double exp;
 	while (1) {
 		struct BudgetTokens *bt = tokenize_budget_byte_offset(nodes[i]->catg_fp);
+		exp = get_expenditures_per_category(bt);
 		if (nodes[i]->next == NULL) {
 			y += print_sidebar_category_string(bt->catg, wptr, y, x, i);
+			y += print_sidebar_category_values(bt->amount, exp, wptr, y, i);
 			free_budget_tokens(bt);
 			bt = NULL;
 			break;
 		} else {
 			y += print_sidebar_category_string(bt->catg, wptr, y, x, i);
+			y += print_sidebar_category_values(bt->amount, exp, wptr, y, i);
 			free_budget_tokens(bt);
 			bt = NULL;
 		}
@@ -2818,23 +2865,23 @@ int nc_print_sidebar_head(WINDOW *wptr, Vec *psc) {
 	double remaining = pb.income - pb.expense;
 
 	mvwprintw(wptr, y, x, "Income:");
-	mvwprintw(wptr, y, max_x - (intlen(pb.income) + 5), "$%.2f", pb.income);
+	mvwprintw(wptr, y, max_x - (finlen(pb.income) + BOX_OFFSET), "$%.2f", pb.income);
 	y++;
 
 	mvwprintw(wptr, y, x, "Expenses:");
-	mvwprintw(wptr, y, max_x - (intlen(pb.expense) + 5), "$%.2f", pb.expense);
+	mvwprintw(wptr, y, max_x - (finlen(pb.expense) + BOX_OFFSET), "$%.2f", pb.expense);
 	y++;
 
 	mvwprintw(wptr, y, x, "Remaining:");
 	if (pb.income - pb.expense < 0) {
 		wattron(wptr, COLOR_PAIR(1));
 	}
-	mvwprintw(wptr, y, max_x - (intlen(remaining) + 5), "$%.2f", remaining);
+	mvwprintw(wptr, y, max_x - (finlen(remaining) + BOX_OFFSET), "$%.2f", remaining);
 	wattroff(wptr, COLOR_PAIR(1));
 	y++;
 
 	mvwprintw(wptr, y, x, "Left to Budget:");
-	mvwprintw(wptr, y, max_x - (intlen(remaining) + 5), "$%.2f", remaining);
+	mvwprintw(wptr, y, max_x - (finlen(remaining) + BOX_OFFSET), "$%.2f", remaining);
 	y++;
 
 	wrefresh(wptr);
