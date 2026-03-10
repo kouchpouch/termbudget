@@ -205,8 +205,8 @@ struct ReadWins *create_read_windows(void) {
 		box(wins->sidebar, 0, 0);
 		wrefresh(wins->sidebar);
 	} else {
-		nc_exit_window(wins->sidebar);
 		wins->sidebar = NULL;
+		wins->sidebar_body = NULL;
 	}
 
 	wins->data = newwin(parent_y - 1 - y_off * 2, parent_x - x_off * 2, y_off + 1, x_off);
