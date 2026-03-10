@@ -341,7 +341,6 @@ Vec *get_budget_catg_by_date_bo(int month, int year) {
 		}
 		m = atoi(strsep(&str, ","));
 		y = atoi(strsep(&str, ","));
-		printw("M/Y %d %d\n", m, y);
 
 		if (y == year && m == month) {
 			if (pcbo->size >= pcbo->capacity) {
