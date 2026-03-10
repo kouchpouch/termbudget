@@ -937,12 +937,22 @@ char *nc_add_budget_category(int yr, int mo) {
 
 void nc_create_new_budget(void) {
 	int yr = nc_input_year();
+	if (yr < 0) {
+		return;
+	}
 	int mo = nc_input_month();
+	if (mo < 0) {
+		return;
+	}
 	if (month_or_year_exists(mo, yr)) {
 		nc_message("A budget already exists for that month");
+		nc_read_setup(yr, mo, SORT_CATG);
 		return;
 	}
 	char *catg = nc_add_budget_category(yr, mo);
+	if (catg == NULL) {
+		return;
+	}
 	free(catg);
 	nc_read_setup(yr, mo, SORT_CATG);
 }
@@ -2762,22 +2772,28 @@ int nc_print_sidebar_head(WINDOW *wptr, Vec *psc) {
 	int max_x = getmaxx(wptr);
 	struct Balances pb;
 	calculate_balance(&pb, psc);
+	double remaining = pb.income - pb.expense;
+
 	mvwprintw(wptr, y, x, "Income:");
 	mvwprintw(wptr, y, max_x - (intlen(pb.income) + 5), "$%.2f", pb.income);
 	y++;
+
 	mvwprintw(wptr, y, x, "Expenses:");
 	mvwprintw(wptr, y, max_x - (intlen(pb.expense) + 5), "$%.2f", pb.expense);
 	y++;
+
 	mvwprintw(wptr, y, x, "Remaining:");
 	if (pb.income - pb.expense < 0) {
 		wattron(wptr, COLOR_PAIR(1));
 	}
-	mvwprintw(wptr, y, max_x - (intlen(pb.expense) + 5), "$%.2f", pb.income - pb.expense);
+	mvwprintw(wptr, y, max_x - (intlen(remaining) + 5), "$%.2f", remaining);
 	wattroff(wptr, COLOR_PAIR(1));
 	y++;
+
 	mvwprintw(wptr, y, x, "Left to Budget:");
-	mvwprintw(wptr, y, max_x - (intlen(pb.expense) + 5), "$%.2f", pb.income - pb.expense);
+	mvwprintw(wptr, y, max_x - (intlen(remaining) + 5), "$%.2f", remaining);
 	y++;
+
 	wrefresh(wptr);
 	return y;
 }
