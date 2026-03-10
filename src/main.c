@@ -2741,6 +2741,42 @@ void init_scroll_cursor(struct ScrollCursor *sc, CategoryNode **nodes)
 	sc->catg_data = -1;
 }
 
+WINDOW *nc_print_initial_sidebar_body
+(WINDOW *wptr_sidebar, CategoryNode **nodes, int y, int x)
+{
+	WINDOW *wptr = 
+		newwin(getmaxy(wptr_sidebar) - y, SIDEBAR_COLUMNS + 1, y, x); 
+	wborder(wptr, 0, 0, 0, 0, ACS_LTEE, ACS_RTEE, 0, 0);
+	wrefresh(wptr);
+	return wptr;
+}
+
+int nc_print_sidebar_head(WINDOW *wptr, Vec *psc) {
+	int x = 1;
+	int y = 1;
+	int max_x = getmaxx(wptr);
+	struct Balances pb;
+	calculate_balance(&pb, psc);
+	mvwprintw(wptr, y, x, "Income:");
+	mvwprintw(wptr, y, max_x - (intlen(pb.income) + 5), "$%.2f", pb.income);
+	y++;
+	mvwprintw(wptr, y, x, "Expenses:");
+	mvwprintw(wptr, y, max_x - (intlen(pb.expense) + 5), "$%.2f", pb.expense);
+	y++;
+	mvwprintw(wptr, y, x, "Remaining:");
+	if (pb.income - pb.expense < 0) {
+		wattron(wptr, COLOR_PAIR(1));
+	}
+	mvwprintw(wptr, y, max_x - (intlen(pb.expense) + 5), "$%.2f", pb.income - pb.expense);
+	wattroff(wptr, COLOR_PAIR(1));
+	y++;
+	mvwprintw(wptr, y, x, "Left to Budget:");
+	mvwprintw(wptr, y, max_x - (intlen(pb.expense) + 5), "$%.2f", pb.income - pb.expense);
+	y++;
+	wrefresh(wptr);
+	return y;
+}
+
 void nc_print_initial_read_budget_loop(WINDOW *wptr, struct ScrollCursor *sc,
 									   CategoryNode **nodes, struct ColWidth *cw,
 									   FILE *fptr)
@@ -2794,9 +2830,8 @@ void nc_print_initial_read_budget_loop(WINDOW *wptr, struct ScrollCursor *sc,
  * Categories will have their own row in the data with a user-modifiable value
  * retrived from BUDGET_DIR.
  */
-void nc_read_budget_loop(WINDOW *wptr_parent, WINDOW *wptr, 
-						 FILE *rfptr, FILE *bfptr, struct SelRecord *sr, 
-						 Vec *psc, CategoryNode **nodes)
+void nc_read_budget_loop(struct ReadWins *wins, FILE *rfptr, FILE *bfptr, 
+						 struct SelRecord *sr, Vec *psc, CategoryNode **nodes)
 {
 	struct ColWidth cw_, *cw = &cw_;
 	struct ScrollCursor sc_, *sc = &sc_;
@@ -2806,28 +2841,28 @@ void nc_read_budget_loop(WINDOW *wptr_parent, WINDOW *wptr,
 	init_scroll_cursor(sc, nodes);
 
 	int c = 0;
-	calculate_columns(cw, getmaxx(wptr) + BOX_OFFSET);
-	nc_print_balances_text(wptr_parent, psc);
+	calculate_columns(cw, getmaxx(wins->data) + BOX_OFFSET);
+	nc_print_balances_text(wins->parent, psc);
 	nc_print_read_footer(stdscr);
-	nc_print_initial_read_budget_loop(wptr, sc, nodes, cw, rfptr);
+	nc_print_initial_read_budget_loop(wins->data, sc, nodes, cw, rfptr);
 
 	while (c != KEY_F(QUIT) && c != '\n' && c != '\r') {
-		wrefresh(wptr);
+		wrefresh(wins->data);
 		if (debug) {
-			nc_print_debug_line(wptr_parent, sc->catg_node, sc->catg_data);
+			nc_print_debug_line(wins->parent, sc->catg_node, sc->catg_data);
 		}
-		c = wgetch(wptr);
+		c = wgetch(wins->data);
 		switch(c) {
 		case('j'):
 		case(KEY_DOWN):
 			if (sc->select_idx + 1 < sc->total_rows) {
-				nc_scroll_next_category(wptr, nodes, sc, cw, rfptr, bfptr);
+				nc_scroll_next_category(wins->data, nodes, sc, cw, rfptr, bfptr);
 			}
 			break;
 		case('k'):
 		case(KEY_UP):
 			if (sc->select_idx - 1 >= 0) {
-				nc_scroll_prev_category(wptr, nodes, sc, cw, rfptr, bfptr);
+				nc_scroll_prev_category(wins->data, nodes, sc, cw, rfptr, bfptr);
 			}
 			break;
 
@@ -2837,16 +2872,16 @@ void nc_read_budget_loop(WINDOW *wptr_parent, WINDOW *wptr,
 				fseek(rfptr, nodes[sc->catg_node]->data->data[sc->catg_data], SEEK_SET);
 				char *line = fgets(linebuff, sizeof(linebuff), rfptr);
 				show_detail_subwindow(line);
-				refresh_on_detail_close_uniform(wptr, wptr_parent, sc->displayed);
+				refresh_on_detail_close_uniform(wins->data, wins->parent, sc->displayed);
 				tmp_idx = sc->select_idx;
 				while (sc->select_idx - 1 >= 0) {
-					nc_scroll_prev_category(wptr, nodes, sc, cw, rfptr, bfptr);
+					nc_scroll_prev_category(wins->data, nodes, sc, cw, rfptr, bfptr);
 				}
 				while (sc->select_idx + 1 < sc->total_rows) {
-					nc_scroll_next_category(wptr, nodes, sc, cw, rfptr, bfptr);
+					nc_scroll_next_category(wins->data, nodes, sc, cw, rfptr, bfptr);
 				}
 				while (sc->select_idx != tmp_idx) {
-					nc_scroll_prev_category(wptr, nodes, sc, cw, rfptr, bfptr);
+					nc_scroll_prev_category(wins->data, nodes, sc, cw, rfptr, bfptr);
 				}
 				c = 0;
 			} else {
@@ -2857,26 +2892,26 @@ void nc_read_budget_loop(WINDOW *wptr_parent, WINDOW *wptr,
 		case(KEY_NPAGE): // PAGE DOWN
 			for (int i = 0; i < 10; i++) {
 				if (sc->select_idx + 1 < sc->total_rows) {
-					nc_scroll_next_category(wptr, nodes, sc, cw, rfptr, bfptr);
+					nc_scroll_next_category(wins->data, nodes, sc, cw, rfptr, bfptr);
 				}
 			}
 			break;
 		case(KEY_PPAGE): // PAGE UP
 			for (int i = 0; i < 10; i++) {
 				if (sc->select_idx - 1 >= 0) {
-					nc_scroll_prev_category(wptr, nodes, sc, cw, rfptr, bfptr);
+					nc_scroll_prev_category(wins->data, nodes, sc, cw, rfptr, bfptr);
 				}
 			}
 			break;
 
 		case(KEY_END):
 			while (sc->select_idx + 1 < sc->total_rows) {
-				nc_scroll_next_category(wptr, nodes, sc, cw, rfptr, bfptr);
+				nc_scroll_next_category(wins->data, nodes, sc, cw, rfptr, bfptr);
 			}
 			break;
 		case(KEY_HOME):
 			while (sc->select_idx - 1 >= 0) {
-				nc_scroll_prev_category(wptr, nodes, sc, cw, rfptr, bfptr);
+				nc_scroll_prev_category(wins->data, nodes, sc, cw, rfptr, bfptr);
 			}
 			break;
 
@@ -3196,6 +3231,8 @@ int nc_read_setup_input_year(WINDOW *wptr) {
 	return yr;
 }
 
+/* Draws a border around the window 'wptr' with "T" shaped characters to
+ * mesh seamlessly with the window border of the sidebar. */
 void draw_parent_box_with_sidebar(WINDOW *wptr) {
 	wborder(wptr, 0, 0, 0, 0, 0, ACS_TTEE, 0, ACS_BTEE);
 }
@@ -3266,6 +3303,7 @@ void nc_read_setup(int sel_year, int sel_month, int sort) {
 	Vec *plines;
 	Vec *psc;
 	size_t n_records;
+	int sidebar_head_y;
 	char *sort_text;
 	bool sidebar_exists;
 
@@ -3310,10 +3348,11 @@ void nc_read_setup(int sel_year, int sel_month, int sort) {
 	print_column_headers(wins->parent, BOX_OFFSET);
 	if (sidebar_exists) {
 		draw_parent_box_with_sidebar(wins->parent);
+		sidebar_head_y = nc_print_sidebar_head(wins->sidebar, psc);
+		nc_print_initial_sidebar_body(wins->sidebar, nodes, sidebar_head_y, getmaxx(wins->parent) - 1);
 	} else {
 		box(wins->parent, 0, 0);
 	}
-	wrefresh(wins->parent);
 
 	mvwprintw(wins->parent, 0, BOX_OFFSET, "%d %s", dates->year, 
 		  	  abbr_months[dates->month - 1]);
@@ -3326,7 +3365,7 @@ void nc_read_setup(int sel_year, int sel_month, int sort) {
 		nc_read_loop(wins->parent, wins->data, fptr, sr, psc);
 	} else if (sort == SORT_CATG) {
 		FILE *bfptr = open_budget_csv("r");
-		nc_read_budget_loop(wins->parent, wins->data, fptr, bfptr, sr, psc, nodes);
+		nc_read_budget_loop(wins, fptr, bfptr, sr, psc, nodes);
 		fclose(bfptr);
 	}
 
