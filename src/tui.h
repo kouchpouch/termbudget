@@ -81,6 +81,8 @@ struct ReadWins {
 	WINDOW *data;
 };
 
+extern void window_creation_fail(void);
+
 /* Tests that the stdscr is big enough to handle this program */
 extern int test_terminal_size(void);
 
