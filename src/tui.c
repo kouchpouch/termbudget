@@ -338,6 +338,8 @@ void nc_message(char *str) {
 static void init_color_palette(void) {
 	// These colors were picked by a clanker, the only thing in the entire
 	// program that used the devil.
+	init_pair(1, COLOR_RED, -1);
+	init_pair(2, COLOR_GREEN, -1);
 	init_pair(11, 75, -1);  // soft blue
 	init_pair(12, 69, -1);  // muted indigo
 	init_pair(13, 111, -1); // lavender
@@ -378,7 +380,6 @@ void nc_print_welcome(WINDOW *wptr) {
 void nc_print_debug_flag(WINDOW *wptr) {
 	char debug_text[] = "DEBUG";
 	wmove(wptr, getmaxy(wptr) - 1, getmaxx(wptr) - (int)strlen(debug_text) - 1);
-	init_pair(1, COLOR_RED, -1);
 	wattron(wptr, COLOR_PAIR(1));
 	wprintw(wptr, "%s", debug_text);
 	wattroff(wptr, COLOR_PAIR(1));
