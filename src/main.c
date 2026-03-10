@@ -2766,6 +2766,26 @@ WINDOW *create_sidebar_body(WINDOW *wptr_sidebar, int y, int x) {
 	return wptr;
 }
 
+double get_total_planned(CategoryNode **nodes) {
+	double p = 0.0;
+	int i = 0;
+	while (1) {
+		struct BudgetTokens *bt = tokenize_budget_byte_offset(nodes[i]->catg_fp);
+		if (nodes[i]->next == NULL) {
+			p += bt->amount;
+			free_budget_tokens(bt);
+			bt = NULL;
+			break;
+		} else {
+			p += bt->amount;
+			free_budget_tokens(bt);
+			bt = NULL;
+		}
+		i++;
+	}
+	return p;
+}
+
 bool verify_sidebar_strlen(char *str, WINDOW *wptr) {
 	if (strlen(str) > getmaxx(wptr) - BOX_OFFSET) {
 		return false;
@@ -2856,7 +2876,7 @@ void init_sidebar_body(WINDOW *wptr, CategoryNode **nodes) {
 
 }
 
-int nc_print_sidebar_head(WINDOW *wptr, Vec *psc) {
+int nc_print_sidebar_head(WINDOW *wptr, Vec *psc, int total_planned) {
 	int x = 1;
 	int y = 1;
 	int max_x = getmaxx(wptr);
@@ -2881,7 +2901,7 @@ int nc_print_sidebar_head(WINDOW *wptr, Vec *psc) {
 	y++;
 
 	mvwprintw(wptr, y, x, "Left to Budget:");
-	mvwprintw(wptr, y, max_x - (finlen(remaining) + BOX_OFFSET), "$%.2f", remaining);
+	mvwprintw(wptr, y, max_x - (finlen(total_planned) + BOX_OFFSET), "$%.2f", pb.income - total_planned);
 	y++;
 
 	wrefresh(wptr);
@@ -3463,7 +3483,7 @@ void nc_read_setup(int sel_year, int sel_month, int sort) {
 	print_column_headers(wins->parent, BOX_OFFSET);
 	if (sidebar_exists) {
 		draw_parent_box_with_sidebar(wins->parent);
-		sidebar_head_y = nc_print_sidebar_head(wins->sidebar, psc);
+		sidebar_head_y = nc_print_sidebar_head(wins->sidebar, psc, get_total_planned(nodes));
 		wins->sidebar_body = 
 			create_sidebar_body(
 				wins->sidebar, sidebar_head_y, getmaxx(wins->parent) - 1);
