@@ -29,6 +29,10 @@ extern bool dayexists(int d, int m, int y);
 /* Returns the len of n */
 extern int intlen(int n);
 
+/* (fin)ancial (len)gth.
+ * Returns the len of n + 3, to add a '.' and two decimal places */
+extern int finlen(int n);
+
 /* Returns the larger of a or b, or a if a == b */
 extern long max_val(long a, long b);
 

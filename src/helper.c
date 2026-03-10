@@ -84,11 +84,20 @@ bool dayexists(int d, int m, int y) {
 }
 
 int intlen(int n) {
+	if (n < 0) {
+		n = -(n);
+	}
 	int len = 0;
 	for (int i = 1; i < n; i *= 10) {
 		len++;
 	}
-	return len;
+	return len == 0 ? 1 : len;
+}
+
+int finlen(int n) {
+	int add;
+	n >= 0 ? (add = 3) : (add = 4);
+	return intlen(n) + add;
 }
 
 long max_val(long a, long b) {
