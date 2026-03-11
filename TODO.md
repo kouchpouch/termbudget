@@ -67,8 +67,9 @@
     - [ ] On the user input prompts, show relevant data on the window as the
             user goes from prompt to prompt. Such as, show the date entered so
             far and the remaining values left per category.
-    - [ ] Add field in BUDGET_DIR with transaction types. A category should be
+    - [X] Add field in BUDGET_DIR with transaction types. A category should be
             marked as an income or expense category.
+        - [X] Use this new field to properly calculate "left to budget"
     - [ ] Remove list_records_by_year_old and list_records_by_month_old.
     - [ ] Refactor legacy_read_csv for CLI mode
     - [ ] Refactor any function that uses seek_n_fields with an integer literal
