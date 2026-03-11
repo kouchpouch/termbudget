@@ -521,6 +521,7 @@ struct BudgetTokens *tokenize_budget_byte_offset(long bo) {
 		memory_allocate_fail();
 	}
 	pbt->catg = tmp;
+	pbt->transtype = atoi(strsep(&str, ","));
 	pbt->amount = atof(strsep(&str, ","));
 
 	fclose(fptr);
@@ -571,6 +572,7 @@ struct BudgetTokens *tokenize_budget_line(int line) {
 		memory_allocate_fail();
 	}
 	pbt->catg = tmp;
+	pbt->transtype = atoi(strsep(&str, ","));
 	pbt->amount = atof(strsep(&str, ","));
 
 	return pbt;
