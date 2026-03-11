@@ -70,24 +70,28 @@ void seek_n_fields(char **line, int n) {
 	}
 }
 
-static void init_budget_header_struct(struct BudgetHeader *bh) {
-	bh->month = -1;
-	bh->year = -1;
-	bh->catg = -1;
-	bh->transtype = -1;
-	bh->value = -1;
+static void init_record_header_struct(struct RecordHeader *rh) {
+	rh->month = -1;
+	rh->day = -1;
+	rh->year = -1;
+	rh->catg = -1;
+	rh->desc = -1;
+	rh->transtype = -1;
+	rh->value = -1;
+	rh->n_fields = -1;
 }
 
-struct BudgetHeader *read_budget_header(FILE *fptr) {
-	struct BudgetHeader *bh = malloc(sizeof(*bh));
-	init_budget_header_struct(bh);
-	if (bh == NULL) {
+struct RecordHeader *parse_record_header(FILE *fptr) {
+	struct RecordHeader *rh = malloc(sizeof(*rh));
+	init_record_header_struct(rh);
+	if (rh == NULL) {
 		memory_allocate_fail();
 	}
 	rewind(fptr);
 
-	char *fields[] = {"month", "year", "category", "transtype", "value"};
+	char *fields[] = {"month", "day", "year", "category", "description", "transtype", "value"};
 	int n_fields = (int)sizeof(fields) / (int)sizeof(char *);
+	rh->n_fields = n_fields;
 	char linebuffer[LINE_BUFFER];
 	char *header = fgets(linebuffer, sizeof(linebuffer), fptr);
 	char *token;
@@ -105,23 +109,91 @@ struct BudgetHeader *read_budget_header(FILE *fptr) {
 			cmp = strncmp(token, fields[j], LINE_BUFFER);
 			if (cmp == 0) {
 				switch (j) {
-					case 0:
-						bh->month = i;
-						break;
-					case 1:
-						bh->year = i;
-						break;
-					case 2:
-						bh->catg = i;
-						break;
-					case 3:
-						bh->transtype = i;
-						break;
-					case 4:
-						bh->value = i;
-						break;
-					default:
-						break;
+				case 0:
+					rh->month = i;
+					break;
+				case 1:
+					rh->day = i;
+					break;
+				case 2:
+					rh->year = i;
+					break;
+				case 3:
+					rh->catg = i;
+					break;
+				case 4:
+					rh->desc = i;
+					break;
+				case 5:
+					rh->transtype = i;
+					break;
+				case 6:
+					rh->value = i;
+					break;
+				default:
+					break;
+				}
+			}
+		}
+	}
+end_of_str:
+	return rh;
+}
+
+static void init_budget_header_struct(struct BudgetHeader *bh) {
+	bh->month = -1;
+	bh->year = -1;
+	bh->catg = -1;
+	bh->transtype = -1;
+	bh->value = -1;
+	bh->n_fields = -1;
+}
+
+struct BudgetHeader *parse_budget_header(FILE *fptr) {
+	struct BudgetHeader *bh = malloc(sizeof(*bh));
+	init_budget_header_struct(bh);
+	if (bh == NULL) {
+		memory_allocate_fail();
+	}
+	rewind(fptr);
+
+	char *fields[] = {"month", "year", "category", "transtype", "value"};
+	int n_fields = (int)sizeof(fields) / (int)sizeof(char *);
+	bh->n_fields = n_fields;
+	char linebuffer[LINE_BUFFER];
+	char *header = fgets(linebuffer, sizeof(linebuffer), fptr);
+	char *token;
+	int cmp;
+
+	for (int i = 0; i < n_fields; i++) {
+		token = strsep(&header, ",");
+		if (token == NULL) {
+			// end of string is reached
+			goto end_of_str;
+		}
+		token[strcspn(token, "\n")] = '\0';
+
+		for (int j = 0; j < n_fields; j++) {
+			cmp = strncmp(token, fields[j], LINE_BUFFER);
+			if (cmp == 0) {
+				switch (j) {
+				case 0:
+					bh->month = i;
+					break;
+				case 1:
+					bh->year = i;
+					break;
+				case 2:
+					bh->catg = i;
+					break;
+				case 3:
+					bh->transtype = i;
+					break;
+				case 4:
+					bh->value = i;
+					break;
+				default:
+					break;
 				}
 			}
 		}

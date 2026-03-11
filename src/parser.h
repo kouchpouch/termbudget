@@ -30,6 +30,18 @@ struct BudgetHeader {
 	int catg;
 	int transtype;
 	int value;
+	int n_fields;
+};
+
+struct RecordHeader {
+	int month;
+	int day;
+	int year;
+	int catg;
+	int desc;
+	int transtype;
+	int value;
+	int n_fields;
 };
 
 struct BudgetTokens {
@@ -71,7 +83,15 @@ extern unsigned int boff_to_linenum_budget(long b);
 /* Moves char * forward n fields in the CSV */
 extern void seek_n_fields(char **line, int n);
 
-extern struct BudgetHeader *read_budget_header(FILE *fptr);
+/* Returns struct initialized with the values of the field number which
+ * that member starts at, the first field is 0. If a field was not found,
+ * the member is set to -1 */
+extern struct RecordHeader *parse_record_header(FILE *fptr);
+
+/* Returns struct initialized with the values of the field number which
+ * that member starts at, the first field is 0. If a field was not found,
+ * the member is set to -1 */
+extern struct BudgetHeader *parse_budget_header(FILE *fptr);
 
 /* Reads the header of the file until a newline is found */
 extern int seek_beyond_header(FILE *fptr);
