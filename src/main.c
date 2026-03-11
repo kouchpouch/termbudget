@@ -2787,24 +2787,35 @@ WINDOW *create_sidebar_body(WINDOW *wptr_sidebar, int y, int x) {
 	return wptr;
 }
 
-double get_total_planned(CategoryNode **nodes) {
-	double p = 0.0;
+struct Plannedvals *get_total_planned(CategoryNode **nodes) {
+	struct Plannedvals *pv = malloc(sizeof(*pv));
+	pv->exp = 0.0;
+	pv->inc = 0.0;
+
 	int i = 0;
 	while (1) {
 		struct BudgetTokens *bt = tokenize_budget_byte_offset(nodes[i]->catg_fp);
 		if (nodes[i]->next == NULL) {
-			p += bt->amount;
+			if (bt->transtype == 1) {
+				pv->inc += bt->amount;
+			} else {
+				pv->exp += bt->amount;
+			}
 			free_budget_tokens(bt);
 			bt = NULL;
 			break;
 		} else {
-			p += bt->amount;
+			if (bt->transtype == 1) {
+				pv->inc += bt->amount;
+			} else {
+				pv->exp += bt->amount;
+			}
 			free_budget_tokens(bt);
 			bt = NULL;
 		}
 		i++;
 	}
-	return p;
+	return pv;
 }
 
 bool verify_sidebar_strlen(char *str, WINDOW *wptr) {
@@ -2897,7 +2908,15 @@ void init_sidebar_body(WINDOW *wptr, CategoryNode **nodes) {
 
 }
 
-int nc_print_sidebar_head(WINDOW *wptr, Vec *psc, int total_planned) {
+double get_left_to_budget(CategoryNode **nodes) {
+	struct Plannedvals *pv = get_total_planned(nodes);
+	double ret = pv->inc - pv->exp;
+	free(pv);
+	pv = NULL;
+	return ret;
+}
+
+int nc_print_sidebar_head(WINDOW *wptr, Vec *psc, double leftover) {
 	int x = 1;
 	int y = 1;
 	int max_x = getmaxx(wptr);
@@ -2922,7 +2941,7 @@ int nc_print_sidebar_head(WINDOW *wptr, Vec *psc, int total_planned) {
 	y++;
 
 	mvwprintw(wptr, y, x, "Left to Budget:");
-	mvwprintw(wptr, y, max_x - (finlen(pb.income - total_planned) + BOX_OFFSET), "$%.2f", pb.income - total_planned);
+	mvwprintw(wptr, y, max_x - (finlen(leftover) + BOX_OFFSET + 1), "$%.2f", leftover);
 	y++;
 
 	wrefresh(wptr);
@@ -3510,6 +3529,7 @@ void nc_read_setup(int sel_year, int sel_month, int sort) {
 	Vec *pidx = index_csv(fptr);
 	Vec *plines;
 	Vec *psc;
+	struct Plannedvals *pv;
 	size_t n_records;
 	int sidebar_head_y;
 	char *ret;
@@ -3553,7 +3573,7 @@ void nc_read_setup(int sel_year, int sel_month, int sort) {
 	print_column_headers(wins->parent, BOX_OFFSET);
 	if (sidebar_exists) {
 		draw_parent_box_with_sidebar(wins->parent);
-		sidebar_head_y = nc_print_sidebar_head(wins->sidebar, psc, get_total_planned(nodes));
+		sidebar_head_y = nc_print_sidebar_head(wins->sidebar, psc, get_left_to_budget(nodes));
 		wins->sidebar_body = 
 			create_sidebar_body(
 				wins->sidebar, sidebar_head_y, getmaxx(wins->parent) - 1);
