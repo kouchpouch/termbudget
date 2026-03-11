@@ -70,6 +70,66 @@ void seek_n_fields(char **line, int n) {
 	}
 }
 
+static void init_budget_header_struct(struct BudgetHeader *bh) {
+	bh->month = -1;
+	bh->year = -1;
+	bh->catg = -1;
+	bh->transtype = -1;
+	bh->value = -1;
+}
+
+struct BudgetHeader *read_budget_header(FILE *fptr) {
+	struct BudgetHeader *bh = malloc(sizeof(*bh));
+	init_budget_header_struct(bh);
+	if (bh == NULL) {
+		memory_allocate_fail();
+	}
+	rewind(fptr);
+
+	char *fields[] = {"month", "year", "category", "transtype", "value"};
+	int n_fields = (int)sizeof(fields) / (int)sizeof(char *);
+	char linebuffer[LINE_BUFFER];
+	char *header = fgets(linebuffer, sizeof(linebuffer), fptr);
+	char *token;
+	int cmp;
+
+	for (int i = 0; i < n_fields; i++) {
+		token = strsep(&header, ",");
+		if (token == NULL) {
+			// end of string is reached
+			goto end_of_str;
+		}
+		token[strcspn(token, "\n")] = '\0';
+
+		for (int j = 0; j < n_fields; j++) {
+			cmp = strncmp(token, fields[j], LINE_BUFFER);
+			if (cmp == 0) {
+				switch (j) {
+					case 0:
+						bh->month = i;
+						break;
+					case 1:
+						bh->year = i;
+						break;
+					case 2:
+						bh->catg = i;
+						break;
+					case 3:
+						bh->transtype = i;
+						break;
+					case 4:
+						bh->value = i;
+						break;
+					default:
+						break;
+				}
+			}
+		}
+	}
+end_of_str:
+	return bh;
+}
+
 int seek_beyond_header(FILE *fptr) {
 	int i = 0;
 	char c = getc(fptr);
