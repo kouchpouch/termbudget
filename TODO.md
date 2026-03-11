@@ -69,6 +69,11 @@
             far and the remaining values left per category.
     - [ ] Add field in BUDGET_DIR with transaction types. A category should be
             marked as an income or expense category.
+    - [ ] Remove list_records_by_year_old and list_records_by_month_old.
+    - [ ] Refactor legacy_read_csv for CLI mode
+    - [ ] Refactor any function that uses seek_n_fields with an integer literal
+            to use a header parsing function to determine field location.
+    - [ ] Add csv header verification on program start.
 
 #### Main Feature Set
     - [X] Create a transaction
