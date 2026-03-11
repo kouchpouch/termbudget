@@ -298,6 +298,25 @@ char *nc_input_string(char *msg) {
 	return pui->str;
 }
 
+int nc_input_category_type(void) {
+	struct MenuParams *mp = malloc(sizeof(*mp) + (sizeof(char *) * 2));
+	if (mp == NULL) {
+		memory_allocate_fail();
+	}
+
+	mp->title = "This Category is to track:";
+	mp->items = 2;
+	mp->strings[0] = "Expenses";
+	mp->strings[1] = "Income";
+
+	/* Transaction type 0 = expense, 1 = income. */
+	int retval = nc_input_menu(mp);
+
+	free(mp);
+
+	return retval;
+}
+
 int nc_input_transaction_type(void) {
 	struct MenuParams *mp = malloc(sizeof(*mp) + (sizeof(char *) * 2));
 	if (mp == NULL) {

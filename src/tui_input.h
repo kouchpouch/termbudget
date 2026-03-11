@@ -51,6 +51,8 @@ int nc_input_day(int month, int year);
 
 char *nc_input_string(char *msg);
 
+int nc_input_category_type(void);
+
 int nc_input_transaction_type(void);
 
 double nc_input_amount(void);
