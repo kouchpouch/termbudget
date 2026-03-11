@@ -70,6 +70,11 @@ struct Datevals {
 	int month;
 };
 
+struct Plannedvals {
+	double inc;
+	double exp;
+};
+
 /* Exits the program with "exit(1)" and prints the error message. */
 extern void memory_allocate_fail(void);
 
