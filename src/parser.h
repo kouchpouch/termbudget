@@ -24,6 +24,14 @@
 
 #define CSV_FIELDS 7
 
+struct BudgetHeader {
+	int month;
+	int year;
+	int catg;
+	int transtype;
+	int value;
+};
+
 struct BudgetTokens {
 	int m;
 	int y;
@@ -62,6 +70,8 @@ extern unsigned int boff_to_linenum_budget(long b);
 
 /* Moves char * forward n fields in the CSV */
 extern void seek_n_fields(char **line, int n);
+
+extern struct BudgetHeader *read_budget_header(FILE *fptr);
 
 /* Reads the header of the file until a newline is found */
 extern int seek_beyond_header(FILE *fptr);
