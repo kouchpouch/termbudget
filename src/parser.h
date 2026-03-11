@@ -48,6 +48,7 @@ struct BudgetTokens {
 	int m;
 	int y;
 	char *catg;
+	int transtype;
 	double amount;
 };
 
