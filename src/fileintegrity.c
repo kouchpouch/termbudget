@@ -25,6 +25,50 @@
 #include <stdbool.h>
 #include <string.h>
 
+bool validate_record_header(void) {
+	FILE *fptr = open_record_csv("r");
+	struct RecordHeader *rh = parse_record_header(fptr);
+	fclose(fptr);
+
+	if (rh->n_fields < 0) {
+		free(rh);
+		return false;
+	}
+
+	int arr[] = {rh->month, rh->day, rh->year, rh->catg, rh->desc, rh->transtype, rh->value};
+	for (int i = 0; i < rh->n_fields; i++) {
+		if (arr[i] < 0) {
+			free(rh);
+			return false;
+		}
+	}
+
+	free(rh);
+	return true;
+}
+
+bool validate_budget_header(void) {
+	FILE *fptr = open_budget_csv("r");
+	struct BudgetHeader *bh = parse_budget_header(fptr);
+	fclose(fptr);
+
+	if (bh->n_fields < 0) {
+		free(bh);
+		return false;
+	}
+
+	int arr[] = {bh->month, bh->year, bh->catg, bh->transtype, bh->value};
+	for (int i = 0; i < bh->n_fields; i++) {
+		if (arr[i] < 0) {
+			free(bh);
+			return false;
+		}
+	}
+
+	free(bh);
+	return true;
+}
+
 bool record_len_verification(void) {
 	FILE *fptr = open_record_csv("r");
 

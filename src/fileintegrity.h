@@ -21,6 +21,14 @@
 
 #include <stdbool.h>
 
+/* Returns true if all fields are initialized with a field value, false if
+ * any field value is less than 0. */
+extern bool validate_record_header(void);
+
+/* Returns true if all fields are initialized with a field value, false if
+ * any field value is less than 0. */
+extern bool validate_budget_header(void);
+
 /* Returns true if record csv fields are equal to or less than the maximum
  * lengths defined in main. False if not */
 extern bool record_len_verification(void);
