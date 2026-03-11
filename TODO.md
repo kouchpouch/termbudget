@@ -73,7 +73,7 @@
     - [ ] Refactor legacy_read_csv for CLI mode
     - [ ] Refactor any function that uses seek_n_fields with an integer literal
             to use a header parsing function to determine field location.
-    - [ ] Add csv header verification on program start.
+    - [X] Add csv header verification on program start.
 
 #### Main Feature Set
     - [X] Create a transaction
