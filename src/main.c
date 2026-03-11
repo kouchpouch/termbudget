@@ -507,14 +507,15 @@ void nc_print_category_member_warning(void) {
 /* Allows the user to change the type or value at file position b. */
 void nc_edit_category(long b, long nmembers) {
 	int select = nc_select_category_field_to_edit();
+	if (select < 0) {
+		return;
+	}
 	struct BudgetTokens *bt = tokenize_budget_byte_offset(b);
 	if (bt == NULL) {
 		return;
 	}
 
 	switch (select) {
-	case -1:
-		return;
 	case 0:
 		bt->amount = nc_input_budget_amount();
 		if (bt->amount < 0) {
@@ -545,8 +546,6 @@ void nc_edit_category(long b, long nmembers) {
 			return;
 		}
 		break;
-
-
 	}
 
 	FILE *fptr = open_budget_csv("r");
@@ -556,7 +555,7 @@ void nc_edit_category(long b, long nmembers) {
 	char *str;
 	unsigned int linenum = 0;
 
-	if (select == 0) { // EDIT AMOUNT
+	if (select == 0 || select == 1) { // EDIT AMOUNT
 		do {
 			str = fgets(linebuff, sizeof(linebuff), fptr);
 			linenum++;	
@@ -575,7 +574,7 @@ void nc_edit_category(long b, long nmembers) {
 			}
 		} while (str != NULL);
 
-	} else if (select == 1) { // DELETE
+	} else if (select == 2) { // DELETE
 		do {
 			str = fgets(linebuff, sizeof(linebuff), fptr);
 			linenum++;	
