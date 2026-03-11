@@ -452,10 +452,11 @@ int nc_select_category_field_to_edit(void) {
 		memory_allocate_fail();
 	}
 
-	mp->items = 2;
+	mp->items = 3;
 	mp->title = "Editing Category";
 	mp->strings[0] = "Edit Amount";
-	mp->strings[1] = "Delete";
+	mp->strings[1] = "Edit Type";
+	mp->strings[2] = "Delete";
 
 	int retval = nc_input_menu(mp);
 
@@ -503,46 +504,54 @@ void nc_print_category_member_warning(void) {
 	nc_exit_window_key(wptr);
 }
 
-/*
- * Allows the user to change the amount of money allocated to the category at
- * file position b.
- */
+/* Allows the user to change the type or value at file position b. */
 void nc_edit_category(long b, long nmembers) {
 	int select = nc_select_category_field_to_edit();
-	double amt = 0;
-
-	if (select == -1) {
+	struct BudgetTokens *bt = tokenize_budget_byte_offset(b);
+	if (bt == NULL) {
 		return;
-	} else if (select == 1 && nmembers > 0) {
-		nc_print_category_member_warning();
-		return;
-	} else if (select == 1) {
-		if (!nc_confirm_input("Confirm Delete")) {
-			return;
-		}
 	}
 
-	if (select == 0) {
-		amt = nc_input_budget_amount();
-		if (amt < 0) {
+	switch (select) {
+	case -1:
+		return;
+	case 0:
+		bt->amount = nc_input_budget_amount();
+		if (bt->amount < 0) {
+			free_budget_tokens(bt);
 			return;
 		}
-		bool conf = nc_confirm_amount(amt);
+		bool conf = nc_confirm_amount(bt->amount);
 		if (!conf) {
+			free_budget_tokens(bt);
 			return;
 		}
+		break;
+	case 1:
+		bt->transtype = nc_input_category_type();
+		if (bt->transtype < 0) {
+			free_budget_tokens(bt);
+			return;
+		}
+		break;
+	case 2:
+		if (nmembers > 0) {
+			nc_print_category_member_warning();
+			free_budget_tokens(bt);
+			return;
+		}
+		if (!nc_confirm_input("Confirm Delete")) {
+			free_budget_tokens(bt);
+			return;
+		}
+		break;
+
+
 	}
 
 	FILE *fptr = open_budget_csv("r");
 	FILE *tmpfptr = open_temp_csv();
 	unsigned int line = boff_to_linenum_budget(b) + 2;
-	struct BudgetTokens *bt = tokenize_budget_byte_offset(b);
-	if (bt == NULL) {
-		fclose(fptr);
-		fclose(tmpfptr);
-		return;
-	}
-
 	char linebuff[LINE_BUFFER * 2];
 	char *str;
 	unsigned int linenum = 0;
@@ -557,7 +566,12 @@ void nc_edit_category(long b, long nmembers) {
 			if (linenum != line) {
 				fputs(str, tmpfptr);
 			} else if (linenum == line) {
-				fprintf(tmpfptr, "%d,%d,%s,%.2f\n", bt->m, bt->y, bt->catg, amt);
+				fprintf(tmpfptr, "%d,%d,%s,%d,%.2f\n", 
+					bt->m, 
+					bt->y, 
+					bt->catg, 
+					bt->transtype,
+					bt->amount);
 			}
 		} while (str != NULL);
 
@@ -725,7 +739,7 @@ err_null:
 	return prsc;
 }
 
-void add_budget_category(char *catg, int m, int y, double amt) {
+void add_budget_category(char *catg, int m, int y, int transtype, double amt) {
 	unsigned int linetoadd = sort_budget_csv(m, y);
 	FILE *fptr = open_budget_csv("r");
 	FILE *tmpfptr = open_temp_csv();
@@ -740,7 +754,7 @@ void add_budget_category(char *catg, int m, int y, double amt) {
 			fputs(line, tmpfptr);
 		} else if (linenum == linetoadd) {
 			fputs(line, tmpfptr);
-			fprintf(tmpfptr, "%d,%d,%s,%.2f\n", m, y, catg, amt);
+			fprintf(tmpfptr, "%d,%d,%s,%d,%.2f\n", m, y, catg, transtype, amt);
 		}
 	}
 
@@ -786,7 +800,7 @@ int cmp_catg_and_fix(struct Categories *prc, struct Categories *pbc,
 			}
 		}
 		if (!cat_exists) {
-			add_budget_category(prc->categories[i], m, y, 0.0);
+			add_budget_category(prc->categories[i], m, y, 0, 0.0);
 			corrected++;
 		};
 	}
@@ -846,7 +860,7 @@ int verify_categories_exist_in_budget(void) {
 /* Adds a record to the CSV on line linetoadd */
 void add_csv_record(int linetoadd, struct LineData *ld) {
 	if (!category_exists_in_budget(ld->category, ld->month, ld->year)) {
-		add_budget_category(ld->category, ld->month, ld->year, 0.0);
+		add_budget_category(ld->category, ld->month, ld->year, ld->transtype, 0.0);
 	} 
 
 	FILE *fptr = open_record_csv("r");
@@ -918,6 +932,11 @@ char *nc_add_budget_category(int yr, int mo) {
 	if (catg == NULL) {
 		return NULL;
 	}
+	int transtype = nc_input_category_type();
+	if (transtype < 0) {
+		return NULL;
+	}
+
 	struct Categories *psc = get_budget_catg_by_date(mo, yr);
 	if (check_dup_catg(psc, catg)) {
 		nc_message("That Category Already Exists");
@@ -928,7 +947,7 @@ char *nc_add_budget_category(int yr, int mo) {
 
 	double amt = nc_input_budget_amount();
 	if (nc_confirm_budget_category(catg, amt)) {
-		add_budget_category(catg, mo, yr, amt);
+		add_budget_category(catg, mo, yr, transtype, amt);
 	}
 
 	free_categories(psc);
@@ -2279,6 +2298,9 @@ void nc_print_category_hr(WINDOW *wptr, struct ColWidth *cw,
 	/* Move cursor past the category column */
 	wmove(wptr, y, x += cw->catg - print_offset);
 	wprintw(wptr, "Planned: %.2f, Remaining: %.2f", bt->amount, remaining);
+
+	wmove(wptr, y, x += cw->desc - print_offset);
+	wprintw(wptr, "%s", bt->transtype == 0 ? "Expenses" : "Income");
 	wattroff(wptr, A_REVERSE);
 }
 
@@ -2973,7 +2995,9 @@ void nc_read_budget_loop(struct ReadWins *wins, FILE *rfptr, FILE *bfptr,
 
 	int c = 0;
 	calculate_columns(cw, getmaxx(wins->data) + BOX_OFFSET);
-	nc_print_balances_text(wins->parent, psc);
+	if (wins->sidebar == NULL) {
+		nc_print_balances_text(wins->parent, psc);
+	}
 	nc_print_read_footer(stdscr);
 	nc_print_initial_read_budget_loop(wins->data, sc, nodes, cw, rfptr);
 
@@ -3440,6 +3464,22 @@ void debug_fields(void) {
 	getch();
 }
 
+void nc_print_date(WINDOW *wptr, int yr, int mo) {
+	int y = 0;
+	int x = BOX_OFFSET;
+	mvwprintw(wptr, y, x, "%s %d", abbr_months[mo - 1], yr);
+	wrefresh(wptr);
+}
+
+void nc_print_sort_text(WINDOW *wptr, int sort) {
+	char *text;
+	sort == SORT_DATE ? (text = "Date") : (text = "Category");
+	int y = 0;
+	int x = getmaxx(wptr) - strlen(text) - strlen("Sort By: ") - BOX_OFFSET;
+	mvwprintw(wptr, y, x, "Sort By: %s", text);
+	wrefresh(wptr);
+}
+
 void nc_read_setup_default(void) {
 	nc_read_setup(0, 0, SORT_CATG);
 }
@@ -3473,7 +3513,6 @@ void nc_read_setup(int sel_year, int sel_month, int sort) {
 	Vec *psc;
 	size_t n_records;
 	int sidebar_head_y;
-	char *sort_text;
 	char *ret;
 	bool sidebar_exists;
 
@@ -3507,10 +3546,8 @@ void nc_read_setup(int sel_year, int sel_month, int sort) {
 
 	if (sort == SORT_DATE) {
 		psc = sort_by_date(fptr, pidx, plines);	
-		sort_text = "Date";
 	} else {
 		psc = sort_by_category(fptr, pidx, plines, dates->year, dates->month);
-		sort_text = "Category";
 	}
 	nodes = create_category_nodes(dates->month, dates->year);
 
@@ -3526,12 +3563,8 @@ void nc_read_setup(int sel_year, int sel_month, int sort) {
 		box(wins->parent, 0, 0);
 	}
 
-	mvwprintw(wins->parent, 0, BOX_OFFSET, "%d %s", dates->year, 
-		  	  abbr_months[dates->month - 1]);
-	mvwprintw(wins->parent, 0, 
-			  getmaxx(wins->parent) - strlen(sort_text) - strlen("Sort By: ") - 
-		   BOX_OFFSET, "Sort By: %s", sort_text);
-	wrefresh(wins->parent);
+	nc_print_date(wins->parent, dates->year, dates->month);
+	nc_print_sort_text(wins->parent, sort);
 	sidebar_body_border(wins->sidebar_body);
 
 	if (sort == SORT_DATE) {
