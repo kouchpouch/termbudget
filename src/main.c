@@ -2258,7 +2258,6 @@ Vec *get_matching_line_nums(FILE *fptr, int month, int year) {
 
 /* Returns all income records subtracted by expense records */
 double get_expenditures_per_category(struct BudgetTokens *bt) {
-	enum transtypes tt;
 	double total = 0;
 	Vec *pi = get_records_by_any(bt->m, -1, bt->y, bt->catg, NULL, TT_INCOME, -1, NULL);
 	Vec *pe = get_records_by_any(bt->m, -1, bt->y, bt->catg, NULL, TT_EXPENSE, -1, NULL);
@@ -2274,7 +2273,6 @@ double get_expenditures_per_category(struct BudgetTokens *bt) {
 }
 
 void print_catg_balances(WINDOW *wptr, int tt, double amt, double exp, int width) {
-	enum transtypes e_tt;
 	int full_inc_len = strlen("Planned: $, Received: $");
 	int full_exp_len = strlen("Planned: $, Remaining: $");
 	int short_exp_len = strlen("Plan: $, Rem: $");
@@ -2305,7 +2303,6 @@ void nc_print_category_hr(WINDOW *wptr, struct ColWidth *cw,
 	char *etc = "..";
 	int x = 0;
 	int print_offset = 1;
-	enum transtypes tt;
 	double e = get_expenditures_per_category(bt);
 	double remaining = 0;
 //	if (e <= 0) {
@@ -2872,7 +2869,6 @@ int print_sidebar_category_string(char *str, WINDOW *wptr, int y, int x, int i) 
 }
 
 int print_sidebar_category_values(double inc, double exp, int tt, WINDOW *wptr, int y, int i) {
-	enum transtypes e_tt;
 	char graph[30];
 	for (int i = 0; i < 30; i++) {
 		graph[i] = ' ';
