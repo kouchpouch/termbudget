@@ -24,6 +24,11 @@
 
 #define CSV_FIELDS 7
 
+enum transtypes {
+	TT_EXPENSE = 0,
+	TT_INCOME = 1
+};
+
 struct BudgetHeader {
 	int month;
 	int year;
