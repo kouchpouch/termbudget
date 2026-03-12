@@ -446,7 +446,7 @@ void print_record_hr(struct LineData *ld) {
 }
 
 int nc_select_category_field_to_edit(void) {
-	struct MenuParams *mp = malloc(sizeof(*mp) + (sizeof(char *) * 2));
+	struct MenuParams *mp = malloc(sizeof(*mp) + (sizeof(char *) * 3));
 
 	if (mp == NULL) {
 		memory_allocate_fail();
@@ -2256,30 +2256,63 @@ Vec *get_matching_line_nums(FILE *fptr, int month, int year) {
 	return pl;
 }
 
+/* Returns all income records subtracted by expense records */
 double get_expenditures_per_category(struct BudgetTokens *bt) {
-	double expenses = 0;
-	Vec *pr = get_records_by_any(bt->m, -1, bt->y, bt->catg, NULL, -1, -1, NULL);
-	for (size_t i = 0; i < pr->size; i++) {
-		expenses += get_amount(pr->data[i]);
+	enum transtypes tt;
+	double total = 0;
+	Vec *pi = get_records_by_any(bt->m, -1, bt->y, bt->catg, NULL, TT_INCOME, -1, NULL);
+	Vec *pe = get_records_by_any(bt->m, -1, bt->y, bt->catg, NULL, TT_EXPENSE, -1, NULL);
+	for (size_t i = 0; i < pi->size; i++) {
+		total += get_amount(pi->data[i]);
 	}
-	free(pr);
-	return expenses;
+	for (size_t i = 0; i < pe->size; i++) {
+		total -= get_amount(pe->data[i]);
+	}
+	free(pe);
+	free(pi);
+	return total;
+}
+
+void print_catg_balances(WINDOW *wptr, int tt, double amt, double exp, int width) {
+	enum transtypes e_tt;
+	int full_inc_len = strlen("Planned: $, Received: $");
+	int full_exp_len = strlen("Planned: $, Remaining: $");
+	int short_exp_len = strlen("Plan: $, Rem: $");
+	int short_inc_len = strlen("Plan: $, Rcvd: $");
+
+	if (tt == TT_INCOME) {
+		if (full_inc_len + finlen(amt) + finlen(exp) < width) {
+			wprintw(wptr, "Planned: $%.2f, Received: $%.2f", amt, exp);
+		} else if (short_inc_len + finlen(amt) + finlen(exp) < width) {
+			wprintw(wptr, "Plan: $%.2f, Rcvd: $%.2f", amt, exp);
+		} else if (strlen("P$, R$") + finlen(amt) + finlen(exp) < width) {
+			wprintw(wptr, "P$%.2f, R$%.2f", amt, exp);
+		}
+	} else if (tt == TT_EXPENSE) {
+		if (full_exp_len + finlen(amt) + finlen(amt - exp) < width) {
+			wprintw(wptr, "Planned: $%.2f, Remaining: $%.2f", amt, exp);
+		} else if (short_exp_len + finlen(amt) + finlen(amt - exp) < width) {
+			wprintw(wptr, "Plan: $%.2f, Rem: $%.2f", amt, amt - exp);
+		} else if (strlen("$P, R$") + finlen(amt) + finlen(amt - exp) < width) {
+			wprintw(wptr, "P$%.2f, R$%.2f", amt, amt - exp);
+		}
+	}
 }
 
 void nc_print_category_hr(WINDOW *wptr, struct ColWidth *cw,
 						  struct BudgetTokens *bt, int y)
 {
-	char *etc = ". ";
+	char *etc = "..";
 	int x = 0;
 	int print_offset = 1;
+	enum transtypes tt;
 	double e = get_expenditures_per_category(bt);
 	double remaining = 0;
-	if (e <= 0) {
-		remaining = bt->amount + e;
-	} else {
-		remaining = bt->amount - e;
-	}
-
+//	if (e <= 0) {
+//		remaining = bt->amount + e;
+//	} else {
+//		remaining = bt->amount - e;
+//	}
 	wattron(wptr, A_REVERSE);
 
 	/* Move cursor past the date columns */
@@ -2296,7 +2329,7 @@ void nc_print_category_hr(WINDOW *wptr, struct ColWidth *cw,
 
 	/* Move cursor past the category column */
 	wmove(wptr, y, x += cw->catg - print_offset);
-	wprintw(wptr, "Planned: %.2f, Remaining: %.2f", bt->amount, remaining);
+	print_catg_balances(wptr, bt->transtype, bt->amount, e, cw->desc);
 
 	wmove(wptr, y, x += cw->desc - print_offset);
 	wprintw(wptr, "%s", bt->transtype == 0 ? "Expenses" : "Income");
@@ -2838,12 +2871,13 @@ int print_sidebar_category_string(char *str, WINDOW *wptr, int y, int x, int i) 
 	return 1;
 }
 
-int print_sidebar_category_values(double inc, double exp, WINDOW *wptr, int y, int i) {
+int print_sidebar_category_values(double inc, double exp, int tt, WINDOW *wptr, int y, int i) {
+	enum transtypes e_tt;
 	char graph[30];
 	for (int i = 0; i < 30; i++) {
 		graph[i] = ' ';
 	}
-	graph[29] = '\0';
+	graph[sizeof(graph) - 1] = '\0';
 	double remaining = 0;
 	if (exp <= 0) {
 		remaining = inc + exp;
@@ -2858,11 +2892,16 @@ int print_sidebar_category_values(double inc, double exp, WINDOW *wptr, int y, i
 	int fill_graph;
 	int graph_x_begin = ((getmaxx(wptr) - sizeof(graph)) / 2);
 	int remain_x_begin = (getmaxx(wptr) - graph_x_begin - strlen(" Remaining") - finlen(remaining) - BOX_OFFSET - 4);
+	int planned_x_begin = (getmaxx(wptr) - graph_x_begin - strlen(" Planned") - finlen(inc) - BOX_OFFSET - 4);
 	int tracked_x_begin = BOX_OFFSET + 6;
 
 	mvwaddch(wptr, y, getmaxx(wptr) - 5 - BOX_OFFSET, ACS_URCORNER);
 	mvwaddch(wptr, y, getmaxx(wptr) - 5 - BOX_OFFSET - 1, ACS_HLINE);
-	mvwprintw(wptr, y, remain_x_begin, " $%.2f Remaining", remaining);
+	if (tt == TT_INCOME) {
+		mvwprintw(wptr, y, planned_x_begin, " $%.2f Planned", inc);
+	} else {
+		mvwprintw(wptr, y, remain_x_begin, " $%.2f Remaining", remaining);
+	}
 	y++;
 
 	wattron(wptr, COLOR_PAIR(category_color(i)));
@@ -2878,7 +2917,11 @@ int print_sidebar_category_values(double inc, double exp, WINDOW *wptr, int y, i
 
 	mvwaddch(wptr, y, BOX_OFFSET + 4, ACS_LLCORNER);
 	mvwaddch(wptr, y, BOX_OFFSET + 5, ACS_HLINE);
-	mvwprintw(wptr, y, tracked_x_begin, " $%.2f Tracked", inc - remaining);
+	if (tt == TT_INCOME) {
+		mvwprintw(wptr, y, tracked_x_begin, " $%.2f Received", exp);
+	} else {
+		mvwprintw(wptr, y, tracked_x_begin, " $%.2f Tracked", inc - remaining);
+	}
 	return 4;
 }
 
@@ -2893,13 +2936,13 @@ void init_sidebar_body(WINDOW *wptr, CategoryNode **nodes) {
 		exp = get_expenditures_per_category(bt);
 		if (nodes[i]->next == NULL) {
 			y += print_sidebar_category_string(bt->catg, wptr, y, x, i);
-			y += print_sidebar_category_values(bt->amount, exp, wptr, y, i);
+			y += print_sidebar_category_values(bt->amount, exp, bt->transtype, wptr, y, i);
 			free_budget_tokens(bt);
 			bt = NULL;
 			break;
 		} else {
 			y += print_sidebar_category_string(bt->catg, wptr, y, x, i);
-			y += print_sidebar_category_values(bt->amount, exp, wptr, y, i);
+			y += print_sidebar_category_values(bt->amount, exp, bt->transtype, wptr, y, i);
 			free_budget_tokens(bt);
 			bt = NULL;
 		}
@@ -2941,7 +2984,7 @@ int nc_print_sidebar_head(WINDOW *wptr, Vec *psc, double leftover) {
 	y++;
 
 	mvwprintw(wptr, y, x, "Left to Budget:");
-	mvwprintw(wptr, y, max_x - (finlen(leftover) + BOX_OFFSET + 1), "$%.2f", leftover);
+	mvwprintw(wptr, y, max_x - (finlen(leftover) + BOX_OFFSET), "$%.2f", leftover);
 	y++;
 
 	wrefresh(wptr);
