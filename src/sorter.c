@@ -22,6 +22,29 @@
 #include "parser.h"
 #include "filemanagement.h"
 
+static int lines_to_last_occurance(FILE *fptr, int month, int year, long b) {
+	char *str;
+	char linebuff[LINE_BUFFER];
+	int l = 0;
+	int monthtok;
+	int yeartok;
+	while (1) {
+		str = fgets(linebuff, sizeof(linebuff), fptr);
+		if (str == NULL) {
+			break;
+		}
+		monthtok = atoi(strsep(&str, ","));
+		yeartok = atoi(strsep(&str, ","));
+		if (monthtok == month && yeartok == year) {
+			l++;
+		} else {
+			break;
+		}
+	}
+
+	return l;
+}
+
 /* We assume that the CSV is sorted by date already. Because every operation
  * to edit or add a transaction will go through the sorting function to
  * determine where to insert the record. */
@@ -67,6 +90,7 @@ unsigned int sort_budget_csv(int month, int year) {
 
 		if (yeartok == year && monthtok == month) {
 			result_line = line;
+			result_line += lines_to_last_occurance(fptr, month, year, ftell(fptr));
 			break;
 		}
 		
