@@ -335,6 +335,10 @@ void nc_message(char *str) {
 	nc_exit_window_key(wptr_msg);
 }
 
+int category_color(int x) {
+	return x % 10 + 11;
+}
+
 static void init_color_palette(void) {
 	// These colors were picked by a clanker, the only thing in the entire
 	// program that used the devil.

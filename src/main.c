@@ -2712,10 +2712,6 @@ int get_total_displayed_rows(CategoryNode **nodes) {
 	return rows;
 }
 
-int category_color(int x) {
-	return x % 10 + 11;
-}
-
 void nc_scroll_prev_category(WINDOW *wptr, CategoryNode **nodes,
 							 struct ScrollCursor *sc, struct ColWidth *cw,
 							 FILE *rfptr, FILE *bfptr)

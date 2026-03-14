@@ -153,6 +153,9 @@ extern WINDOW *create_input_subwindow(void);
 /* Show a message str in an input subwindow which exits on key press */
 extern void nc_message(char *str);
 
+/* Returns the color pair for the index 'x' of each category */
+extern int category_color(int x);
+
 /* Initializes the stdscr */
 extern WINDOW *nc_init_stdscr(void);
 
