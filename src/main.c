@@ -69,8 +69,8 @@ struct Balances {
 
 void free_categories(struct Categories *pc);
 int *list_records_by_month_old(FILE *fptr, int matchyear);
+Vec *get_months_with_data(FILE *fptr, int matchyear, int field);
 Vec *get_years_with_data(FILE *fptr, int field);
-int *list_records_by_year_old(FILE *fptr);
 void memory_allocate_fail(void);
 int mv_tmp_to_budget_file(FILE *tmp, FILE* main);
 void nc_read_setup_default(void);
@@ -84,6 +84,8 @@ int mv_tmp_to_record_file(FILE *tempfile, FILE *mainfile);
 int delete_csv_record(int linetodelete);
 Vec *get_matching_line_nums(FILE *fptr, int month, int year);
 char *nc_add_budget_category(int yr, int mo);
+
+//int *list_records_by_year_old(FILE *fptr);
 
 char *user_input(int n) {
 	size_t buffersize = n + 1;
@@ -828,26 +830,22 @@ int verify_categories_exist_in_budget(void) {
 
 	struct Categories prc_, *prc = &prc_;
 	struct Categories pbc_, *pbc = &pbc_;
-	int *years = list_records_by_year_old(rfptr);
+	Vec *years = get_years_with_data(rfptr, 2);
 	if (years == NULL) {
 		return 0;
 	}
-	int i = 0;
 
-	while (years[i] != 0) {
+	for (int i = 0; i < years->size; i++) {
 		rewind(rfptr);
-		int *months = list_records_by_month_old(rfptr, years[i]);
-		for (int j = 0; j < 12; j++) {
-			if (months[j] != 0) {
-				prc = list_categories(months[j], years[i]);
-				pbc = get_budget_catg_by_date(months[j], years[i]);
-				corrected += cmp_catg_and_fix(prc, pbc, months[j], years[i]);
-				free_categories(prc);
-				free_categories(pbc);
-			}
+		Vec *months = get_months_with_data(rfptr, years->data[i], 0);
+		for (int j = 0; j < months->size; j++) {
+			prc = list_categories(months->data[j], years->data[i]);
+			pbc = get_budget_catg_by_date(months->data[j], years->data[i]);
+			corrected += cmp_catg_and_fix(prc, pbc, months->data[j], years->data[i]);
+			free_categories(prc);
+			free_categories(pbc);
 		}
 		free(months);
-		i++;
 	}
 
 	free(years);
@@ -1422,53 +1420,53 @@ Vec *get_years_with_data(FILE *fptr, int field) {
 
 /* Returns an malloc'd array of integers containing the years in which records
  * are found in fptr. A '0' marks the end of the array. */
-int *list_records_by_year_old(FILE *fptr) {
-	char linebuff[LINE_BUFFER];
-	char *str;
-	int *years = calloc(1, sizeof(int));
-	int year;
-	int i = 0;
-
-	if (seek_beyond_header(fptr) == -1) {
-		puts("Failed to read header");
-		free(years);
-		return NULL;
-	}
-
-	str = fgets(linebuff, sizeof(linebuff), fptr); // Read first year into index 0
-	if (str == NULL) {
-		free(years);
-		return NULL;
-	}
-	seek_n_fields(&str, 2);
-	years[i] = atoi(strsep(&str, ",")); // year
-
-	while ((str = fgets(linebuff, sizeof(linebuff), fptr)) != NULL) {
-		seek_n_fields(&str, 2);
-		year = atoi(strsep(&str, ",")); // year
-		if (year != years[i]) {
-			i++;
-			int *tmp = realloc(years, (i + 1) * sizeof(int));
-			if (tmp == NULL) {
-				free(years);
-				memory_allocate_fail();
-			}
-			years = tmp;
-			years[i] = year;
-		}
-	}
-	int *tmp = realloc(years, (i + 2) * sizeof(int));
-	if (tmp == NULL) {
-		free(years);
-		memory_allocate_fail();
-	}
-	years = tmp;
-	/* Place a zero at the end of the array to mark the end */
-	years[i + 1] = 0; 
-
-	printf("\n");
-	return years;
-}
+//int *list_records_by_year_old(FILE *fptr) {
+//	char linebuff[LINE_BUFFER];
+//	char *str;
+//	int *years = calloc(1, sizeof(int));
+//	int year;
+//	int i = 0;
+//
+//	if (seek_beyond_header(fptr) == -1) {
+//		puts("Failed to read header");
+//		free(years);
+//		return NULL;
+//	}
+//
+//	str = fgets(linebuff, sizeof(linebuff), fptr); // Read first year into index 0
+//	if (str == NULL) {
+//		free(years);
+//		return NULL;
+//	}
+//	seek_n_fields(&str, 2);
+//	years[i] = atoi(strsep(&str, ",")); // year
+//
+//	while ((str = fgets(linebuff, sizeof(linebuff), fptr)) != NULL) {
+//		seek_n_fields(&str, 2);
+//		year = atoi(strsep(&str, ",")); // year
+//		if (year != years[i]) {
+//			i++;
+//			int *tmp = realloc(years, (i + 1) * sizeof(int));
+//			if (tmp == NULL) {
+//				free(years);
+//				memory_allocate_fail();
+//			}
+//			years = tmp;
+//			years[i] = year;
+//		}
+//	}
+//	int *tmp = realloc(years, (i + 2) * sizeof(int));
+//	if (tmp == NULL) {
+//		free(years);
+//		memory_allocate_fail();
+//	}
+//	years = tmp;
+//	/* Place a zero at the end of the array to mark the end */
+//	years[i + 1] = 0; 
+//
+//	printf("\n");
+//	return years;
+//}
 
 void init_data_array(Vec *vec) {
 	for (size_t i = 0; i < vec->size; i++) {
@@ -1483,7 +1481,7 @@ void init_data_array(Vec *vec) {
  * temporary and a new function will be added to find which fields to read
  * based on the header.
  */
-Vec *get_months_with_data(FILE *fptr, int matchyear, int fields) {
+Vec *get_months_with_data(FILE *fptr, int matchyear, int field) {
 	char linebuff[LINE_BUFFER];
 	char *str;
 	Vec *months = malloc(sizeof(*months) + (sizeof(long) * MONTHS_IN_YEAR));
@@ -1505,7 +1503,7 @@ Vec *get_months_with_data(FILE *fptr, int matchyear, int fields) {
 
 	while ((str = fgets(linebuff, sizeof(linebuff), fptr)) != NULL) {
 		month = atol(strsep(&str, ","));
-		seek_n_fields(&str, fields);
+		seek_n_fields(&str, field);
 		year = atol(strsep(&str, ","));
 		if (matchyear == year) {
 			if (months->data[0] == 0) {
@@ -1858,44 +1856,45 @@ void legacy_read_csv(void) {
 
 	struct LineData linedata_, *ld = &linedata_;
 
-	yearsarr = list_records_by_year_old(fptr);
+	Vec *years = get_years_with_data(fptr, 2);
 	rewind(fptr);
 
 	while (year_record_exists == false) {
-		if (i > 0) puts("No records match that year");
-		i = 0;
 		useryear = input_year();
-		while (yearsarr[i] != 0) {
-			if (useryear == yearsarr[i]) {
+		for (size_t i = 0; i < years->size; i++) {
+			if (years->data[i] == useryear) {
 				year_record_exists = true;
 				break;
 			}
-			i++;
+		}
+
+		if (year_record_exists == false) {
+			printf("%s '%d'\n", "No records match the year", useryear);
 		}
 	}
 
-	i = 0;
-	free(yearsarr);
-	yearsarr = NULL;
+	free(years);
+	years = NULL;
 	rewind(fptr);
 
-	int *monthsarr = list_records_by_month_old(fptr, useryear);
-	i = 0;
+	Vec *months = get_months_with_data(fptr, useryear, 1);
 
 	while (month_record_exists == false) {
-		if (i > 0) puts("No records match that month");
-		i = 0;
 		usermonth = input_month();
-		while (monthsarr[i] != 0) {
-			if (usermonth == monthsarr[i]) {
+		for (size_t i = 0; i < months->size; i++) {
+			if (months->data[i] == usermonth) {
 				month_record_exists = true;
 				break;
 			}
-			i++;
+		}
+
+		if (month_record_exists == false) {
+			printf("%s '%d'\n", "No records match the month", usermonth);
 		}
 	}
-	free(monthsarr);
-	monthsarr = NULL;
+
+	free(months);
+	months = NULL;
 	rewind(fptr);
 
 	if (seek_beyond_header(fptr) == -1) {
