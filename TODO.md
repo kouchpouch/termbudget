@@ -72,7 +72,7 @@
             marked as an income or expense category.
         - [X] Use this new field to properly calculate "left to budget"
     - [X] Remove list_records_by_year_old in main.c
-    - [ ] Remove list_records_by_month_old in main.c
+    - [X] Remove list_records_by_month_old in main.c
     - [ ] Refactor legacy_read_csv for CLI mode
     - [ ] Refactor any function that uses seek_n_fields with an integer literal
             to use a header parsing function to determine field location.
