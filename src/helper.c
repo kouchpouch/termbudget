@@ -1,5 +1,7 @@
 #include <limits.h>
+#include <stdlib.h>
 #include <stdbool.h>
+#include <limits.h>
 #include "helper.h"
 
 #define MAX_UPPER_ASCII 90
@@ -110,4 +112,12 @@ long min_val(long a, long b) {
 
 int compare_for_sort(const void *a, const void *b) {
 	return (*(long *)a - *(long *)b);
+}
+
+int size_to_int(size_t n) {
+	if (n <= INT_MAX) {
+		return (int)n;
+	} else {
+		return -1;
+	}
 }

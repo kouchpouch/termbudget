@@ -15,6 +15,7 @@
 #ifndef HELPER_H
 #define HELPER_H
 #include <stdbool.h>
+#include <stdlib.h>
 
 /* Returns ltr ascii value to uppercase */
 extern int upper(char *ltr);
@@ -40,5 +41,8 @@ extern long max_val(long a, long b);
 extern long min_val(long a, long b);
 
 extern int compare_for_sort(const void *a, const void *b);
+
+/* Safely casts size_t to and integer. Returns -1 on unsafe cast */
+extern int size_to_int(size_t n);
 
 #endif
