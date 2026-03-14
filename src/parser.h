@@ -68,15 +68,6 @@ struct LineData {
 	int linenum;
 };
 
-/* Opens file located at RECORD_DIR in mode mode. Exits on failure */
-extern FILE *open_record_csv(char *mode);
-
-/* Opens file located at BUDGET_DIR in mode mode. Exits on failure */
-extern FILE *open_budget_csv(char *mode);
-
-/* Opens file located at TMP_DIR in w+ mode. Exits on failure */
-extern FILE *open_temp_csv(void);
-
 /* Returns total lines in the CSV */
 extern int get_total_csv_lines(void);
 
@@ -163,8 +154,8 @@ extern struct BudgetTokens *tokenize_budget_line(int line);
 /* Populates ld members with tokens from str */
 extern void tokenize_record(struct LineData *ld, char **str);
 
-/* Returns the amount value from file position b */
-extern double get_amount(long b);
+/* Returns the amount value in RECORD_DIR from file position b */
+extern double get_record_amount(long b);
 
 /* Returns an integer value of a given line number line and of field number 
  * field. Field numbers start at 1 */

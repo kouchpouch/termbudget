@@ -611,7 +611,7 @@ void tokenize_record(struct LineData *ld, char **str) {
 	}
 }
 
-double get_amount(long b) {
+double get_record_amount(long b) {
 	FILE *fptr = open_record_csv("r");
 	char linebuff[LINE_BUFFER];
 	char *str;
