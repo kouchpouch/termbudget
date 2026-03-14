@@ -59,9 +59,10 @@
             creating a new transaction, creating a new category, roll over
             previous month's data to the target month, or exit.
     - [X] Add alerter when adding a category that already exists
-    - [ ] Add a sidebar or somewhere to put info such as: money remaining,
+    - [X] Add a sidebar or somewhere to put info such as: money remaining,
             money left to still budget (zero dollar based budgeting), total
             income, etc.
+        - [ ] Sidebar scrolling
     - [X] Create a color palette and assign different colors to
             different categories.
     - [ ] On the user input prompts, show relevant data on the window as the
@@ -159,4 +160,6 @@
                 is not actually created but the record in data.csv is updated
                 correctly.
     - 21 [ ] Sidebar does not refresh when transaction detail window opens.
-    - 22 [ ] Left to budget value in sidebar is incorrect.
+        - Either detail window remains within the bounds of the data window
+            or have a function to refresh the sidebar.
+    - 22 [X] Left to budget value in sidebar is incorrect.
