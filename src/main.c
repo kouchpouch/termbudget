@@ -68,7 +68,6 @@ struct Balances {
 };
 
 void free_categories(struct Categories *pc);
-int *list_records_by_month_old(FILE *fptr, int matchyear);
 Vec *get_months_with_data(FILE *fptr, int matchyear, int field);
 Vec *get_years_with_data(FILE *fptr, int field);
 void memory_allocate_fail(void);
@@ -84,8 +83,6 @@ int mv_tmp_to_record_file(FILE *tempfile, FILE *mainfile);
 int delete_csv_record(int linetodelete);
 Vec *get_matching_line_nums(FILE *fptr, int month, int year);
 char *nc_add_budget_category(int yr, int mo);
-
-//int *list_records_by_year_old(FILE *fptr);
 
 char *user_input(int n) {
 	size_t buffersize = n + 1;
@@ -1418,56 +1415,6 @@ Vec *get_years_with_data(FILE *fptr, int field) {
 	return pr;
 }
 
-/* Returns an malloc'd array of integers containing the years in which records
- * are found in fptr. A '0' marks the end of the array. */
-//int *list_records_by_year_old(FILE *fptr) {
-//	char linebuff[LINE_BUFFER];
-//	char *str;
-//	int *years = calloc(1, sizeof(int));
-//	int year;
-//	int i = 0;
-//
-//	if (seek_beyond_header(fptr) == -1) {
-//		puts("Failed to read header");
-//		free(years);
-//		return NULL;
-//	}
-//
-//	str = fgets(linebuff, sizeof(linebuff), fptr); // Read first year into index 0
-//	if (str == NULL) {
-//		free(years);
-//		return NULL;
-//	}
-//	seek_n_fields(&str, 2);
-//	years[i] = atoi(strsep(&str, ",")); // year
-//
-//	while ((str = fgets(linebuff, sizeof(linebuff), fptr)) != NULL) {
-//		seek_n_fields(&str, 2);
-//		year = atoi(strsep(&str, ",")); // year
-//		if (year != years[i]) {
-//			i++;
-//			int *tmp = realloc(years, (i + 1) * sizeof(int));
-//			if (tmp == NULL) {
-//				free(years);
-//				memory_allocate_fail();
-//			}
-//			years = tmp;
-//			years[i] = year;
-//		}
-//	}
-//	int *tmp = realloc(years, (i + 2) * sizeof(int));
-//	if (tmp == NULL) {
-//		free(years);
-//		memory_allocate_fail();
-//	}
-//	years = tmp;
-//	/* Place a zero at the end of the array to mark the end */
-//	years[i + 1] = 0; 
-//
-//	printf("\n");
-//	return years;
-//}
-
 void init_data_array(Vec *vec) {
 	for (size_t i = 0; i < vec->size; i++) {
 		vec->data[i] = 0;
@@ -1520,40 +1467,6 @@ Vec *get_months_with_data(FILE *fptr, int matchyear, int field) {
 	return months;
 }
 
-/* Returns a calloc'd array of months in which records exist in fptr which
- * match the year of matchyear. The month value is '0' if that month doesn't
- * exist. The size of the array is always 12. */
-int *list_records_by_month_old(FILE *fptr, int matchyear) {
-	char linebuff[LINE_BUFFER];
-	char *str;
-	int *months = calloc(12, sizeof(int));
-	int year;
-	int month;
-	int i = 0;
-
-	if (seek_beyond_header(fptr) == -1) {
-		puts("Failed to read header");
-	}
-
-	while ((str = fgets(linebuff, sizeof(linebuff), fptr)) != NULL) {
-		month = atoi(strsep(&str, ","));
-		seek_n_fields(&str, 1);
-		year = atoi(strsep(&str, ","));
-		if (matchyear == year) {
-			if (months[0] == 0) {
-				months[0] = month;
-			} else if (month != months[i]) {
-				i++;
-				months[i] = month;
-			}
-		} else if (matchyear < year) {
-			break;
-		}
-	}
-
-	return months;
-}
-
 /* Returns the row on the bottom 4th of wptr */
 int last_quarter_row(WINDOW *wptr) {
 	return getmaxy(wptr) - getmaxy(wptr) / 4;
@@ -1577,7 +1490,7 @@ double get_max_value(int elements, double *arr) {
 	return max;
 }
 
-void nc_print_overview_graphs(WINDOW *wptr, int *months, int year) {
+void nc_print_overview_graphs(WINDOW *wptr, Vec *months, int year) {
 	double ratios[12] = {0.0}; // Holds each month's income/expense ratio
 	double maxvals[12] = {0.0};
 	struct Balances pb_, *pb = &pb_;
@@ -1589,9 +1502,9 @@ void nc_print_overview_graphs(WINDOW *wptr, int *months, int year) {
 		NO_EXPENSE = -2,
 	};
 
-	for (int i = 0; i < 12 && mo <= 12; i++, mo++) {
-		if (months[i] == mo) {
-			Vec *pbo = get_records_by_mo_yr(months[i], year);
+	for (size_t i = 0; i < months->size && mo <= 12; i++, mo++) {
+		if (months->data[i] == mo) {
+			Vec *pbo = get_records_by_mo_yr(months->data[i], year);
 			calculate_balance(pb, pbo);
 			if (pb->income == 0) { // Prevent a div by zero
 				ratios[mo - 1] = NO_INCOME;
@@ -1674,18 +1587,18 @@ void nc_print_overview_graphs(WINDOW *wptr, int *months, int year) {
 	}
 }
 
-void nc_print_overview_balances(WINDOW *wptr, int *months, int year) {
+void nc_print_overview_balances(WINDOW *wptr, Vec *months, int year) {
 	int tmpx = 0;
 	int space = calculate_overview_columns(wptr);
 	int y = last_quarter_row(wptr) + 2;
 	int cur = (getmaxx(wptr) - space * 11) / 2;
 	int mo = 1;
 	struct Balances pb_, *pb = &pb_;
-	for (int i = 0; i < 12 && mo <= 12; i++, mo++) {
+	for (size_t i = 0; i < months->size && mo <= 12; i++, mo++) {
 		tmpx = 0;
 
-		if (months[i] == mo) {
-			Vec *pbo = get_records_by_mo_yr(months[i], year);
+		if (months->data[i] == mo) {
+			Vec *pbo = get_records_by_mo_yr(months->data[i], year);
 			calculate_balance(pb, pbo);
 			tmpx = intlen(pb->income) / 2;
 			wmove(wptr, y, cur - tmpx);
@@ -1735,7 +1648,7 @@ void nc_print_overview_months(WINDOW *wptr) {
 	}
 }
 
-unsigned int nc_overview_loop(WINDOW *wptr, int *months, int year) {
+unsigned int nc_overview_loop(WINDOW *wptr, Vec *months, int year) {
 	unsigned int flag = 0;
 	int c;
 	int space = calculate_overview_columns(wptr);
@@ -1779,8 +1692,7 @@ void nc_overview_setup(int year) {
 	wrefresh(wptr_parent);
 	
 	FILE *fptr = open_record_csv("r");
-	int *months = list_records_by_month_old(fptr, year);
-//	Vec *months = get_months_with_data(fptr, year, 1);
+	Vec *months = get_months_with_data(fptr, year, 1);
 	fclose(fptr);
 
 	unsigned int flag = nc_overview_loop(wptr_data, months, year);
@@ -2262,10 +2174,10 @@ double get_expenditures_per_category(struct BudgetTokens *bt) {
 	Vec *pi = get_records_by_any(bt->m, -1, bt->y, bt->catg, NULL, TT_INCOME, -1, NULL);
 	Vec *pe = get_records_by_any(bt->m, -1, bt->y, bt->catg, NULL, TT_EXPENSE, -1, NULL);
 	for (size_t i = 0; i < pi->size; i++) {
-		total += get_amount(pi->data[i]);
+		total += get_record_amount(pi->data[i]);
 	}
 	for (size_t i = 0; i < pe->size; i++) {
-		total -= get_amount(pe->data[i]);
+		total -= get_record_amount(pe->data[i]);
 	}
 	free(pe);
 	free(pi);
