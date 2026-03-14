@@ -3129,6 +3129,7 @@ void nc_read_loop(WINDOW *wptr_parent, WINDOW *wptr, FILE *fptr,
 {
 	struct ColWidth cw_, *cw = &cw_;
 	struct ScrollCursorSimple sc_, *sc = &sc_;
+
 	char linebuff[LINE_BUFFER];
 
 	init_scroll_cursor_simple(sc);
@@ -3476,7 +3477,7 @@ void nc_read_setup(int sel_year, int sel_month, int sort) {
 	Vec *pidx = index_csv(fptr);
 	Vec *plines;
 	Vec *psc;
-	struct Plannedvals *pv;
+//	struct Plannedvals *pv;
 	size_t n_records;
 	int sidebar_head_y;
 	char *ret;
