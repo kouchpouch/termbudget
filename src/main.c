@@ -837,7 +837,7 @@ int verify_categories_exist_in_budget(void) {
 
 	for (int i = 0; i < years->size; i++) {
 		rewind(rfptr);
-		Vec *months = get_months_with_data(rfptr, years->data[i], 0);
+		Vec *months = get_months_with_data(rfptr, years->data[i], 1);
 		for (int j = 0; j < months->size; j++) {
 			prc = list_categories(months->data[j], years->data[i]);
 			pbc = get_budget_catg_by_date(months->data[j], years->data[i]);
@@ -1780,6 +1780,7 @@ void nc_overview_setup(int year) {
 	
 	FILE *fptr = open_record_csv("r");
 	int *months = list_records_by_month_old(fptr, year);
+//	Vec *months = get_months_with_data(fptr, year, 1);
 	fclose(fptr);
 
 	unsigned int flag = nc_overview_loop(wptr_data, months, year);
