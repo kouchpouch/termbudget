@@ -181,7 +181,7 @@ WINDOW *create_lines_subwindow(int max_y, int max_x, int y_off, int x_off) {
 struct ReadWins *create_read_windows(void) {
 	struct ReadWins *wins = malloc(sizeof(*wins));
 	int parent_y, parent_x;
-	int x, y;
+	int y, x;
 	getmaxyx(stdscr, y, x);
 	bool width = verify_sidebar_width(stdscr);
 	int y_off = 1;
@@ -200,12 +200,7 @@ struct ReadWins *create_read_windows(void) {
 
 	if (width) {
 		wins->sidebar_parent = create_sidebar_parent(wins->parent, y, x);
-//		wins->sidebar = newwin(y - 1, x - parent_x + 1, 0, parent_x - 1);
-//		if (wins->sidebar == NULL) {
-//			window_creation_fail();
-//		}
-//		box(wins->sidebar, 0, 0);
-//		wrefresh(wins->sidebar);
+		wins->sidebar_body = create_sidebar_body(wins->parent, wins->sidebar_parent);
 	} else {
 		wins->sidebar_parent = NULL;
 		wins->sidebar_body = NULL;
