@@ -2948,7 +2948,7 @@ void nc_read_budget_loop(struct ReadWins *wins, FILE *rfptr, FILE *bfptr,
 
 	int c = 0;
 	calculate_columns(cw, getmaxx(wins->data) + BOX_OFFSET);
-	if (wins->sidebar == NULL) {
+	if (wins->sidebar_parent == NULL) {
 		nc_print_balances_text(wins->parent, psc);
 	}
 	nc_print_read_footer(stdscr);
@@ -3380,8 +3380,8 @@ void get_dates(struct SelRecord *sr, struct Datevals *dates) {
 void free_windows(struct ReadWins *wins) {
 	nc_exit_window(wins->data);
 	nc_exit_window(wins->parent);
-	if (wins->sidebar != NULL) {
-		nc_exit_window(wins->sidebar);
+	if (wins->sidebar_parent != NULL) {
+		nc_exit_window(wins->sidebar_parent);
 		nc_exit_window(wins->sidebar_body);
 	}
 	free(wins);
@@ -3475,11 +3475,11 @@ void nc_read_setup(int sel_year, int sel_month, int sort) {
 	}
 
 	struct ReadWins *wins = create_read_windows();
-	if (wins->sidebar == NULL) {
+	if (wins->sidebar_parent == NULL) {
 		sidebar_exists = false;
 	} else {
-		mvwxcprintw(wins->sidebar, 0, "Summary");
-		wrefresh(wins->sidebar);
+		mvwxcprintw(wins->sidebar_parent, 0, "Summary");
+		wrefresh(wins->sidebar_parent);
 		sidebar_exists = true;
 	}
 
@@ -3508,10 +3508,10 @@ void nc_read_setup(int sel_year, int sel_month, int sort) {
 	print_column_headers(wins->parent, BOX_OFFSET);
 	if (sidebar_exists) {
 		draw_parent_box_with_sidebar(wins->parent);
-		sidebar_head_y = nc_print_sidebar_head(wins->sidebar, psc, get_left_to_budget(nodes));
+		sidebar_head_y = nc_print_sidebar_head(wins->sidebar_parent, psc, get_left_to_budget(nodes));
 		wins->sidebar_body = 
 			create_sidebar_body(
-				wins->sidebar, sidebar_head_y, getmaxx(wins->parent) - 1);
+				wins->sidebar_parent, sidebar_head_y, getmaxx(wins->parent) - 1);
 		init_sidebar_body(wins->sidebar_body, nodes);
 	} else {
 		box(wins->parent, 0, 0);

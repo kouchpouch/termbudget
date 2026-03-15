@@ -76,7 +76,7 @@ enum menukeys {
 
 struct ReadWins {
 	WINDOW *parent;
-	WINDOW *sidebar;
+	WINDOW *sidebar_parent;
 	WINDOW *sidebar_body;
 	WINDOW *data;
 };
