@@ -91,10 +91,17 @@ static int print_body_graphs_and_values(double inc, double exp, int tt, WINDOW *
 		remaining = inc - exp;
 	}
 
-	int graph_len = (GRAPH_LENGTH - 1) * (1 - (remaining / inc));
+	int graph_len;
+
+	if (inc == 0) {
+		graph_len = GRAPH_LENGTH - 1;
+	} else {
+		graph_len = (GRAPH_LENGTH - 1) * (1 - (remaining / inc));
+	}
 	if (graph_len > GRAPH_LENGTH - 1) {
 		graph_len = GRAPH_LENGTH - 1;
 	}
+
 	int fill_graph;
 	int graph_x_begin = (getmaxx(wptr) - GRAPH_LENGTH) / 2;
 	int remain_x_begin = (getmaxx(wptr) - graph_x_begin - strlen(" Remaining") - finlen(remaining) - BOX_OFFSET - 4);
@@ -106,7 +113,13 @@ static int print_body_graphs_and_values(double inc, double exp, int tt, WINDOW *
 	if (tt == TT_INCOME) {
 		mvwprintw(wptr, y, planned_x_begin, " $%.2f Planned", inc);
 	} else {
-		mvwprintw(wptr, y, remain_x_begin, " $%.2f Remaining", remaining);
+		if (remaining < 0) {
+			wattron(wptr, COLOR_PAIR(1));
+			mvwprintw(wptr, y, remain_x_begin, " $%.2f Remaining", remaining);
+			wattroff(wptr, COLOR_PAIR(1));
+		} else {
+			mvwprintw(wptr, y, remain_x_begin, " $%.2f Remaining", remaining);
+		}
 	}
 	y++;
 
@@ -128,6 +141,7 @@ static int print_body_graphs_and_values(double inc, double exp, int tt, WINDOW *
 	} else {
 		mvwprintw(wptr, y, tracked_x_begin, " $%.2f Tracked", inc - remaining);
 	}
+
 	return 4;
 }
 
@@ -138,7 +152,7 @@ void init_sidebar_body(WINDOW *wptr, CategoryNode **nodes) {
 	int y = 1;
 	int x = 1;
 	double exp;
-	while (y <= max_y) {
+	while (1) {
 		struct BudgetTokens *bt = tokenize_budget_byte_offset(nodes[i]->catg_fp);
 		exp = get_expenditures_per_category(bt);
 		if (nodes[i]->next == NULL) {
