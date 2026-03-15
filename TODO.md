@@ -77,6 +77,7 @@
     - [ ] Refactor any function that uses seek_n_fields with an integer literal
             to use a header parsing function to determine field location.
     - [X] Add csv header verification on program start.
+    - [ ] Move tui sidebar function to their own file
 
 #### Main Feature Set
     - [X] Create a transaction
