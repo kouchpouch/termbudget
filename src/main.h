@@ -85,4 +85,6 @@ extern void calculate_balance(struct Balances *pb, Vec *pbo);
 
 extern struct Plannedvals *get_total_planned(CategoryNode **nodes);
 
+extern double get_left_to_budget(CategoryNode **nodes);
+
 #endif
