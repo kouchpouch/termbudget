@@ -15,7 +15,7 @@
 #ifndef CATEGORIES_H
 #define CATEGORIES_H
 
-#include "main.h"
+#include "vector.h"
 
 /*
  * CategoryNode is to be used as a doubly linked list which includes members
