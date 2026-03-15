@@ -16,6 +16,8 @@
 #define MAIN_H
 
 #include <stddef.h>
+#include "vector.h"
+#include "categories.h"
 
 #define REALLOC_INCR 64
 #define INDEX_ALLOC 1024
@@ -37,12 +39,6 @@
 #define MIN_LEN_YEAR 4
 #define MIN_INPUT_CHAR 2
 #define INPUT_MSG_Y_OFFSET 2
-
-typedef struct {
-	size_t capacity;
-	size_t size;
-	long data[];
-} Vec;
 
 struct Categories {
 	size_t capacity;
@@ -75,7 +71,18 @@ struct Plannedvals {
 	double exp;
 };
 
+struct Balances {
+	double income;
+	double expense;
+};
+
 /* Exits the program with "exit(1)" and prints the error message. */
 extern void memory_allocate_fail(void);
+
+/* Sets the values of struct members 'pb' using records in RECORD_DIR
+ * at file positions of 'pbo' */
+extern void calculate_balance(struct Balances *pb, Vec *pbo);
+
+extern struct Plannedvals *get_total_planned(CategoryNode **nodes);
 
 #endif
