@@ -147,7 +147,6 @@ static int print_body_graphs_and_values(double inc, double exp, int tt, WINDOW *
 
 void init_sidebar_body(WINDOW *wptr, CategoryNode **nodes) {
 	draw_body_border(wptr);
-	int max_y = getmaxy(wptr);
 	int i = 0;
 	int y = 1;
 	int x = 1;
