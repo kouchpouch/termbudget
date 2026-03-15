@@ -20,7 +20,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <stdlib.h>
-#include "main.h"
+#include "vector.h"
 
 #define CSV_FIELDS 7
 
@@ -103,6 +103,9 @@ extern void free_budget_tokens(struct BudgetTokens *pbt);
  * record there must either contain records or categories. Month parameter
  * is optional, call function with the month paramater <= 0*/
 extern bool month_or_year_exists(int m, int y);
+
+/* Returns all income records subtracted by expense records */
+extern double get_expenditures_per_category(struct BudgetTokens *bt);
 
 /* Uses get_records_by_any with all parameters except year as NULL
  * or -1, omitting the search for other fields */
