@@ -1,7 +1,7 @@
 .PHONY: termbudget
 
 termbudget:
-	gcc -g -Wall -Wpedantic \
+	gcc -g -Wall -Wextra -Wpedantic \
 		src/main.c \
 		src/tui.c \
 		src/tui_input.c \
