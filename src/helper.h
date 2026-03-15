@@ -45,4 +45,5 @@ extern int compare_for_sort(const void *a, const void *b);
 /* Safely casts size_t to and integer. Returns -1 on unsafe cast */
 extern int size_to_int(size_t n);
 
+extern bool int_to_size_safe(int n);
 #endif
