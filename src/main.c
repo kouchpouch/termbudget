@@ -2599,7 +2599,11 @@ int get_total_nodes(CategoryNode **nodes) {
 }
 
 void print_debug_node(WINDOW *wptr, CategoryNode *node) {
-	wprintw(wptr, "Data sz: %lu, Next: %p, Prev: %p, FPI: %lu\n", node->data->size, node->next, node->prev, node->catg_fp);
+	wprintw(wptr, "Data sz: %lu, Next: %p, Prev: %p, FPI: %lu\n", 
+		 node->data->size, 
+		 (void *)node->next, 
+		 (void *)node->prev, 
+		 node->catg_fp);
 }
 
 void debug_category_nodes(WINDOW *wptr, CategoryNode **nodes) {
