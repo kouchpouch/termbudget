@@ -1,25 +1,63 @@
-//#include "tui_sidebar.h"
+/*
+ * This program is free software: you can redistribute it and/or modify 
+ * it under the terms of the GNU General Public License as published by 
+ * the Free Software Foundation, either version 3 of the License, 
+ * or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of 
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU 
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along 
+ * with this program. If not, see <https://www.gnu.org/licenses/>. 
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ncurses.h>
+#include "main.h"
 #include "tui.h"
+#include "tui_sidebar.h"
+#include "parser.h"
+#include "categories.h"
 
-void sidebar_body_border(WINDOW *wptr) {
+#define GRAPH_LENGTH 30
+
+static void draw_body_border(WINDOW *wptr) {
 	wborder(wptr, 0, 0, 0, 0, ACS_LTEE, ACS_RTEE, ACS_BTEE, 0);
 	mvwxcprintw(wptr, 0, "Categories");
 	wrefresh(wptr);
 }
 
-WINDOW *create_sidebar_body(WINDOW *wptr_sidebar, int y, int x) {
-	WINDOW *wptr = newwin(getmaxy(wptr_sidebar) - y, SIDEBAR_COLUMNS + 1, y, x); 
+static void write_parent_title(WINDOW *wptr) {
+	mvwxcprintw(wptr, 0, "Summary");
+	wrefresh(wptr);
+}
+
+WINDOW *create_sidebar_parent(WINDOW *wptr_parent, int std_y, int std_x) {
+	int parent_x = getmaxx(wptr_parent);
+	WINDOW *wptr = newwin(std_y - 1, std_x - parent_x + 1, 0, parent_x - 1);
 	if (wptr == NULL) {
 		window_creation_fail();
 	}
+
 	return wptr;
 }
 
-bool verify_sidebar_strlen(char *str, WINDOW *wptr) {
+WINDOW *create_sidebar_body(WINDOW *wptr_parent, WINDOW *wptr_sidebar_parent) {
+	// This really should come from the return value of print_parent_header
+	int head_y = 5;
+	WINDOW *wptr = newwin(getmaxy(wptr_sidebar_parent) - head_y, SIDEBAR_COLUMNS + 1, head_y, getmaxx(wptr_parent) - 1); 
+	if (wptr == NULL) {
+		window_creation_fail();
+	}
+
+	return wptr;
+}
+
+static bool verify_sidebar_strlen(char *str, WINDOW *wptr) {
 	if (strlen(str) > getmaxx(wptr) - BOX_OFFSET) {
 		return false;
 	} else {
@@ -28,7 +66,7 @@ bool verify_sidebar_strlen(char *str, WINDOW *wptr) {
 }
 
 /* Prints the string 'str' and returns the number of rows printed to */
-int print_sidebar_category_string(char *str, WINDOW *wptr, int y, int x, int i) {
+static int print_body_categories(char *str, WINDOW *wptr, int y, int x, int i) {
 	wattron(wptr, COLOR_PAIR(category_color(i)));
 	if (!verify_sidebar_strlen(str, wptr)) {
 		mvwprintw(wptr, y, x, "%.*s%s", getmaxx(wptr) - (BOX_OFFSET + 2), str, "..");
@@ -39,9 +77,9 @@ int print_sidebar_category_string(char *str, WINDOW *wptr, int y, int x, int i) 
 	return 1;
 }
 
-int print_sidebar_category_values(double inc, double exp, int tt, WINDOW *wptr, int y, int i) {
-	char graph[30];
-	for (int i = 0; i < 30; i++) {
+static int print_body_graphs_and_values(double inc, double exp, int tt, WINDOW *wptr, int y, int i) {
+	char graph[GRAPH_LENGTH];
+	for (int i = 0; i < GRAPH_LENGTH; i++) {
 		graph[i] = ' ';
 	}
 	graph[sizeof(graph) - 1] = '\0';
@@ -93,40 +131,34 @@ int print_sidebar_category_values(double inc, double exp, int tt, WINDOW *wptr, 
 }
 
 void init_sidebar_body(WINDOW *wptr, CategoryNode **nodes) {
-	sidebar_body_border(wptr);
+	draw_body_border(wptr);
+	int max_y = getmaxy(wptr);
 	int i = 0;
 	int y = 1;
 	int x = 1;
 	double exp;
-	while (1) {
+	while (y <= max_y) {
 		struct BudgetTokens *bt = tokenize_budget_byte_offset(nodes[i]->catg_fp);
 		exp = get_expenditures_per_category(bt);
 		if (nodes[i]->next == NULL) {
-			y += print_sidebar_category_string(bt->catg, wptr, y, x, i);
-			y += print_sidebar_category_values(bt->amount, exp, bt->transtype, wptr, y, i);
+			y += print_body_categories(bt->catg, wptr, y, x, i);
+			y += print_body_graphs_and_values(bt->amount, exp, bt->transtype, wptr, y, i);
 			free_budget_tokens(bt);
 			bt = NULL;
 			break;
 		} else {
-			y += print_sidebar_category_string(bt->catg, wptr, y, x, i);
-			y += print_sidebar_category_values(bt->amount, exp, bt->transtype, wptr, y, i);
+			y += print_body_categories(bt->catg, wptr, y, x, i);
+			y += print_body_graphs_and_values(bt->amount, exp, bt->transtype, wptr, y, i);
 			free_budget_tokens(bt);
 			bt = NULL;
 		}
 		i++;
 	}
 
+	wrefresh(wptr);
 }
 
-double get_left_to_budget(CategoryNode **nodes) {
-	struct Plannedvals *pv = get_total_planned(nodes);
-	double ret = pv->inc - pv->exp;
-	free(pv);
-	pv = NULL;
-	return ret;
-}
-
-int nc_print_sidebar_head(WINDOW *wptr, Vec *psc, double leftover) {
+static int print_parent_header(WINDOW *wptr, Vec *psc, double leftover) {
 	int x = 1;
 	int y = 1;
 	int max_x = getmaxx(wptr);
@@ -156,4 +188,10 @@ int nc_print_sidebar_head(WINDOW *wptr, Vec *psc, double leftover) {
 
 	wrefresh(wptr);
 	return y;
+}
+
+void init_sidebar_parent(WINDOW *wptr, Vec *psc, double leftover) {
+	box(wptr, 0, 0);
+	write_parent_title(wptr);
+	print_parent_header(wptr, psc, leftover);
 }
