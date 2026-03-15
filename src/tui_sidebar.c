@@ -17,6 +17,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ncurses.h>
+#include <limits.h>
 #include "main.h"
 #include "tui.h"
 #include "tui_sidebar.h"
@@ -58,7 +59,7 @@ WINDOW *create_sidebar_body(WINDOW *wptr_parent, WINDOW *wptr_sidebar_parent) {
 }
 
 static bool verify_sidebar_strlen(char *str, WINDOW *wptr) {
-	if (strlen(str) > getmaxx(wptr) - BOX_OFFSET) {
+	if ((int)strnlen(str, INT_MAX) > getmaxx(wptr) - BOX_OFFSET) {
 		return false;
 	} else {
 		return true;
@@ -90,12 +91,12 @@ static int print_body_graphs_and_values(double inc, double exp, int tt, WINDOW *
 		remaining = inc - exp;
 	}
 
-	int graph_len = (sizeof(graph) - 1) * (1 - (remaining / inc));
-	if (graph_len > sizeof(graph) - 1) {
-		graph_len = sizeof(graph) - 1;
+	int graph_len = (GRAPH_LENGTH - 1) * (1 - (remaining / inc));
+	if (graph_len > GRAPH_LENGTH - 1) {
+		graph_len = GRAPH_LENGTH - 1;
 	}
 	int fill_graph;
-	int graph_x_begin = ((getmaxx(wptr) - sizeof(graph)) / 2);
+	int graph_x_begin = (getmaxx(wptr) - GRAPH_LENGTH) / 2;
 	int remain_x_begin = (getmaxx(wptr) - graph_x_begin - strlen(" Remaining") - finlen(remaining) - BOX_OFFSET - 4);
 	int planned_x_begin = (getmaxx(wptr) - graph_x_begin - strlen(" Planned") - finlen(inc) - BOX_OFFSET - 4);
 	int tracked_x_begin = BOX_OFFSET + 6;
