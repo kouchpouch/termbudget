@@ -121,3 +121,9 @@ int size_to_int(size_t n) {
 		return -1;
 	}
 }
+
+bool int_to_size_safe(int n) {
+	bool ret;
+	n >= 0 ? (ret = true) : (ret = false);
+	return ret;
+}
