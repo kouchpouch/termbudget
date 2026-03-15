@@ -37,6 +37,14 @@ static void write_parent_title(WINDOW *wptr) {
 	wrefresh(wptr);
 }
 
+static bool check_y_fit(WINDOW *wptr, int y) {
+	if (y >= getmaxy(wptr) - 1) {
+		return false;
+	} else {
+		return true;
+	}
+}
+
 WINDOW *create_sidebar_parent(WINDOW *wptr_parent, int std_y, int std_x) {
 	int parent_x = getmaxx(wptr_parent);
 	WINDOW *wptr = newwin(std_y - 1, std_x - parent_x + 1, 0, parent_x - 1);
@@ -68,6 +76,9 @@ static bool verify_sidebar_strlen(char *str, WINDOW *wptr) {
 
 /* Prints the string 'str' and returns the number of rows printed to */
 static int print_body_categories(char *str, WINDOW *wptr, int y, int x, int i) {
+	if (!check_y_fit(wptr, y)) {
+		return 0;
+	}
 	wattron(wptr, COLOR_PAIR(category_color(i)));
 	if (!verify_sidebar_strlen(str, wptr)) {
 		mvwprintw(wptr, y, x, "%.*s%s", getmaxx(wptr) - (BOX_OFFSET + 2), str, "..");
@@ -79,6 +90,9 @@ static int print_body_categories(char *str, WINDOW *wptr, int y, int x, int i) {
 }
 
 static int print_body_graphs_and_values(double inc, double exp, int tt, WINDOW *wptr, int y, int i) {
+	if (!check_y_fit(wptr, y)) {
+		return 0;
+	}
 	char graph[GRAPH_LENGTH];
 	for (int i = 0; i < GRAPH_LENGTH; i++) {
 		graph[i] = ' ';
@@ -122,6 +136,9 @@ static int print_body_graphs_and_values(double inc, double exp, int tt, WINDOW *
 		}
 	}
 	y++;
+	if (!check_y_fit(wptr, y)) {
+		return 1;
+	}
 
 	wattron(wptr, COLOR_PAIR(category_color(i)));
 	mvwprintw(wptr, y, graph_x_begin, "[%s]", graph);
@@ -133,6 +150,9 @@ static int print_body_graphs_and_values(double inc, double exp, int tt, WINDOW *
 	}
 	wattroff(wptr, COLOR_PAIR(category_color(i)));
 	y++;
+	if (!check_y_fit(wptr, y)) {
+		return 2;
+	}
 
 	mvwaddch(wptr, y, BOX_OFFSET + 4, ACS_LLCORNER);
 	mvwaddch(wptr, y, BOX_OFFSET + 5, ACS_HLINE);
@@ -151,17 +171,25 @@ void init_sidebar_body(WINDOW *wptr, CategoryNode **nodes) {
 	int y = 1;
 	int x = 1;
 	double exp;
-	while (1) {
+	while (y < getmaxy(wptr) - 1) {
 		struct BudgetTokens *bt = tokenize_budget_byte_offset(nodes[i]->catg_fp);
 		exp = get_expenditures_per_category(bt);
 		if (nodes[i]->next == NULL) {
 			y += print_body_categories(bt->catg, wptr, y, x, i);
+			if (!check_y_fit(wptr, y)) {
+				free_budget_tokens(bt);
+				break;
+			}
 			y += print_body_graphs_and_values(bt->amount, exp, bt->transtype, wptr, y, i);
 			free_budget_tokens(bt);
 			bt = NULL;
 			break;
 		} else {
 			y += print_body_categories(bt->catg, wptr, y, x, i);
+			if (!check_y_fit(wptr, y)) {
+				free_budget_tokens(bt);
+				break;
+			}
 			y += print_body_graphs_and_values(bt->amount, exp, bt->transtype, wptr, y, i);
 			free_budget_tokens(bt);
 			bt = NULL;
