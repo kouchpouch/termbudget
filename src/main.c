@@ -2710,6 +2710,10 @@ void init_scroll_cursor(struct ScrollCursor *sc, CategoryNode **nodes)
 
 struct Plannedvals *get_total_planned(CategoryNode **nodes) {
 	struct Plannedvals *pv = malloc(sizeof(*pv));
+	if (pv == NULL) {
+		memory_allocate_fail();
+	}
+
 	pv->exp = 0.0;
 	pv->inc = 0.0;
 
@@ -3365,6 +3369,7 @@ void nc_read_setup(int sel_year, int sel_month, int sort) {
 	} else {
 		psc = sort_by_category(fptr, pidx, plines, dates->year, dates->month);
 	}
+
 	nodes = create_category_nodes(dates->month, dates->year);
 
 	if (sidebar_exists) {
