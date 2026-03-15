@@ -2164,14 +2164,14 @@ double get_expenditures_per_category(struct BudgetTokens *bt) {
 		total += get_record_amount(pi->data[i]);
 	}
 	for (size_t i = 0; i < pe->size; i++) {
-		total -= get_record_amount(pe->data[i]);
+		total += get_record_amount(pe->data[i]);
 	}
 	free(pe);
 	free(pi);
 	return total;
 }
 
-void print_catg_balances(WINDOW *wptr, int tt, double amt, double exp, int width) {
+void print_catg_balances(WINDOW *wptr, int tt, double planned, double exp, int width) {
 	// Safe cast, we know these strings aren't greater than INT_MAX
 	char *full_inc_string = "Planned: $, Received: $";
 	char *full_exp_string = "Planned: $, Remaining: $";
@@ -2185,21 +2185,30 @@ void print_catg_balances(WINDOW *wptr, int tt, double amt, double exp, int width
 	int short_exp_len = (int)strlen(short_exp_string);
 	int abbreviated_len = (int)strlen(abbreviated);
 
+	double remaining;
+
+	if (exp > 0) {
+		remaining = exp - planned;
+	} else {
+		remaining = planned + exp;
+	}
+
 	if (tt == TT_INCOME) {
-		if (full_inc_len + finlen(amt) + finlen(exp) < width) {
-			wprintw(wptr, "Planned: $%.2f, Received: $%.2f", amt, exp);
-		} else if (short_inc_len + finlen(amt) + finlen(exp) < width) {
-			wprintw(wptr, "Plan: $%.2f, Rcvd: $%.2f", amt, exp);
-		} else if (abbreviated_len + finlen(amt) + finlen(exp) < width) {
-			wprintw(wptr, "P$%.2f, R$%.2f", amt, exp);
+		if (full_inc_len + finlen(planned) + finlen(exp) < width) {
+			wprintw(wptr, "Planned: $%.2f, Received: $%.2f", planned, exp);
+		} else if (short_inc_len + finlen(planned) + finlen(exp) < width) {
+			wprintw(wptr, "Plan: $%.2f, Rcvd: $%.2f", planned, exp);
+		} else if (abbreviated_len + finlen(planned) + finlen(exp) < width) {
+			wprintw(wptr, "P$%.2f, R$%.2f", planned, exp);
 		}
 	} else if (tt == TT_EXPENSE) {
-		if (full_exp_len + finlen(amt) + finlen(amt - exp) < width) {
-			wprintw(wptr, "Planned: $%.2f, Remaining: $%.2f", amt, exp);
-		} else if (short_exp_len + finlen(amt) + finlen(amt - exp) < width) {
-			wprintw(wptr, "Plan: $%.2f, Rem: $%.2f", amt, amt - exp);
-		} else if (abbreviated_len + finlen(amt) + finlen(amt - exp) < width) {
-			wprintw(wptr, "P$%.2f, R$%.2f", amt, amt - exp);
+		if (full_exp_len + finlen(planned) + finlen(remaining) < width) {
+			//wprintw(wptr, "Plan: $%.2f, Rem: $%.2f, Exp: $%.2f", planned, remaining, exp);
+			wprintw(wptr, "Planned: $%.2f, Remaining: $%.2f", planned, remaining);
+		} else if (short_exp_len + finlen(planned) + finlen(remaining) < width) {
+			wprintw(wptr, "Plan: $%.2f, Rem: $%.2f", planned, remaining);
+		} else if (abbreviated_len + finlen(planned) + finlen(remaining) < width) {
+			wprintw(wptr, "P$%.2f, R$%.2f", planned, remaining);
 		}
 	}
 }
