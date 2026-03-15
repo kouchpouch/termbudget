@@ -21,6 +21,7 @@
 #include <ctype.h>
 #include <ncurses.h>
 #include <limits.h>
+#include "main.h"
 #include "get_date.h"
 #include "fileintegrity.h"
 #include "filemanagement.h"
@@ -29,8 +30,8 @@
 #include "tui.h"
 #include "tui_input.h"
 #include "tui_input_menu.h"
+#include "vector.h"
 #include "parser.h"
-#include "main.h"
 #include "categories.h"
 
 bool debug;
@@ -60,11 +61,6 @@ struct SelRecord {
 	unsigned int flag;
 	long index;
 	long opt; // Optional flag
-};
-
-struct Balances {
-	double income;
-	double expense;
 };
 
 void free_categories(struct Categories *pc);
@@ -1760,10 +1756,8 @@ void legacy_read_csv(void) {
 	double income = 0;
 	double expense = 0;
 	int linenum = 0;
-	int i = 0;
 	char linebuff[LINE_BUFFER] = {0};
 	FILE *fptr = open_record_csv("r");
-	int *yearsarr;
 	bool month_record_exists = false;
 	bool year_record_exists = false;
 
@@ -2216,12 +2210,6 @@ void nc_print_category_hr(WINDOW *wptr, struct ColWidth *cw,
 	int x = 0;
 	int print_offset = 1;
 	double e = get_expenditures_per_category(bt);
-	double remaining = 0;
-//	if (e <= 0) {
-//		remaining = bt->amount + e;
-//	} else {
-//		remaining = bt->amount - e;
-//	}
 	wattron(wptr, A_REVERSE);
 
 	/* Move cursor past the date columns */
@@ -3477,7 +3465,6 @@ void nc_read_setup(int sel_year, int sel_month, int sort) {
 	Vec *pidx = index_csv(fptr);
 	Vec *plines;
 	Vec *psc;
-//	struct Plannedvals *pv;
 	size_t n_records;
 	int sidebar_head_y;
 	char *ret;
