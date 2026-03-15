@@ -17,6 +17,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include "tui.h"
+#include "tui_sidebar.h"
 
 enum FooterAttr {
 	ON,
@@ -198,12 +199,13 @@ struct ReadWins *create_read_windows(void) {
 	getmaxyx(wins->parent, parent_y, parent_x);
 
 	if (width) {
-		wins->sidebar = newwin(y - 1, x - parent_x + 1, 0, parent_x - 1);
-		if (wins->sidebar == NULL) {
-			window_creation_fail();
-		}
-		box(wins->sidebar, 0, 0);
-		wrefresh(wins->sidebar);
+		wins->sidebar = create_sidebar_parent(wins->parent, y, x);
+//		wins->sidebar = newwin(y - 1, x - parent_x + 1, 0, parent_x - 1);
+//		if (wins->sidebar == NULL) {
+//			window_creation_fail();
+//		}
+//		box(wins->sidebar, 0, 0);
+//		wrefresh(wins->sidebar);
 	} else {
 		wins->sidebar = NULL;
 		wins->sidebar_body = NULL;
