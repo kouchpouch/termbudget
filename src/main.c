@@ -829,10 +829,10 @@ int verify_categories_exist_in_budget(void) {
 		return 0;
 	}
 
-	for (int i = 0; i < years->size; i++) {
+	for (size_t i = 0; i < years->size; i++) {
 		rewind(rfptr);
 		Vec *months = get_months_with_data(rfptr, years->data[i], 1);
-		for (int j = 0; j < months->size; j++) {
+		for (size_t j = 0; j < months->size; j++) {
 			prc = list_categories(months->data[j], years->data[i]);
 			pbc = get_budget_catg_by_date(months->data[j], years->data[i]);
 			corrected += cmp_catg_and_fix(prc, pbc, months->data[j], years->data[i]);
@@ -2180,17 +2180,25 @@ double get_expenditures_per_category(struct BudgetTokens *bt) {
 }
 
 void print_catg_balances(WINDOW *wptr, int tt, double amt, double exp, int width) {
-	int full_inc_len = strlen("Planned: $, Received: $");
-	int full_exp_len = strlen("Planned: $, Remaining: $");
-	int short_exp_len = strlen("Plan: $, Rem: $");
-	int short_inc_len = strlen("Plan: $, Rcvd: $");
+	// Safe cast, we know these strings aren't greater than INT_MAX
+	char *full_inc_string = "Planned: $, Received: $";
+	char *full_exp_string = "Planned: $, Remaining: $";
+	char *short_inc_string = "Plan: $, Rcvd: $";
+	char *short_exp_string = "Plan: $, Rem: $";
+	char *abbreviated = "P$, R$";
+
+	int full_inc_len = (int)strlen(full_inc_string);
+	int full_exp_len = (int)strlen(full_exp_string);
+	int short_inc_len = (int)strlen(short_inc_string);
+	int short_exp_len = (int)strlen(short_exp_string);
+	int abbreviated_len = (int)strlen(abbreviated);
 
 	if (tt == TT_INCOME) {
 		if (full_inc_len + finlen(amt) + finlen(exp) < width) {
 			wprintw(wptr, "Planned: $%.2f, Received: $%.2f", amt, exp);
 		} else if (short_inc_len + finlen(amt) + finlen(exp) < width) {
 			wprintw(wptr, "Plan: $%.2f, Rcvd: $%.2f", amt, exp);
-		} else if (strlen("P$, R$") + finlen(amt) + finlen(exp) < width) {
+		} else if (abbreviated_len + finlen(amt) + finlen(exp) < width) {
 			wprintw(wptr, "P$%.2f, R$%.2f", amt, exp);
 		}
 	} else if (tt == TT_EXPENSE) {
@@ -2198,7 +2206,7 @@ void print_catg_balances(WINDOW *wptr, int tt, double amt, double exp, int width
 			wprintw(wptr, "Planned: $%.2f, Remaining: $%.2f", amt, exp);
 		} else if (short_exp_len + finlen(amt) + finlen(amt - exp) < width) {
 			wprintw(wptr, "Plan: $%.2f, Rem: $%.2f", amt, amt - exp);
-		} else if (strlen("$P, R$") + finlen(amt) + finlen(amt - exp) < width) {
+		} else if (abbreviated_len + finlen(amt) + finlen(amt - exp) < width) {
 			wprintw(wptr, "P$%.2f, R$%.2f", amt, amt - exp);
 		}
 	}
