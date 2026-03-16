@@ -44,6 +44,13 @@ enum SortBy {
 	SORT_CATG = 1
 } sortby;
 
+enum fields {
+	EDIT_AMNT = 0,
+	EDIT_TYPE,
+	ZERO_AMNT,
+	DEL_CATG
+};
+
 const char *abbr_months[] = {
 	"JAN", 
 	"FEB", 
@@ -443,17 +450,19 @@ void print_record_hr(struct LineData *ld) {
 }
 
 int nc_select_category_field_to_edit(void) {
-	struct MenuParams *mp = malloc(sizeof(*mp) + (sizeof(char *) * 3));
+	size_t n_options = 4;
+	struct MenuParams *mp = malloc(sizeof(*mp) + (sizeof(char *) * n_options));
 
 	if (mp == NULL) {
 		memory_allocate_fail();
 	}
 
-	mp->items = 3;
+	mp->items = n_options;
 	mp->title = "Editing Category";
-	mp->strings[0] = "Edit Amount";
-	mp->strings[1] = "Edit Type";
-	mp->strings[2] = "Delete";
+	mp->strings[EDIT_AMNT] = "Edit Amount";
+	mp->strings[EDIT_TYPE] = "Edit Type";
+	mp->strings[ZERO_AMNT] = "Zero Out";
+	mp->strings[DEL_CATG] = "Delete";
 
 	int retval = nc_input_menu(mp);
 
@@ -503,7 +512,8 @@ void nc_print_category_member_warning(void) {
 
 /* Allows the user to change the type or value at file position b. */
 void nc_edit_category(long b, long nmembers) {
-	int select = nc_select_category_field_to_edit();
+	double tmp = 0;
+	enum fields select = nc_select_category_field_to_edit();
 	if (select < 0) {
 		return;
 	}
@@ -513,7 +523,7 @@ void nc_edit_category(long b, long nmembers) {
 	}
 
 	switch (select) {
-	case 0:
+	case EDIT_AMNT:
 		bt->amount = nc_input_budget_amount();
 		if (bt->amount < 0) {
 			free_budget_tokens(bt);
@@ -525,14 +535,22 @@ void nc_edit_category(long b, long nmembers) {
 			return;
 		}
 		break;
-	case 1:
+	case EDIT_TYPE:
 		bt->transtype = nc_input_category_type();
 		if (bt->transtype < 0) {
 			free_budget_tokens(bt);
 			return;
 		}
 		break;
-	case 2:
+	case ZERO_AMNT:
+		tmp = get_expenditures_per_category(bt);
+		if (bt->transtype == TT_INCOME) {
+			bt->amount = tmp;
+		} else {
+			bt->amount = -(tmp);
+		}
+		break;
+	case DEL_CATG:
 		if (nmembers > 0) {
 			nc_print_category_member_warning();
 			free_budget_tokens(bt);
@@ -552,7 +570,7 @@ void nc_edit_category(long b, long nmembers) {
 	char *str;
 	unsigned int linenum = 0;
 
-	if (select == 0 || select == 1) { // EDIT AMOUNT
+	if (select != DEL_CATG) { // EDIT AMOUNT
 		do {
 			str = fgets(linebuff, sizeof(linebuff), fptr);
 			linenum++;	
@@ -571,7 +589,7 @@ void nc_edit_category(long b, long nmembers) {
 			}
 		} while (str != NULL);
 
-	} else if (select == 2) { // DELETE
+	} else { // DELETE
 		do {
 			str = fgets(linebuff, sizeof(linebuff), fptr);
 			linenum++;	
