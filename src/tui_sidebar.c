@@ -114,6 +114,10 @@ static int print_body_graphs_and_values(double inc, double exp, int tt, WINDOW *
 		graph_len = GRAPH_LENGTH - 1;
 	}
 
+	if (graph_len < 0) {
+		graph_len = 0;
+	}
+
 	int fill_graph;
 	int graph_x_begin = (getmaxx(wptr) - GRAPH_LENGTH) / 2;
 	int remain_x_begin = (getmaxx(wptr) - graph_x_begin - strlen(" Remaining") - finlen(remaining) - BOX_OFFSET - 4);
