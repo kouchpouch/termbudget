@@ -78,7 +78,7 @@
             to use a header parsing function to determine field location.
     - [X] Add csv header verification on program start.
     - [X] Move tui sidebar function to their own file
-    - [ ] Add an easy way to balance a category to match the planned value to
+    - [X] Add an easy way to balance a category to match the planned value to
             the record's total amount.
     - [ ] When validating the budget csv against the data csv to create
             categories that do not exist, the function should check if only
