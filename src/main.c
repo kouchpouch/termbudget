@@ -512,7 +512,7 @@ void nc_print_category_member_warning(void) {
 
 /* Allows the user to change the type or value at file position b. */
 void nc_edit_category(long b, long nmembers) {
-	double tmp = 0;
+	double tmp = 0.0;
 	enum fields select = nc_select_category_field_to_edit();
 	if (select < 0) {
 		return;
@@ -525,7 +525,7 @@ void nc_edit_category(long b, long nmembers) {
 	switch (select) {
 	case EDIT_AMNT:
 		bt->amount = nc_input_budget_amount();
-		if (bt->amount < 0) {
+		if (bt->amount < 0.0) {
 			free_budget_tokens(bt);
 			return;
 		}
@@ -537,7 +537,7 @@ void nc_edit_category(long b, long nmembers) {
 		break;
 	case EDIT_TYPE:
 		bt->transtype = nc_input_category_type();
-		if (bt->transtype < 0) {
+		if (bt->transtype < 0.0) {
 			free_budget_tokens(bt);
 			return;
 		}
@@ -545,8 +545,14 @@ void nc_edit_category(long b, long nmembers) {
 	case ZERO_AMNT:
 		tmp = get_expenditures_per_category(bt);
 		if (bt->transtype == TT_INCOME) {
+			if (tmp < 0.0) {
+				tmp = 0.0;
+			}
 			bt->amount = tmp;
 		} else {
+			if (-(tmp) < 0.0) {
+				tmp = -0.0;
+			}
 			bt->amount = -(tmp);
 		}
 		break;
