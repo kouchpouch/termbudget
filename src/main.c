@@ -12,6 +12,7 @@
  * You should have received a copy of the GNU General Public License along 
  * with this program. If not, see <https://www.gnu.org/licenses/>. 
  */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -797,7 +798,7 @@ int cmp_catg_and_fix(struct Categories *prc, struct Categories *pbc,
 		if (!cat_exists) {
 			add_budget_category(prc->categories[i], m, y, 0, 0.0);
 			corrected++;
-		};
+		}
 	}
 	return corrected;
 }
@@ -814,7 +815,6 @@ int cmp_catg_and_fix(struct Categories *prc, struct Categories *pbc,
  * Returns a 0 or positive value of records that were corrected successfully.
  * Returns -1 on failure.
  */
-
 int verify_categories_exist_in_budget(void) {
 	FILE *rfptr = open_record_csv("r");
 	int corrected = 0;
@@ -2838,10 +2838,9 @@ void nc_read_budget_loop(struct ReadWins *wins, FILE *rfptr, FILE *bfptr,
 	struct ScrollCursor sc_, *sc = &sc_;
 	char linebuff[LINE_BUFFER];
 	int tmp_idx;
+	int c = 0;
 
 	init_scroll_cursor(sc, nodes);
-
-	int c = 0;
 	calculate_columns(cw, getmaxx(wins->data) + BOX_OFFSET);
 	if (wins->sidebar_parent == NULL) {
 		nc_print_balances_text(wins->parent, psc);
@@ -2855,6 +2854,7 @@ void nc_read_budget_loop(struct ReadWins *wins, FILE *rfptr, FILE *bfptr,
 			nc_print_debug_line(wins->parent, sc->catg_node, sc->catg_data);
 		}
 		c = wgetch(wins->data);
+
 		switch(c) {
 		case('j'):
 		case(KEY_DOWN):
@@ -3011,8 +3011,8 @@ void nc_read_loop(struct ReadWins *wins, FILE *fptr, struct SelRecord *sr, Vec *
 {
 	struct ColWidth cw_, *cw = &cw_;
 	struct ScrollCursorSimple sc_, *sc = &sc_;
-
 	char linebuff[LINE_BUFFER];
+	int c = 0;
 
 	init_scroll_cursor_simple(sc);
 	calculate_columns(cw, getmaxx(wins->data) + BOX_OFFSET);
@@ -3022,7 +3022,6 @@ void nc_read_loop(struct ReadWins *wins, FILE *fptr, struct SelRecord *sr, Vec *
 	nc_print_read_footer(stdscr);
 	nc_print_initial_read_loop(wins->data, sc, cw, fptr, psc);
 
-	int c = 0;
 	while (c != KEY_F(QUIT) && c != '\n' && c != '\r') {
 		wrefresh(wins->data);
 		if (debug) {
@@ -3039,7 +3038,7 @@ void nc_read_loop(struct ReadWins *wins, FILE *fptr, struct SelRecord *sr, Vec *
 			break;
 		case('k'):
 		case(KEY_UP):
-			if (sc->select_idx - 1 >= 0) {
+			if (sc->select_idx > 0) {
 				nc_scroll_prev_read_loop(wins->data, sc, cw, fptr, psc);
 			}
 			break;
@@ -3062,7 +3061,7 @@ void nc_read_loop(struct ReadWins *wins, FILE *fptr, struct SelRecord *sr, Vec *
 			break;
 		case(KEY_PPAGE): // PAGE UP
 			for (int i = 0; i < 10; i++) {
-				if (sc->select_idx - 1 >= 0) {
+				if (sc->select_idx > 0) {
 					nc_scroll_prev_read_loop(wins->data, sc, cw, fptr, psc);
 				}
 			}
@@ -3074,7 +3073,7 @@ void nc_read_loop(struct ReadWins *wins, FILE *fptr, struct SelRecord *sr, Vec *
 			}
 			break;
 		case(KEY_HOME):
-			while (sc->select_idx - 1 >= 0) {
+			while (sc->select_idx > 0) {
 				nc_scroll_prev_read_loop(wins->data, sc, cw, fptr, psc);
 			}
 			break;
