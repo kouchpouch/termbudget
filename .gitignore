@@ -7,3 +7,4 @@ termbudget
 termbudget.*
 *.bak
 vgcore.*
+.DS_Store
