@@ -2237,23 +2237,36 @@ void print_catg_balances(WINDOW *wptr, int tt, double planned, double exp, int w
 	}
 }
 
+/* Prints the value of each struct ColWidth memeber to the window wptr */
+void debug_columns(WINDOW *wptr, struct ColWidth *cw) {
+	wmove(wptr, 5, 10);
+	wprintw(wptr, "DATE: %d CATG: %d, DESC: %d, TRNS: %d, AMNT: %d\n",
+	cw->date, cw->catg,	cw->desc, cw->trns, cw->amnt);
+	wrefresh(wptr);
+	wgetch(wptr);
+}
+
+static bool shorten_string(WINDOW *wptr) {
+	if (getmaxx(wptr) + BOX_OFFSET < MIN_COLUMNS + SHORTEN_THRESH) {
+		return true;
+	} else {
+		return false;
+	}
+}
+
 void nc_print_category_hr(WINDOW *wptr, struct ColWidth *cw,
 						  struct BudgetTokens *bt, int y)
 {
 	char *etc = "..";
 	int x = 0;
-	int print_offset = 1;
+	int print_offset = 0;
 	double e = get_expenditures_per_category(bt);
 	wattron(wptr, A_REVERSE);
 
 	/* Move cursor past the date columns */
 	wmove(wptr, y, x += cw->date - print_offset);
 	if ((int)strlen(bt->catg) > cw->catg - (int)strlen(etc)) {
-		if (getmaxx(wptr) < MIN_COLUMNS) {
-			wprintw(wptr, "%.*s%s", cw->catg - (int)strlen(etc), bt->catg, etc);
-		} else {
-			wprintw(wptr, "%.*s%s", cw->catg - (int)strlen(etc), bt->catg, etc);
-		}
+		wprintw(wptr, "%.*s%s", cw->catg - (int)strlen(etc), bt->catg, etc);
 	} else {
 		wprintw(wptr, "%s", bt->catg);
 	}
@@ -2263,7 +2276,13 @@ void nc_print_category_hr(WINDOW *wptr, struct ColWidth *cw,
 	print_catg_balances(wptr, bt->transtype, bt->amount, e, cw->desc);
 
 	wmove(wptr, y, x += cw->desc - print_offset);
-	wprintw(wptr, "%s", bt->transtype == 0 ? "Expenses" : "Income");
+
+	if (shorten_string(wptr)) {
+		wprintw(wptr, "%s", bt->transtype == 0 ? "-" : "+");
+	} else {
+		wprintw(wptr, "%s", bt->transtype == 0 ? "Expenses" : "Income");
+	}
+
 	wattroff(wptr, A_REVERSE);
 }
 
@@ -2277,8 +2296,9 @@ void nc_print_record_hr(WINDOW *wptr, struct ColWidth *cw,
 {
 	char *etc = ". ";
 	int x = 0;
+	bool shorten = shorten_string(wptr);
 	wmove(wptr, y, x);
-	if (getmaxx(wptr) < MIN_COLUMNS) {
+	if (shorten) {
 		wprintw(wptr, "%d/%d", ld->month, ld->day);
 	} else {
 		wprintw(wptr, "%d/%d/%d", ld->month, ld->day, ld->year);
@@ -2303,7 +2323,7 @@ void nc_print_record_hr(WINDOW *wptr, struct ColWidth *cw,
 	}
 
 	wmove(wptr, y, x += cw->desc);
-	if (getmaxx(wptr) < MIN_COLUMNS) {
+	if (shorten) {
 		wprintw(wptr, "%s", ld->transtype == 0 ? "-" : "+");
 	} else {
 		wprintw(wptr, "%s", ld->transtype == 0 ? "Expense" : "Income");
@@ -2866,6 +2886,11 @@ void nc_read_budget_loop(struct ReadWins *wins, FILE *rfptr, FILE *bfptr,
 
 	init_scroll_cursor(sc, nodes);
 	calculate_columns(cw, getmaxx(wins->data) + BOX_OFFSET);
+
+	if (debug) {
+		debug_columns(wins->parent, cw);
+	}
+
 	if (wins->sidebar_parent == NULL) {
 		nc_print_balances_text(wins->parent, psc);
 	}
@@ -3470,7 +3495,7 @@ err_select_date_fail:
 		nc_print_input_footer(stdscr);
 		if (dates->year < 0 || dates->month < 0) {
 			struct MenuParams *mp = init_add_main_menu();
-			int c = nc_input_menu(mp);
+			c = nc_input_menu(mp);
 			switch (c) {
 			case 0:
 				nc_add_transaction_default();
@@ -3542,7 +3567,7 @@ err_select_date_fail:
 		}
 		break;
 	case(NO_RCRD):
-		int c = getch();
+		c = getch();
 		switch(c) {
 		case(KEY_F(1)):
 		case('a'):
