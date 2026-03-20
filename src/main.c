@@ -3252,7 +3252,7 @@ int nc_read_setup_input_year(WINDOW *wptr) {
 		mvwxcprintw(wptr, getmaxy(wptr) / 2, 
 			  "No records exist, add (F1) to get started");
 		wgetch(wptr);
-		return -1;
+		return -(NO_RCRD);
 	} else if (yr < 0) {
 		return yr;
 	};
@@ -3388,6 +3388,8 @@ void nc_read_setup(int sel_year, int sel_month, int sort) {
 	size_t n_records;
 	char *ret;
 	bool sidebar_exists;
+	// To hold the return value of wgetch()/getch()
+	int c;
 
 	if (debug) {
 		debug_fields();
@@ -3537,6 +3539,24 @@ err_select_date_fail:
 			nc_read_setup(dates->year, dates->month, sort);
 		} else {
 			nc_read_setup_default();
+		}
+		break;
+	case(NO_RCRD):
+		int c = getch();
+		switch(c) {
+		case(KEY_F(1)):
+		case('a'):
+		case('A'):
+			sr->flag = ADD;
+			goto err_select_date_fail;
+			break;
+		case(KEY_F(4)):
+		case('q'):
+		case('Q'):
+			break;
+		default:
+			break;
+
 		}
 		break;
 	default:
@@ -3702,7 +3722,7 @@ int nc_main_menu(WINDOW *wptr) {
 
 	char *ret;
 	int c = 0;
-	while (c != KEY_F(QUIT)) {
+	while (c != KEY_F(QUIT) && c != 'q') {
 		nc_print_welcome(wptr);
 		nc_print_main_menu_footer(wptr);
 		if (debug) {
