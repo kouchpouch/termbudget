@@ -87,7 +87,9 @@ static int print_body_categories(char *str, WINDOW *wptr, int y, int x, int i) {
 	return 1;
 }
 
-static int print_body_graphs_and_values(double inc, double exp, int tt, WINDOW *wptr, int y, int i) {
+static int print_body_graphs_and_values
+(double inc, double exp, int tt, WINDOW *wptr, int y, int i)
+{
 	if (!check_y_fit(wptr, y)) {
 		return 0;
 	}
