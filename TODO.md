@@ -84,6 +84,8 @@
             categories that do not exist, the function should check if only
             income exists in a certain category, and set that transtype to
             income.
+    - [ ] Add indicators that the window is scrollable (that it contains more
+            data than is displayed)
 
 #### Main Feature Set
     - [X] Create a transaction
@@ -171,3 +173,4 @@
         - Either detail window remains within the bounds of the data window
             or have a function to refresh the sidebar.
     - 22 [X] Left to budget value in sidebar is incorrect.
+    - 23 [X] When no transactions exist it is impossible to quit
