@@ -107,9 +107,9 @@ void calculate_columns(struct ColWidth *cw, int max_x) {
 
 	int static_columns = cw->date + cw->trns + cw->amnt;
 
-	if (max_x < MIN_COLUMNS) {
-		cw->date = 6;
-		cw->trns = 5;
+	if (max_x < MIN_COLUMNS + SHORTEN_THRESH) {
+		cw->date = strlen("00/00 ");
+		cw->trns = strlen("+- ");
 		int small_scr = cw->date + cw->trns + cw->amnt;
 		cw->catg = (max_x - small_scr) / 3;
 		cw->desc = (max_x - small_scr) / 3 + cw->catg;
@@ -132,14 +132,25 @@ void print_column_headers(WINDOW *wptr, int x_off) {
 
 	mvwprintw(wptr, y, cur, "DATE");
 
-	if (cw->catg <= CATG_X) {
-		mvwprintw(wptr, y, cur += cw->date, "CAT.");
+	if (cw->catg < CATG_X * 2) {
+		mvwprintw(wptr, y, cur += cw->date, "CATG");
 	} else {
 		mvwprintw(wptr, y, cur += cw->date, "CATEGORY");
 	}
-	mvwprintw(wptr, y, cur += cw->catg, "DESCRIPTION");
-	mvwprintw(wptr, y, cur += cw->desc, "TYPE");
+	if (cw->desc < DESC_X * 2) {
+		mvwprintw(wptr, y, cur += cw->catg, "DESC");
+	} else {
+		mvwprintw(wptr, y, cur += cw->catg, "DESCRIPTION");
+	}
+
+	if (cw->trns < TRNS_X) {
+		mvwprintw(wptr, y, cur += cw->desc, "+-");
+	} else {
+		mvwprintw(wptr, y, cur += cw->desc, "TYPE");
+	}
+
 	mvwprintw(wptr, y, cur += cw->trns, "AMOUNT");
+
 	mvwchgat(wptr, y, x_off, getmaxx(wptr) - x_off * 2, A_REVERSE, 0, NULL);
 
 	wrefresh(wptr);
