@@ -3935,9 +3935,8 @@ int main(int argc, char **argv) {
 		exit(1);
 	}
 
-	assert(record_len_verification());
-	int corrected = verify_categories_exist_in_budget();
-
+	bool verify = true;
+	int corrected = 0;
 	debug = false;
 	cli_mode = false;
 
@@ -3949,10 +3948,19 @@ int main(int argc, char **argv) {
 			if (strcmp(argv[i], "-c") == 0) {
 				cli_mode = true;
 			}
+			if (strcmp(argv[i], "-v") == 0) {
+				verify = false;
+			}
 		}
 	}
 
-	if (debug) {
+
+	if (verify) {
+		assert(record_len_verification());
+		corrected = verify_categories_exist_in_budget();
+	}
+
+	if (debug && verify) {
 		printf("Corrected %d records\n", corrected);
 		printf("Press enter to continue");
 		getc(stdin);
