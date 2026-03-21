@@ -620,16 +620,9 @@ void nc_edit_category(long b, long nmembers) {
 		break;
 	}
 
-	FILE *fptr = open_budget_csv("r");
-	FILE *tmpfptr = open_temp_csv();
-	unsigned int line = boff_to_linenum_budget(b) + 2;
-	char linebuff[LINE_BUFFER * 2];
-	char *str;
-	unsigned int linenum = 0;
-
 	if (select != DEL_CATG) {
 		replace_category(bt, b);
-	} else { // DELETE
+	} else {
 		delete_category(b);
 	}
 
@@ -853,7 +846,6 @@ int cmp_catg_and_fix(struct Categories *prc, struct Categories *pbc,
 int remove_category_orphans(void) {
 	FILE *bfptr = open_budget_csv("r");
 	FILE *rfptr = open_record_csv("r");
-
 
 }
 
