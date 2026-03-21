@@ -510,6 +510,57 @@ void nc_print_category_member_warning(void) {
 	nc_exit_window_key(wptr);
 }
 
+void replace_category(struct BudgetTokens *bt, long b) {
+	FILE *bfptr = open_budget_csv("r");
+	FILE *tmpfptr = open_temp_csv();
+	char *str;
+	char linebuff[LINE_BUFFER];
+	size_t line = boff_to_linenum_budget(b) + 2;
+	size_t linenum = 0;
+
+	while (1) {
+		str = fgets(linebuff, sizeof(linebuff), bfptr);
+		if (str == NULL) {
+			break;
+		}
+		linenum++;	
+		if (linenum != line) {
+			fputs(str, tmpfptr);
+		} else if (linenum == line) {
+			fprintf(tmpfptr, "%d,%d,%s,%d,%.2f\n", 
+				bt->m, 
+				bt->y, 
+				bt->catg, 
+				bt->transtype,
+				bt->amount);
+		}
+	}
+
+	mv_tmp_to_budget_file(tmpfptr, bfptr);
+}
+
+void delete_category(long b) {
+	FILE *bfptr = open_budget_csv("r");
+	FILE *tmpfptr = open_temp_csv();
+	char *str;
+	char linebuff[LINE_BUFFER];
+	size_t line = boff_to_linenum_budget(b) + 2;
+	size_t linenum = 0;
+
+	while (1) {
+		str = fgets(linebuff, sizeof(linebuff), bfptr);
+		if (str == NULL) {
+			break;
+		}
+		linenum++;	
+		if (linenum != line) {
+			fputs(str, tmpfptr);
+		}
+	}
+
+	mv_tmp_to_budget_file(tmpfptr, bfptr);
+}
+
 /* Allows the user to change the type or value at file position b. */
 void nc_edit_category(long b, long nmembers) {
 	double tmp = 0.0;
@@ -576,41 +627,13 @@ void nc_edit_category(long b, long nmembers) {
 	char *str;
 	unsigned int linenum = 0;
 
-	if (select != DEL_CATG) { // EDIT AMOUNT
-		do {
-			str = fgets(linebuff, sizeof(linebuff), fptr);
-			linenum++;	
-			if (str == NULL) {
-				break;
-			}
-			if (linenum != line) {
-				fputs(str, tmpfptr);
-			} else if (linenum == line) {
-				fprintf(tmpfptr, "%d,%d,%s,%d,%.2f\n", 
-					bt->m, 
-					bt->y, 
-					bt->catg, 
-					bt->transtype,
-					bt->amount);
-			}
-		} while (str != NULL);
-
+	if (select != DEL_CATG) {
+		replace_category(bt, b);
 	} else { // DELETE
-		do {
-			str = fgets(linebuff, sizeof(linebuff), fptr);
-			linenum++;	
-			if (str == NULL) {
-				break;
-			}
-			if (linenum != line) {
-				fputs(str, tmpfptr);
-			}
-		} while (str != NULL);
+		delete_category(b);
 	}
 
 	free_budget_tokens(bt);
-
-	mv_tmp_to_budget_file(tmpfptr, fptr);
 }
 
 /*
@@ -825,6 +848,13 @@ int cmp_catg_and_fix(struct Categories *prc, struct Categories *pbc,
 		}
 	}
 	return corrected;
+}
+
+int remove_category_orphans(void) {
+	FILE *bfptr = open_budget_csv("r");
+	FILE *rfptr = open_record_csv("r");
+
+
 }
 
 /*
