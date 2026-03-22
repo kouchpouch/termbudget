@@ -44,6 +44,13 @@ enum SortBy {
 	SORT_CATG = 1
 } sortby;
 
+enum fields {
+	EDIT_AMNT = 0,
+	EDIT_TYPE,
+	ZERO_AMNT,
+	DEL_CATG
+};
+
 const char *abbr_months[] = {
 	"JAN", 
 	"FEB", 
@@ -443,17 +450,19 @@ void print_record_hr(struct LineData *ld) {
 }
 
 int nc_select_category_field_to_edit(void) {
-	struct MenuParams *mp = malloc(sizeof(*mp) + (sizeof(char *) * 3));
+	size_t n_options = 4;
+	struct MenuParams *mp = malloc(sizeof(*mp) + (sizeof(char *) * n_options));
 
 	if (mp == NULL) {
 		memory_allocate_fail();
 	}
 
-	mp->items = 3;
+	mp->items = n_options;
 	mp->title = "Editing Category";
-	mp->strings[0] = "Edit Amount";
-	mp->strings[1] = "Edit Type";
-	mp->strings[2] = "Delete";
+	mp->strings[EDIT_AMNT] = "Edit Amount";
+	mp->strings[EDIT_TYPE] = "Edit Type";
+	mp->strings[ZERO_AMNT] = "Zero Out";
+	mp->strings[DEL_CATG] = "Delete";
 
 	int retval = nc_input_menu(mp);
 
@@ -501,9 +510,61 @@ void nc_print_category_member_warning(void) {
 	nc_exit_window_key(wptr);
 }
 
+void replace_category(struct BudgetTokens *bt, long b) {
+	FILE *bfptr = open_budget_csv("r");
+	FILE *tmpfptr = open_temp_csv();
+	char *str;
+	char linebuff[LINE_BUFFER];
+	size_t line = boff_to_linenum_budget(b) + 2;
+	size_t linenum = 0;
+
+	while (1) {
+		str = fgets(linebuff, sizeof(linebuff), bfptr);
+		if (str == NULL) {
+			break;
+		}
+		linenum++;	
+		if (linenum != line) {
+			fputs(str, tmpfptr);
+		} else if (linenum == line) {
+			fprintf(tmpfptr, "%d,%d,%s,%d,%.2f\n", 
+				bt->m, 
+				bt->y, 
+				bt->catg, 
+				bt->transtype,
+				bt->amount);
+		}
+	}
+
+	mv_tmp_to_budget_file(tmpfptr, bfptr);
+}
+
+void delete_category(long b) {
+	FILE *bfptr = open_budget_csv("r");
+	FILE *tmpfptr = open_temp_csv();
+	char *str;
+	char linebuff[LINE_BUFFER];
+	size_t line = boff_to_linenum_budget(b) + 2;
+	size_t linenum = 0;
+
+	while (1) {
+		str = fgets(linebuff, sizeof(linebuff), bfptr);
+		if (str == NULL) {
+			break;
+		}
+		linenum++;	
+		if (linenum != line) {
+			fputs(str, tmpfptr);
+		}
+	}
+
+	mv_tmp_to_budget_file(tmpfptr, bfptr);
+}
+
 /* Allows the user to change the type or value at file position b. */
 void nc_edit_category(long b, long nmembers) {
-	int select = nc_select_category_field_to_edit();
+	double tmp = 0.0;
+	enum fields select = nc_select_category_field_to_edit();
 	if (select < 0) {
 		return;
 	}
@@ -513,9 +574,9 @@ void nc_edit_category(long b, long nmembers) {
 	}
 
 	switch (select) {
-	case 0:
+	case EDIT_AMNT:
 		bt->amount = nc_input_budget_amount();
-		if (bt->amount < 0) {
+		if (bt->amount < 0.0) {
 			free_budget_tokens(bt);
 			return;
 		}
@@ -525,14 +586,28 @@ void nc_edit_category(long b, long nmembers) {
 			return;
 		}
 		break;
-	case 1:
+	case EDIT_TYPE:
 		bt->transtype = nc_input_category_type();
-		if (bt->transtype < 0) {
+		if (bt->transtype < 0.0) {
 			free_budget_tokens(bt);
 			return;
 		}
 		break;
-	case 2:
+	case ZERO_AMNT:
+		tmp = get_expenditures_per_category(bt);
+		if (bt->transtype == TT_INCOME) {
+			if (tmp < 0.0) {
+				tmp = 0.0;
+			}
+			bt->amount = tmp;
+		} else {
+			if (-(tmp) < 0.0) {
+				tmp = -0.0;
+			}
+			bt->amount = -(tmp);
+		}
+		break;
+	case DEL_CATG:
 		if (nmembers > 0) {
 			nc_print_category_member_warning();
 			free_budget_tokens(bt);
@@ -545,48 +620,13 @@ void nc_edit_category(long b, long nmembers) {
 		break;
 	}
 
-	FILE *fptr = open_budget_csv("r");
-	FILE *tmpfptr = open_temp_csv();
-	unsigned int line = boff_to_linenum_budget(b) + 2;
-	char linebuff[LINE_BUFFER * 2];
-	char *str;
-	unsigned int linenum = 0;
-
-	if (select == 0 || select == 1) { // EDIT AMOUNT
-		do {
-			str = fgets(linebuff, sizeof(linebuff), fptr);
-			linenum++;	
-			if (str == NULL) {
-				break;
-			}
-			if (linenum != line) {
-				fputs(str, tmpfptr);
-			} else if (linenum == line) {
-				fprintf(tmpfptr, "%d,%d,%s,%d,%.2f\n", 
-					bt->m, 
-					bt->y, 
-					bt->catg, 
-					bt->transtype,
-					bt->amount);
-			}
-		} while (str != NULL);
-
-	} else if (select == 2) { // DELETE
-		do {
-			str = fgets(linebuff, sizeof(linebuff), fptr);
-			linenum++;	
-			if (str == NULL) {
-				break;
-			}
-			if (linenum != line) {
-				fputs(str, tmpfptr);
-			}
-		} while (str != NULL);
+	if (select != DEL_CATG) {
+		replace_category(bt, b);
+	} else {
+		delete_category(b);
 	}
 
 	free_budget_tokens(bt);
-
-	mv_tmp_to_budget_file(tmpfptr, fptr);
 }
 
 /*
@@ -801,6 +841,12 @@ int cmp_catg_and_fix(struct Categories *prc, struct Categories *pbc,
 		}
 	}
 	return corrected;
+}
+
+int remove_category_orphans(void) {
+	FILE *bfptr = open_budget_csv("r");
+	FILE *rfptr = open_record_csv("r");
+
 }
 
 /*
@@ -2213,23 +2259,36 @@ void print_catg_balances(WINDOW *wptr, int tt, double planned, double exp, int w
 	}
 }
 
+/* Prints the value of each struct ColWidth memeber to the window wptr */
+void debug_columns(WINDOW *wptr, struct ColWidth *cw) {
+	wmove(wptr, 5, 10);
+	wprintw(wptr, "DATE: %d CATG: %d, DESC: %d, TRNS: %d, AMNT: %d\n",
+	cw->date, cw->catg,	cw->desc, cw->trns, cw->amnt);
+	wrefresh(wptr);
+	wgetch(wptr);
+}
+
+static bool shorten_string(WINDOW *wptr) {
+	if (getmaxx(wptr) + BOX_OFFSET < MIN_COLUMNS + SHORTEN_THRESH) {
+		return true;
+	} else {
+		return false;
+	}
+}
+
 void nc_print_category_hr(WINDOW *wptr, struct ColWidth *cw,
 						  struct BudgetTokens *bt, int y)
 {
 	char *etc = "..";
 	int x = 0;
-	int print_offset = 1;
+	int print_offset = 0;
 	double e = get_expenditures_per_category(bt);
 	wattron(wptr, A_REVERSE);
 
 	/* Move cursor past the date columns */
 	wmove(wptr, y, x += cw->date - print_offset);
 	if ((int)strlen(bt->catg) > cw->catg - (int)strlen(etc)) {
-		if (getmaxx(wptr) < MIN_COLUMNS) {
-			wprintw(wptr, "%.*s%s", cw->catg - (int)strlen(etc), bt->catg, etc);
-		} else {
-			wprintw(wptr, "%.*s%s", cw->catg - (int)strlen(etc), bt->catg, etc);
-		}
+		wprintw(wptr, "%.*s%s", cw->catg - (int)strlen(etc), bt->catg, etc);
 	} else {
 		wprintw(wptr, "%s", bt->catg);
 	}
@@ -2239,7 +2298,13 @@ void nc_print_category_hr(WINDOW *wptr, struct ColWidth *cw,
 	print_catg_balances(wptr, bt->transtype, bt->amount, e, cw->desc);
 
 	wmove(wptr, y, x += cw->desc - print_offset);
-	wprintw(wptr, "%s", bt->transtype == 0 ? "Expenses" : "Income");
+
+	if (shorten_string(wptr)) {
+		wprintw(wptr, "%s", bt->transtype == 0 ? "-" : "+");
+	} else {
+		wprintw(wptr, "%s", bt->transtype == 0 ? "Expenses" : "Income");
+	}
+
 	wattroff(wptr, A_REVERSE);
 }
 
@@ -2253,8 +2318,9 @@ void nc_print_record_hr(WINDOW *wptr, struct ColWidth *cw,
 {
 	char *etc = ". ";
 	int x = 0;
+	bool shorten = shorten_string(wptr);
 	wmove(wptr, y, x);
-	if (getmaxx(wptr) < MIN_COLUMNS) {
+	if (shorten) {
 		wprintw(wptr, "%d/%d", ld->month, ld->day);
 	} else {
 		wprintw(wptr, "%d/%d/%d", ld->month, ld->day, ld->year);
@@ -2279,7 +2345,7 @@ void nc_print_record_hr(WINDOW *wptr, struct ColWidth *cw,
 	}
 
 	wmove(wptr, y, x += cw->desc);
-	if (getmaxx(wptr) < MIN_COLUMNS) {
+	if (shorten) {
 		wprintw(wptr, "%s", ld->transtype == 0 ? "-" : "+");
 	} else {
 		wprintw(wptr, "%s", ld->transtype == 0 ? "Expense" : "Income");
@@ -2842,6 +2908,11 @@ void nc_read_budget_loop(struct ReadWins *wins, FILE *rfptr, FILE *bfptr,
 
 	init_scroll_cursor(sc, nodes);
 	calculate_columns(cw, getmaxx(wins->data) + BOX_OFFSET);
+
+	if (debug) {
+		debug_columns(wins->parent, cw);
+	}
+
 	if (wins->sidebar_parent == NULL) {
 		nc_print_balances_text(wins->parent, psc);
 	}
@@ -3228,7 +3299,7 @@ int nc_read_setup_input_year(WINDOW *wptr) {
 		mvwxcprintw(wptr, getmaxy(wptr) / 2, 
 			  "No records exist, add (F1) to get started");
 		wgetch(wptr);
-		return -1;
+		return -(NO_RCRD);
 	} else if (yr < 0) {
 		return yr;
 	};
@@ -3364,6 +3435,8 @@ void nc_read_setup(int sel_year, int sel_month, int sort) {
 	size_t n_records;
 	char *ret;
 	bool sidebar_exists;
+	// To hold the return value of wgetch()/getch()
+	int c;
 
 	if (debug) {
 		debug_fields();
@@ -3444,7 +3517,7 @@ err_select_date_fail:
 		nc_print_input_footer(stdscr);
 		if (dates->year < 0 || dates->month < 0) {
 			struct MenuParams *mp = init_add_main_menu();
-			int c = nc_input_menu(mp);
+			c = nc_input_menu(mp);
 			switch (c) {
 			case 0:
 				nc_add_transaction_default();
@@ -3513,6 +3586,24 @@ err_select_date_fail:
 			nc_read_setup(dates->year, dates->month, sort);
 		} else {
 			nc_read_setup_default();
+		}
+		break;
+	case(NO_RCRD):
+		c = getch();
+		switch(c) {
+		case(KEY_F(1)):
+		case('a'):
+		case('A'):
+			sr->flag = ADD;
+			goto err_select_date_fail;
+			break;
+		case(KEY_F(4)):
+		case('q'):
+		case('Q'):
+			break;
+		default:
+			break;
+
 		}
 		break;
 	default:
@@ -3678,7 +3769,7 @@ int nc_main_menu(WINDOW *wptr) {
 
 	char *ret;
 	int c = 0;
-	while (c != KEY_F(QUIT)) {
+	while (c != KEY_F(QUIT) && c != 'q') {
 		nc_print_welcome(wptr);
 		nc_print_main_menu_footer(wptr);
 		if (debug) {
@@ -3866,9 +3957,8 @@ int main(int argc, char **argv) {
 		exit(1);
 	}
 
-	assert(record_len_verification());
-	int corrected = verify_categories_exist_in_budget();
-
+	bool verify = true;
+	int corrected = 0;
 	debug = false;
 	cli_mode = false;
 
@@ -3880,10 +3970,19 @@ int main(int argc, char **argv) {
 			if (strcmp(argv[i], "-c") == 0) {
 				cli_mode = true;
 			}
+			if (strcmp(argv[i], "-v") == 0) {
+				verify = false;
+			}
 		}
 	}
 
-	if (debug) {
+
+	if (verify) {
+		assert(record_len_verification());
+		corrected = verify_categories_exist_in_budget();
+	}
+
+	if (debug && verify) {
 		printf("Corrected %d records\n", corrected);
 		printf("Press enter to continue");
 		getc(stdin);
