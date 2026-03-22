@@ -103,7 +103,7 @@ void calculate_columns(struct ColWidth *cw, int max_x) {
 
 	cw->date = DATE_X;
 
-	if (max_x < MIN_TYPE_COLUMNS) {
+	if (max_x < MIN_COLUMNS) {
 		cw->trns = strlen("+-");
 	} else {
 		cw->trns = TRNS_X;
