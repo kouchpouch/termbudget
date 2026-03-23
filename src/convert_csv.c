@@ -55,16 +55,6 @@ static void insert_record(struct LineData *ld) {
 		exit(1);
 	}
 
-	printf("Inserting: %d,%d,%d,%s,%s,%d,%.2f\n",
-			ld->month,
-			ld->day,
-			ld->year,
-			ld->category,
-			ld->desc,
-			ld->transtype,
-			ld->amount
-	);
-
 	unsigned int linenum_insert = sort_converted_csv(ld->month, ld->day, ld->year, convfptr);
 	rewind(convfptr);
 
@@ -140,6 +130,7 @@ static size_t tokenize_and_convert(FILE *fptr) {
 
 size_t convert_chase_csv(char *dir) {
 	printf("FILE: %s\n", dir);
+	printf("CONVERTED: %s\n", CONVERTED_FILE_DIR);
 	FILE *fptr = open_csv(dir);
 	create_csv();
 	size_t count = tokenize_and_convert(fptr);
