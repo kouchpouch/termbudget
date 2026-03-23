@@ -3976,39 +3976,59 @@ int verify_files_exist(void) {
 	return 0;
 }
 
+void print_usage(void) {
+	printf("Usage: termbudget OPTIONS... FILE...\n");
+	printf("FILE only used for csv conversion (experimental)\n\n");
+	printf("\n");
+	printf("OPTIONS:\n");
+	printf("-c\t CLI MODE\n");
+	printf("-d\t DEBUG\n");
+	printf("-v\t NO VERIFY, does not verify csv records formatting.\n");
+	printf("--convert FILE\t Converts FILE to termbudget compatible CSV\n");
+}
+
 int main(int argc, char **argv) {
 	if (verify_files_exist() == -1) {
 		exit(1);
 	}
 
+	char opt[LINE_BUFFER];
 	bool verify = true;
 	int corrected = 0;
 	size_t count;
 	debug = false;
 	cli_mode = false;
 
-	if (argc > 0) {
-		for (int i = 1; i < argc; i++) { // Args start at 1
-			if (strcmp(argv[i], "-d") == 0) {
-				debug = true;
-			}
-
-			if (strcmp(argv[i], "-c") == 0) {
-				cli_mode = true;
-			}
-
-			if (strcmp(argv[i], "-v") == 0) {
-				verify = false;
-			}
-
-			if (strcmp(argv[i], "--convert") == 0) {
-				count = convert_chase_csv(argv[i + 1]);
-				printf("Converted %ld records", count);
-				getc(stdin);
+	if (argc > 1) {
+		strncpy(opt, argv[1], LINE_BUFFER);
+		for (int i = 1; i < strlen(opt); i++) { // Args start at 1
+			if (opt[0] == '-') {
+				switch(opt[i]) {
+				case('d'):
+					debug = true;
+					break;
+				case('c'):
+					cli_mode = true;
+					break;
+				case('v'):
+					verify = false;
+					break;
+				case('-'):
+					if (strcmp(argv[1], "--convert") == 0) {
+						count = convert_chase_csv(argv[i + 1]);
+						printf("Converted %ld records", count);
+						getc(stdin);
+						exit(0);
+					}
+					break;
+				default:
+					print_usage();
+					exit(0);
+					break;
+				}
 			}
 		}
 	}
-
 
 	if (verify) {
 		assert(record_len_verification());
