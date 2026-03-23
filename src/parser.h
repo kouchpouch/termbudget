@@ -14,6 +14,7 @@
  * You should have received a copy of the GNU General Public License along 
  * with this program. If not, see <https://www.gnu.org/licenses/>. 
  */
+
 #ifndef PARSER_H
 #define PARSER_H
 #include <stdio.h>
