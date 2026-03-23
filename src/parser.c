@@ -373,11 +373,12 @@ Vec *get_records_by_any(int month, int day, int year, char *category,
 		if (date && cat && desc && tt && amt) {
 			if (prbc->size >= prbc->capacity) {
 				prbc->capacity += REALLOC_INCR;
-				Vec *tmp = realloc(prbc, sizeof(Vec) + (sizeof(long) * prbc->capacity));
+				Vec *tmp = realloc(prbc, sizeof(*prbc) + (sizeof(long) * prbc->capacity));
 				if (tmp == NULL) {
 					free(prbc);
 					memory_allocate_fail();
 				}
+				prbc = tmp;
 			}
 			prbc->data[prbc->size] = tmpbo;
 			prbc->size++;
