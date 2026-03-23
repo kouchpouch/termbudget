@@ -35,6 +35,7 @@
 #include "vector.h"
 #include "parser.h"
 #include "categories.h"
+#include "convert_csv.h"
 
 bool debug;
 bool cli_mode;
@@ -88,6 +89,8 @@ int mv_tmp_to_record_file(FILE *tempfile, FILE *mainfile);
 int delete_csv_record(int linetodelete);
 Vec *get_matching_line_nums(FILE *fptr, int month, int year);
 char *nc_add_budget_category(int yr, int mo);
+void draw_parent_box_with_sidebar(WINDOW *wptr);
+void draw_scroll_indicator(WINDOW *wptr);
 
 char *user_input(int n) {
 	size_t buffersize = n + 1;
@@ -328,6 +331,10 @@ char *nc_select_category(int month, int year) {
 	for (int i = 0; i < getmaxy(wptr) && i < sz; i++) {
 		mvwxcprintw(wptr, i, pc->categories[i]);
 		displayed++;
+	}
+
+	if (sz > displayed) {
+		draw_scroll_indicator(wptr_parent);
 	}
 
 	wrefresh(wptr);
@@ -2891,6 +2898,14 @@ void nc_print_initial_read_budget_loop(WINDOW *wptr, struct ScrollCursor *sc,
 	wrefresh(wptr);
 }
 
+void draw_scroll_indicator(WINDOW *wptr) {
+	char *etc = "...";
+	int y = getmaxy(wptr) - 1;
+	int x = getmaxx(wptr) - (strlen(etc) + BOX_OFFSET);
+	mvwprintw(wptr, y, x, "%s", etc);
+	wrefresh(wptr);
+}
+
 /*
  * Main loop for the user to interact with when selecting the read menu option.
  * If sorted by anything other than 'Category', nc_read_loop will be used.
@@ -2920,6 +2935,9 @@ void nc_read_budget_loop(struct ReadWins *wins, FILE *rfptr, FILE *bfptr,
 	}
 	nc_print_read_footer(stdscr);
 	nc_print_initial_read_budget_loop(wins->data, sc, nodes, cw, rfptr);
+	if (sc->displayed < sc->total_rows) {
+		draw_scroll_indicator(wins->parent);
+	}
 
 	while (c != KEY_F(QUIT) && c != '\n' && c != '\r') {
 		wrefresh(wins->data);
@@ -3095,6 +3113,9 @@ void nc_read_loop(struct ReadWins *wins, FILE *fptr, struct SelRecord *sr, Vec *
 	}
 	nc_print_read_footer(stdscr);
 	nc_print_initial_read_loop(wins->data, sc, cw, fptr, psc);
+	if (sc->displayed < psc->size) {
+		draw_scroll_indicator(wins->parent);
+	}
 
 	while (c != KEY_F(QUIT) && c != '\n' && c != '\r') {
 		wrefresh(wins->data);
@@ -3962,6 +3983,7 @@ int main(int argc, char **argv) {
 
 	bool verify = true;
 	int corrected = 0;
+	size_t count;
 	debug = false;
 	cli_mode = false;
 
@@ -3970,11 +3992,19 @@ int main(int argc, char **argv) {
 			if (strcmp(argv[i], "-d") == 0) {
 				debug = true;
 			}
+
 			if (strcmp(argv[i], "-c") == 0) {
 				cli_mode = true;
 			}
+
 			if (strcmp(argv[i], "-v") == 0) {
 				verify = false;
+			}
+
+			if (strcmp(argv[i], "--convert") == 0) {
+				count = convert_chase_csv(argv[i + 1]);
+				printf("Converted %ld records", count);
+				getc(stdin);
 			}
 		}
 	}
