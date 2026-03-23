@@ -843,10 +843,12 @@ int cmp_catg_and_fix(struct Categories *prc, struct Categories *pbc,
 	return corrected;
 }
 
+//FIX Implement
 int remove_category_orphans(void) {
 	FILE *bfptr = open_budget_csv("r");
 	FILE *rfptr = open_record_csv("r");
 
+	return 0;
 }
 
 /*
@@ -2947,6 +2949,7 @@ void nc_read_budget_loop(struct ReadWins *wins, FILE *rfptr, FILE *bfptr,
 				char *line = fgets(linebuff, sizeof(linebuff), rfptr);
 				show_detail_subwindow(line);
 				refresh_on_detail_close_uniform(wins->data, wins->parent, sc->displayed);
+				init_sidebar_body(wins->sidebar_body, nodes);
 				tmp_idx = sc->select_idx;
 				while (sc->select_idx - 1 >= 0) {
 					nc_scroll_prev_category(wins->data, nodes, sc, cw, rfptr, bfptr);
