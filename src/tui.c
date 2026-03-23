@@ -100,18 +100,16 @@ int calculate_overview_columns(WINDOW *wptr) {
 }
 
 void calculate_columns(struct ColWidth *cw, int max_x) {
-
-	cw->date = DATE_X;
-
-	if (max_x < MIN_COLUMNS) {
-		cw->trns = strlen("+-");
-	} else {
-		cw->trns = TRNS_X;
-	}
-
 	cw->amnt = AMNT_X;
 
-	int small_scr;
+	if (max_x < MIN_COLUMNS) {
+		cw->trns = strlen("+- ");
+		cw->date = strlen("00/00 ");
+	} else {
+		cw->trns = TRNS_X;
+		cw->date = DATE_X;
+	}
+
 	int static_columns = cw->date + cw->trns + cw->amnt;
 
 	if (max_x < MIN_COLUMNS + SHORTEN_THRESH) {
