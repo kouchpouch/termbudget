@@ -78,6 +78,7 @@
             to use a header parsing function to determine field location.
     - [X] Add csv header verification on program start.
     - [X] Move tui sidebar function to their own file
+    - [ ] Sidebar scrolling
     - [X] Add an easy way to balance a category to match the planned value to
             the record's total amount.
     - [ ] When validating the budget csv against the data csv to create
@@ -169,7 +170,7 @@
     - 20 [X] When editing a transaction and creating a new category the category
                 is not actually created but the record in data.csv is updated
                 correctly.
-    - 21 [ ] Sidebar does not refresh when transaction detail window opens.
+    - 21 [X] Sidebar does not refresh when transaction detail window opens.
         - Either detail window remains within the bounds of the data window
             or have a function to refresh the sidebar.
     - 22 [X] Left to budget value in sidebar is incorrect.
