@@ -122,6 +122,7 @@ unsigned int sort_record_csv(int month, int day, int year) {
 	unsigned int result_line = 1;
 	unsigned int lessdayline = 0;
 	
+	rewind(fptr);
 	/* Read the header */
 	if (seek_beyond_header(fptr) == -1) {
 		perror("Failed to read header");
@@ -136,9 +137,6 @@ unsigned int sort_record_csv(int month, int day, int year) {
 	bool greateryear = false;
 	bool matchingyear = false;
 	bool lesseryear = false;
-	/* lessermonth isn't used, but I'm keeping it here until I prove I don't
-	 * need it */
-//	bool lessermonth = false;
 	bool lesserday = false;
 
 	while ((str = fgets(linebuff, sizeof(linebuff), fptr)) != NULL) {
@@ -162,39 +160,30 @@ unsigned int sort_record_csv(int month, int day, int year) {
 			result_line = line - 1;
 			break;
 		}
-//		if (yeartok > year) {
-//			result_line = line - 1;
-//			break;
-//		}
 
 		if (yeartok == year && monthtok == month && daytok == day) {
 			lesserday = false;
-//			lessermonth = false;
 			result_line = line;
 			break;
 		}
 
 		if (yeartok == year && monthtok == month && daytok > day) {
 			lesserday = false;
-//			lessermonth = false;
 			result_line = line - 1;
 			break;
 		}
 
 		if (yeartok == year && monthtok == month && daytok < day) {
 			lesserday = true;
-//			lessermonth = false;
 			lessdayline = line;
 		}
 		
 		if (yeartok == year && monthtok > month) {
-//			lessermonth = false;
 			result_line = line - 1;
 			break;
 		}
 
 		if (yeartok == year && monthtok < month) {
-//			lessermonth = true;
 			result_line = line;
 		}
 	}
@@ -206,6 +195,86 @@ unsigned int sort_record_csv(int month, int day, int year) {
 	}
 
 	fclose(fptr);
+
+	return result_line;
+}
+
+unsigned int sort_converted_csv(int month, int day, int year, FILE *fptr) {
+	unsigned int line = 1; // Line starts at 1 to skip the header
+	unsigned int result_line = 1;
+	unsigned int lessdayline = 0;
+	
+	rewind(fptr);
+	/* Read the header */
+	if (seek_beyond_header(fptr) == -1) {
+		perror("Failed to read header");
+		fclose(fptr);
+		exit(1);
+	}
+	
+	char linebuff[LINE_BUFFER];
+	char *str;
+
+	int daytok, monthtok, yeartok;
+	bool greateryear = false;
+	bool matchingyear = false;
+	bool lesseryear = false;
+	bool lesserday = false;
+
+	while ((str = fgets(linebuff, sizeof(linebuff), fptr)) != NULL) {
+		line++;
+
+		monthtok = atoi(strsep(&str, ","));
+		daytok = atoi(strsep(&str, ","));
+		yeartok = atoi(strsep(&str, ","));
+
+		if (yeartok < year) {
+			lesseryear = true;
+		} else if (yeartok == year) {
+			matchingyear = true;
+		} else if (yeartok > year) {
+			greateryear = true;
+		}
+
+		if (yeartok < year) {
+			result_line = line;
+		} else if (yeartok > year) {
+			result_line = line - 1;
+			break;
+		}
+
+		if (yeartok == year && monthtok == month && daytok == day) {
+			lesserday = false;
+			result_line = line;
+			break;
+		}
+
+		if (yeartok == year && monthtok == month && daytok > day) {
+			lesserday = false;
+			result_line = line - 1;
+			break;
+		}
+
+		if (yeartok == year && monthtok == month && daytok < day) {
+			lesserday = true;
+			lessdayline = line;
+		}
+		
+		if (yeartok == year && monthtok > month) {
+			result_line = line - 1;
+			break;
+		}
+
+		if (yeartok == year && monthtok < month) {
+			result_line = line;
+		}
+	}
+
+	if (!lesseryear && !matchingyear && greateryear) {
+		result_line = 1;
+	} else if (lesserday) {
+		result_line = lessdayline;
+	}
 
 	return result_line;
 }
