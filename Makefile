@@ -13,4 +13,5 @@ termbudget:
 		src/tui_input_menu.c \
 		src/tui_sidebar.c \
 		src/get_date.c \
+		src/convert_csv.c \
 		-lncurses -o termbudget
