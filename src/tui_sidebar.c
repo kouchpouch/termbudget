@@ -24,7 +24,7 @@
 
 #define GRAPH_LENGTH 30
 
-static void draw_body_border(WINDOW *wptr) {
+void draw_body_border(WINDOW *wptr) {
 	wborder(wptr, 0, 0, 0, 0, ACS_LTEE, ACS_RTEE, ACS_BTEE, 0);
 	mvwxcprintw(wptr, 0, "Categories");
 	wrefresh(wptr);

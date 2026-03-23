@@ -24,6 +24,8 @@
 #include "categories.h"
 #include "vector.h"
 
+extern void draw_body_border(WINDOW *wptr);
+
 /* Creates the sidebar parent window based on dimensions of stdscr provided
  * by arguments std_y and std_x. Returns a WINDOW * on success or calls
  * window_creation_fail() from tui.h */
