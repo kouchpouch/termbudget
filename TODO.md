@@ -87,6 +87,7 @@
             income.
     - [ ] Add indicators that the window is scrollable (that it contains more
             data than is displayed)
+    - [ ] Add ability to move categories up and down the list of records
 
 #### Main Feature Set
     - [X] Create a transaction
