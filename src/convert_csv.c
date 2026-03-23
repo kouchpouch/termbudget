@@ -29,7 +29,7 @@ static void write_temp_header(FILE *convfptr) {
 	fprintf(convfptr, "%s\n", header); 
 }
 
-void create_csv(void) {
+static void create_csv(void) {
 	FILE *fptr = fopen(CONVERTED_FILE_DIR, "w+");
 	if (fptr == NULL) {
 		perror("Failed to open file");
@@ -54,10 +54,8 @@ static void insert_record(struct LineData *ld) {
 		perror("Failed to open file");
 		exit(1);
 	}
-	unsigned int linenum_insert = sort_converted_csv(ld->month, ld->day, ld->year, convfptr);
-	
-	printf("Inserting at line: %u : %d,%d,%d,%s,%s,%d,%.2f\n",
-			linenum_insert,
+
+	printf("Inserting: %d,%d,%d,%s,%s,%d,%.2f\n",
 			ld->month,
 			ld->day,
 			ld->year,
@@ -67,13 +65,18 @@ static void insert_record(struct LineData *ld) {
 			ld->amount
 	);
 
+	unsigned int linenum_insert = sort_converted_csv(ld->month, ld->day, ld->year, convfptr);
+	rewind(convfptr);
+
 	FILE *tmpfptr = open_temp_csv();
 	unsigned int linenum = 0;
 	char linebuff[LINE_BUFFER];
 	char *str;
 
 	while ((str = fgets(linebuff, sizeof(linebuff), convfptr)) != NULL) { 
-		printf("FILE CONTAINS: %s\n", str);
+		if (str == NULL) {
+			break;
+		}
 		linenum++;
 		if (linenum != linenum_insert) {
 			fputs(str, tmpfptr);
