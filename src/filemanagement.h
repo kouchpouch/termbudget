@@ -18,6 +18,7 @@
 #define RECORD_DIR "./data.csv"
 #define RECORD_BAK_DIR "./data.csv.bak"
 #define TEMP_FILE_DIR "./tmp"
+#define CONVERTED_FILE_DIR "./converted.csv"
 #define BUDGET_DIR "./budget.csv"
 #define BUDGET_BAK_DIR "./budget.csv.bak"
 
