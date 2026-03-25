@@ -40,12 +40,6 @@
 #define MIN_INPUT_CHAR 2
 #define INPUT_MSG_Y_OFFSET 2
 
-struct Categories {
-	size_t capacity;
-	size_t size;
-	char *categories[];
-};
-
 struct ScrollCursorSimple {
 	size_t displayed;
 	int select_idx;
@@ -86,5 +80,8 @@ extern void calculate_balance(struct Balances *pb, Vec *pbo);
 extern struct Plannedvals *get_total_planned(CategoryNode **nodes);
 
 extern double get_left_to_budget(CategoryNode **nodes);
+
+// To be moved from main.h
+extern bool check_dup_catg(struct Categories *psc, char *catg);
 
 #endif
