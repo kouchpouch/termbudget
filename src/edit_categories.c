@@ -113,7 +113,7 @@ static void delete_category(long b) {
  * If the user tries to delete a category that contains members, this warns
  * the user that the action cannot be completed.
  */
-static void nc_print_category_member_warning(void) {
+static void invalid_delete_warning(void) {
 	WINDOW *wptr = create_input_subwindow();
 	mvwxcprintw(wptr, 3, "Cannot delete a category");
 	mvwxcprintw(wptr, 4, "which contains records");
@@ -155,9 +155,9 @@ void mv_category_to_top(CategoryNode **nodes, size_t i) {
 	if (i == 0) {
 		return;
 	}
+
 	long first = nodes[0]->catg_fp;
 	unsigned int insert_ln = boff_to_linenum_budget(first) + 1;
-
 	struct BudgetTokens *bt = tokenize_budget_byte_offset(nodes[i]->catg_fp);
 
 	delete_category(nodes[i]->catg_fp);
@@ -166,7 +166,7 @@ void mv_category_to_top(CategoryNode **nodes, size_t i) {
 	free_budget_tokens(bt);
 }
 
-static int nc_select_category_field_to_edit(void) {
+static int select_catg_field(void) {
 	size_t n_options = 4;
 	struct MenuParams *mp = malloc(sizeof(*mp) + (sizeof(char *) * n_options));
 
@@ -190,7 +190,7 @@ static int nc_select_category_field_to_edit(void) {
 /* Allows the user to edit the category at file position b. */
 void nc_edit_category(long b, long nmembers) {
 	double tmp = 0.0;
-	enum fields select = nc_select_category_field_to_edit();
+	enum fields select = select_catg_field();
 	if (select < 0) {
 		return;
 	}
@@ -203,20 +203,17 @@ void nc_edit_category(long b, long nmembers) {
 	case EDIT_AMNT:
 		bt->amount = nc_input_budget_amount();
 		if (bt->amount < 0.0) {
-			free_budget_tokens(bt);
-			return;
+			goto err_fail;
 		}
 		bool conf = nc_confirm_amount(bt->amount);
 		if (!conf) {
-			free_budget_tokens(bt);
-			return;
+			goto err_fail;
 		}
 		break;
 	case EDIT_TYPE:
 		bt->transtype = nc_input_category_type();
 		if (bt->transtype < 0.0) {
-			free_budget_tokens(bt);
-			return;
+			goto err_fail;
 		}
 		break;
 	case ZERO_AMNT:
@@ -235,13 +232,11 @@ void nc_edit_category(long b, long nmembers) {
 		break;
 	case DEL_CATG:
 		if (nmembers > 0) {
-			nc_print_category_member_warning();
-			free_budget_tokens(bt);
-			return;
+			invalid_delete_warning();
+			goto err_fail;
 		}
 		if (!nc_confirm_input("Confirm Delete")) {
-			free_budget_tokens(bt);
-			return;
+			goto err_fail;
 		}
 		break;
 	}
@@ -252,5 +247,6 @@ void nc_edit_category(long b, long nmembers) {
 		delete_category(b);
 	}
 
+err_fail:
 	free_budget_tokens(bt);
 }
