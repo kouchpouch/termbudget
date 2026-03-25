@@ -695,12 +695,12 @@ int cmp_catg_and_fix(struct Categories *prc, struct Categories *pbc,
 }
 
 //FIX Implement
-int remove_category_orphans(void) {
-	FILE *bfptr = open_budget_csv("r");
-	FILE *rfptr = open_record_csv("r");
-
-	return 0;
-}
+//int remove_category_orphans(void) {
+//	FILE *bfptr = open_budget_csv("r");
+//	FILE *rfptr = open_record_csv("r");
+//
+//	return 0;
+//}
 
 /*
  * Ensures that if a category exists in RECORD_DIR(main.h)
@@ -1222,6 +1222,7 @@ void combine_dedup_vectors(Vec *vec1, Vec *vec2, Vec *result) {
 					result->size++;
 				}
 			}
+
 		} else if (tmp1 > 0 && tmp2 == 0) {
 			if (!duplicate_vector_data(result, tmp1)) {
 				result->data[result->size] = tmp1;
