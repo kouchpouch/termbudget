@@ -44,8 +44,8 @@
                 amount for each category and how much is remaining.
         - [X] Allow budget planning, I.E. making categories where no record
                 currently exists.
-        - [X] Handle deleting categories, possibly renaming as well. But
-                probably not.
+        - [X] Handle deleting categories.
+        - [ ] Category renaming
         - [ ] Orphaned categories handling
         - [X] Verify data between files and in the files themselves (The CSVs)
     - [X] Create data structures to handle budget planning by category
