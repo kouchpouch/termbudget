@@ -14,6 +14,7 @@
  */
 
 #include <ncurses.h>
+#include <stdio.h>
 
 #include "edit_categories.h"
 #include "main.h"
@@ -23,6 +24,7 @@
 #include "tui_input.h"
 #include "tui_input_menu.h"
 #include "filemanagement.h"
+#include "flags.h"
 
 enum fields {
 	EDIT_AMNT = 0,
@@ -187,7 +189,7 @@ static int select_catg_field(void) {
 	return retval;
 }
 
-int rename_category(long b, struct BudgetTokens *bt) {
+static int rename_category(long b, struct BudgetTokens *bt) {
 	char *catg = nc_input_string("Renaming Category");
 	if (catg == NULL) {
 		return -1;
@@ -205,6 +207,92 @@ int rename_category(long b, struct BudgetTokens *bt) {
 		bt->catg = catg;
 		return 0;
 	}
+}
+
+static void free_lda(struct LineData **lda, size_t sz) {
+	for (size_t i = 0; i < sz; i++) {
+		free(lda[i]->desc);
+		free(lda[i]);
+		lda[i] = NULL;
+	}
+
+	free(lda);
+}
+
+/* Thinking out loud: We don't want this function to replace each category
+ * one by one. Instead we want to have an array of line numbers to replace
+ * all in one chunk. The records are already sorted, we just need a way to
+ * store their current line number and some index to determine which
+ * linedata to print at which line. Maybe a struct LineData **ld_head
+ * indexed to match a vec of FPIs. */
+//---//
+/* Replaces the category field of records contained in nodes[node_idx] with
+ * catg. */
+static int replace_many_records_categories
+(CategoryNode **nodes, size_t node_idx, char *catg)
+{
+	size_t n_recs = nodes[node_idx]->data->size;
+	size_t del_lines[n_recs];
+	struct LineData **lda = malloc(sizeof(struct LineData) * n_recs);
+	if (lda == NULL) {
+		memory_allocate_fail();
+	}
+
+	for (size_t i = 0; i <= n_recs; i++) {
+		lda[i] = malloc(sizeof(struct LineData));
+		if (lda[i] == NULL) {
+			memory_allocate_fail();
+		}
+		tokenize_record_fpi(nodes[node_idx]->data->data[i], lda[i]);
+		free(lda[i]->category);
+		lda[i]->category = catg;
+		del_lines[i] = boff_to_linenum(nodes[node_idx]->data->data[i]) + 2;
+	}
+
+	FILE *fptr = open_record_csv("r");
+	FILE *tmpfptr = open_temp_csv();
+	char *str;
+	char linebuff[LINE_BUFFER];
+	size_t line = 0;
+	size_t temp_line;
+	size_t temp_idx;
+	int changed = 0;
+
+	while ((str = fgets(linebuff, sizeof(linebuff), fptr)) != NULL) {
+		line++;
+		temp_line = 0;
+		for (size_t i = 0; i < n_recs; i++) {
+			if (del_lines[i] == line) {
+				temp_line = del_lines[i];
+				temp_idx = i;
+				break;
+			}
+		}
+		if (temp_line == 0) {
+			fputs(str, tmpfptr);
+		} else {
+			changed++;
+			fprintf(tmpfptr, "%d,%d,%d,%s,%s,%d,%.2f\n",
+			lda[temp_idx]->month, 
+			lda[temp_idx]->day, 
+			lda[temp_idx]->year, 
+			lda[temp_idx]->category, 
+			lda[temp_idx]->desc, 
+			lda[temp_idx]->transtype, 
+			lda[temp_idx]->amount
+		   );
+		}
+	}
+
+	free_lda(lda, n_recs);
+
+	if (debug_flag) {
+		printw("CHANGED: %d\n", changed);
+		getch();
+	}
+
+	mv_tmp_to_record_file(tmpfptr, fptr);
+	return changed;
 }
 
 void nc_edit_category(long node_idx, long nmembers, CategoryNode **nodes) {
@@ -254,7 +342,7 @@ void nc_edit_category(long node_idx, long nmembers, CategoryNode **nodes) {
 		if (rename_category(b, bt) < 0) {
 			goto err_fail;
 		}
-		//rename_many_records(nodes);
+		replace_many_records_categories(nodes, node_idx, bt->catg);
 		break;
 	case DEL_CATG:
 		if (nmembers > 0) {
