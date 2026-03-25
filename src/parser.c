@@ -384,6 +384,8 @@ Vec *get_records_by_any(int month, int day, int year, char *category,
 			prbc->size++;
 		}
 
+		free_tokenized_record_strings(ld);
+
 		if (chunk != NULL) {
 			if (i < chunk->size) {
 				fseek(fptr, chunk->data[i], SEEK_SET);
@@ -579,6 +581,25 @@ struct BudgetTokens *tokenize_budget_line(int line) {
 	return pbt;
 }
 
+void free_tokenized_record_strings(struct LineData *ld) {
+	free(ld->category);
+	free(ld->desc);
+}
+
+int tokenize_record_fpi(long b, struct LineData *ld) {
+	FILE *fptr = open_record_csv("r");
+	fseek(fptr, b, SEEK_SET);
+	char linebuff[LINE_BUFFER];
+	char *str = fgets(linebuff, sizeof(linebuff), fptr);
+	fclose(fptr);
+	if (str == NULL) {
+		return -1;
+	}
+
+	tokenize_record(ld, &str);
+	return 0;
+}
+
 void tokenize_record(struct LineData *ld, char **str) {
 	char *token;
 	for (int i = 0; i < CSV_FIELDS; i++) {
@@ -596,11 +617,11 @@ void tokenize_record(struct LineData *ld, char **str) {
 			break;
 		case 3:
 			token[strcspn(token, "\n")] = '\0';
-			ld->category = token;
+			ld->category = strndup(token, strlen(token));
 			break;
 		case 4:
 			token[strcspn(token, "\n")] = '\0';
-			ld->desc = token;
+			ld->desc = strndup(token, strlen(token));
 			break;
 		case 5:
 			ld->transtype = atoi(token);
