@@ -133,6 +133,8 @@ bool record_len_verification(void) {
 			return false;
 		}
 
+		free_tokenized_record_strings(pld);
+
 		linenumber++;
 	}
 
