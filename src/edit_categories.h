@@ -24,6 +24,6 @@
 extern void mv_category_to_top(CategoryNode **nodes, size_t i);
 
 /* Allows the user to edit the category at file position b. */
-extern void nc_edit_category(long b, long nmembers);
+extern void nc_edit_category(long b, long nmembers, CategoryNode **nodes);
 
 #endif
