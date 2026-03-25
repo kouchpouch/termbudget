@@ -204,6 +204,7 @@ static int rename_category(long b, struct BudgetTokens *bt) {
 		return -1;
 	} else {
 		free_categories(psc);
+		free(bt->catg);
 		bt->catg = catg;
 		return 0;
 	}
@@ -211,7 +212,7 @@ static int rename_category(long b, struct BudgetTokens *bt) {
 
 static void free_lda(struct LineData **lda, size_t sz) {
 	for (size_t i = 0; i < sz; i++) {
-		free(lda[i]->desc);
+		free_tokenized_record_strings(lda[i]);
 		free(lda[i]);
 		lda[i] = NULL;
 	}
@@ -238,14 +239,14 @@ static int replace_many_records_categories
 		memory_allocate_fail();
 	}
 
-	for (size_t i = 0; i <= n_recs; i++) {
+	for (size_t i = 0; i < n_recs; i++) {
 		lda[i] = malloc(sizeof(struct LineData));
 		if (lda[i] == NULL) {
 			memory_allocate_fail();
 		}
 		tokenize_record_fpi(nodes[node_idx]->data->data[i], lda[i]);
 		free(lda[i]->category);
-		lda[i]->category = catg;
+		lda[i]->category = strndup(catg, strlen(catg));;
 		del_lines[i] = boff_to_linenum(nodes[node_idx]->data->data[i]) + 2;
 	}
 
@@ -271,7 +272,6 @@ static int replace_many_records_categories
 		if (temp_line == 0) {
 			fputs(str, tmpfptr);
 		} else {
-			changed++;
 			fprintf(tmpfptr, "%d,%d,%d,%s,%s,%d,%.2f\n",
 			lda[temp_idx]->month, 
 			lda[temp_idx]->day, 
@@ -281,6 +281,7 @@ static int replace_many_records_categories
 			lda[temp_idx]->transtype, 
 			lda[temp_idx]->amount
 		   );
+			changed++;
 		}
 	}
 
