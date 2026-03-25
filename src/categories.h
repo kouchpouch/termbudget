@@ -15,6 +15,7 @@
 #ifndef CATEGORIES_H
 #define CATEGORIES_H
 
+#include <stdio.h>
 #include "vector.h"
 
 /*
@@ -32,5 +33,13 @@ struct CategoryNode {
 	long catg_fp; // Category File Position
 	Vec *data;
 };
+
+struct Categories {
+	size_t capacity;
+	size_t size;
+	char *categories[];
+};
+
+extern void free_categories(struct Categories *pc);
 
 #endif
