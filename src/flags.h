@@ -16,8 +16,8 @@
 #ifndef FLAGS_H
 #define FLAGS_H
 
-extern int debug_flag = 0;
-extern int cli_flag = 0;
-extern int verify_flag = 1;
+int debug_flag = 0;
+int cli_flag = 0;
+int verify_flag = 1;
 
 #endif
