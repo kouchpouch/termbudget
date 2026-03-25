@@ -15,4 +15,5 @@ termbudget:
 		src/get_date.c \
 		src/convert_csv.c \
 		src/edit_categories.c \
+		src/categories.c \
 		-lncurses -o termbudget
