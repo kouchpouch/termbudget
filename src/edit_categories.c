@@ -28,6 +28,7 @@ enum fields {
 	EDIT_AMNT = 0,
 	EDIT_TYPE,
 	ZERO_AMNT,
+	RENAME_CATG,
 	DEL_CATG
 };
 
@@ -165,7 +166,7 @@ void mv_category_to_top(CategoryNode **nodes, size_t i) {
 }
 
 static int select_catg_field(void) {
-	size_t n_options = 4;
+	size_t n_options = 5;
 	struct MenuParams *mp = malloc(sizeof(*mp) + (sizeof(char *) * n_options));
 
 	if (mp == NULL) {
@@ -177,6 +178,7 @@ static int select_catg_field(void) {
 	mp->strings[EDIT_AMNT] = "Edit Amount";
 	mp->strings[EDIT_TYPE] = "Edit Type";
 	mp->strings[ZERO_AMNT] = "Zero Out";
+	mp->strings[RENAME_CATG] = "Rename";
 	mp->strings[DEL_CATG] = "Delete";
 
 	int retval = nc_input_menu(mp);
@@ -185,7 +187,28 @@ static int select_catg_field(void) {
 	return retval;
 }
 
-void nc_edit_category(long b, long nmembers) {
+int rename_category(long b, struct BudgetTokens *bt) {
+	char *catg = nc_input_string("Renaming Category");
+	if (catg == NULL) {
+		return -1;
+	}
+
+	struct Categories *psc = get_budget_catg_by_date(bt->m, bt->y);
+
+	if (check_dup_catg(psc, catg)) {
+		nc_message("That Category Already Exists");
+		free(catg);
+		free_categories(psc);
+		return -1;
+	} else {
+		free_categories(psc);
+		bt->catg = catg;
+		return 0;
+	}
+}
+
+void nc_edit_category(long node_idx, long nmembers, CategoryNode **nodes) {
+	long b = nodes[node_idx]->catg_fp;
 	double tmp = 0.0;
 	enum fields select = select_catg_field();
 	if (select < 0) {
@@ -226,6 +249,12 @@ void nc_edit_category(long b, long nmembers) {
 			}
 			bt->amount = -(tmp);
 		}
+		break;
+	case RENAME_CATG:
+		if (rename_category(b, bt) < 0) {
+			goto err_fail;
+		}
+		//rename_many_records(nodes);
 		break;
 	case DEL_CATG:
 		if (nmembers > 0) {
