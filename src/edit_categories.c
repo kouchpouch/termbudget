@@ -149,8 +149,6 @@ static bool nc_confirm_amount(double amt) {
 	return false;
 }
 
-/* Moves the category found at FPI nodes[i]->catg_fp to the top of its
- * siblings with the same date range. */
 void mv_category_to_top(CategoryNode **nodes, size_t i) {
 	if (i == 0) {
 		return;
@@ -187,7 +185,6 @@ static int select_catg_field(void) {
 	return retval;
 }
 
-/* Allows the user to edit the category at file position b. */
 void nc_edit_category(long b, long nmembers) {
 	double tmp = 0.0;
 	enum fields select = select_catg_field();

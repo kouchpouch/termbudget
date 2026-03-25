@@ -19,8 +19,11 @@
 #include "main.h"
 #include "categories.h"
 
+/* Moves the category found at FPI nodes[i]->catg_fp to the top of its
+ * siblings with the same date range. */
 extern void mv_category_to_top(CategoryNode **nodes, size_t i);
 
+/* Allows the user to edit the category at file position b. */
 extern void nc_edit_category(long b, long nmembers);
 
 #endif
