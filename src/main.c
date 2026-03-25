@@ -997,13 +997,19 @@ bool nc_confirm_record(struct LineData *ld) {
 	return false;
 }
 
-int replace_many_records(struct LineData **ld_head, Vec *records) {
+int replace_many_records
+(CategoryNode **nodes, size_t node_idx, Vec *records)
+{
 	/* Thinking out loud: We don't want this function to replace each category
 	 * one by one. Instead we want to have an array of line numbers to replace
 	 * all in one chunk. The records are already sorted, we just need a way to
 	 * store their current line number and some index to determine which
 	 * linedata to print at which line. Maybe a struct LineData **ld_head
 	 * indexed to match a vec of FPIs. */
+	size_t n_recs = nodes[node_idx]->data->size;
+	struct LineData **ld_head = malloc(sizeof(struct LineData) * n_recs);
+
+//	tokenize_record(ld_head[i], );
 
 	
 	return 0;
