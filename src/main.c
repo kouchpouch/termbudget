@@ -568,7 +568,47 @@ void delete_category(long b) {
 	mv_tmp_to_budget_file(tmpfptr, bfptr);
 }
 
-/* Allows the user to change the type or value at file position b. */
+void insert_category(struct BudgetTokens *bt, unsigned int ln) {
+	FILE *bfptr = open_budget_csv("r");
+	FILE *tmpfptr = open_temp_csv();
+	
+	char linebuff[LINE_BUFFER];
+	char *line;
+	unsigned int linenum = 0;
+
+	while ((line = fgets(linebuff, sizeof(linebuff), bfptr)) != NULL) {
+		linenum++;	
+		if (linenum != ln) {
+			fputs(line, tmpfptr);
+		} else if (linenum == ln) {
+			fputs(line, tmpfptr);
+			fprintf(tmpfptr, "%d,%d,%s,%d,%.2f\n", 
+				bt->m,
+				bt->y,
+				bt->catg,
+				bt->transtype,
+				bt->amount
+		   );
+		}
+	}
+
+	mv_tmp_to_budget_file(tmpfptr, bfptr);
+
+}
+
+void mv_category_to_top(CategoryNode **nodes, size_t i) {
+	long first = nodes[0]->catg_fp;
+	unsigned int insert_ln = boff_to_linenum_budget(first) + 1;
+
+	struct BudgetTokens *bt = tokenize_budget_byte_offset(nodes[i]->catg_fp);
+
+	delete_category(nodes[i]->catg_fp);
+	insert_category(bt, insert_ln);
+
+	free_budget_tokens(bt);
+}
+
+/* Allows the user to edit the category at file position b. */
 void nc_edit_category(long b, long nmembers) {
 	double tmp = 0.0;
 	enum fields select = nc_select_category_field_to_edit();
@@ -2957,6 +2997,14 @@ void nc_read_budget_loop(struct ReadWins *wins, FILE *rfptr, FILE *bfptr,
 		case(KEY_UP):
 			if (sc->select_idx > 0) {
 				nc_scroll_prev_category(wins->data, nodes, sc, cw, rfptr, bfptr);
+			}
+			break;
+		case(KEY_SHOME):
+			if (sc->catg_data == -1) {
+				mv_category_to_top(nodes, sc->catg_node);
+				sr->flag = RESIZE;
+				sr->index = 0;
+				return;
 			}
 			break;
 
