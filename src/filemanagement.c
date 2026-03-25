@@ -46,9 +46,36 @@ FILE *open_temp_csv(void) {
 	return tmpfptr;
 }
 
-//int delete_category_orphans(long b) {
-//	FILE *fptr = open_budget_csv("r");
-//
-//
-//	return 0;
-//}
+static int move_tmp_to_main(FILE *tmp, FILE *main, char *dir, char *backdir) {
+	if (fclose(main) == -1) {
+		perror("Failed to close main file");
+		return -1;
+	} else {
+		main = NULL;
+	}
+	if (fclose(tmp) == -1) {
+		perror("Failed to close temporary file");
+		return -1;
+	} else {
+		tmp = NULL;
+	}
+	if (rename(dir, backdir) == -1) {
+		perror("Failed to move main file");	
+		return -1;
+	}
+	if (rename(TEMP_FILE_DIR, dir) == -1) {
+		perror("Failed to move temporary file");	
+		return -1;
+	}
+	return 0;
+}
+
+int mv_tmp_to_budget_file(FILE *tmp, FILE* main) {
+	int retval = move_tmp_to_main(tmp, main, BUDGET_DIR, BUDGET_BAK_DIR);
+	return retval;
+}
+
+int mv_tmp_to_record_file(FILE *tmp, FILE* main) {
+	int retval = move_tmp_to_main(tmp, main, RECORD_DIR, RECORD_BAK_DIR);
+	return retval;
+}
