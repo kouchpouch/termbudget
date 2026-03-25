@@ -17,7 +17,6 @@
 #include "tui_input_menu.h"
 
 #include <ncurses.h>
-#include <stdlib.h>
 #include <string.h>
 
 void print_items(struct MenuParams *mp, WINDOW *wptr, int first_y) {
