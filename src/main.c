@@ -38,9 +38,7 @@
 #include "parser.h"
 #include "categories.h"
 #include "convert_csv.h"
-
-bool debug;
-bool cli_mode;
+#include "flags.h"
 
 enum SortBy {
 	SORT_DATE = 0,
@@ -196,7 +194,7 @@ int input_month(void) {
 
 int input_year(void) {
 	int year;
-	if (cli_mode == true) {
+	if (cli_flag) {
 		puts("Enter Year");
 	}
 	while ((year = input_n_digits(MAX_LEN_YEAR, MIN_LEN_YEAR)) == -1);
@@ -307,7 +305,7 @@ char *nc_select_category(int month, int year) {
 	WINDOW *wptr = create_category_select_subwindow(wptr_parent);
 	int sz;
 
-	if (debug) {
+	if (debug_flag) {
 		curs_set(1);
 	}
 
@@ -954,7 +952,7 @@ void add_transaction(void) {
 
 	unsigned int resultline = sort_record_csv(uld->month, uld->day, uld->year);
 
-	if (debug) {
+	if (debug_flag) {
 		printf("Result line: %d\n", resultline);
 	}
 
@@ -1425,7 +1423,7 @@ void nc_print_overview_graphs(WINDOW *wptr, Vec *months, int year) {
 
 	double maxval = get_max_value(12, maxvals);
 
-	if (debug) {
+	if (debug_flag) {
 		wmove(wptr, 1, 1);
 		for (int i = 0; i < 12; i++) {
 			wprintw(wptr, "RAT: %.2f VAL: %.2f\n", ratios[i], maxvals[i]);
@@ -1531,7 +1529,7 @@ void nc_print_overview_months(WINDOW *wptr) {
 	int y = last_quarter_row(wptr);
 	int cur = (getmaxx(wptr) - space * 11) / 2;
 
-	if (debug) {
+	if (debug_flag) {
 		wprintw(wptr, "INIT CUR: %d ", cur);
 		wprintw(wptr, "SPACE: %d ", space);
 		wprintw(wptr, "SPACEx11: %d ", space * 11);
@@ -2736,7 +2734,7 @@ void nc_print_initial_read_budget_loop(WINDOW *wptr, struct ScrollCursor *sc,
 	wmove(wptr, 0, 0);
 	mvwchgat(wptr, sc->select_idx, 0, -1, A_REVERSE, REVERSE_COLOR, NULL); 
 
-	if (debug) {
+	if (debug_flag) {
 		curs_set(1);
 	}
 
@@ -2771,7 +2769,7 @@ void nc_read_budget_loop(struct ReadWins *wins, FILE *rfptr, FILE *bfptr,
 	init_scroll_cursor(sc, nodes);
 	calculate_columns(cw, getmaxx(wins->data) + BOX_OFFSET);
 
-	if (debug) {
+	if (debug_flag) {
 		debug_columns(wins->parent, cw);
 	}
 
@@ -2786,7 +2784,7 @@ void nc_read_budget_loop(struct ReadWins *wins, FILE *rfptr, FILE *bfptr,
 
 	while (c != KEY_F(QUIT) && c != '\n' && c != '\r') {
 		wrefresh(wins->data);
-		if (debug) {
+		if (debug_flag) {
 			nc_print_debug_line(wins->parent, sc->catg_node, sc->catg_data);
 		}
 		c = wgetch(wins->data);
@@ -2804,6 +2802,7 @@ void nc_read_budget_loop(struct ReadWins *wins, FILE *rfptr, FILE *bfptr,
 				nc_scroll_prev_category(wins->data, nodes, sc, cw, rfptr, bfptr);
 			}
 			break;
+		case('K'):
 		case(KEY_SHOME):
 			if (sc->catg_data == -1 && sc->catg_node != 0) {
 				mv_category_to_top(nodes, sc->catg_node);
@@ -2941,7 +2940,7 @@ void nc_print_initial_read_loop(WINDOW *wptr, struct ScrollCursorSimple *sc,
 
 	wmove(wptr, 0, 0);
 	mvwchgat(wptr, sc->select_idx, 0, -1, A_REVERSE, REVERSE_COLOR, NULL); 
-	if (debug) {
+	if (debug_flag) {
 		curs_set(1);
 	}
 	wrefresh(wptr);
@@ -2972,7 +2971,7 @@ void nc_read_loop(struct ReadWins *wins, FILE *fptr, struct SelRecord *sr, Vec *
 
 	while (c != KEY_F(QUIT) && c != '\n' && c != '\r') {
 		wrefresh(wins->data);
-		if (debug) {
+		if (debug_flag) {
 			nc_print_debug_line(wins->parent, psc->data[sc->select_idx], sc->select_idx);
 		}
 		c = wgetch(wins->data);
@@ -3288,7 +3287,7 @@ void nc_read_setup_year(int sel_year) {
 
 void nc_read_setup(int sel_year, int sel_month, int sort) {
 	nc_print_main_menu_footer(stdscr);
-	if (debug) {
+	if (debug_flag) {
 		nc_print_debug_flag(stdscr);
 	}
 	refresh();
@@ -3315,7 +3314,7 @@ void nc_read_setup(int sel_year, int sel_month, int sort) {
 	// To hold the return value of wgetch()/getch()
 	int c;
 
-	if (debug) {
+	if (debug_flag) {
 		debug_fields();
 	}
 
@@ -3348,7 +3347,7 @@ void nc_read_setup(int sel_year, int sel_month, int sort) {
 	}
 
 	nodes = create_category_nodes(dates->month, dates->year);
-	if (debug) {
+	if (debug_flag) {
 		debug_category_nodes(wins->data, nodes);
 	}
 
@@ -3531,14 +3530,14 @@ void edit_transaction(void) {
 
 	target = humantarget - 1;
 
-	if (debug) {
+	if (debug_flag) {
 		printf("TARGET: %d\n", target);
 		printf("TARGET OFFSET: %ld\n", pidx->data[target]);
 	}
 
 	fseek(fptr, pidx->data[target], SEEK_SET);
 
-	if (debug) {
+	if (debug_flag) {
 		printf("COMMANDED SEEK OFFSET: %ld\n", pidx->data[target]);
 	}
 	
@@ -3605,7 +3604,7 @@ void edit_transaction(void) {
 int nc_main_menu(WINDOW *wptr) {
 	nc_print_welcome(wptr);
 	nc_print_main_menu_footer(wptr);
-	if (debug) {
+	if (debug_flag) {
 		nc_print_debug_flag(wptr);
 	}
 	wrefresh(wptr);
@@ -3615,7 +3614,7 @@ int nc_main_menu(WINDOW *wptr) {
 	while (c != KEY_F(QUIT) && c != 'q') {
 		nc_print_welcome(wptr);
 		nc_print_main_menu_footer(wptr);
-		if (debug) {
+		if (debug_flag) {
 			nc_print_debug_flag(wptr);
 		}
 		wrefresh(wptr);
@@ -3796,14 +3795,12 @@ int verify_files_exist(void) {
 }
 
 void print_usage(void) {
-	printf("Usage: termbudget OPTIONS... FILE...\n");
-	printf("FILE only used for csv conversion (experimental)\n\n");
-	printf("\n");
+	printf("\x1b[1mUsage: termbudget [OPTIONS]\x1b[0m\n\n");
 	printf("OPTIONS:\n");
-	printf("-c\t CLI MODE\n");
-	printf("-d\t DEBUG\n");
-	printf("-v\t NO VERIFY, does not verify csv records formatting.\n");
-	printf("--convert FILE\t Converts FILE to termbudget compatible CSV\n");
+	printf("-c               CLI MODE\n");
+	printf("-d               DEBUG\n");
+	printf("-v               NO VERIFY, does not verify csv records formatting.\n");
+	printf("--convert FILE   Converts FILE to termbudget compatible CSV\n");
 }
 
 int main(int argc, char **argv) {
@@ -3812,11 +3809,8 @@ int main(int argc, char **argv) {
 	}
 
 	char opt[LINE_BUFFER];
-	bool verify = true;
 	int corrected = 0;
 	size_t count;
-	debug = false;
-	cli_mode = false;
 
 	if (argc > 1) {
 		strncpy(opt, argv[1], LINE_BUFFER);
@@ -3824,13 +3818,13 @@ int main(int argc, char **argv) {
 			if (opt[0] == '-') {
 				switch(opt[i]) {
 				case('d'):
-					debug = true;
+					debug_flag = 1;
 					break;
 				case('c'):
-					cli_mode = true;
+					cli_flag = 1;
 					break;
 				case('v'):
-					verify = false;
+					verify_flag = 0;
 					break;
 				case('-'):
 					if (strcmp(argv[1], "--convert") == 0) {
@@ -3849,18 +3843,18 @@ int main(int argc, char **argv) {
 		}
 	}
 
-	if (verify) {
+	if (verify_flag) {
 		assert(record_len_verification());
 		corrected = verify_categories_exist_in_budget();
 	}
 
-	if (debug && verify) {
+	if (debug_flag && verify_flag) {
 		printf("Corrected %d records\n", corrected);
 		printf("Press enter to continue");
 		getc(stdin);
 	}
 
-	if (cli_mode == false) {
+	if (!cli_flag) {
 		stdscr = nc_init_stdscr();
 		int flag = 0;
 		while (flag == 0) {
