@@ -665,12 +665,12 @@ bool category_exists_in_budget(char *catg, int month, int year) {
 	return false;
 }
 
-void free_categories(struct Categories *pc) {
-	for (size_t i = 0; i < pc->size; i++) {
-		free(pc->categories[i]);
-	}
-	free(pc);
-}
+//void free_categories(struct Categories *pc) {
+//	for (size_t i = 0; i < pc->size; i++) {
+//		free(pc->categories[i]);
+//	}
+//	free(pc);
+//}
 
 int cmp_catg_and_fix(struct Categories *prc, struct Categories *pbc, 
 					 int m, int y) 
@@ -779,6 +779,7 @@ void add_csv_record(int linetoadd, struct LineData *ld) {
 	mv_tmp_to_record_file(tmpfptr, fptr);
 }
 
+/* Returns true if a duplicate is found, false if not */
 bool check_dup_catg(struct Categories *psc, char *catg) {
 	for (size_t i = 0; i < psc->size; i++) {
 		if (strcasecmp(psc->categories[i], catg) == 0) {
@@ -994,6 +995,18 @@ bool nc_confirm_record(struct LineData *ld) {
 
 	nc_exit_window_key(wptr);
 	return false;
+}
+
+int replace_many_records(struct LineData **ld_head, Vec *records) {
+	/* Thinking out loud: We don't want this function to replace each category
+	 * one by one. Instead we want to have an array of line numbers to replace
+	 * all in one chunk. The records are already sorted, we just need a way to
+	 * store their current line number and some index to determine which
+	 * linedata to print at which line. Maybe a struct LineData **ld_head
+	 * indexed to match a vec of FPIs. */
+
+	
+	return 0;
 }
 
 int nc_edit_csv_record(int replaceln, int field, struct LineData *ld) {
@@ -2873,7 +2886,8 @@ void nc_read_budget_loop(struct ReadWins *wins, FILE *rfptr, FILE *bfptr,
 			if (sc->catg_data < 0) { 
 				sr->flag = EDIT_CATG;
 				sr->opt = nodes[sc->catg_node]->data->size;
-				sr->index = nodes[sc->catg_node]->catg_fp;
+				sr->index = sc->catg_node;
+				//sr->index = nodes[sc->catg_node]->catg_fp;
 			} else {
 				sr->flag = EDIT;
 				sr->index = nodes[sc->catg_node]->data->data[sc->catg_data];
@@ -3375,8 +3389,10 @@ void nc_read_setup(int sel_year, int sel_month, int sort) {
 	psc = NULL;
 	free(plines);
 	plines = NULL;
-	free_category_nodes(nodes);
-	nodes = NULL;
+	if (sr->flag != EDIT_CATG) {
+		free_category_nodes(nodes);
+		nodes = NULL;
+	}
 	free_windows(wins);
 	wins = NULL;
 	free(pidx);
@@ -3447,7 +3463,9 @@ err_select_date_fail:
 		nc_read_setup(dates->year, dates->month, sort);
 		break;
 	case(EDIT_CATG):
-		nc_edit_category(sr->index, sr->opt); 
+		nc_edit_category(sr->index, sr->opt, nodes); 
+		free_category_nodes(nodes);
+		nodes = NULL;
 		if (n_records > 0) {
 			nc_read_setup(dates->year, dates->month, sort);
 		} else {
