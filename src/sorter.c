@@ -22,7 +22,7 @@
 #include "parser.h"
 #include "filemanagement.h"
 
-static int lines_to_last_occurance(FILE *fptr, int month, int year, long b) {
+static int lines_to_last_occurance(FILE *fptr, int month, int year) {
 	char *str;
 	char linebuff[LINE_BUFFER];
 	int l = 0;
@@ -90,7 +90,7 @@ unsigned int sort_budget_csv(int month, int year) {
 
 		if (yeartok == year && monthtok == month) {
 			result_line = line;
-			result_line += lines_to_last_occurance(fptr, month, year, ftell(fptr));
+			result_line += lines_to_last_occurance(fptr, month, year);
 			break;
 		}
 		
