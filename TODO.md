@@ -45,7 +45,7 @@
         - [X] Allow budget planning, I.E. making categories where no record
                 currently exists.
         - [X] Handle deleting categories.
-        - [ ] Category renaming
+        - [X] Category renaming
         - [ ] Orphaned categories handling
         - [X] Verify data between files and in the files themselves (The CSVs)
     - [X] Create data structures to handle budget planning by category
@@ -88,6 +88,7 @@
     - [ ] Add indicators that the window is scrollable (that it contains more
             data than is displayed)
     - [ ] Add ability to move categories up and down the budget list
+    - [X] Add help menu
 
 #### Main Feature Set
     - [X] Create a transaction
