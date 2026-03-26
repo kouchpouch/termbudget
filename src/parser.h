@@ -155,6 +155,9 @@ extern struct BudgetTokens *tokenize_budget_byte_offset(long bo);
  * Returns NULL on failure, pointer to struct BudgetTokens on success. */
 extern struct BudgetTokens *tokenize_budget_line(int line);
 
+/* Populates ld members with tokens from fpi b */
+extern int tokenize_record_fpi(long b, struct LineData *ld);
+
 /* Populates ld members with tokens from str */
 extern void tokenize_record(struct LineData *ld, char **str);
 

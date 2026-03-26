@@ -40,6 +40,11 @@
 #include "convert_csv.h"
 #include "flags.h"
 
+// GLOBAL FLAGS. Defined in flags.h, initialized here in main.c
+int debug_flag;
+int cli_flag;
+int verify_flag;
+
 enum SortBy {
 	SORT_DATE = 0,
 	SORT_CATG = 1
@@ -997,24 +1002,6 @@ bool nc_confirm_record(struct LineData *ld) {
 	return false;
 }
 
-int replace_many_records
-(CategoryNode **nodes, size_t node_idx, Vec *records)
-{
-	/* Thinking out loud: We don't want this function to replace each category
-	 * one by one. Instead we want to have an array of line numbers to replace
-	 * all in one chunk. The records are already sorted, we just need a way to
-	 * store their current line number and some index to determine which
-	 * linedata to print at which line. Maybe a struct LineData **ld_head
-	 * indexed to match a vec of FPIs. */
-	size_t n_recs = nodes[node_idx]->data->size;
-	struct LineData **ld_head = malloc(sizeof(struct LineData) * n_recs);
-
-//	tokenize_record(ld_head[i], );
-
-	
-	return 0;
-}
-
 int nc_edit_csv_record(int replaceln, int field, struct LineData *ld) {
 	if (replaceln == 0) {
 		puts("Cannot delete line 0");
@@ -1744,6 +1731,7 @@ void legacy_read_csv(void) {
 				expense+=ld->amount;
 			}
 		}
+		free_tokenized_record_strings(ld);
 	}
 
 	if (month_record_exists) {
@@ -2357,6 +2345,7 @@ void nc_edit_transaction(long b) {
 		return;
 	}
 
+	free_tokenized_record_strings(pld);
 	free(pld);
 	pld = NULL;
 }
@@ -2417,6 +2406,7 @@ int show_detail_subwindow(char *line) {
 	struct LineData linedata_, *ld = &linedata_;
 	tokenize_record(ld, &line);
 	nc_print_record_vert(wptr_detail, ld, BOX_OFFSET);
+	free_tokenized_record_strings(ld);
 	nc_exit_window_key(wptr_detail);
 	return y;
 }
@@ -2468,6 +2458,7 @@ void nc_scroll_prev(long b, FILE *fptr, WINDOW *wptr, struct ColWidth *cw,
 		wmove(wptr, 0, 0);
 		winsertln(wptr);
 		nc_print_record_hr(wptr, cw, ld, 0);
+		free_tokenized_record_strings(ld);
 	}
 }
 
@@ -2496,6 +2487,7 @@ void nc_scroll_next(long b, FILE *fptr, WINDOW *wptr, struct ColWidth *cw,
 		wdeleteln(wptr);
 		wmove(wptr, getmaxy(wptr) - 1, 0);
 		nc_print_record_hr(wptr, cw, ld, getmaxy(wptr) - 1);
+		free_tokenized_record_strings(ld);
 	}
 }
 
@@ -2749,6 +2741,7 @@ void nc_print_initial_read_budget_loop(WINDOW *wptr, struct ScrollCursor *sc,
 			line_str = fgets(linebuff, sizeof(linebuff), fptr);
 			tokenize_record(&ld, &line_str);
 			nc_print_record_hr(wptr, cw, &ld, sc->displayed);
+			free_tokenized_record_strings(&ld);
 			sc->displayed++;
 		}
 		free_budget_tokens(bt);
@@ -2990,6 +2983,7 @@ void nc_print_initial_read_loop(WINDOW *wptr, struct ScrollCursorSimple *sc,
 		line_str = fgets(linebuff, sizeof(linebuff), fptr);
 		tokenize_record(&ld, &line_str);
 		nc_print_record_hr(wptr, cw, &ld, i);
+		free_tokenized_record_strings(&ld);
 		sc->displayed++;
 	}
 
@@ -3652,6 +3646,7 @@ void edit_transaction(void) {
 		return;
 	}
 
+	free_tokenized_record_strings(pLd);
 	free(pLd);
 	pLd = NULL;
 	free(pidx);
@@ -3866,6 +3861,10 @@ int main(int argc, char **argv) {
 	if (verify_files_exist() == -1) {
 		exit(1);
 	}
+
+	debug_flag = 0;
+	cli_flag = 0;
+	verify_flag = 1;
 
 	char opt[LINE_BUFFER];
 	int corrected = 0;

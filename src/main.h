@@ -18,6 +18,7 @@
 #include <stddef.h>
 #include "vector.h"
 #include "categories.h"
+#include "parser.h"
 
 #define REALLOC_INCR 64
 #define INDEX_ALLOC 1024
@@ -69,6 +70,8 @@ struct Balances {
 	double income;
 	double expense;
 };
+
+extern void free_tokenized_record_strings(struct LineData *ld);
 
 /* Exits the program with "exit(1)" and prints the error message. */
 extern void memory_allocate_fail(void);
