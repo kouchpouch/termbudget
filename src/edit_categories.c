@@ -189,7 +189,7 @@ static int select_catg_field(void) {
 	return retval;
 }
 
-static int rename_category(long b, struct BudgetTokens *bt) {
+static int rename_category(struct BudgetTokens *bt) {
 	char *catg = nc_input_string("Renaming Category");
 	if (catg == NULL) {
 		return -1;
@@ -340,7 +340,7 @@ void nc_edit_category(long node_idx, long nmembers, CategoryNode **nodes) {
 		}
 		break;
 	case RENAME_CATG:
-		if (rename_category(b, bt) < 0) {
+		if (rename_category(bt) < 0) {
 			goto err_fail;
 		}
 		replace_many_records_categories(nodes, node_idx, bt->catg);
