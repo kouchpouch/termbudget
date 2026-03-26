@@ -2758,15 +2758,15 @@ void nc_print_initial_read_budget_loop(WINDOW *wptr, struct ScrollCursor *sc,
 }
 
 /* An optimized version of refreshing the screen. This function only refreshes
- * as many lines as is required to get the data back on the screen after the
- * detail subwindow closes. */
-static void refresh_on_detail_close
+ * as many lines as is required to get the data back on the screen after a
+ * subwindow closes. */
+static void refresh_budget_loop
 (WINDOW *data, CategoryNode **nodes, struct ScrollCursor *sc, struct ColWidth *cw,
- FILE *rfptr, FILE *bfptr, int detail_y)
+ FILE *rfptr, FILE *bfptr, int subwin_y)
 {
 	int tmp_idx = sc->select_idx;
-	int subw_y_upper = (getmaxy(stdscr) / 2) - (detail_y / 2) - BOX_OFFSET;
-	int subw_y_lower = (getmaxy(stdscr) / 2) + (detail_y / 2) - BOX_OFFSET;
+	int subw_y_upper = (getmaxy(stdscr) / 2) - (subwin_y / 2) - BOX_OFFSET;
+	int subw_y_lower = (getmaxy(stdscr) / 2) + (subwin_y / 2) - BOX_OFFSET;
 
 	if (sc->cur_y <= subw_y_upper) {
 		while (sc->cur_y < subw_y_lower) {
@@ -2803,6 +2803,72 @@ void draw_scroll_indicator(WINDOW *wptr) {
 	wrefresh(wptr);
 }
 
+int n_spaces(int max_x, char *str1, char *str2) {
+	return (int)(max_x - (BOX_OFFSET * 2) - strlen(str1) - strlen(str2));
+}
+
+int show_help_subwindow(void) {
+	int rows = 14;
+	WINDOW *wptr = create_input_subwindow_n_rows(rows);
+	int y = 1;
+	int mx = getmaxx(wptr);
+	int my = getmaxy(wptr);
+
+	char line[mx];
+	for (int i = 0; i < sizeof(line); i++) {
+		line[i] = ' ';
+	}
+	line[sizeof(line) - 1] = '\0';
+
+	char *key[] = {
+		"a, A, F1",
+		"e, E, F2",
+		"r, R, F3",
+		"q, Q, F4",
+		"s, S, F5",
+		"o, O, F6",
+		"k, ARROW UP",
+		"j, ARROW DN",
+		"PAGE UP",
+		"PAGE DN",
+		"HOME",
+		"END",
+		"ENTER",
+		"K, ^HOME",
+		"?, h, H"
+	};
+
+	char *help[] = {
+		"Add a category, record, or new budget",
+		"Edit a record or category",
+		"Select a new date to read data from",
+		"Go back/quit",
+		"Change sorted by method",
+		"Show the yearly overview graphs",
+		"Scroll up",
+		"Scroll down",
+		"Scroll up many",
+		"Scroll down many",
+		"Scroll to beginning",
+		"Scroll to end",
+		"Select date/view record details",
+		"Move a category to the beginning",
+		"Show this menu"
+	};
+
+	assert(sizeof(key) == sizeof(help));
+
+	for (size_t i = 0; i < sizeof(key) / sizeof(char *); i++) {
+		mvwprintw(wptr, y++, BOX_OFFSET, "%s%.*s%s\n", help[i], n_spaces(mx, help[i], key[i]), line, key[i]);
+	}
+
+	box(wptr, 0, 0);
+	mvwxcprintw(wptr, 0, "Help");
+	wrefresh(wptr);
+	nc_exit_window_key(wptr);
+	return my;
+}
+
 /*
  * Main loop for the user to interact with when selecting the read menu option.
  * If sorted by anything other than 'Category', nc_read_loop will be used.
@@ -2819,7 +2885,7 @@ void nc_read_budget_loop(struct ReadWins *wins, FILE *rfptr, FILE *bfptr,
 	char *line;
 	char linebuff[LINE_BUFFER];
 	int c = 0;
-	int detail_y;
+	int subwin_y;
 
 	init_scroll_cursor(sc, nodes);
 	calculate_columns(cw, getmaxx(wins->data) + BOX_OFFSET);
@@ -2867,16 +2933,19 @@ void nc_read_budget_loop(struct ReadWins *wins, FILE *rfptr, FILE *bfptr,
 			}
 			break;
 		case('?'):
-			//show_help_subwindow();
+			subwin_y = show_help_subwindow();
+			init_sidebar_body(wins->sidebar_body, nodes);
+			refresh_budget_loop(wins->data, nodes, sc, cw, rfptr, bfptr, subwin_y);
+			c = 0;
 			break;
 		case('\n'):
 		case('\r'):
 			if (sc->catg_data >= 0) {
 				fseek(rfptr, nodes[sc->catg_node]->data->data[sc->catg_data], SEEK_SET);
 				line = fgets(linebuff, sizeof(linebuff), rfptr);
-				detail_y = show_detail_subwindow(line);
+				subwin_y = show_detail_subwindow(line);
 				init_sidebar_body(wins->sidebar_body, nodes);
-				refresh_on_detail_close(wins->data, nodes, sc, cw, rfptr, bfptr, detail_y);
+				refresh_budget_loop(wins->data, nodes, sc, cw, rfptr, bfptr, subwin_y);
 				c = 0;
 			} else {
 				c = 0;
