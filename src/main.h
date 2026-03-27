@@ -45,6 +45,7 @@ struct ScrollCursorSimple {
 	size_t displayed;
 	int select_idx;
 	int cur_y;
+	size_t sidebar_idx;
 };
 
 struct ScrollCursor {
@@ -54,6 +55,7 @@ struct ScrollCursor {
 	int cur_y;
 	int catg_node;
 	int catg_data;
+	size_t sidebar_idx;
 };
 
 struct Datevals {
