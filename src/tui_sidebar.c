@@ -169,13 +169,16 @@ static int print_body_graphs_and_values
 	return 4;
 }
 
-void init_sidebar_body(WINDOW *wptr, CategoryNode **nodes) {
+int init_sidebar_body(WINDOW *wptr, CategoryNode **nodes, size_t i) {
+	wclear(wptr);
 	draw_body_border(wptr);
-	int i = 0;
+//	int i = 0;
+	int n_displayed = 0;
 	int y = 1;
 	int x = 1;
 	double exp;
-	while (y < getmaxy(wptr) - 1) {
+
+	while (y < getmaxy(wptr) - 4) {
 		struct BudgetTokens *bt = tokenize_budget_byte_offset(nodes[i]->catg_fp);
 		exp = get_expenditures_per_category(bt);
 		if (nodes[i]->next == NULL) {
@@ -199,9 +202,11 @@ void init_sidebar_body(WINDOW *wptr, CategoryNode **nodes) {
 			bt = NULL;
 		}
 		i++;
+		n_displayed++;
 	}
 
 	wrefresh(wptr);
+	return n_displayed;
 }
 
 static int print_parent_header(WINDOW *wptr, Vec *psc, double leftover) {
