@@ -36,7 +36,11 @@ extern WINDOW *create_sidebar_parent(WINDOW *wptr_parent, int std_y, int std_x);
  * window_creation_fail() from tui.h */
 extern WINDOW *create_sidebar_body(WINDOW *wptr_parent, WINDOW *wptr_sidebar_parent);
 
-extern void init_sidebar_body(WINDOW *wptr, CategoryNode **nodes);
+/* Draws in all of the data for the sidebar body inside of window 'wptr' using
+ * data from 'nodes', beginning at node 'i'. */
+extern int init_sidebar_body(WINDOW *wptr, CategoryNode **nodes, size_t i);
+
+//extern void init_sidebar_body(WINDOW *wptr, CategoryNode **nodes);
 
 extern void init_sidebar_parent(WINDOW *wptr, Vec *psc, double leftover);
 
