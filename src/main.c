@@ -2666,6 +2666,7 @@ void init_scroll_cursor(struct ScrollCursor *sc, CategoryNode **nodes)
 	/* Tracks which member record the cursor is on, begins at -1 to mark that
 	 * the first cursor position is a node. */
 	sc->catg_data = -1;
+	sc->sidebar_idx = 0;
 }
 
 struct Plannedvals *get_total_planned(CategoryNode **nodes) {
@@ -2916,6 +2917,7 @@ void nc_read_budget_loop(struct ReadWins *wins, FILE *rfptr, FILE *bfptr,
 			if (sc->select_idx + 1 < sc->total_rows) {
 				nc_scroll_next_category(wins->data, nodes, sc, cw, rfptr, bfptr);
 			}
+
 			break;
 		case('k'):
 		case(KEY_UP):
@@ -2934,7 +2936,7 @@ void nc_read_budget_loop(struct ReadWins *wins, FILE *rfptr, FILE *bfptr,
 			break;
 		case('?'):
 			subwin_y = show_help_subwindow();
-			init_sidebar_body(wins->sidebar_body, nodes);
+			init_sidebar_body(wins->sidebar_body, nodes, sc->sidebar_idx);
 			refresh_budget_loop(wins->data, nodes, sc, cw, rfptr, bfptr, subwin_y);
 			c = 0;
 			break;
@@ -2944,7 +2946,7 @@ void nc_read_budget_loop(struct ReadWins *wins, FILE *rfptr, FILE *bfptr,
 				fseek(rfptr, nodes[sc->catg_node]->data->data[sc->catg_data], SEEK_SET);
 				line = fgets(linebuff, sizeof(linebuff), rfptr);
 				subwin_y = show_detail_subwindow(line);
-				init_sidebar_body(wins->sidebar_body, nodes);
+				init_sidebar_body(wins->sidebar_body, nodes, sc->sidebar_idx);
 				refresh_budget_loop(wins->data, nodes, sc, cw, rfptr, bfptr, subwin_y);
 				c = 0;
 			} else {
@@ -2978,6 +2980,18 @@ void nc_read_budget_loop(struct ReadWins *wins, FILE *rfptr, FILE *bfptr,
 			}
 			break;
 
+		case('['):
+			if (sc->sidebar_idx > 0) {
+				sc->sidebar_idx--;
+				init_sidebar_body(wins->sidebar_body, nodes, sc->sidebar_idx);
+			}
+			break;
+		case(']'):
+			if (nodes[sc->sidebar_idx]->next != NULL) {
+				sc->sidebar_idx++;
+				init_sidebar_body(wins->sidebar_body, nodes, sc->sidebar_idx);
+			}
+			break;
 		case('A'):
 		case('a'):
 		case(KEY_F(ADD)):
@@ -3037,6 +3051,7 @@ void init_scroll_cursor_simple(struct ScrollCursorSimple *sc)
 	sc->displayed = 0;
 	sc->select_idx = 0; // To keep track of selection for indexing
 	sc->cur_y = 0; // Keep track of cursor position in window
+	sc->sidebar_idx = 0;
 }
 
 /* Print initial lines based on screen size for nc_read_loop */
@@ -3064,12 +3079,21 @@ void nc_print_initial_read_loop(WINDOW *wptr, struct ScrollCursorSimple *sc,
 	wrefresh(wptr);
 }
 
+static size_t get_n_nodes(CategoryNode **nodes) {
+	size_t n = 0;
+	while (nodes[n]->next != NULL) {
+		n++;
+	}
+	return n;
+}
+
 /*
  * Main read loop. Populates member values in the struct pointed to 
  * by sr on a MenuKeys press. Prints lines by seeking FPI to the byte offset
  * of psc->data. Sort occurs before this function in nc_read_setup.
  */
-void nc_read_loop(struct ReadWins *wins, FILE *fptr, struct SelRecord *sr, Vec *psc)
+void nc_read_loop
+(struct ReadWins *wins, FILE *fptr, struct SelRecord *sr, Vec *psc, CategoryNode **nodes)
 {
 	struct ColWidth cw_, *cw = &cw_;
 	struct ScrollCursorSimple sc_, *sc = &sc_;
@@ -3143,6 +3167,18 @@ void nc_read_loop(struct ReadWins *wins, FILE *fptr, struct SelRecord *sr, Vec *
 			}
 			break;
 
+		case('['):
+			if (sc->sidebar_idx > 0) {
+				sc->sidebar_idx--;
+				init_sidebar_body(wins->sidebar_body, nodes, sc->sidebar_idx);
+			}
+			break;
+		case(']'):
+			if (nodes[sc->sidebar_idx]->next != NULL) {
+				sc->sidebar_idx++;
+				init_sidebar_body(wins->sidebar_body, nodes, sc->sidebar_idx);
+			}
+			break;
 		case('A'):
 		case('a'):
 		case(KEY_F(ADD)):
@@ -3471,7 +3507,7 @@ void nc_read_setup(int sel_year, int sel_month, int sort) {
 
 	if (sidebar_exists) {
 		init_sidebar_parent(wins->sidebar_parent, psc, get_left_to_budget(nodes));
-		init_sidebar_body(wins->sidebar_body, nodes);
+		init_sidebar_body(wins->sidebar_body, nodes, 0);
 		draw_parent_box_with_sidebar(wins->parent);
 	} else {
 		box(wins->parent, 0, 0);
@@ -3482,7 +3518,7 @@ void nc_read_setup(int sel_year, int sel_month, int sort) {
 	nc_print_sort_text(wins->parent, sort);
 
 	if (sort == SORT_DATE) {
-		nc_read_loop(wins, fptr, sr, psc);
+		nc_read_loop(wins, fptr, sr, psc, nodes);
 	} else if (sort == SORT_CATG) {
 		FILE *bfptr = open_budget_csv("r");
 		nc_read_budget_loop(wins, fptr, bfptr, sr, psc, nodes);
