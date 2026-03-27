@@ -2815,7 +2815,7 @@ int show_help_subwindow(void) {
 	int my = getmaxy(wptr);
 
 	char line[mx];
-	for (int i = 0; i < sizeof(line); i++) {
+	for (size_t i = 0; i < sizeof(line); i++) {
 		line[i] = ' ';
 	}
 	line[sizeof(line) - 1] = '\0';
@@ -3941,7 +3941,7 @@ int main(int argc, char **argv) {
 
 	if (argc > 1) {
 		strncpy(opt, argv[1], LINE_BUFFER);
-		for (int i = 1; i < strlen(opt); i++) { // Args start at 1
+		for (size_t i = 1; i < strlen(opt); i++) { // Args start at 1
 			if (opt[0] == '-') {
 				switch(opt[i]) {
 				case('d'):
