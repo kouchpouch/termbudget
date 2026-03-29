@@ -40,10 +40,32 @@
 #include "convert_csv.h"
 #include "flags.h"
 
+// 'R'ead 'RET'urn values
+#define RRET_DEFAULT 0
+#define RRET_BYDATE 1
+#define RRET_QUIT 2
+
 // GLOBAL FLAGS. Defined in flags.h, initialized here in main.c
 int debug_flag;
 int cli_flag;
 int verify_flag;
+
+struct ReadRet {
+	int flag;
+	int yr;
+	int mo;
+	int sort;
+};
+
+enum EditRecordFields {
+	NO_SEL,
+	E_DATE,
+	E_CATG,
+	E_DESC,
+	E_TYPE,
+	E_AMNT,
+	DELETE,
+};
 
 enum SortBy {
 	SORT_DATE = 0,
@@ -76,9 +98,9 @@ Vec *get_months_with_data(FILE *fptr, int matchyear, int field);
 Vec *get_years_with_data(FILE *fptr, int field);
 void memory_allocate_fail(void);
 int mv_tmp_to_budget_file(FILE *tmp, FILE* main);
-void nc_read_setup_default(void);
+void nc_read_setup_default(struct ReadRet *rret);
 void calculate_balance(struct Balances *pb, Vec *pbo);
-void nc_read_setup(int sel_year, int sel_month, int sort);
+void nc_read_setup(int sel_year, int sel_month, int sort, struct ReadRet *rret);
 bool nc_confirm_record(struct LineData *ld);
 void nc_print_record_hr(WINDOW *wptr, struct ColWidth *cw, struct LineData *ld, int y);
 void nc_print_record_vert(WINDOW *wptr, struct LineData *ld, int x_off);
@@ -849,26 +871,34 @@ char *nc_add_budget_category(int yr, int mo) {
 	return catg;
 }
 
-void nc_create_new_budget(void) {
-	int yr = nc_input_year();
-	if (yr < 0) {
-		return;
+struct Datevals *nc_create_new_budget(void) {
+	struct Datevals *dv = malloc(sizeof(struct Datevals));
+	if (dv == NULL) {
+		memory_allocate_fail();
 	}
-	int mo = nc_input_month();
-	if (mo < 0) {
-		return;
+
+	dv->year = nc_input_year();
+	if (dv->year < 0) {
+		free(dv);
+		return NULL;
 	}
-	if (month_or_year_exists(mo, yr)) {
+	dv->month = nc_input_month();
+	if (dv->month < 0) {
+		free(dv);
+		return NULL;
+	}
+	if (month_or_year_exists(dv->month, dv->year)) {
 		nc_message("A budget already exists for that month");
-		nc_read_setup(yr, mo, SORT_CATG);
-		return;
+		return dv;
 	}
-	char *catg = nc_add_budget_category(yr, mo);
+	char *catg = nc_add_budget_category(dv->year, dv->month);
 	if (catg == NULL) {
-		return;
+		free(dv);
+		return NULL;
 	}
+
 	free(catg);
-	nc_read_setup(yr, mo, SORT_CATG);
+	return dv;
 }
 
 /* Optional parameters int month, year. If add transaction is selected while
@@ -1069,8 +1099,14 @@ int nc_edit_csv_record(int replaceln, int field, struct LineData *ld) {
 	}
 
 	if (!nc_confirm_record(ld)) {
-		if (field == 2) free(ld->category);
-		if (field == 3) free(ld->desc);
+		if (field == 2) {
+			free(ld->category);
+			ld->category = NULL;
+		}
+		if (field == 3) {
+			free(ld->desc);
+			ld->desc = NULL;
+		}
 		goto err_fail;
 	}
 
@@ -1103,8 +1139,15 @@ int nc_edit_csv_record(int replaceln, int field, struct LineData *ld) {
 	/* mv_tmp_to_record_file() closes the file pointers */
 	mv_tmp_to_record_file(tmpfptr, fptr);
 
-	if (field == 2) free(ld->category);
-	if (field == 3) free(ld->desc);
+	if (field == 2) {
+		free(ld->category);
+		ld->category = NULL;
+	}
+	if (field == 3) {
+		free(ld->desc);
+		ld->desc = NULL;
+	}
+
 	return 0;
 
 err_fail:
@@ -1610,7 +1653,6 @@ void nc_overview_setup(int year) {
 	case(QUIT):
 		break;
 	default:
-		nc_read_setup_default();
 		break;
 	}
 }
@@ -2276,10 +2318,11 @@ int nc_select_field_to_edit(WINDOW *wptr) {
 }
 
 void nc_edit_transaction(long b) {
-	struct LineData linedata, *ld = &linedata;
-	struct LineData *pld = malloc(sizeof(*ld));
+//	struct LineData linedata, *ld = &linedata;
+	struct LineData *ld = malloc(sizeof(*ld));
+	enum EditRecordFields field;
 
-	if (pld == NULL) {
+	if (ld == NULL) {
 		memory_allocate_fail();
 		return;
 	}
@@ -2298,8 +2341,7 @@ void nc_edit_transaction(long b) {
 	}
 
 	tokenize_record(ld, &line);
-
-	memcpy(pld, ld, sizeof(*ld));
+	//memcpy(pld, ld, sizeof(*ld));
 
 	nc_print_record_vert(wptr_edit, ld, BOX_OFFSET);
 
@@ -2307,34 +2349,38 @@ void nc_edit_transaction(long b) {
 	box(wptr_edit, 0, 0);
 	wrefresh(wptr_edit);
 
-	edit_field = nc_select_field_to_edit(wptr_edit);
+	field = nc_select_field_to_edit(wptr_edit);
 
 	fclose(fptr);
 	nc_exit_window(wptr_edit);
 
-	switch(edit_field) {
-	case 0:
+	switch(field) {
+	case NO_SEL:
 		break;
-	case 1:
+	case E_DATE:
 		nc_print_input_footer(stdscr);
-		nc_edit_csv_record(linenum + 1, 1, pld);
+		nc_edit_csv_record(linenum + 1, 1, ld);
 		break;
-	case 2:
-		nc_edit_csv_record(linenum + 1, 2, pld);
+	case E_CATG:
+		free(ld->category);
+		ld->category = NULL;
+		nc_edit_csv_record(linenum + 1, 2, ld);
 		break;
-	case 3:
+	case E_DESC:
 		nc_print_input_footer(stdscr);
-		nc_edit_csv_record(linenum + 1, 3, pld);
+		free(ld->desc);
+		ld->desc = NULL;
+		nc_edit_csv_record(linenum + 1, 3, ld);
 		break;
-	case 4:
+	case E_TYPE:
 		nc_print_input_footer(stdscr);
-		nc_edit_csv_record(linenum + 1, 4, pld);
+		nc_edit_csv_record(linenum + 1, 4, ld);
 		break;
-	case 5:
+	case E_AMNT:
 		nc_print_input_footer(stdscr);
-		nc_edit_csv_record(linenum + 1, 5, pld);
+		nc_edit_csv_record(linenum + 1, 5, ld);
 		break;
-	case 6:
+	case DELETE:
 		nc_print_input_footer(stdscr);
 		if (nc_confirm_input("Confirm Delete")) {
 			if (delete_csv_record(linenum + 1) == 0) {
@@ -2346,9 +2392,9 @@ void nc_edit_transaction(long b) {
 		return;
 	}
 
-	free_tokenized_record_strings(pld);
-	free(pld);
-	pld = NULL;
+	free_tokenized_record_strings(ld);
+	free(ld);
+	ld = NULL;
 }
 
 void nc_print_debug_line(WINDOW *wptr, struct ScrollCursor *sc) {
@@ -3457,15 +3503,15 @@ void nc_print_sort_text(WINDOW *wptr, int sort) {
 	wrefresh(wptr);
 }
 
-void nc_read_setup_default(void) {
-	nc_read_setup(0, 0, SORT_CATG);
+void nc_read_setup_default(struct ReadRet *rret) {
+	nc_read_setup(0, 0, SORT_CATG, rret);
 }
 
-void nc_read_setup_year(int sel_year) {
-	nc_read_setup(sel_year, 0, SORT_CATG);
+void nc_read_setup_year(int sel_year, struct ReadRet *rret) {
+	nc_read_setup(sel_year, 0, SORT_CATG, rret);
 }
 
-void nc_read_setup(int sel_year, int sel_month, int sort) {
+void nc_read_setup(int sel_year, int sel_month, int sort, struct ReadRet *rret) {
 	nc_print_main_menu_footer(stdscr);
 	if (debug_flag) {
 		nc_print_debug_flag(stdscr);
@@ -3566,10 +3612,15 @@ void nc_read_setup(int sel_year, int sel_month, int sort) {
 	fclose(fptr);
 	fptr = NULL;
 
+	rret->mo = dates->month;
+	rret->yr = dates->year;
+	rret->sort = sort;
+
 err_select_date_fail:
 	switch(sr->flag) {
 	case(NO_SELECT):
-		nc_read_setup_default();
+		rret->flag = RRET_DEFAULT;
+//		nc_read_setup_default();
 		break;
 	case(ADD):
 		nc_print_input_footer(stdscr);
@@ -3589,7 +3640,8 @@ err_select_date_fail:
 				break;
 			}
 			free(mp);
-			nc_read_setup_default();
+			rret->flag = RRET_DEFAULT;
+//			nc_read_setup_default();
 		} else {
 			struct MenuParams *mp = init_add_menu();
 			int c = nc_input_menu(mp);
@@ -3600,18 +3652,22 @@ err_select_date_fail:
 				free(ret);
 			}
 			free(mp);
-			nc_read_setup(dates->year, dates->month, sort);
+			rret->flag = RRET_BYDATE;
+//			nc_read_setup(dates->year, dates->month, sort);
 		}
 		break;
 	case(EDIT):
 		nc_print_quit_footer(stdscr);
 		nc_edit_transaction(sr->index);
-		nc_read_setup(dates->year, dates->month, sort);
+		rret->flag = RRET_BYDATE;
+//		nc_read_setup(dates->year, dates->month, sort);
 		break;
 	case(READ):
-		nc_read_setup_default();
+		rret->flag = RRET_DEFAULT;
+//		nc_read_setup_default(rret);
 		break;
 	case(QUIT):
+		rret->flag = RRET_QUIT;
 		break;
 	case(SORT):
 		if (sort == SORT_CATG && n_records == 0) {
@@ -3622,20 +3678,25 @@ err_select_date_fail:
 		} else {
 			sort = SORT_CATG;
 		}
-		nc_read_setup(dates->year, dates->month, sort);
+		rret->flag = RRET_BYDATE;
+		rret->sort = sort;
+//		nc_read_setup(dates->year, dates->month, sort);
 		break;
 	case(OVERVIEW):
 		nc_overview_setup(dates->year);
-		nc_read_setup(dates->year, dates->month, sort);
+		rret->flag = RRET_BYDATE;
+//		nc_read_setup(dates->year, dates->month, sort);
 		break;
 	case(EDIT_CATG):
 		nc_edit_category(sr->index, sr->opt, nodes); 
 		free_category_nodes(nodes);
 		nodes = NULL;
 		if (n_records > 0) {
-			nc_read_setup(dates->year, dates->month, sort);
+			rret->flag = RRET_BYDATE;
+//			nc_read_setup(dates->year, dates->month, sort);
 		} else {
-			nc_read_setup_default();
+			rret->flag = RRET_DEFAULT;
+//			nc_read_setup_default();
 		}
 		break;
 	case(RESIZE):
@@ -3643,9 +3704,11 @@ err_select_date_fail:
 			getch();
 		}
 		if (dates->month > 0 && dates->year > 0) {
-			nc_read_setup(dates->year, dates->month, sort);
+			rret->flag = RRET_BYDATE;
+//			nc_read_setup(dates->year, dates->month, sort);
 		} else {
-			nc_read_setup_default();
+			rret->flag = RRET_DEFAULT;
+//			nc_read_setup_default();
 		}
 		break;
 	case(NO_RCRD):
@@ -3660,13 +3723,15 @@ err_select_date_fail:
 		case(KEY_F(4)):
 		case('q'):
 		case('Q'):
+			rret->flag = RRET_QUIT;
 			break;
 		default:
+			rret->flag = RRET_QUIT;
 			break;
-
 		}
 		break;
 	default:
+		rret->flag = RRET_QUIT;
 		break;
 	}
 	refresh();
@@ -3787,15 +3852,18 @@ void edit_transaction(void) {
 }
 
 int nc_main_menu(WINDOW *wptr) {
-	nc_print_welcome(wptr);
-	nc_print_main_menu_footer(wptr);
-	if (debug_flag) {
-		nc_print_debug_flag(wptr);
-	}
-	wrefresh(wptr);
+	struct ReadRet rr_, *rret = &rr_;
+	struct Datevals *dv;
+
+	enum add_sel {
+		ADD_TRNS = 0,
+		ADD_CATG,
+		ADD_BUDG
+	} add_sel;
 
 	char *ret;
 	int c = 0;
+
 	while (c != KEY_F(QUIT) && c != 'q') {
 		nc_print_welcome(wptr);
 		nc_print_main_menu_footer(wptr);
@@ -3811,39 +3879,59 @@ int nc_main_menu(WINDOW *wptr) {
 		case (KEY_F(ADD)):
 			wclear(wptr);
 			struct MenuParams *mp = init_add_main_menu();
-			int r = nc_input_menu(mp);
+			add_sel = nc_input_menu(mp);
 			free(mp);
-			switch(r) {
-				case 0:
+			switch(add_sel) {
+				case ADD_TRNS:
 					nc_add_transaction_default();
 					break;
-				case 1:
+				case ADD_CATG:
 					ret = nc_add_budget_category(0, 0);
 					free(ret);
 					break;
-				case 2:
-					nc_create_new_budget();
+				case ADD_BUDG:
+					dv = nc_create_new_budget();
+					if (dv != NULL) {
+						nc_read_setup(dv->year, dv->month, SORT_CATG, rret);
+						free(dv);
+					}
 					break;
 				default:
 					break;
 			}
 			break;
+
 		case('E'):
 		case('e'):
 		case(KEY_F(EDIT)):
 			wclear(wptr);
 			break;
+
 		case('R'):
 		case('r'):
 		case(KEY_F(READ)):
 			wclear(wptr);
-			nc_read_setup_default();
+			nc_read_setup_default(rret);
+			while(rret->flag != RRET_QUIT) {
+				switch(rret->flag) {
+				case(RRET_DEFAULT):
+					nc_read_setup_default(rret);
+					break;
+				case(RRET_BYDATE):
+					nc_read_setup(rret->yr, rret->mo, rret->sort, rret);
+					break;
+				default:
+					nc_read_setup_default(rret);
+					break;
+				}
+			}
 			break;
 		case('Q'):
 		case('q'):
 		case(KEY_F(QUIT)):
 			wclear(wptr);
 			return 1;
+
 		case(KEY_RESIZE):
 			wclear(wptr);
 			break;
