@@ -9,4 +9,5 @@ termbudget
 termbudget.*
 *.bak
 vgcore.*
+valgrind*
 .DS_Store
