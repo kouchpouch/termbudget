@@ -241,8 +241,12 @@ static int print_parent_header(WINDOW *wptr, Vec *psc, double leftover) {
 	return y;
 }
 
-void init_sidebar_parent(WINDOW *wptr, Vec *psc, double leftover) {
-	box(wptr, 0, 0);
+void draw_sidebar_parent_border(WINDOW *wptr) {
+	wborder(wptr, 0, 0, 0, 0, ACS_TTEE, 0, 0, 0);
 	write_parent_title(wptr);
+}
+
+void init_sidebar_parent(WINDOW *wptr, Vec *psc, double leftover) {
+	draw_sidebar_parent_border(wptr);
 	print_parent_header(wptr, psc, leftover);
 }
