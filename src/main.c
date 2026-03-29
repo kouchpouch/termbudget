@@ -2901,7 +2901,9 @@ void nc_read_budget_loop(struct ReadWins *wins, FILE *rfptr, FILE *bfptr,
 	nc_print_read_footer(stdscr);
 	nc_print_initial_read_budget_loop(wins->data, sc, nodes, cw, rfptr);
 	if (sc->displayed < sc->total_rows) {
-		draw_scroll_indicator(wins->parent);
+		mvwprintw(wins->parent, getmaxy(wins->parent) - 1, getmaxx(wins->data) - 20,
+			"%d of %d displayed", sc->displayed, sc->total_rows);
+		wrefresh(wins->parent);
 	}
 
 	while (c != KEY_F(QUIT) && c != '\n' && c != '\r') {
@@ -2969,11 +2971,13 @@ void nc_read_budget_loop(struct ReadWins *wins, FILE *rfptr, FILE *bfptr,
 			}
 			break;
 
+		case(KEY_EOL):
 		case(KEY_END):
 			while (sc->select_idx + 1 < sc->total_rows) {
 				nc_scroll_next_category(wins->data, nodes, sc, cw, rfptr, bfptr);
 			}
 			break;
+		case(KEY_BEG):
 		case(KEY_HOME):
 			while (sc->select_idx > 0) {
 				nc_scroll_prev_category(wins->data, nodes, sc, cw, rfptr, bfptr);
