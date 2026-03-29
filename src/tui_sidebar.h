@@ -40,7 +40,9 @@ extern WINDOW *create_sidebar_body(WINDOW *wptr_parent, WINDOW *wptr_sidebar_par
  * data from 'nodes', beginning at node 'i'. */
 extern int init_sidebar_body(WINDOW *wptr, CategoryNode **nodes, size_t i);
 
-//extern void init_sidebar_body(WINDOW *wptr, CategoryNode **nodes);
+/* Draws a box around the sidebar parent. Pass in the WINDOW * which points to 
+ * the sidebar parent. Also draws the appropriate text on the boundary */
+extern void draw_sidebar_parent_border(WINDOW *wptr);
 
 extern void init_sidebar_parent(WINDOW *wptr, Vec *psc, double leftover);
 
