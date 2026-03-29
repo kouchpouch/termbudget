@@ -89,6 +89,7 @@ Vec *get_matching_line_nums(FILE *fptr, int month, int year);
 char *nc_add_budget_category(int yr, int mo);
 void draw_parent_box_with_sidebar(WINDOW *wptr);
 void draw_scroll_indicator(WINDOW *wptr);
+void draw_read_window_borders_and_text(struct ReadWins *wins, struct ScrollCursor *sc, Vec *psc);
 
 char *user_input(int n) {
 	size_t buffersize = n + 1;
@@ -2491,7 +2492,7 @@ void nc_scroll_next(long b, FILE *fptr, WINDOW *wptr, struct ColWidth *cw,
 	}
 }
 
-void nc_scroll_prev_read_loop(WINDOW *wptr, struct ScrollCursorSimple *sc,
+void nc_scroll_prev_read_loop(WINDOW *wptr, struct ScrollCursor *sc,
 							  struct ColWidth *cw, FILE *fptr, Vec *psc)
 {
 	mvwchgat(wptr, sc->cur_y, 0, -1, A_NORMAL, 0, NULL); 
@@ -2509,7 +2510,7 @@ void nc_scroll_prev_read_loop(WINDOW *wptr, struct ScrollCursorSimple *sc,
 	mvwchgat(wptr, sc->cur_y, 0, -1, A_REVERSE, REVERSE_COLOR, NULL); 
 }
 
-void nc_scroll_next_read_loop(WINDOW *wptr, struct ScrollCursorSimple *sc,
+void nc_scroll_next_read_loop(WINDOW *wptr, struct ScrollCursor *sc,
 							  struct ColWidth *cw, FILE *fptr, Vec *psc)
 {
 	mvwchgat(wptr, sc->cur_y, 0, -1, A_NORMAL, 0, NULL); 
@@ -2878,8 +2879,9 @@ int show_help_subwindow(void) {
  * Categories will have their own row in the data with a user-modifiable value
  * retrived from BUDGET_DIR.
  */
-void nc_read_budget_loop(struct ReadWins *wins, FILE *rfptr, FILE *bfptr, 
-						 struct SelRecord *sr, Vec *psc, CategoryNode **nodes)
+void nc_read_budget_loop
+(struct ReadWins *wins, FILE *rfptr, FILE *bfptr, struct SelRecord *sr,
+ Vec *psc, CategoryNode **nodes)
 {
 	struct ColWidth cw_, *cw = &cw_;
 	struct ScrollCursor sc_, *sc = &sc_;
@@ -2895,16 +2897,9 @@ void nc_read_budget_loop(struct ReadWins *wins, FILE *rfptr, FILE *bfptr,
 		debug_columns(wins->parent, cw);
 	}
 
-	if (wins->sidebar_parent == NULL) {
-		nc_print_balances_text(wins->parent, psc);
-	}
 	nc_print_read_footer(stdscr);
 	nc_print_initial_read_budget_loop(wins->data, sc, nodes, cw, rfptr);
-	if (sc->displayed < sc->total_rows) {
-		mvwprintw(wins->parent, getmaxy(wins->parent) - 1, getmaxx(wins->data) - 20,
-			"%d of %d displayed", sc->displayed, sc->total_rows);
-		wrefresh(wins->parent);
-	}
+	draw_read_window_borders_and_text(wins, sc, psc);
 
 	while (c != KEY_F(QUIT) && c != '\n' && c != '\r') {
 		wrefresh(wins->data);
@@ -3050,16 +3045,21 @@ void nc_read_budget_loop(struct ReadWins *wins, FILE *rfptr, FILE *bfptr,
 	return;
 }
 
-void init_scroll_cursor_simple(struct ScrollCursorSimple *sc)
+void init_scroll_cursor_no_category(struct ScrollCursor *sc)
 {
+	sc->total_rows = 0;
 	sc->displayed = 0;
-	sc->select_idx = 0; // To keep track of selection for indexing
-	sc->cur_y = 0; // Keep track of cursor position in window
+	sc->select_idx = 0; // Tracks selection for indexing
+	sc->cur_y = 0; // Tracks cursor position in window
+	sc->catg_node = 0; // Tracks which node the cursor is on
+	/* Tracks which member record the cursor is on, begins at -1 to mark that
+	 * the first cursor position is a node. */
+	sc->catg_data = -1;
 	sc->sidebar_idx = 0;
 }
 
 /* Print initial lines based on screen size for nc_read_loop */
-void nc_print_initial_read_loop(WINDOW *wptr, struct ScrollCursorSimple *sc,
+void nc_print_initial_read_loop(WINDOW *wptr, struct ScrollCursor *sc,
 								struct ColWidth *cw, FILE *fptr, Vec *psc)
 {
 	char *line_str;
@@ -3097,23 +3097,21 @@ static size_t get_n_nodes(CategoryNode **nodes) {
  * of psc->data. Sort occurs before this function in nc_read_setup.
  */
 void nc_read_loop
-(struct ReadWins *wins, FILE *fptr, struct SelRecord *sr, Vec *psc, CategoryNode **nodes)
+(struct ReadWins *wins, FILE *fptr, struct SelRecord *sr, Vec *psc,
+ CategoryNode **nodes)
 {
 	struct ColWidth cw_, *cw = &cw_;
-	struct ScrollCursorSimple sc_, *sc = &sc_;
+	struct ScrollCursor sc_, *sc = &sc_;
+//	struct ScrollCursor sc_, *sc = &sc_;
 	char linebuff[LINE_BUFFER];
 	int c = 0;
 
-	init_scroll_cursor_simple(sc);
+	init_scroll_cursor_no_category(sc);
 	calculate_columns(cw, getmaxx(wins->data) + BOX_OFFSET);
-	if (wins->sidebar_parent == NULL) {
-		nc_print_balances_text(wins->parent, psc);
-	}
 	nc_print_read_footer(stdscr);
 	nc_print_initial_read_loop(wins->data, sc, cw, fptr, psc);
-	if (sc->displayed < psc->size) {
-		draw_scroll_indicator(wins->parent);
-	}
+	sc->total_rows = psc->size;
+	draw_read_window_borders_and_text(wins, sc, psc);
 
 	while (c != KEY_F(QUIT) && c != '\n' && c != '\r') {
 		wrefresh(wins->data);
@@ -3345,6 +3343,30 @@ int nc_read_setup_input_year(WINDOW *wptr) {
 void draw_parent_box_with_sidebar(WINDOW *wptr) {
 	wborder(wptr, 0, 0, 0, 0, 0, ACS_TTEE, 0, ACS_BTEE);
 	wrefresh(wptr);
+}
+
+/* Draws all of the window borders, then the border text on top. Call this
+ * function any time the borders/text need to be updated. */
+void draw_read_window_borders_and_text
+(struct ReadWins *wins, struct ScrollCursor *sc, Vec *psc)
+{
+	// Draw borders in order for correct intersecting lines
+	if (wins->sidebar_parent != NULL || wins->sidebar_body != NULL) {
+		draw_sidebar_parent_border(wins->sidebar_parent);
+		draw_body_border(wins->sidebar_body);
+	} else {
+		box(wins->parent, 0, 0);
+		nc_print_balances_text(wins->parent, psc);
+	}
+
+	// For calculating the length of, for example, "32 out of 50 records shown"
+	char *disp = "/ Records Displayed";
+	int x_offset = strlen(disp) + intlen(sc->displayed) + 1 + intlen(sc->total_rows) + 1;
+
+	if (sc->displayed < sc->total_rows) {
+		mvwprintw(wins->parent, getmaxy(wins->parent) - 1, getmaxx(wins->data) - x_offset, "%d/%d Records Displayed", sc->displayed, sc->total_rows);
+		wrefresh(wins->parent);
+	}
 }
 
 void get_dates(struct SelRecord *sr, struct Datevals *dates) {
@@ -3784,6 +3806,7 @@ int nc_main_menu(WINDOW *wptr) {
 		c = getch();
 
 		switch(c) {
+		case('A'):
 		case('a'):
 		case (KEY_F(ADD)):
 			wclear(wptr);
@@ -3805,15 +3828,18 @@ int nc_main_menu(WINDOW *wptr) {
 					break;
 			}
 			break;
+		case('E'):
 		case('e'):
 		case(KEY_F(EDIT)):
 			wclear(wptr);
 			break;
+		case('R'):
 		case('r'):
 		case(KEY_F(READ)):
 			wclear(wptr);
 			nc_read_setup_default();
 			break;
+		case('Q'):
 		case('q'):
 		case(KEY_F(QUIT)):
 			wclear(wptr);
