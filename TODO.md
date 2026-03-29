@@ -89,6 +89,7 @@
             data than is displayed)
     - [ ] Add ability to move categories up and down the budget list
     - [X] Add help menu
+    - [X] Create one function for handling window borders in the read loop
 
 #### Main Feature Set
     - [X] Create a transaction
