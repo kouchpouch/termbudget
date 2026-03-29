@@ -41,13 +41,6 @@
 #define MIN_INPUT_CHAR 2
 #define INPUT_MSG_Y_OFFSET 2
 
-struct ScrollCursorSimple {
-	size_t displayed;
-	int select_idx;
-	int cur_y;
-	size_t sidebar_idx;
-};
-
 struct ScrollCursor {
 	int total_rows;
 	int displayed;
