@@ -66,8 +66,6 @@ struct Balances {
 	double expense;
 };
 
-extern void free_tokenized_record_strings(struct LineData *ld);
-
 /* Exits the program with "exit(1)" and prints the error message. */
 extern void memory_allocate_fail(void);
 
