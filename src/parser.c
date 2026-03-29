@@ -582,8 +582,14 @@ struct BudgetTokens *tokenize_budget_line(int line) {
 }
 
 void free_tokenized_record_strings(struct LineData *ld) {
-	free(ld->category);
-	free(ld->desc);
+	if (ld->category != NULL) {
+		free(ld->category);
+		ld->category = NULL;
+	}
+	if (ld->desc != NULL) {
+		free(ld->desc);
+		ld->desc = NULL;
+	}
 }
 
 int tokenize_record_fpi(long b, struct LineData *ld) {
@@ -617,11 +623,11 @@ void tokenize_record(struct LineData *ld, char **str) {
 			break;
 		case 3:
 			token[strcspn(token, "\n")] = '\0';
-			ld->category = strndup(token, strlen(token));
+			ld->category = strndup(token, strlen(token) + 1);
 			break;
 		case 4:
 			token[strcspn(token, "\n")] = '\0';
-			ld->desc = strndup(token, strlen(token));
+			ld->desc = strndup(token, strlen(token) + 1);
 			break;
 		case 5:
 			ld->transtype = atoi(token);
