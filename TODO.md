@@ -178,3 +178,4 @@
             or have a function to refresh the sidebar.
     - 22 [X] Left to budget value in sidebar is incorrect.
     - 23 [X] When no transactions exist it is impossible to quit
+    - 24 [X] Out of bounds access not checked in refresh_budget_loop

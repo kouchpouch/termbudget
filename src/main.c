@@ -2331,7 +2331,6 @@ void nc_edit_transaction(long b) {
 	FILE *fptr = open_record_csv("r+");
 	fseek(fptr, b, SEEK_SET);
 	unsigned int linenum = boff_to_linenum(b);
-	int edit_field;
 
 	char linebuff[LINE_BUFFER];
 	char *line = fgets(linebuff, sizeof(linebuff), fptr);
@@ -2341,7 +2340,6 @@ void nc_edit_transaction(long b) {
 	}
 
 	tokenize_record(ld, &line);
-	//memcpy(pld, ld, sizeof(*ld));
 
 	nc_print_record_vert(wptr_edit, ld, BOX_OFFSET);
 
@@ -2817,27 +2815,27 @@ static void refresh_budget_loop
 	int subw_y_lower = (getmaxy(stdscr) / 2) + (subwin_y / 2) - BOX_OFFSET;
 
 	if (sc->cur_y <= subw_y_upper) {
-		while (sc->cur_y < subw_y_lower) {
+		while (sc->cur_y < subw_y_lower && sc->select_idx + 1 < sc->total_rows) {
 			nc_scroll_next_category(data, nodes, sc, cw, rfptr, bfptr);
 		}
-		while (sc->select_idx != tmp_idx) {
+		while (sc->select_idx != tmp_idx && sc->select_idx > 0) {
 			nc_scroll_prev_category(data, nodes, sc, cw, rfptr, bfptr);
 		}
 	} else if (sc->cur_y >= subw_y_lower) {
-		while (sc->cur_y > subw_y_upper) { 
+		while (sc->cur_y > subw_y_upper && sc->select_idx > 0) { 
 			nc_scroll_prev_category(data, nodes, sc, cw, rfptr, bfptr);
 		}
-		while (sc->select_idx != tmp_idx) {
+		while (sc->select_idx != tmp_idx && sc->select_idx + 1 < sc->total_rows) {
 			nc_scroll_next_category(data, nodes, sc, cw, rfptr, bfptr);
 		}
 	} else {
-		while (sc->cur_y > subw_y_upper) { 
+		while (sc->cur_y > subw_y_upper && sc->select_idx > 0) { 
 			nc_scroll_prev_category(data, nodes, sc, cw, rfptr, bfptr);
 		}
-		while (sc->cur_y < subw_y_lower) {
+		while (sc->cur_y < subw_y_lower && sc->select_idx + 1 < sc->total_rows) {
 			nc_scroll_next_category(data, nodes, sc, cw, rfptr, bfptr);
 		}
-		while (sc->select_idx != tmp_idx) {
+		while (sc->select_idx != tmp_idx && sc->select_idx + 1 < sc->total_rows) {
 			nc_scroll_prev_category(data, nodes, sc, cw, rfptr, bfptr);
 		}
 	}
@@ -2856,7 +2854,7 @@ int n_spaces(int max_x, char *str1, char *str2) {
 }
 
 int show_help_subwindow(void) {
-	int rows = 14;
+	int rows = 15;
 	WINDOW *wptr = create_input_subwindow_n_rows(rows);
 	int y = 1;
 	int mx = getmaxx(wptr);
@@ -3934,6 +3932,11 @@ int nc_main_menu(WINDOW *wptr) {
 
 		case(KEY_RESIZE):
 			wclear(wptr);
+			break;
+		case('H'):
+		case('h'):
+		case('?'):
+			show_help_subwindow();
 			break;
 		}
 	}
