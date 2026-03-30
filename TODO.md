@@ -87,7 +87,7 @@
             income.
     - [ ] Add indicators that the window is scrollable (that it contains more
             data than is displayed)
-    - [ ] Add ability to move categories up and down the budget list
+    - [X] Allow user to move categories to the top of the screen
     - [X] Add help menu
     - [X] Create one function for handling window borders in the read loop
 
