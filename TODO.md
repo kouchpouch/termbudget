@@ -78,7 +78,8 @@
             to use a header parsing function to determine field location.
     - [X] Add csv header verification on program start.
     - [X] Move tui sidebar function to their own file
-    - [ ] Sidebar scrolling
+    - [X] Sidebar scrolling
+        - [ ] Automated sidebar scrolling.
     - [X] Add an easy way to balance a category to match the planned value to
             the record's total amount.
     - [ ] When validating the budget csv against the data csv to create
@@ -87,6 +88,8 @@
             income.
     - [ ] Add indicators that the window is scrollable (that it contains more
             data than is displayed)
+        - [X] For the main "read" loop display the number of records shown
+                and the total number of records.
     - [X] Allow user to move categories to the top of the screen
     - [X] Add help menu
     - [X] Create one function for handling window borders in the read loop
