@@ -111,7 +111,7 @@ Vec *get_matching_line_nums(FILE *fptr, int month, int year);
 char *nc_add_budget_category(int yr, int mo);
 void draw_parent_box_with_sidebar(WINDOW *wptr);
 void draw_scroll_indicator(WINDOW *wptr);
-void draw_read_window_borders_and_text(struct ReadWins *wins, struct ScrollCursor *sc, Vec *psc);
+void draw_read_window_borders_and_text(struct ReadWins *wins, Vec *psc);
 
 char *user_input(int n) {
 	size_t buffersize = n + 1;
@@ -2978,7 +2978,7 @@ void refresh_displayed_counter
 
 void nc_read_budget_loop
 (struct ReadWins *wins, FILE *rfptr, FILE *bfptr, struct SelRecord *sr,
- Vec *psc, CategoryNode **nodes, int yr, int mo)
+ Vec *psc, CategoryNode **nodes)
 {
 	struct ColWidth cw_, *cw = &cw_;
 	struct ScrollCursor sc_, *sc = &sc_;
@@ -3000,7 +3000,7 @@ void nc_read_budget_loop
 
 	nc_print_read_footer(stdscr);
 	nc_print_initial_read_budget_loop(wins->data, sc, nodes, cw, rfptr);
-	draw_read_window_borders_and_text(wins, sc, psc);
+	draw_read_window_borders_and_text(wins, psc);
 	dc->last = sc->displayed;
 
 	while (c != KEY_F(QUIT) && c != '\n' && c != '\r') {
@@ -3230,14 +3230,13 @@ void nc_read_loop
 	nc_print_initial_read_loop(wins->data, sc, cw, fptr, psc);
 	sc->total_rows = psc->size;
 	dc->last = sc->displayed;
-	draw_read_window_borders_and_text(wins, sc, psc);
+	draw_read_window_borders_and_text(wins, psc);
 
 	while (c != KEY_F(QUIT) && c != '\n' && c != '\r') {
 		wrefresh(wins->data);
 		refresh_displayed_counter(wins->parent, sc, dc);
 
 		if (debug_flag) {
-			//nc_print_debug_line(wins->parent, psc->data[sc->select_idx], sc->select_idx, sc->cur_y);
 		}
 		c = wgetch(wins->data);
 
@@ -3481,7 +3480,7 @@ void draw_parent_box_with_sidebar(WINDOW *wptr) {
 /* Draws all of the window borders, then the border text on top. Call this
  * function any time the borders/text need to be updated. */
 void draw_read_window_borders_and_text
-(struct ReadWins *wins, struct ScrollCursor *sc, Vec *psc)
+(struct ReadWins *wins, Vec *psc)
 {
 	// Draw borders in order for correct intersecting lines
 	if (wins->sidebar_parent != NULL || wins->sidebar_body != NULL) {
@@ -3491,15 +3490,6 @@ void draw_read_window_borders_and_text
 		box(wins->parent, 0, 0);
 		nc_print_balances_text(wins->parent, psc);
 	}
-
-//	// For calculating the length of, for example, "32 out of 50 records shown"
-//	char *disp = "/ Records Displayed";
-//	int x_offset = strlen(disp) + intlen(sc->displayed) + 1 + intlen(sc->total_rows) + 1;
-//
-//	if (sc->displayed < sc->total_rows) {
-//		mvwprintw(wins->parent, getmaxy(wins->parent) - 1, getmaxx(wins->data) - x_offset, "%d/%d Records Displayed", sc->displayed, sc->total_rows);
-//		wrefresh(wins->parent);
-//	}
 }
 
 void get_dates(struct SelRecord *sr, struct Datevals *dates) {
@@ -3680,7 +3670,7 @@ void nc_read_setup(int sel_year, int sel_month, int sort, struct ReadRet *rret) 
 		nc_read_loop(wins, fptr, sr, psc, nodes);
 	} else if (sort == SORT_CATG) {
 		FILE *bfptr = open_budget_csv("r");
-		nc_read_budget_loop(wins, fptr, bfptr, sr, psc, nodes, dates->year, dates->month);
+		nc_read_budget_loop(wins, fptr, bfptr, sr, psc, nodes); 
 		fclose(bfptr);
 	}
 
