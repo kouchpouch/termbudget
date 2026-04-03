@@ -42,13 +42,21 @@
 #define INPUT_MSG_Y_OFFSET 2
 
 struct ScrollCursor {
-	int total_rows;
-	int displayed;
+	/* Total size of the data that can be shown. */
+	int total_rows; 
+
+	/* Total number of records and/or categories displayed on the screen. */
+	int displayed; 
 	int select_idx;
 	int cur_y;
 	int catg_node;
 	int catg_data;
 	size_t sidebar_idx;
+};
+
+struct DispCursor {
+	int first;
+	int last;
 };
 
 struct Datevals {
