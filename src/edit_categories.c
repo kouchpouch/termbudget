@@ -31,6 +31,7 @@ enum fields {
 	EDIT_TYPE,
 	ZERO_AMNT,
 	RENAME_CATG,
+	MOVE_TO_TOP,
 	DEL_CATG
 };
 
@@ -168,7 +169,7 @@ void mv_category_to_top(CategoryNode **nodes, size_t i) {
 }
 
 static int select_catg_field(void) {
-	size_t n_options = 5;
+	const size_t n_options = 6;
 	struct MenuParams *mp = malloc(sizeof(*mp) + (sizeof(char *) * n_options));
 
 	if (mp == NULL) {
@@ -181,6 +182,7 @@ static int select_catg_field(void) {
 	mp->strings[EDIT_TYPE] = "Edit Type";
 	mp->strings[ZERO_AMNT] = "Zero Out";
 	mp->strings[RENAME_CATG] = "Rename";
+	mp->strings[MOVE_TO_TOP] = "Move to top";
 	mp->strings[DEL_CATG] = "Delete";
 
 	int retval = nc_input_menu(mp);
@@ -226,7 +228,9 @@ static void free_lda(struct LineData **lda, size_t sz) {
  * store their current line number and some index to determine which
  * linedata to print at which line. Maybe a struct LineData **ld_head
  * indexed to match a vec of FPIs. */
-//---//
+
+/*---*/
+
 /* Replaces the category field of records contained in nodes[node_idx] with
  * catg. */
 static int replace_many_records_categories
@@ -344,6 +348,9 @@ void nc_edit_category(long node_idx, long nmembers, CategoryNode **nodes) {
 			goto err_fail;
 		}
 		replace_many_records_categories(nodes, node_idx, bt->catg);
+		break;
+	case MOVE_TO_TOP:
+		mv_category_to_top(nodes, node_idx);
 		break;
 	case DEL_CATG:
 		if (nmembers > 0) {
