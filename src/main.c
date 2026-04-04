@@ -24,6 +24,7 @@
 #include <limits.h>
 
 #include "main.h"
+#include "read_init.h"
 #include "edit_categories.h"
 #include "get_date.h"
 #include "fileintegrity.h"
@@ -50,12 +51,12 @@ int debug_flag;
 int cli_flag;
 int verify_flag;
 
-struct ReadRet {
-	int flag;
-	int yr;
-	int mo;
-	int sort;
-};
+//struct ReadRet {
+//	int flag;
+//	int yr;
+//	int mo;
+//	int sort;
+//};
 
 enum EditRecordFields {
 	NO_SEL,
@@ -87,11 +88,11 @@ const char *abbr_months[] = {
 	"DEC"
 };
 
-struct SelRecord {
-	unsigned int flag;
-	long index;
-	long opt; // Optional flag
-};
+//struct SelRecord {
+//	unsigned int flag;
+//	long index;
+//	long opt; // Optional flag
+//};
 
 void free_categories(struct Categories *pc);
 Vec *get_months_with_data(FILE *fptr, int matchyear, int field);
@@ -104,7 +105,7 @@ void nc_read_setup(int sel_year, int sel_month, int sort, struct ReadRet *rret);
 bool nc_confirm_record(struct LineData *ld);
 void nc_print_record_hr(WINDOW *wptr, struct ColWidth *cw, struct LineData *ld, int y);
 void nc_print_record_vert(WINDOW *wptr, struct LineData *ld, int x_off);
-struct Categories *list_categories(int month, int year);
+/* struct Categories *get_categories(int month, int year); */
 int mv_tmp_to_record_file(FILE *tempfile, FILE *mainfile);
 int delete_csv_record(int linetodelete);
 Vec *get_matching_line_nums(FILE *fptr, int month, int year);
@@ -291,7 +292,7 @@ char *input_str_retry(char *msg) {
 char *input_category(int month, int year) {
 	char *str;
 	bool cat_exists = false;
-	struct Categories *pc = list_categories(month, year);
+	struct Categories *pc = get_categories(month, year);
 
 	if (pc->size > 0) {
 		puts("Categories:");
@@ -507,65 +508,6 @@ void replace_category(struct BudgetTokens *bt, long b) {
 }
 
 /*
- * For a given month and year, return an array of strings from the category
- * field of the RECORD_DIR csv file.
- */
-struct Categories *list_categories(int month, int year) {
-	FILE *fptr = open_record_csv("r");
-	char *line;
-	char *token;
-	char linebuff[LINE_BUFFER];
-	struct Categories *pc = malloc(sizeof(*pc) + (sizeof(char *) * REALLOC_INCR));
-	pc->size = 0;
-	pc->capacity = REALLOC_INCR;
-
-	seek_beyond_header(fptr);
-
-	while ((line = fgets(linebuff, sizeof(linebuff), fptr)) != NULL) {
-		if (month != atoi(strsep(&line, ","))) {
-			goto duplicate_exists;
-		}
-
-		seek_n_fields(&line, 1);
-		
-		if (year != atoi(strsep(&line, ","))) {
-			goto duplicate_exists;
-		}
-
-		token = strsep(&line, ",");
-		token[strcspn(token, "\n")] = '\0';
-
-		if (pc->size != 0) { // Duplicate Check
-			for (size_t i = 0; i < pc->size; i++) {
-				if (strcasecmp(pc->categories[i], token) == 0) {
-					goto duplicate_exists;
-				}
-			}
-		}
-
-		if (pc->size >= pc->capacity) {
-			pc->capacity += REALLOC_INCR;
-			struct Categories *temp = realloc(pc, sizeof(struct Categories) + 
-										((pc->capacity) * sizeof(char *)));
-			if (temp == NULL) {
-				memory_allocate_fail();
-			}
-			pc = temp;
-		}
-
-		pc->categories[pc->size] = strdup(token);
-		pc->size++;
-
-duplicate_exists:
-		memset(linebuff, 0, sizeof(linebuff)); // Reset the Buffer
-	}
-
-	fclose(fptr);
-	fptr = NULL;
-	return pc; // Struct and each index of categories must be free'd
-}
-
-/*
  * Returns an vector of byte offsets sorted by date. No actual sorting is done
  * in this function, it is assumed the CSV is already sorted. This is basically
  * just moving memory around for the sake of portability and other sorting
@@ -600,7 +542,7 @@ Vec *sort_by_category(FILE *fptr, Vec *pidx, Vec *plines, int yr, int mo)
 	prsc->size = 0;
 
 	rewind(fptr);
-	struct Categories *pc = list_categories(mo, yr);
+	struct Categories *pc = get_categories(mo, yr);
 
 	char linebuff[LINE_BUFFER];
 	char *line;
@@ -693,13 +635,6 @@ bool category_exists_in_budget(char *catg, int month, int year) {
 	return false;
 }
 
-//void free_categories(struct Categories *pc) {
-//	for (size_t i = 0; i < pc->size; i++) {
-//		free(pc->categories[i]);
-//	}
-//	free(pc);
-//}
-
 int cmp_catg_and_fix(struct Categories *prc, struct Categories *pbc, 
 					 int m, int y) 
 {
@@ -758,7 +693,7 @@ int verify_categories_exist_in_budget(void) {
 		rewind(rfptr);
 		Vec *months = get_months_with_data(rfptr, years->data[i], 1);
 		for (size_t j = 0; j < months->size; j++) {
-			prc = list_categories(months->data[j], years->data[i]);
+			prc = get_categories(months->data[j], years->data[i]);
 			pbc = get_budget_catg_by_date(months->data[j], years->data[i]);
 			corrected += cmp_catg_and_fix(prc, pbc, months->data[j], years->data[i]);
 			free_categories(prc);
@@ -1303,113 +1238,6 @@ Vec *consolidate_year_vectors(Vec *vec1, Vec *vec2) {
 	qsort(result->data, result->size, sizeof(result->data[0]), compare_for_sort);
 
 	return result;
-}
-
-Vec *get_years_with_data(FILE *fptr, int field) {
-	Vec *pr = malloc(sizeof(*pr) + sizeof(long) * REALLOC_INCR);
-	if (pr == NULL) {
-		memory_allocate_fail();
-	}
-
-	pr->size = 0;
-	pr->capacity = REALLOC_INCR;
-
-	char linebuff[LINE_BUFFER];
-	char *str;
-	int prevyear = 0;
-	int tempyear;
-
-	if (seek_beyond_header(fptr) == -1) {
-		puts("Failed to read header");
-		free(pr);
-		return NULL;
-	}
-
-	/* Check first record outside of the loop to check if no records exist.
-	 * If none exists, the function returns NULL */
-	str = fgets(linebuff, sizeof(linebuff), fptr);
-	if (str == NULL) {
-		free(pr);
-		return NULL;
-	}
-	seek_n_fields(&str, field);
-	tempyear = atoi(strsep(&str, ","));
-	prevyear = tempyear;
-	pr->data[pr->size] = tempyear;
-	pr->size++;
-
-	while ((str = fgets(linebuff, sizeof(linebuff), fptr)) != NULL) {
-		if (pr->size >= pr->capacity) {
-			pr->capacity += REALLOC_INCR;
-			Vec *tmp = realloc(pr, sizeof(*pr) + (sizeof(long) * pr->capacity));
-			if (tmp == NULL) {
-				free(pr);
-				memory_allocate_fail();
-			}
-			pr = tmp;
-		}
-		seek_n_fields(&str, field);
-		tempyear = atoi(strsep(&str, ","));
-		if (tempyear != prevyear) {
-			prevyear = tempyear;
-			pr->data[pr->size] = tempyear;
-			pr->size++;
-		}
-	}
-
-	return pr;
-}
-
-void init_data_array(Vec *vec) {
-	for (size_t i = 0; i < vec->size; i++) {
-		vec->data[i] = 0;
-	}
-}
-
-/*
- * Returns a malloc'd vector containing all months with records in file 'fptr',
- * which match the year 'matchyear'. Pass the parameter 'fields' to tell
- * the function how many CSV fields to skip ahead. This 'fields' passing is
- * temporary and a new function will be added to find which fields to read
- * based on the header.
- */
-Vec *get_months_with_data(FILE *fptr, int matchyear, int field) {
-	char linebuff[LINE_BUFFER];
-	char *str;
-	Vec *months = malloc(sizeof(*months) + (sizeof(long) * MONTHS_IN_YEAR));
-
-	if (months == NULL) {
-		memory_allocate_fail();
-	}
-
-	months->size = MONTHS_IN_YEAR;
-	init_data_array(months);
-
-	int year;
-	int month;
-	int i = 0;
-
-	if (seek_beyond_header(fptr) == -1) {
-		puts("Failed to read header");
-	}
-
-	while ((str = fgets(linebuff, sizeof(linebuff), fptr)) != NULL) {
-		month = atol(strsep(&str, ","));
-		seek_n_fields(&str, field);
-		year = atol(strsep(&str, ","));
-		if (matchyear == year) {
-			if (months->data[0] == 0) {
-				months->data[0] = month;
-			} else if (month != months->data[i]) {
-				i++;
-				months->data[i] = month;
-			}
-		} else if (matchyear < year) {
-			break;
-		}
-	}
-
-	return months;
 }
 
 /* Returns the row on the bottom 4th of wptr */
@@ -2053,56 +1881,6 @@ int nc_read_select_month(WINDOW *wptr, int year) {
 	return selected_month;
 }
 
-Vec *get_matching_line_nums(FILE *fptr, int month, int year) {
-	rewind(fptr);
-	Vec *pl = malloc(sizeof(*pl) + (sizeof(long) * REALLOC_INCR));
-	if (pl == NULL) {
-		memory_allocate_fail();
-	}
-
-	pl->size = 0;
-	pl->capacity = REALLOC_INCR;
-
-	long linenumber = 0;
-	int line_month, line_year;
-	char linebuff[LINE_BUFFER];
-	char *str;
-
-	if (seek_beyond_header(fptr) == -1) {
-		perror("Unable to read header");
-		free(pl);
-		return NULL;
-	}
-
-	while (1) {
-		str = fgets(linebuff, sizeof(linebuff), fptr);
-		if (str == NULL) {
-			break;
-		}
-
-		line_month = atoi(strsep(&str, ","));
-		seek_n_fields(&str, 1);
-		line_year = atoi(strsep(&str, ","));
-		if (year == line_year && month == line_month) {
-			if (pl->size >= pl->capacity) {
-				pl->capacity += REALLOC_INCR;
-				Vec *tmp = 
-					realloc(pl, sizeof(*pl) + (sizeof(long) * pl->capacity));
-				if (tmp == NULL) {
-					free(pl);
-					memory_allocate_fail();
-				}
-				pl = tmp;
-			}
-			pl->data[pl->size] = linenumber;
-			pl->size++;	
-		}
-		linenumber++;
-	}
-
-	return pl;
-}
-
 /* Returns all income records subtracted by expense records */
 double get_expenditures_per_category(struct BudgetTokens *bt) {
 	double total = 0;
@@ -2696,10 +2474,10 @@ int nc_scroll_next_category
 	if (sc->catg_data < 0 && nodes[sc->catg_node]->data->size > 0) {
 		mvwchgat(wptr, sc->cur_y, 0, -1, A_NORMAL, category_color(sc->catg_node), NULL); 
 		sc->catg_data = 0;
+		retval++;
 
 	/* Explicit cast of sc->catg_data to size_t is okay, the previous condition checks
 	 * that it is a positive number.  vvvvvv */
-		retval++;
 	} else if (sc->catg_data >= 0 && (size_t)sc->catg_data < nodes[sc->catg_node]->data->size - 1) {
 		mvwchgat(wptr, sc->cur_y, 0, -1, A_NORMAL, 0, NULL); 
 		sc->catg_data++;
@@ -2975,7 +2753,6 @@ void refresh_displayed_counter
  * Categories will have their own row in the data with a user-modifiable value
  * retrived from BUDGET_DIR.
  */
-
 void nc_read_budget_loop
 (struct ReadWins *wins, FILE *rfptr, FILE *bfptr, struct SelRecord *sr,
  Vec *psc, CategoryNode **nodes)
@@ -3360,74 +3137,6 @@ void nc_read_loop
 	sr->flag = NO_SELECT;
 	sr->index = 0;
 	return;
-}
-
-void free_category_nodes(CategoryNode **nodes) {
-	int i = 0;
-	while (1) {
-		if (nodes[i]->next == NULL) {
-			free(nodes[i]->data);
-			free(nodes[i]);
-			break;
-		}
-		free(nodes[i]->data);
-		free(nodes[i]);
-		i++;
-	}
-
-	free(nodes);
-}
-
-/*
- * Initializes CategoryNode.data. The data is a Vec which contains all of
- * the file position byte offsets for the records that match the CategoryNode's
- * category.
- */
-void init_category_nodes(CategoryNode *node, Vec *chunk, int m, int y) {
-	struct BudgetTokens *pbt = tokenize_budget_byte_offset(node->catg_fp);
-	Vec *pr = get_records_by_any(m, -1, y, pbt->catg, NULL, -1, -1, chunk);
-	node->data = pr;
-	free_budget_tokens(pbt);
-}
-
-/*
- * Returns a pointer to a pointer to the first CategoryNode in a doubly 
- * linked list of CategoryNodes.
- */
-CategoryNode **create_category_nodes(int m, int y) {
-	Vec *pcbo = get_budget_catg_by_date_bo(m, y);
-	Vec *chunk = get_records_by_mo_yr(m, y);
-	unsigned long n = pcbo->size;
-	CategoryNode **pnode = malloc(sizeof(CategoryNode *) * n);
-	if (pnode == NULL) {
-		memory_allocate_fail();
-	}
-
-	for (size_t i = 0; i < n; i++) {
-		pnode[i] = malloc(sizeof(CategoryNode));
-		if (pnode[i] == NULL) {
-			memory_allocate_fail();
-		}
-
-		pnode[i]->catg_fp = pcbo->data[i];
-
-		if (i == 0) {
-			pnode[0]->prev = NULL;
-		} else if (i > 0) {
-			pnode[i]->prev = pnode[i - 1];
-			pnode[i - 1]->next = pnode[i];		
-		}
-
-		if (i == n - 1) {
-			pnode[i]->next = NULL;
-		}
-
-		init_category_nodes(pnode[i], chunk, m, y);
-	}
-
-	free(chunk);
-	free(pcbo);
-	return pnode;
 }
 
 struct MenuParams *init_add_main_menu(void) {
