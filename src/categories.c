@@ -15,7 +15,10 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+
 #include "categories.h"
+#include "main.h"
+#include "parser.h"
 
 void free_categories(struct Categories *pc) {
 	for (size_t i = 0; i < pc->size; i++) {
@@ -24,3 +27,70 @@ void free_categories(struct Categories *pc) {
 	free(pc);
 }
 
+void free_category_nodes(CategoryNode **nodes) {
+	int i = 0;
+	while (1) {
+		if (nodes[i]->next == NULL) {
+			free(nodes[i]->data);
+			free(nodes[i]);
+			break;
+		}
+		free(nodes[i]->data);
+		free(nodes[i]);
+		i++;
+	}
+
+	free(nodes);
+}
+
+/*
+ * Initializes CategoryNode.data. The data is a Vec which contains all of
+ * the file position byte offsets for the records that match the CategoryNode's
+ * category.
+ */
+static void init_category_nodes(CategoryNode *node, Vec *chunk, int m, int y) {
+	struct BudgetTokens *pbt = tokenize_budget_byte_offset(node->catg_fp);
+	Vec *pr = get_records_by_any(m, -1, y, pbt->catg, NULL, -1, -1, chunk);
+	node->data = pr;
+	free_budget_tokens(pbt);
+}
+
+/*
+ * Returns a pointer to a pointer to the first CategoryNode in a doubly 
+ * linked list of CategoryNodes.
+ */
+CategoryNode **create_category_nodes(int m, int y) {
+	Vec *pcbo = get_budget_catg_by_date_bo(m, y);
+	Vec *chunk = get_records_by_mo_yr(m, y);
+	unsigned long n = pcbo->size;
+	CategoryNode **pnode = malloc(sizeof(CategoryNode *) * n);
+	if (pnode == NULL) {
+		memory_allocate_fail();
+	}
+
+	for (size_t i = 0; i < n; i++) {
+		pnode[i] = malloc(sizeof(CategoryNode));
+		if (pnode[i] == NULL) {
+			memory_allocate_fail();
+		}
+
+		pnode[i]->catg_fp = pcbo->data[i];
+
+		if (i == 0) {
+			pnode[0]->prev = NULL;
+		} else if (i > 0) {
+			pnode[i]->prev = pnode[i - 1];
+			pnode[i - 1]->next = pnode[i];		
+		}
+
+		if (i == n - 1) {
+			pnode[i]->next = NULL;
+		}
+
+		init_category_nodes(pnode[i], chunk, m, y);
+	}
+
+	free(chunk);
+	free(pcbo);
+	return pnode;
+}
