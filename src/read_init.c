@@ -19,7 +19,7 @@
 #include <stdbool.h>
 #include <ncurses.h>
 
-#include "read.h"
+#include "read_init.h"
 #include "main.h"
 #include "edit_categories.h"
 #include "get_date.h"
@@ -34,12 +34,12 @@
 #include "categories.h"
 #include "flags.h"
 
-enum SortBy {
+static enum SortBy {
 	SORT_DATE = 0,
 	SORT_CATG = 1
 } sortby;
 
-const char *abbr_months[] = {
+static const char *abbr_months[] = {
 	"JAN", 
 	"FEB", 
 	"MAR", 
@@ -562,9 +562,35 @@ err_null:
 
 /* Draws a border around the window 'wptr' with "T" shaped characters to
  * mesh seamlessly with the window border of the sidebar. */
-void draw_parent_box_with_sidebar(WINDOW *wptr) {
+static void draw_parent_box_with_sidebar(WINDOW *wptr) {
 	wborder(wptr, 0, 0, 0, 0, 0, ACS_TTEE, 0, ACS_BTEE);
 	wrefresh(wptr);
+}
+
+static void print_date(WINDOW *wptr, int yr, int mo) {
+	int y = 0;
+	int x = BOX_OFFSET;
+	mvwprintw(wptr, y, x, "%s %d", abbr_months[mo - 1], yr);
+	wrefresh(wptr);
+}
+
+static void print_sort_text(WINDOW *wptr, int sort) {
+	char *text;
+	sort == SORT_DATE ? (text = "Date") : (text = "Category");
+	int y = 0;
+	int x = getmaxx(wptr) - strlen(text) - strlen("Sort By: ") - BOX_OFFSET;
+	mvwprintw(wptr, y, x, "Sort By: %s", text);
+	wrefresh(wptr);
+}
+
+static void free_windows(struct ReadWins *wins) {
+	nc_exit_window(wins->data);
+	nc_exit_window(wins->parent);
+	if (wins->sidebar_parent != NULL) {
+		nc_exit_window(wins->sidebar_parent);
+		nc_exit_window(wins->sidebar_body);
+	}
+	free(wins);
 }
 
 void nc_read_setup
@@ -632,7 +658,7 @@ void nc_read_setup
 
 	nodes = create_category_nodes(dates->month, dates->year);
 	if (debug_flag) {
-		debug_category_nodes(wins->data, nodes);
+//		debug_category_nodes(wins->data, nodes);
 	}
 
 	if (sidebar_exists) {
@@ -644,8 +670,8 @@ void nc_read_setup
 	}
 
 	print_column_headers(wins->parent, BOX_OFFSET);
-	nc_print_date(wins->parent, dates->year, dates->month);
-	nc_print_sort_text(wins->parent, sort);
+	print_date(wins->parent, dates->year, dates->month);
+	print_sort_text(wins->parent, sort);
 
 	if (sort == SORT_DATE) {
 		nc_read_loop(wins, fptr, sr, psc, nodes);
@@ -678,7 +704,6 @@ err_select_date_fail:
 	switch(sr->flag) {
 	case(NO_SELECT):
 		rret->flag = RRET_DEFAULT;
-//		nc_read_setup_default();
 		break;
 	case(ADD):
 		nc_print_input_footer(stdscr);
@@ -699,7 +724,6 @@ err_select_date_fail:
 			}
 			free(mp);
 			rret->flag = RRET_DEFAULT;
-//			nc_read_setup_default();
 		} else {
 			struct MenuParams *mp = init_add_menu();
 			int c = nc_input_menu(mp);
@@ -711,18 +735,16 @@ err_select_date_fail:
 			}
 			free(mp);
 			rret->flag = RRET_BYDATE;
-//			nc_read_setup(dates->year, dates->month, sort);
 		}
 		break;
+
 	case(EDIT):
 		nc_print_quit_footer(stdscr);
 		nc_edit_transaction(sr->index);
 		rret->flag = RRET_BYDATE;
-//		nc_read_setup(dates->year, dates->month, sort);
 		break;
 	case(READ):
 		rret->flag = RRET_DEFAULT;
-//		nc_read_setup_default(rret);
 		break;
 	case(QUIT):
 		rret->flag = RRET_QUIT;
@@ -738,12 +760,11 @@ err_select_date_fail:
 		}
 		rret->flag = RRET_BYDATE;
 		rret->sort = sort;
-//		nc_read_setup(dates->year, dates->month, sort);
 		break;
+
 	case(OVERVIEW):
 		nc_overview_setup(dates->year);
 		rret->flag = RRET_BYDATE;
-//		nc_read_setup(dates->year, dates->month, sort);
 		break;
 	case(EDIT_CATG):
 		nc_edit_category(sr->index, sr->opt, nodes); 
@@ -751,22 +772,19 @@ err_select_date_fail:
 		nodes = NULL;
 		if (n_records > 0) {
 			rret->flag = RRET_BYDATE;
-//			nc_read_setup(dates->year, dates->month, sort);
 		} else {
 			rret->flag = RRET_DEFAULT;
-//			nc_read_setup_default();
 		}
 		break;
+
 	case(RESIZE):
 		while (test_terminal_size() == -1) {
 			getch();
 		}
 		if (dates->month > 0 && dates->year > 0) {
 			rret->flag = RRET_BYDATE;
-//			nc_read_setup(dates->year, dates->month, sort);
 		} else {
 			rret->flag = RRET_DEFAULT;
-//			nc_read_setup_default();
 		}
 		break;
 	case(NO_RCRD):
@@ -788,6 +806,7 @@ err_select_date_fail:
 			break;
 		}
 		break;
+
 	default:
 		rret->flag = RRET_QUIT;
 		break;

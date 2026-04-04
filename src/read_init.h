@@ -13,8 +13,8 @@
  * with this program. If not, see <https://www.gnu.org/licenses/>. 
  */
 
-#ifndef READ_H
-#define READ_H
+#ifndef READ_INIT_H
+#define READ_INIT_H
 
 #include <stdio.h>
 
