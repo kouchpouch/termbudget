@@ -108,6 +108,30 @@ extern bool month_or_year_exists(int m, int y);
 /* Returns all income records subtracted by expense records */
 extern double get_expenditures_per_category(struct BudgetTokens *bt);
 
+/* Returns a vector of years which contain data */
+extern Vec *get_years_with_data(FILE *fptr, int field);
+
+/*
+ * Returns a malloc'd vector containing all months with records in file 'fptr',
+ * which match the year 'matchyear'. Pass the parameter 'fields' to tell
+ * the function how many CSV fields to skip ahead. This 'fields' passing is
+ * temporary and a new function will be added to find which fields to read
+ * based on the header.
+ */
+extern Vec *get_months_with_data(FILE *fptr, int matchyear, int field);
+
+/*
+ * Returns a vector containing the line numbers of the records with matching
+ * month and year.
+ */
+extern Vec *get_matching_line_nums(FILE *fptr, int month, int year);
+
+/*
+ * For a given month and year, return an array of strings from the category
+ * field of the RECORD_DIR csv file.
+ */
+extern struct Categories *get_categories(int month, int year);
+
 /* Uses get_records_by_any with all parameters except year as NULL
  * or -1, omitting the search for other fields */
 extern Vec *get_records_by_yr(int year);
