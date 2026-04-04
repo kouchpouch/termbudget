@@ -265,6 +265,222 @@ bool month_or_year_exists(int m, int y) {
 	return false;
 }
 
+Vec *get_years_with_data(FILE *fptr, int field) {
+	Vec *pr = malloc(sizeof(*pr) + sizeof(long) * REALLOC_INCR);
+	if (pr == NULL) {
+		memory_allocate_fail();
+	}
+
+	pr->size = 0;
+	pr->capacity = REALLOC_INCR;
+
+	char linebuff[LINE_BUFFER];
+	char *str;
+	int prevyear = 0;
+	int tempyear;
+
+	if (seek_beyond_header(fptr) == -1) {
+		puts("Failed to read header");
+		free(pr);
+		return NULL;
+	}
+
+	/* Check first record outside of the loop to check if no records exist.
+	 * If none exists, the function returns NULL */
+	str = fgets(linebuff, sizeof(linebuff), fptr);
+	if (str == NULL) {
+		free(pr);
+		return NULL;
+	}
+	seek_n_fields(&str, field);
+	tempyear = atoi(strsep(&str, ","));
+	prevyear = tempyear;
+	pr->data[pr->size] = tempyear;
+	pr->size++;
+
+	while ((str = fgets(linebuff, sizeof(linebuff), fptr)) != NULL) {
+		if (pr->size >= pr->capacity) {
+			pr->capacity += REALLOC_INCR;
+			Vec *tmp = realloc(pr, sizeof(*pr) + (sizeof(long) * pr->capacity));
+			if (tmp == NULL) {
+				free(pr);
+				memory_allocate_fail();
+			}
+			pr = tmp;
+		}
+		seek_n_fields(&str, field);
+		tempyear = atoi(strsep(&str, ","));
+		if (tempyear != prevyear) {
+			prevyear = tempyear;
+			pr->data[pr->size] = tempyear;
+			pr->size++;
+		}
+	}
+
+	return pr;
+}
+
+static void init_data_array(Vec *vec) {
+	for (size_t i = 0; i < vec->size; i++) {
+		vec->data[i] = 0;
+	}
+}
+
+/*
+ * Returns a malloc'd vector containing all months with records in file 'fptr',
+ * which match the year 'matchyear'. Pass the parameter 'fields' to tell
+ * the function how many CSV fields to skip ahead. This 'fields' passing is
+ * temporary and a new function will be added to find which fields to read
+ * based on the header.
+ */
+Vec *get_months_with_data(FILE *fptr, int matchyear, int field) {
+	char linebuff[LINE_BUFFER];
+	char *str;
+	Vec *months = malloc(sizeof(*months) + (sizeof(long) * MONTHS_IN_YEAR));
+
+	if (months == NULL) {
+		memory_allocate_fail();
+	}
+
+	months->size = MONTHS_IN_YEAR;
+	init_data_array(months);
+
+	int year;
+	int month;
+	int i = 0;
+
+	if (seek_beyond_header(fptr) == -1) {
+		puts("Failed to read header");
+	}
+
+	while ((str = fgets(linebuff, sizeof(linebuff), fptr)) != NULL) {
+		month = atol(strsep(&str, ","));
+		seek_n_fields(&str, field);
+		year = atol(strsep(&str, ","));
+		if (matchyear == year) {
+			if (months->data[0] == 0) {
+				months->data[0] = month;
+			} else if (month != months->data[i]) {
+				i++;
+				months->data[i] = month;
+			}
+		} else if (matchyear < year) {
+			break;
+		}
+	}
+
+	return months;
+}
+
+Vec *get_matching_line_nums(FILE *fptr, int month, int year) {
+	rewind(fptr);
+	Vec *pl = malloc(sizeof(*pl) + (sizeof(long) * REALLOC_INCR));
+	if (pl == NULL) {
+		memory_allocate_fail();
+	}
+
+	pl->size = 0;
+	pl->capacity = REALLOC_INCR;
+
+	long linenumber = 0;
+	int line_month, line_year;
+	char linebuff[LINE_BUFFER];
+	char *str;
+
+	if (seek_beyond_header(fptr) == -1) {
+		perror("Unable to read header");
+		free(pl);
+		return NULL;
+	}
+
+	while (1) {
+		str = fgets(linebuff, sizeof(linebuff), fptr);
+		if (str == NULL) {
+			break;
+		}
+
+		line_month = atoi(strsep(&str, ","));
+		seek_n_fields(&str, 1);
+		line_year = atoi(strsep(&str, ","));
+		if (year == line_year && month == line_month) {
+			if (pl->size >= pl->capacity) {
+				pl->capacity += REALLOC_INCR;
+				Vec *tmp = 
+					realloc(pl, sizeof(*pl) + (sizeof(long) * pl->capacity));
+				if (tmp == NULL) {
+					free(pl);
+					memory_allocate_fail();
+				}
+				pl = tmp;
+			}
+			pl->data[pl->size] = linenumber;
+			pl->size++;	
+		}
+		linenumber++;
+	}
+
+	return pl;
+}
+
+/*
+ * For a given month and year, return an array of strings from the category
+ * field of the RECORD_DIR csv file.
+ */
+struct Categories *get_categories(int month, int year) {
+	FILE *fptr = open_record_csv("r");
+	char *line;
+	char *token;
+	char linebuff[LINE_BUFFER];
+	struct Categories *pc = malloc(sizeof(*pc) + (sizeof(char *) * REALLOC_INCR));
+	pc->size = 0;
+	pc->capacity = REALLOC_INCR;
+
+	seek_beyond_header(fptr);
+
+	while ((line = fgets(linebuff, sizeof(linebuff), fptr)) != NULL) {
+		if (month != atoi(strsep(&line, ","))) {
+			goto duplicate_exists;
+		}
+
+		seek_n_fields(&line, 1);
+		
+		if (year != atoi(strsep(&line, ","))) {
+			goto duplicate_exists;
+		}
+
+		token = strsep(&line, ",");
+		token[strcspn(token, "\n")] = '\0';
+
+		if (pc->size != 0) { // Duplicate Check
+			for (size_t i = 0; i < pc->size; i++) {
+				if (strcasecmp(pc->categories[i], token) == 0) {
+					goto duplicate_exists;
+				}
+			}
+		}
+
+		if (pc->size >= pc->capacity) {
+			pc->capacity += REALLOC_INCR;
+			struct Categories *temp = realloc(pc, sizeof(struct Categories) + 
+										((pc->capacity) * sizeof(char *)));
+			if (temp == NULL) {
+				memory_allocate_fail();
+			}
+			pc = temp;
+		}
+
+		pc->categories[pc->size] = strdup(token);
+		pc->size++;
+
+duplicate_exists:
+		memset(linebuff, 0, sizeof(linebuff)); // Reset the Buffer
+	}
+
+	fclose(fptr);
+	fptr = NULL;
+	return pc; // Struct and each index of categories must be free'd
+}
+
 Vec *get_records_by_yr(int year) {
 	return get_records_by_any(-1, -1, year, NULL, NULL, -1, -1, NULL);
 }
