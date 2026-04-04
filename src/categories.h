@@ -42,6 +42,8 @@ struct Categories {
 
 extern void free_categories(struct Categories *pc);
 
+extern void free_category_nodes(CategoryNode **nodes);
+
 extern CategoryNode **create_category_nodes(int m, int y);
 
 #endif
