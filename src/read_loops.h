@@ -16,5 +16,17 @@
 #ifndef READ_LOOPS_H
 #define READ_LOOPS_H
 
+#include "read_init.h"
+#include "tui.h"
+#include "vector.h"
+#include "categories.h"
+
+void nc_read_loop
+(struct ReadWins *wins, FILE *fptr, struct SelRecord *sr,
+ Vec *psc, CategoryNode **nodes);
+
+void nc_read_budget_loop
+(struct ReadWins *wins, FILE *rfptr, FILE *bfptr, struct SelRecord *sr,
+ Vec *psc, CategoryNode **nodes);
 
 #endif
