@@ -18,6 +18,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <ncurses.h>
+#include <assert.h>
 
 #include "read_loops.h"
 #include "read_init.h"
@@ -83,24 +84,16 @@ static bool shorten_string(WINDOW *wptr) {
 	}
 }
 
-/* Prints record from ld, in vertical format, 5 rows. */
-//static void nc_print_record_vert(WINDOW *wptr, struct LineData *ld, int x_off) {
-//	mvwprintw(wptr, 1, x_off, "Date--> %d/%d/%d", ld->month, ld->day, ld->year);
-//	mvwprintw(wptr, 2, x_off, "Cat.--> %s", ld->category);
-//	mvwprintw(wptr, 3, x_off, "Desc--> %s", ld->desc);
-//	mvwprintw(wptr, 4, x_off, "Type--> %s", ld->transtype == 0 ? "Expense" : "Income");
-//	mvwprintw(wptr, 5, x_off, "Amt.--> %.2f", ld->amount);
-//}
-
 /* 
  * Prints record from ld, formatting in columns from cw, to a window pointed
  * to by wptr, at a Y-coordinate of y. Truncates desc and category strings
  * if the window is too small.
  */
-static void nc_print_record_hr(WINDOW *wptr, struct ColWidth *cw, 
-						struct LineData *ld, int y)
+static void print_record_hr
+(WINDOW *wptr, struct ColWidth *cw, struct LineData *ld, int y)
 {
-	char *etc = ". ";
+	char *etc = "..";
+	int lenetc = (int)strlen(etc);
 	int x = 0;
 	bool shorten = shorten_string(wptr);
 	wmove(wptr, y, x);
@@ -111,19 +104,19 @@ static void nc_print_record_hr(WINDOW *wptr, struct ColWidth *cw,
 	}
 
 	wmove(wptr, y, x += cw->date);
-	if ((int)strlen(ld->category) > cw->catg - (int)strlen(etc)) {
+	if ((int)strlen(ld->category) > cw->catg - lenetc) {
 		if (getmaxx(wptr) < MIN_COLUMNS) {
-			wprintw(wptr, "%.*s%s", cw->catg - (int)strlen(etc), ld->category, etc);
+			wprintw(wptr, "%.*s%s", cw->catg - lenetc, ld->category, etc);
 		} else {
-			wprintw(wptr, "%.*s%s", cw->catg - (int)strlen(etc), ld->category, etc);
+			wprintw(wptr, "%.*s%s", cw->catg - lenetc, ld->category, etc);
 		}
 	} else {
 		wprintw(wptr, "%s", ld->category);
 	}
 
 	wmove(wptr, y, x += cw->catg);
-	if ((int)strlen(ld->desc) > cw->desc - (int)strlen(etc)) {
-		wprintw(wptr, "%.*s%s", cw->desc - (int)strlen(etc), ld->desc, etc);
+	if ((int)strlen(ld->desc) > cw->desc - lenetc) {
+		wprintw(wptr, "%.*s%s", cw->desc - lenetc, ld->desc, etc);
 	} else {
 		wprintw(wptr, "%s", ld->desc);
 	}
@@ -139,10 +132,11 @@ static void nc_print_record_hr(WINDOW *wptr, struct ColWidth *cw,
 	wprintw(wptr, "$%.2f", ld->amount);
 }
 
-static void nc_print_category_hr(WINDOW *wptr, struct ColWidth *cw,
-						  struct BudgetTokens *bt, int y)
+static void print_category_hr
+(WINDOW *wptr, struct ColWidth *cw, struct BudgetTokens *bt, int y)
 {
 	char *etc = "..";
+	int lenetc = (int)strlen(etc);
 	int x = 0;
 	int print_offset = 0;
 	double e = get_expenditures_per_category(bt);
@@ -150,8 +144,8 @@ static void nc_print_category_hr(WINDOW *wptr, struct ColWidth *cw,
 
 	/* Move cursor past the date columns */
 	wmove(wptr, y, x += cw->date - print_offset);
-	if ((int)strlen(bt->catg) > cw->catg - (int)strlen(etc)) {
-		wprintw(wptr, "%.*s%s", cw->catg - (int)strlen(etc), bt->catg, etc);
+	if ((int)strlen(bt->catg) > cw->catg - lenetc) {
+		wprintw(wptr, "%.*s%s", cw->catg - lenetc, bt->catg, etc);
 	} else {
 		wprintw(wptr, "%s", bt->catg);
 	}
@@ -180,7 +174,7 @@ static int get_total_nodes(CategoryNode **nodes) {
 	return n;
 }
 
-static void nc_print_initial_read_budget_loop
+static void print_init_budget_loop
 (WINDOW *wptr, struct ScrollCursor *sc, CategoryNode **nodes, 
  struct ColWidth *cw, FILE *fptr)
 {
@@ -199,7 +193,7 @@ static void nc_print_initial_read_budget_loop
 		 && i < total_nodes; i++) {
 
 		struct BudgetTokens *bt = tokenize_budget_byte_offset(nodes[i]->catg_fp);
-		nc_print_category_hr(wptr, cw, bt, sc->displayed);
+		print_category_hr(wptr, cw, bt, sc->displayed);
 		mvwchgat(wptr, sc->displayed, 0, -1, A_NORMAL, category_color(i), NULL); 
 		sc->displayed++;
 
@@ -209,7 +203,7 @@ static void nc_print_initial_read_budget_loop
 			fseek(fptr, nodes[i]->data->data[j], SEEK_SET);
 			line_str = fgets(linebuff, sizeof(linebuff), fptr);
 			tokenize_record(&ld, &line_str);
-			nc_print_record_hr(wptr, cw, &ld, sc->displayed);
+			print_record_hr(wptr, cw, &ld, sc->displayed);
 			free_tokenized_record_strings(&ld);
 			sc->displayed++;
 		}
@@ -263,7 +257,7 @@ static void init_scroll_cursor(struct ScrollCursor *sc, CategoryNode **nodes)
 	sc->sidebar_idx = 0;
 }
 
-static void nc_print_balances_text(WINDOW *wptr, Vec *psc) {
+static void print_balances_text(WINDOW *wptr, Vec *psc) {
 	struct Balances pb_, *pb = &pb_;
 	calculate_balance(pb, psc);
 	int total_len = intlen(pb->income) + intlen(pb->expense) + strlen("Expenses: $.00 Income: $.00");
@@ -290,7 +284,7 @@ static void draw_read_window_borders_and_text
 		draw_body_border(wins->sidebar_body);
 	} else {
 		box(wins->parent, 0, 0);
-		nc_print_balances_text(wins->parent, psc);
+		print_balances_text(wins->parent, psc);
 	}
 }
 
@@ -302,11 +296,15 @@ static void draw_read_window_borders_and_text
 static int show_detail_subwindow(char *line) {
 	WINDOW *wptr_detail = create_input_subwindow();
 	int y = getmaxy(wptr_detail);
+
 	box(wptr_detail, 0, 0);
 	mvwxcprintw(wptr_detail, 0, "Details");
+
 	struct LineData linedata_, *ld = &linedata_;
 	tokenize_record(ld, &line);
+
 	nc_print_record_vert(wptr_detail, ld, BOX_OFFSET);
+
 	free_tokenized_record_strings(ld);
 	nc_exit_window_key(wptr_detail);
 	return y;
@@ -344,14 +342,14 @@ static void nc_scroll_prev(long b, FILE *fptr, WINDOW *wptr, struct ColWidth *cw
 		struct BudgetTokens *bt = tokenize_budget_byte_offset(b);
 		wmove(wptr, 0, 0);
 		winsertln(wptr);
-		nc_print_category_hr(wptr, cw, bt, 0);
+		print_category_hr(wptr, cw, bt, 0);
 		free_budget_tokens(bt);
 	} else {
 		struct LineData linedata_, *ld = &linedata_;
 		tokenize_record(ld, &line_str);
 		wmove(wptr, 0, 0);
 		winsertln(wptr);
-		nc_print_record_hr(wptr, cw, ld, 0);
+		print_record_hr(wptr, cw, ld, 0);
 		free_tokenized_record_strings(ld);
 	}
 }
@@ -372,7 +370,7 @@ static void nc_scroll_next
 		wmove(wptr, 0, 0);
 		wdeleteln(wptr);
 		wmove(wptr, getmaxy(wptr) - 1, 0);
-		nc_print_category_hr(wptr, cw, bt, getmaxy(wptr) - 1);
+		print_category_hr(wptr, cw, bt, getmaxy(wptr) - 1);
 		free_budget_tokens(bt);
 	} else {
 		struct LineData linedata_, *ld = &linedata_;
@@ -380,7 +378,7 @@ static void nc_scroll_next
 		wmove(wptr, 0, 0);
 		wdeleteln(wptr);
 		wmove(wptr, getmaxy(wptr) - 1, 0);
-		nc_print_record_hr(wptr, cw, ld, getmaxy(wptr) - 1);
+		print_record_hr(wptr, cw, ld, getmaxy(wptr) - 1);
 		free_tokenized_record_strings(ld);
 	}
 }
@@ -400,7 +398,10 @@ static int nc_scroll_prev_read_loop
 		sc->cur_y = -1;
 	}
 	
-	if (sc->select_idx >= 0 && sc->displayed < psc->size && sc->cur_y == -1) {
+	/* For safe cast */
+	assert(sc->displayed >= 0);
+
+	if (sc->select_idx >= 0 && (size_t)sc->displayed < psc->size && sc->cur_y == -1) {
 		nc_scroll_prev(psc->data[sc->select_idx], fptr, wptr, cw, false);
 		sc->cur_y = getcury(wptr);
 		retval++;
@@ -621,7 +622,7 @@ void nc_read_budget_loop
 	}
 
 	nc_print_read_footer(stdscr);
-	nc_print_initial_read_budget_loop(wins->data, sc, nodes, cw, rfptr);
+	print_init_budget_loop(wins->data, sc, nodes, cw, rfptr);
 	draw_read_window_borders_and_text(wins, psc);
 	dc->last = sc->displayed;
 
@@ -809,7 +810,7 @@ static void nc_print_initial_read_loop
 		fseek(fptr, psc->data[i], SEEK_SET);
 		line_str = fgets(linebuff, sizeof(linebuff), fptr);
 		tokenize_record(&ld, &line_str);
-		nc_print_record_hr(wptr, cw, &ld, i);
+		print_record_hr(wptr, cw, &ld, i);
 		free_tokenized_record_strings(&ld);
 		sc->displayed++;
 	}
