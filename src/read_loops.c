@@ -191,8 +191,8 @@ static void print_init_budget_loop
 	 * displayed (this is to keep track of scrolling).
 	 */
 	for (int i = 0; sc->displayed < max_y && sc->displayed < sc->total_rows 
-		 && i < total_nodes; i++) {
-
+		 && i < total_nodes; i++) 
+	{
 		struct BudgetTokens *bt = tokenize_budget_byte_offset(nodes[i]->catg_fp);
 		print_category_hr(wptr, cw, bt, sc->displayed);
 		mvwchgat(wptr, sc->displayed, 0, -1, A_NORMAL, category_color(i), NULL); 
@@ -208,6 +208,7 @@ static void print_init_budget_loop
 			free_tokenized_record_strings(&ld);
 			sc->displayed++;
 		}
+
 		free_budget_tokens(bt);
 	}
 
@@ -284,7 +285,6 @@ static void draw_read_window_borders_and_text
 		draw_sidebar_parent_border(wins->sidebar_parent);
 		draw_body_border(wins->sidebar_body);
 	} else {
-		box(wins->parent, 0, 0);
 		print_balances_text(wins->parent, psc);
 	}
 }
