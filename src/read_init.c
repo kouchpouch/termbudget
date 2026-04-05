@@ -114,8 +114,9 @@ static void combine_dedup_vectors(Vec *vec1, Vec *vec2, Vec *result) {
 	}
 }
 
-/* Returns a Vec of deduplicated data from record_years and budget_years */
-static Vec *consolidate_year_vectors(Vec *vec1, Vec *vec2) {
+/* Returns a Vec of deduplicated and sorted data from record_years and 
+ * budget_years */
+static Vec *consolidate_years(Vec *vec1, Vec *vec2) {
 	Vec *result = malloc(sizeof(*result) 
 					     + (sizeof(long) * vec1->size) 
 					     + (sizeof(long) * vec2->size));
@@ -136,7 +137,10 @@ static Vec *consolidate_year_vectors(Vec *vec1, Vec *vec2) {
 	return result;
 }
 
-static Vec *init_nc_read_select_year(void) {
+/* Retrieves years with data from RECORD_DIR and BUDGET_DIR CSVs, combines
+ * and deduplicates the data, and returns a malloc'd Vec containing an array
+ * of years that can be selected for viewing. */
+static Vec *init_select_year(void) {
 	FILE *rfptr = open_record_csv("r");
 	FILE *bfptr = open_budget_csv("r");
 
@@ -161,7 +165,7 @@ static Vec *init_nc_read_select_year(void) {
 	fclose(rfptr);
 	fclose(bfptr);
 
-	retval = consolidate_year_vectors(pr, pb);
+	retval = consolidate_years(pr, pb);
 
 	free(pr);
 	pr = NULL;
@@ -171,7 +175,7 @@ static Vec *init_nc_read_select_year(void) {
 	return retval;
 }
 
-static Vec *consolidate_month_vectors(Vec *vec1, Vec *vec2) {
+static Vec *consolidate_months(Vec *vec1, Vec *vec2) {
 	Vec *result = malloc(sizeof(*result) + (sizeof(long) * MONTHS_IN_YEAR));
 	if (result == NULL) {
 		free(vec1);
@@ -189,7 +193,10 @@ static Vec *consolidate_month_vectors(Vec *vec1, Vec *vec2) {
 	return result;
 }
 
-static Vec *init_nc_read_select_month(int year) {
+/* Retrieves months with data from RECORD_DIR and BUDGET_DIR CSVs, combines
+ * and deduplicates the data, and returns a malloc'd Vec containing an array
+ * of months that can be selected for viewing. */
+static Vec *init_select_month(int year) {
 	FILE *rfptr = open_record_csv("r");
 	FILE *bfptr = open_budget_csv("r");
 
@@ -200,7 +207,7 @@ static Vec *init_nc_read_select_month(int year) {
 	fclose(rfptr);
 	fclose(bfptr);
 
-	retval = consolidate_month_vectors(pr, pb);
+	retval = consolidate_months(pr, pb);
 
 	free(pr);
 	pr = NULL;
@@ -210,10 +217,13 @@ static Vec *init_nc_read_select_month(int year) {
 	return retval;
 }
 
+/* Iterates through 'months' vector's data member and returns the index of
+ * the current month */
 static int get_current_mo_idx(Vec *months) {
 	int mo = get_current_month();
 
-	// months->size can never be more than MONTHS_IN_YEAR so this cast is
+	/* months->size can never be more than MONTHS_IN_YEAR or less than zero,
+	 * so this cast is safe */
 	for (int i = 0; i < (int)months->size; i++) {
 		if (months->data[i] - 1 == mo) {
 			return i;
@@ -223,8 +233,8 @@ static int get_current_mo_idx(Vec *months) {
 }
 
 /* On a non-select, the return value is the inverted menukeys value */
-static int nc_read_select_month(WINDOW *wptr, int year) {
-	Vec *months_data = init_nc_read_select_month(year);
+static int select_month(WINDOW *wptr, int year) {
+	Vec *months_data = init_select_month(year);
 
 	int selected_month = 0;
 	int monlen = strlen(abbr_months[0]);
@@ -325,10 +335,10 @@ static int nc_read_select_month(WINDOW *wptr, int year) {
 }
 
 /* On a non-select, the return value is the inverted menukeys value */
-static int nc_read_select_year(WINDOW *wptr) {
+static int select_year(WINDOW *wptr) {
 	keypad(wptr, true);	
 
-	Vec *years = init_nc_read_select_year();
+	Vec *years = init_select_year();
 	if (years == NULL) {
 		return -(NO_RCRD);
 	}
@@ -426,8 +436,8 @@ static int nc_read_select_year(WINDOW *wptr) {
 	return selected_year;
 }
 
-static int nc_read_setup_input_year(WINDOW *wptr) {
-	int yr = nc_read_select_year(wptr);
+static int input_year(WINDOW *wptr) {
+	int yr = select_year(wptr);
 
 	if (yr == -(NO_RCRD)) {
 		mvwxcprintw(wptr, getmaxy(wptr) / 2, 
@@ -451,7 +461,7 @@ static void get_dates(struct SelRecord *sr, struct Datevals *dates) {
 	}
 
 	if (!dates->year) {
-		dates->year = nc_read_setup_input_year(wptr);
+		dates->year = input_year(wptr);
 		if (dates->year < 0) {
 			dates->month = -1;
 			sr->flag = -(dates->year);
@@ -461,7 +471,7 @@ static void get_dates(struct SelRecord *sr, struct Datevals *dates) {
 	}
 
 	if (!dates->month) {
-		dates->month = nc_read_select_month(wptr, dates->year);
+		dates->month = select_month(wptr, dates->year);
 		if (dates->month < 0) {
 			sr->flag = -(dates->month);
 			nc_exit_window(wptr);
@@ -511,7 +521,6 @@ static void debug_fields(void) {
  */
 static Vec *sort_by_date(FILE *fptr, Vec *pidx, Vec *plines) {
 	Vec *psbd = malloc(sizeof(*psbd) + (sizeof(long) * plines->size));
-
 	if (psbd == NULL) {
 		memory_allocate_fail();
 	}
@@ -534,6 +543,12 @@ static Vec *sort_by_category
 (FILE *fptr, Vec *pidx, Vec *plines, int yr, int mo)
 {
 	Vec *prsc = malloc(sizeof(*prsc) + (sizeof(long) * REALLOC_INCR));
+	if (prsc == NULL) {
+		free(pidx);
+		free(plines);
+		memory_allocate_fail();
+	}
+
 	prsc->capacity = REALLOC_INCR;
 	prsc->size = 0;
 
