@@ -58,7 +58,7 @@ static const char *abbr_months[] = {
 	"DEC"
 };
 
-static bool duplicate_vector_data(Vec *vec, long y) {
+static bool duplicate_data_exists(Vec *vec, long y) {
 	for (size_t i = 0; i < vec->size; i++) {
 		if (vec->data[i] == y) {
 			return true;
@@ -90,23 +90,23 @@ static void combine_dedup_vectors(Vec *vec1, Vec *vec2, Vec *result) {
 				result->data[result->size] = tmp1;
 				result->size++;
 			} else {
-				if (!duplicate_vector_data(result, tmp1)) {
+				if (!duplicate_data_exists(result, tmp1)) {
 					result->data[result->size] = tmp1;
 					result->size++;
 				}
-				if (!duplicate_vector_data(result, tmp2)) {
+				if (!duplicate_data_exists(result, tmp2)) {
 					result->data[result->size] = tmp2;
 					result->size++;
 				}
 			}
 
 		} else if (tmp1 > 0 && tmp2 == 0) {
-			if (!duplicate_vector_data(result, tmp1)) {
+			if (!duplicate_data_exists(result, tmp1)) {
 				result->data[result->size] = tmp1;
 				result->size++;
 			}
 		} else if (tmp2 > 0 && tmp1 == 0) {
-			if (!duplicate_vector_data(result, tmp2)) {
+			if (!duplicate_data_exists(result, tmp2)) {
 				result->data[result->size] = tmp2;
 				result->size++;
 			}
@@ -116,8 +116,10 @@ static void combine_dedup_vectors(Vec *vec1, Vec *vec2, Vec *result) {
 
 /* Returns a Vec of deduplicated data from record_years and budget_years */
 static Vec *consolidate_year_vectors(Vec *vec1, Vec *vec2) {
-	Vec *result = malloc(sizeof(*result) + (sizeof(long) * vec1->size) +
-				  	 sizeof(long) * vec2->size);
+	Vec *result = malloc(sizeof(*result) 
+					     + (sizeof(long) * vec1->size) 
+					     + (sizeof(long) * vec2->size));
+
 	if (result == NULL) {
 		free(vec1);
 		free(vec2);
@@ -140,6 +142,7 @@ static Vec *init_nc_read_select_year(void) {
 
 	Vec *pr = get_years_with_data(rfptr, 2);
 	Vec *pb = get_years_with_data(bfptr, 1);
+	Vec *retval;
 
 	if (pr == NULL && pb != NULL) {
 		fclose(rfptr);
@@ -158,7 +161,7 @@ static Vec *init_nc_read_select_year(void) {
 	fclose(rfptr);
 	fclose(bfptr);
 
-	Vec *retval = consolidate_year_vectors(pr, pb);
+	retval = consolidate_year_vectors(pr, pb);
 
 	free(pr);
 	pr = NULL;
@@ -192,11 +195,12 @@ static Vec *init_nc_read_select_month(int year) {
 
 	Vec *pr = get_months_with_data(rfptr, year, 1);
 	Vec *pb = get_months_with_data(bfptr, year, 0);
+	Vec *retval;
 
 	fclose(rfptr);
 	fclose(bfptr);
 
-	Vec *retval = consolidate_month_vectors(pr, pb);
+	retval = consolidate_month_vectors(pr, pb);
 
 	free(pr);
 	pr = NULL;
@@ -208,6 +212,7 @@ static Vec *init_nc_read_select_month(int year) {
 
 static int get_current_mo_idx(Vec *months) {
 	int mo = get_current_month();
+
 	// months->size can never be more than MONTHS_IN_YEAR so this cast is
 	for (int i = 0; i < (int)months->size; i++) {
 		if (months->data[i] - 1 == mo) {
@@ -224,6 +229,7 @@ static int nc_read_select_month(WINDOW *wptr, int year) {
 	int selected_month = 0;
 	int monlen = strlen(abbr_months[0]);
 
+	int c = 0;
 	int temp_y = 0;
 	int scr_idx = 0;
 	int cur_idx = 0;
@@ -251,34 +257,39 @@ static int nc_read_select_month(WINDOW *wptr, int year) {
 	box(wptr, 0, 0);
 	wrefresh(wptr);
 
-	int c = 0;
 	while (c != KEY_F(QUIT) && c != 'q') {
 		c = wgetch(wptr);
 		temp_y = getcury(wptr);
 		switch(c) {
+
 		case('j'):
 		case(KEY_DOWN):
 			if (temp_y - BOX_OFFSET + 1 < scr_idx) {
 				mvwchgat(wptr, temp_y, BOX_OFFSET, monlen, A_NORMAL, 0, NULL);
-				mvwchgat(wptr, temp_y + 1, BOX_OFFSET, monlen, A_REVERSE, REVERSE_COLOR, NULL);
+				mvwchgat(wptr, temp_y + 1, BOX_OFFSET, monlen, 
+			 			 A_REVERSE, REVERSE_COLOR, NULL);
 				wrefresh(wptr);
 				cur_idx++;
 			}
 			break;
+
 		case('k'):
 		case(KEY_UP):
 			if (temp_y - 1 >= BOX_OFFSET) {
 				mvwchgat(wptr, temp_y, BOX_OFFSET, monlen, A_NORMAL, 0, NULL);
-				mvwchgat(wptr, temp_y - 1, BOX_OFFSET, monlen, A_REVERSE, REVERSE_COLOR, NULL);
+				mvwchgat(wptr, temp_y - 1, BOX_OFFSET, monlen, 
+						 A_REVERSE, REVERSE_COLOR, NULL);
 				wrefresh(wptr);
 				cur_idx--;
 			}
 			break;
+
 		case('a'):
 		case(KEY_F(ADD)):
 			free(months_data);
 			months_data = NULL;
 			return -(ADD);
+
 		case(KEY_RESIZE):
 			free(months_data);
 			months_data = NULL;
@@ -287,18 +298,21 @@ static int nc_read_select_month(WINDOW *wptr, int year) {
 			 * intention of changing. I hate this. However--I'm lazy. Plus,
 			 * all of the resizes in this program suck. */
 			return -(RESIZE);
+
 		case('\n'):
 		case('\r'):
 			selected_month = months_data->data[cur_idx];
 			free(months_data);
 			months_data = NULL;
 			return selected_month;
+
 		case('Q'):
 		case('q'):
 		case(KEY_F(QUIT)):
 			free(months_data);
 			months_data = NULL;
 			return -(QUIT);
+
 		default: 
 			break;
 		}
@@ -324,6 +338,10 @@ static int nc_read_select_year(WINDOW *wptr) {
 	int print_x = 2;
 	size_t year_index = 0;
 	size_t scr_idx = 0;
+	
+	int c = 0;
+	int temp_x;
+	int init_rv_x = print_x;
 
 	box(wptr, 0, 0);
 	wrefresh(wptr);
@@ -338,7 +356,6 @@ static int nc_read_select_year(WINDOW *wptr) {
 	}
 
 	/* Initially highlight the current year and move cursor to it */
-	int init_rv_x = print_x;
 	if (year_index > 0) {
 		init_rv_x += (4 * year_index) + year_index;
 		scr_idx = year_index;
@@ -347,50 +364,57 @@ static int nc_read_select_year(WINDOW *wptr) {
 	mvwchgat(wptr, print_y, init_rv_x, 4, A_REVERSE, REVERSE_COLOR, NULL);
 	wrefresh(wptr);
 
-	int c = 0;
-	int temp_x;
 	while (c != KEY_F(QUIT) && c != 'q') {
 		c = wgetch(wptr);
 		temp_x = getcurx(wptr);
 		switch(c) {
+
 		case('h'):
 		case(KEY_LEFT):
 			if (scr_idx > 0) {
 				mvwchgat(wptr, print_y, temp_x, 4, A_NORMAL, 0, NULL);
-				mvwchgat(wptr, print_y, temp_x - 5, 4, A_REVERSE, REVERSE_COLOR, NULL);
+				mvwchgat(wptr, print_y, temp_x - 5, 4, A_REVERSE, 
+			 			 REVERSE_COLOR, NULL);
 				wrefresh(wptr);
 				scr_idx--;
 			}
 			break;
+
 		case('l'):
 		case(KEY_RIGHT):
 			if (scr_idx + 1 < years->size) {
 				mvwchgat(wptr, print_y, temp_x, 4, A_NORMAL, 0, NULL);
-				mvwchgat(wptr, print_y, temp_x + 5, 4, A_REVERSE, REVERSE_COLOR, NULL);
+				mvwchgat(wptr, print_y, temp_x + 5, 4, A_REVERSE, 
+			 			 REVERSE_COLOR, NULL);
 				wrefresh(wptr);
 				scr_idx++;
 			}
 			break;
+
 		case('a'):
 		case(KEY_F(ADD)):
 			free(years);
 			years = NULL;
 			return -(ADD);
+
 		case(KEY_RESIZE):
 			free(years);
 			years = NULL;
 			return -(RESIZE);
+
 		case('\n'):
 		case('\r'):
 			selected_year = years->data[scr_idx];
 			free(years);
 			years = NULL;
 			return selected_year;
+
 		case('Q'):
 		case('q'):
 		case(KEY_F(QUIT)):
 			free(years);
 			return -(QUIT);
+
 		default: 
 			break;
 		}
@@ -404,6 +428,7 @@ static int nc_read_select_year(WINDOW *wptr) {
 
 static int nc_read_setup_input_year(WINDOW *wptr) {
 	int yr = nc_read_select_year(wptr);
+
 	if (yr == -(NO_RCRD)) {
 		mvwxcprintw(wptr, getmaxy(wptr) / 2, 
 			  "No records exist, add (F1) to get started");
@@ -411,7 +436,8 @@ static int nc_read_setup_input_year(WINDOW *wptr) {
 		return -(NO_RCRD);
 	} else if (yr < 0) {
 		return yr;
-	};
+	}
+
 	return yr;
 }
 
@@ -447,9 +473,12 @@ static void get_dates(struct SelRecord *sr, struct Datevals *dates) {
 }
 
 static void debug_fields(void) {
-	move(0,0);
 	FILE *bfptr = open_budget_csv("r");
 	struct BudgetHeader *bh = parse_budget_header(bfptr);
+	FILE *fptr = open_record_csv("r");
+	struct RecordHeader *rh = parse_record_header(fptr);
+
+	move(0,0);
 
 	printw("Budget Fields: %d, %d, %d, %d, %d\n",
 	 bh->month,
@@ -457,11 +486,6 @@ static void debug_fields(void) {
 	 bh->catg,
 	 bh->transtype, 
 	 bh->value);
-
-	free(bh);
-	fclose(bfptr);
-	FILE *fptr = open_record_csv("r");
-	struct RecordHeader *rh = parse_record_header(fptr);
 
 	printw("Record Fields: %d, %d, %d, %d, %d, %d, %d\n", 
 	 rh->month,
@@ -472,6 +496,8 @@ static void debug_fields(void) {
 	 rh->transtype,
 	 rh->value);
 
+	free(bh);
+	fclose(bfptr);
 	free(rh);
 	fclose(fptr);
 	getch();
@@ -511,12 +537,13 @@ static Vec *sort_by_category
 	prsc->capacity = REALLOC_INCR;
 	prsc->size = 0;
 
-	rewind(fptr);
 	struct Categories *pc = get_categories(mo, yr);
 
 	char linebuff[LINE_BUFFER];
 	char *line;
 	char *token;
+
+	rewind(fptr);
 
 	for (size_t i = 0; i < pc->size; i++) { // Iterate categories
 		prsc->data[prsc->size] = 0;
@@ -526,8 +553,8 @@ static Vec *sort_by_category
 			 * to mark the spaces between categories */
 			if (prsc->size + 1 >= prsc->capacity) {
 				prsc->capacity += REALLOC_INCR;
-				Vec *tmp =
-					realloc(prsc, sizeof(*prsc) + (prsc->capacity * sizeof(char *)));
+				Vec *tmp = realloc(prsc, sizeof(*prsc) 
+					    		   + (prsc->capacity * sizeof(char *)));
 				if (tmp == NULL) {
 					free(prsc);
 					prsc = NULL;
@@ -583,6 +610,7 @@ static void print_sort_text(WINDOW *wptr, int sort) {
 	sort == SORT_DATE ? (text = "Date") : (text = "Category");
 	int y = 0;
 	int x = getmaxx(wptr) - strlen(text) - strlen("Sort By: ") - BOX_OFFSET;
+
 	mvwprintw(wptr, y, x, "Sort By: %s", text);
 	wrefresh(wptr);
 }
@@ -623,16 +651,15 @@ void nc_read_setup
 	Vec *plines;
 	Vec *psc;
 	size_t n_records;
-//	char *ret;
 	bool sidebar_exists;
 	/* To hold the return value of wgetch()/getch() */
 	int c;
+	struct ReadWins *wins = create_read_windows();
 
 	if (debug_flag) {
 		debug_fields();
 	}
 
-	struct ReadWins *wins = create_read_windows();
 	if (wins->sidebar_parent == NULL || wins->sidebar_body == NULL) {
 		sidebar_exists = false;
 	} else {
