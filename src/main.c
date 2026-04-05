@@ -1928,10 +1928,12 @@ void edit_transaction(void) {
 	
 	Vec *pidx = index_csv(fptr);
 
+	assert(pidx->size < INT_MAX);
+
 	do {
 		puts("Enter line number");
 		humantarget = input_n_digits(sizeof(size_t) + 1, 2);
-	} while (humantarget <= 0 || humantarget > pidx->size);
+	} while (humantarget <= 0 || humantarget > (int)pidx->size);
 
 	target = humantarget - 1;
 

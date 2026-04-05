@@ -19,6 +19,7 @@
 #include <stdbool.h>
 #include <ncurses.h>
 #include <assert.h>
+#include <limits.h>
 
 #include "read_loops.h"
 #include "read_init.h"
@@ -422,7 +423,10 @@ static int nc_scroll_next_read_loop
 	sc->cur_y++;
 	sc->select_idx++;
 
-	if (sc->displayed < psc->size && sc->cur_y == getmaxy(wptr)) {
+	/* For safe cast */
+	assert(sc->displayed >= 0);
+
+	if ((size_t)sc->displayed < psc->size && sc->cur_y == getmaxy(wptr)) {
 		nc_scroll_next(psc->data[sc->select_idx], fptr, wptr, cw, false);
 		sc->cur_y = getcury(wptr);
 		retval++;
@@ -484,6 +488,8 @@ static int nc_scroll_next_category
 (WINDOW *wptr, CategoryNode **nodes, struct ScrollCursor *sc, 
  struct ColWidth *cw, FILE *rfptr, FILE *bfptr)
 {
+	assert(nodes[sc->catg_node]->data->size <= INT_MAX);
+
 	int retval = -1;
 	if (sc->catg_data < 0 && nodes[sc->catg_node]->data->size > 0) {
 		mvwchgat(wptr, sc->cur_y, 0, -1, A_NORMAL, category_color(sc->catg_node), NULL); 
@@ -492,11 +498,11 @@ static int nc_scroll_next_category
 
 	/* Explicit cast of sc->catg_data to size_t is okay, the previous condition checks
 	 * that it is a positive number.  vvvvvv */
-	} else if (sc->catg_data >= 0 && (size_t)sc->catg_data < nodes[sc->catg_node]->data->size - 1) {
+	} else if (sc->catg_data < (int)nodes[sc->catg_node]->data->size - 1) {
 		mvwchgat(wptr, sc->cur_y, 0, -1, A_NORMAL, 0, NULL); 
 		sc->catg_data++;
 		retval++;
-	} else if (sc->catg_data == nodes[sc->catg_node]->data->size - 1) {
+	} else if (sc->catg_data == (int)nodes[sc->catg_node]->data->size - 1) {
 		if (nodes[sc->catg_node]->data->size == 0) {
 			mvwchgat(wptr, sc->cur_y, 0, -1, A_NORMAL, category_color(sc->catg_node), NULL); 
 		} else {
@@ -806,7 +812,10 @@ static void nc_print_initial_read_loop
 	char linebuff[LINE_BUFFER];
 	struct LineData ld;
 
-	for (int i = 0; i < getmaxy(wptr) && sc->displayed < psc->size; i++) {
+	/* For safe cast */
+	assert(sc->displayed >= 0);
+
+	for (int i = 0; i < getmaxy(wptr) && (size_t)sc->displayed < psc->size; i++) {
 		fseek(fptr, psc->data[i], SEEK_SET);
 		line_str = fgets(linebuff, sizeof(linebuff), fptr);
 		tokenize_record(&ld, &line_str);
@@ -844,6 +853,9 @@ void nc_read_loop
 	calculate_columns(cw, getmaxx(wins->data) + BOX_OFFSET);
 	nc_print_read_footer(stdscr);
 	nc_print_initial_read_loop(wins->data, sc, cw, fptr, psc);
+
+	assert(psc->size <= INT_MAX);
+
 	sc->total_rows = psc->size;
 	dc->last = sc->displayed;
 	draw_read_window_borders_and_text(wins, psc);
@@ -859,7 +871,7 @@ void nc_read_loop
 		switch(c) {
 		case('j'):
 		case(KEY_DOWN):
-			if (sc->select_idx + 1 < psc->size) {
+			if (sc->select_idx + 1 < sc->total_rows) {
 				scroll_ret = nc_scroll_next_read_loop(wins->data, sc, cw, fptr, psc);
 				dc->first += scroll_ret;
 				dc->last += scroll_ret;
@@ -885,7 +897,7 @@ void nc_read_loop
 
 		case(KEY_NPAGE): // PAGE DOWN
 			for(int i = 0; i < 10; i++) {
-				if (sc->select_idx + 1 < psc->size) {
+				if (sc->select_idx + 1 < sc->total_rows) {
 					nc_scroll_next_read_loop(wins->data, sc, cw, fptr, psc);
 					dc->first += scroll_ret;
 					dc->last += scroll_ret;
@@ -903,7 +915,7 @@ void nc_read_loop
 			break;
 
 		case(KEY_END):
-			while (sc->select_idx + 1 < psc->size) {
+			while (sc->select_idx + 1 < sc->total_rows) {
 				nc_scroll_next_read_loop(wins->data, sc, cw, fptr, psc);
 				dc->first += scroll_ret;
 				dc->last += scroll_ret;
