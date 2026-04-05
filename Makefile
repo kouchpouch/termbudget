@@ -16,4 +16,6 @@ termbudget:
 		src/convert_csv.c \
 		src/edit_categories.c \
 		src/categories.c \
+		src/read_init.c \
+		src/read_loops.c \
 		-lncurses -o termbudget
