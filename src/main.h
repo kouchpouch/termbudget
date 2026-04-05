@@ -16,6 +16,7 @@
 #define MAIN_H
 
 #include <stddef.h>
+#include <ncurses.h>
 #include "vector.h"
 #include "categories.h"
 #include "parser.h"
@@ -85,7 +86,20 @@ extern struct Plannedvals *get_total_planned(CategoryNode **nodes);
 
 extern double get_left_to_budget(CategoryNode **nodes);
 
+extern void nc_print_record_vert(WINDOW *wptr, struct LineData *ld, int x_off);
+
 // To be moved from main.h
 extern bool check_dup_catg(struct Categories *psc, char *catg);
+
+extern int show_help_subwindow(void);
+
+extern void add_main_no_date(void);
+
+extern void add_main_with_date(struct Datevals *dv);
+
+extern void nc_edit_transaction(long b);
+
+extern void nc_overview_setup(int year);
+
 
 #endif
