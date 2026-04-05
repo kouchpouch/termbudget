@@ -25,8 +25,6 @@
 
 #include "main.h"
 #include "read_init.h"
-#include "edit_categories.h"
-#include "get_date.h"
 #include "fileintegrity.h"
 #include "filemanagement.h"
 #include "helper.h"
@@ -34,7 +32,6 @@
 #include "tui.h"
 #include "tui_input.h"
 #include "tui_input_menu.h"
-#include "tui_sidebar.h"
 #include "vector.h"
 #include "parser.h"
 #include "categories.h"
@@ -525,7 +522,6 @@ void add_budget_category(char *catg, int m, int y, int transtype, double amt) {
 			fprintf(tmpfptr, "%d,%d,%s,%d,%.2f\n", m, y, catg, transtype, amt);
 		}
 	}
-
 	mv_tmp_to_budget_file(tmpfptr, fptr);
 }
 
