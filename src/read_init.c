@@ -20,24 +20,28 @@
 #include <ncurses.h>
 
 #include "read_init.h"
+#include "read_loops.h"
 #include "main.h"
 #include "edit_categories.h"
 #include "get_date.h"
 #include "filemanagement.h"
 #include "helper.h"
 #include "tui.h"
-#include "tui_input.h"
-#include "tui_input_menu.h"
 #include "tui_sidebar.h"
 #include "vector.h"
 #include "parser.h"
 #include "categories.h"
 #include "flags.h"
 
-static enum SortBy {
+// 'R'ead 'RET'urn values
+#define RRET_DEFAULT 0
+#define RRET_BYDATE 1
+#define RRET_QUIT 2
+
+enum SortBy {
 	SORT_DATE = 0,
 	SORT_CATG = 1
-} sortby;
+};
 
 static const char *abbr_months[] = {
 	"JAN", 
@@ -619,9 +623,9 @@ void nc_read_setup
 	Vec *plines;
 	Vec *psc;
 	size_t n_records;
-	char *ret;
+//	char *ret;
 	bool sidebar_exists;
-	// To hold the return value of wgetch()/getch()
+	/* To hold the return value of wgetch()/getch() */
 	int c;
 
 	if (debug_flag) {
@@ -705,35 +709,14 @@ err_select_date_fail:
 	case(NO_SELECT):
 		rret->flag = RRET_DEFAULT;
 		break;
+
 	case(ADD):
 		nc_print_input_footer(stdscr);
 		if (dates->year < 0 || dates->month < 0) {
-			struct MenuParams *mp = init_add_main_menu();
-			c = nc_input_menu(mp);
-			switch (c) {
-			case 0:
-				nc_add_transaction_default();
-				break;
-			case 1:
-				ret = nc_add_budget_category(0, 0);
-				free(ret);
-				break;
-			case 2:
-				nc_create_new_budget();
-				break;
-			}
-			free(mp);
+			add_main_no_date();
 			rret->flag = RRET_DEFAULT;
 		} else {
-			struct MenuParams *mp = init_add_menu();
-			int c = nc_input_menu(mp);
-			if (c == 0) {
-				nc_add_transaction(dates->year, dates->month);
-			} else if (c == 1) {
-				ret = nc_add_budget_category(dates->year, dates->month);
-				free(ret);
-			}
-			free(mp);
+			add_main_with_date(dates);
 			rret->flag = RRET_BYDATE;
 		}
 		break;
@@ -743,12 +726,15 @@ err_select_date_fail:
 		nc_edit_transaction(sr->index);
 		rret->flag = RRET_BYDATE;
 		break;
+
 	case(READ):
 		rret->flag = RRET_DEFAULT;
 		break;
+
 	case(QUIT):
 		rret->flag = RRET_QUIT;
 		break;
+
 	case(SORT):
 		if (sort == SORT_CATG && n_records == 0) {
 			nc_message("Cannot sort by date, no records exist");
@@ -766,6 +752,7 @@ err_select_date_fail:
 		nc_overview_setup(dates->year);
 		rret->flag = RRET_BYDATE;
 		break;
+
 	case(EDIT_CATG):
 		nc_edit_category(sr->index, sr->opt, nodes); 
 		free_category_nodes(nodes);
@@ -787,6 +774,7 @@ err_select_date_fail:
 			rret->flag = RRET_DEFAULT;
 		}
 		break;
+
 	case(NO_RCRD):
 		c = getch();
 		switch(c) {
