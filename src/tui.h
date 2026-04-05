@@ -87,6 +87,17 @@ extern void window_creation_fail(void);
 /* Tests that the stdscr is big enough to handle this program */
 extern int test_terminal_size(void);
 
+/* Exits the window wptr and hangs the terminal until a key is pressed */
+extern void nc_exit_window_key(WINDOW *wptr);
+
+/* Exits window wptr */
+extern void nc_exit_window(WINDOW *wptr);
+
+/* Removes and refreshes wptr to remove error message.
+ * For use with input subwindows. Dimensions are hard coded to be 4 above
+ * the maximum y coordinate */
+extern void clear_input_error_message(WINDOW *wptr);
+
 /* Returns the number of spaces between each bar graph for the overview
  * option */
 extern int calculate_overview_columns(WINDOW *wptr);
@@ -104,17 +115,6 @@ extern void calculate_columns(struct ColWidth *cw, int max_x);
  * of x_off
  */
 extern void print_column_headers(WINDOW *wptr, int x_off);
-
-/* Exits the window wptr and hangs the terminal until a key is pressed */
-extern void nc_exit_window_key(WINDOW *wptr);
-
-/* Exits window wptr */
-extern void nc_exit_window(WINDOW *wptr);
-
-/* Removes and refreshes wptr to remove error message.
- * For use with input subwindows. Dimensions are hard coded to be 4 above
- * the maximum y coordinate */
-extern void clear_input_error_message(WINDOW *wptr);
 
 /* Moves cursor in wptr to y-coord y for a string len
  * of len */
