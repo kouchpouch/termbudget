@@ -22,9 +22,6 @@
     - [X] Show selected month and year at the top of the screen after
             selection on read
     - [X] Remove all reallocarray() functions for portability
-    - [ ] After main feature set is done and working, refactor to make main.c
-            have a clearer control flow purpose
-        - [X] Move read feature to its own source files
     - [X] Implement visual truncation when there are not enough columns to
             display all the field data
     - [ ] Move to integer/fixed point arithmetic for financial calculations
@@ -94,6 +91,12 @@
     - [X] Allow user to move categories to the top of the screen
     - [X] Add help menu
     - [X] Create one function for handling window borders in the read loop
+
+#### Refactors
+    - [ ] After main feature set is done and working, refactor to make main.c
+            have a clearer control flow purpose
+        - [X] Move read feature to its own source files
+        - [ ] Move add feature to its own source files
 
 #### Main Feature Set
     - [X] Create a transaction
