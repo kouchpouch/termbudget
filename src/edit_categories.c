@@ -40,7 +40,7 @@ static void replace_category(struct BudgetTokens *bt, long b) {
 	FILE *tmpfptr = open_temp_csv();
 	char *str;
 	char linebuff[LINE_BUFFER];
-	size_t line = boff_to_linenum_budget(b) + 2;
+	size_t line = boff_to_linenum_budget(b) + 1;
 	size_t linenum = 0;
 
 	while (1) {
@@ -96,7 +96,7 @@ static void delete_category(long b) {
 	FILE *tmpfptr = open_temp_csv();
 	char *str;
 	char linebuff[LINE_BUFFER];
-	size_t line = boff_to_linenum_budget(b) + 2;
+	size_t line = boff_to_linenum_budget(b) + 1;
 	size_t linenum = 0;
 
 	while (1) {
@@ -159,7 +159,7 @@ void mv_category_to_top(CategoryNode **nodes, size_t i) {
 	}
 
 	long first = nodes[0]->catg_fp;
-	unsigned int insert_ln = boff_to_linenum_budget(first) + 1;
+	unsigned int insert_ln = boff_to_linenum_budget(first);
 	struct BudgetTokens *bt = tokenize_budget_byte_offset(nodes[i]->catg_fp);
 
 	delete_category(nodes[i]->catg_fp);
@@ -251,7 +251,7 @@ static int replace_many_records_categories
 		tokenize_record_fpi(nodes[node_idx]->data->data[i], lda[i]);
 		free(lda[i]->category);
 		lda[i]->category = strndup(catg, strlen(catg));;
-		del_lines[i] = boff_to_linenum(nodes[node_idx]->data->data[i]) + 2;
+		del_lines[i] = boff_to_linenum(nodes[node_idx]->data->data[i]) + 1;
 	}
 
 	FILE *fptr = open_record_csv("r");
