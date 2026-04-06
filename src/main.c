@@ -528,20 +528,21 @@ void add_budget_category(char *catg, int m, int y, int transtype, double amt) {
  * Loop through each category in the budget. Returns true or false if the
  * category exists for the given date range 
  */
-bool category_exists_in_budget(char *catg, int month, int year) {
-	struct BudgetTokens bt, *pbt = &bt;
-	int i = 1;
-
-	while ((pbt = tokenize_budget_line(i)) != NULL) {
-		if (pbt->y == year && pbt->m == month && strcasecmp(pbt->catg, catg) == 0) {
-			free_budget_tokens(pbt);
-			return true;
-		}
-		free_budget_tokens(pbt);
-		i++;
-	}
-	return false;
-}
+/* MOVED TO PARSER.C */
+//bool category_exists_in_budget(char *catg, int month, int year) {
+//	struct BudgetTokens bt, *pbt = &bt;
+//	int i = 1;
+//
+//	while ((pbt = tokenize_budget_line(i)) != NULL) {
+//		if (pbt->y == year && pbt->m == month && strcasecmp(pbt->catg, catg) == 0) {
+//			free_budget_tokens(pbt);
+//			return true;
+//		}
+//		free_budget_tokens(pbt);
+//		i++;
+//	}
+//	return false;
+//}
 
 int cmp_catg_and_fix(struct Categories *prc, struct Categories *pbc, 
 					 int m, int y) 
