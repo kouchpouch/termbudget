@@ -89,7 +89,7 @@ extern double get_left_to_budget(CategoryNode **nodes);
 extern void nc_print_record_vert(WINDOW *wptr, struct LineData *ld, int x_off);
 
 // To be moved from main.h
-extern bool check_dup_catg(struct Categories *psc, char *catg);
+extern bool duplicate_category_exists(struct Categories *psc, char *catg);
 
 extern int show_help_subwindow(void);
 

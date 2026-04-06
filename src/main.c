@@ -660,7 +660,7 @@ void nc_print_record_vert(WINDOW *wptr, struct LineData *ld, int x_off) {
 }
 
 /* Returns true if a duplicate is found, false if not */
-bool check_dup_catg(struct Categories *psc, char *catg) {
+bool duplicate_category_exists(struct Categories *psc, char *catg) {
 	for (size_t i = 0; i < psc->size; i++) {
 		if (strcasecmp(psc->categories[i], catg) == 0) {
 			return true;
@@ -708,7 +708,7 @@ char *nc_add_budget_category(int yr, int mo) {
 	}
 
 	struct Categories *psc = get_budget_catg_by_date(mo, yr);
-	if (check_dup_catg(psc, catg)) {
+	if (duplicate_category_exists(psc, catg)) {
 		nc_message("That Category Already Exists");
 		free(catg);
 		free_categories(psc);

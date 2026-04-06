@@ -199,7 +199,7 @@ static int rename_category(struct BudgetTokens *bt) {
 
 	struct Categories *psc = get_budget_catg_by_date(bt->m, bt->y);
 
-	if (check_dup_catg(psc, catg)) {
+	if (duplicate_category_exists(psc, catg)) {
 		nc_message("That Category Already Exists");
 		free(catg);
 		free_categories(psc);
