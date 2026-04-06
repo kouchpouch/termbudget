@@ -24,6 +24,7 @@
 #include <limits.h>
 
 #include "main.h"
+#include "create.h"
 #include "read_init.h"
 #include "fileintegrity.h"
 #include "filemanagement.h"
@@ -38,22 +39,15 @@
 #include "convert_csv.h"
 #include "flags.h"
 
-// 'R'ead 'RET'urn values
+/* 'R'ead 'RET'urn values */
 #define RRET_DEFAULT 0
 #define RRET_BYDATE 1
 #define RRET_QUIT 2
 
-// GLOBAL FLAGS. Defined in flags.h, initialized here in main.c
+/* GLOBAL FLAGS. Defined in flags.h, initialized here in main.c */
 int debug_flag;
 int cli_flag;
 int verify_flag;
-
-//struct ReadRet {
-//	int flag;
-//	int yr;
-//	int mo;
-//	int sort;
-//};
 
 enum EditRecordFields {
 	NO_SEL,
@@ -85,12 +79,6 @@ const char *abbr_months[] = {
 	"DEC"
 };
 
-//struct SelRecord {
-//	unsigned int flag;
-//	long index;
-//	long opt; // Optional flag
-//};
-
 void free_categories(struct Categories *pc);
 Vec *get_months_with_data(FILE *fptr, int matchyear, int field);
 Vec *get_years_with_data(FILE *fptr, int field);
@@ -98,15 +86,12 @@ void memory_allocate_fail(void);
 int mv_tmp_to_budget_file(FILE *tmp, FILE* main);
 void nc_read_setup_default(struct ReadRet *rret);
 void calculate_balance(struct Balances *pb, Vec *pbo);
-void nc_read_setup(int sel_year, int sel_month, int sort, struct ReadRet *rret);
 bool nc_confirm_record(struct LineData *ld);
 void nc_print_record_hr(WINDOW *wptr, struct ColWidth *cw, struct LineData *ld, int y);
 void nc_print_record_vert(WINDOW *wptr, struct LineData *ld, int x_off);
 int mv_tmp_to_record_file(FILE *tempfile, FILE *mainfile);
 int delete_csv_record(int linetodelete);
 Vec *get_matching_line_nums(FILE *fptr, int month, int year);
-char *nc_add_budget_category(int yr, int mo);
-//void draw_parent_box_with_sidebar(WINDOW *wptr);
 void draw_scroll_indicator(WINDOW *wptr);
 void draw_read_window_borders_and_text(struct ReadWins *wins, Vec *psc);
 
@@ -503,67 +488,6 @@ void replace_category(struct BudgetTokens *bt, long b) {
 	mv_tmp_to_budget_file(tmpfptr, bfptr);
 }
 
-void add_budget_category(char *catg, int m, int y, int transtype, double amt) {
-	unsigned int linetoadd = sort_budget_csv(m, y);
-	FILE *fptr = open_budget_csv("r");
-	FILE *tmpfptr = open_temp_csv();
-
-	char linebuff[LINE_BUFFER];
-	char *line;
-	unsigned int linenum = 0;
-
-	while ((line = fgets(linebuff, sizeof(linebuff), fptr)) != NULL) {
-		linenum++;	
-		if (linenum != linetoadd) {
-			fputs(line, tmpfptr);
-		} else if (linenum == linetoadd) {
-			fputs(line, tmpfptr);
-			fprintf(tmpfptr, "%d,%d,%s,%d,%.2f\n", m, y, catg, transtype, amt);
-		}
-	}
-	mv_tmp_to_budget_file(tmpfptr, fptr);
-}
-
-/* 
- * Loop through each category in the budget. Returns true or false if the
- * category exists for the given date range 
- */
-/* MOVED TO PARSER.C */
-//bool category_exists_in_budget(char *catg, int month, int year) {
-//	struct BudgetTokens bt, *pbt = &bt;
-//	int i = 1;
-//
-//	while ((pbt = tokenize_budget_line(i)) != NULL) {
-//		if (pbt->y == year && pbt->m == month && strcasecmp(pbt->catg, catg) == 0) {
-//			free_budget_tokens(pbt);
-//			return true;
-//		}
-//		free_budget_tokens(pbt);
-//		i++;
-//	}
-//	return false;
-//}
-
-int cmp_catg_and_fix(struct Categories *prc, struct Categories *pbc, 
-					 int m, int y) 
-{
-	int corrected = 0;
-	bool cat_exists = false;
-	for (size_t i = 0; i < prc->size; i++) {
-		cat_exists = false;
-		for (size_t j = 0; j < pbc->size; j++) {
-			if (strcasecmp(prc->categories[i], pbc->categories[j]) == 0) {
-				cat_exists = true;
-			}
-		}
-		if (!cat_exists) {
-			add_budget_category(prc->categories[i], m, y, 0, 0.0);
-			corrected++;
-		}
-	}
-	return corrected;
-}
-
 //FIX Implement
 //int remove_category_orphans(void) {
 //	FILE *bfptr = open_budget_csv("r");
@@ -571,85 +495,6 @@ int cmp_catg_and_fix(struct Categories *prc, struct Categories *pbc,
 //
 //	return 0;
 //}
-
-/*
- * Ensures that if a category exists in RECORD_DIR(main.h)
- * it will also exist in BUDGET_DIR(main.h). BUDGET_DIR is verified against
- * RECORD_DIR, not the other way around. If a category exists in BUDGET_DIR
- * and not RECORD_DIR leading to an orphaned category--this is not checked.
- *
- * Orphaned categories are expected and a normal part of the program that are
- * used for budget planning.
- *
- * Returns a 0 or positive value of records that were corrected successfully.
- * Returns -1 on failure.
- */
-int verify_categories_exist_in_budget(void) {
-	FILE *rfptr = open_record_csv("r");
-	int corrected = 0;
-
-	/* Go through each year and find the matching months, then find the
-	 * matching categories, then compare. */
-
-	struct Categories prc_, *prc = &prc_;
-	struct Categories pbc_, *pbc = &pbc_;
-	Vec *years = get_years_with_data(rfptr, 2);
-	if (years == NULL) {
-		return 0;
-	}
-
-	for (size_t i = 0; i < years->size; i++) {
-		rewind(rfptr);
-		Vec *months = get_months_with_data(rfptr, years->data[i], 1);
-		for (size_t j = 0; j < months->size; j++) {
-			prc = get_categories(months->data[j], years->data[i]);
-			pbc = get_budget_catg_by_date(months->data[j], years->data[i]);
-			corrected += cmp_catg_and_fix(prc, pbc, months->data[j], years->data[i]);
-			free_categories(prc);
-			free_categories(pbc);
-		}
-		free(months);
-	}
-
-	free(years);
-	fclose(rfptr);
-
-	return corrected;
-}
-
-/* Adds a record to the CSV on line linetoadd */
-void add_csv_record(int linetoadd, struct LineData *ld) {
-	if (!category_exists_in_budget(ld->category, ld->month, ld->year)) {
-		add_budget_category(ld->category, ld->month, ld->year, ld->transtype, 0.0);
-	} 
-
-	FILE *fptr = open_record_csv("r");
-	FILE *tmpfptr = open_temp_csv();
-
-	char linebuff[LINE_BUFFER];
-	char *line;
-	int linenum = 0;
-
-	while ((line = fgets(linebuff, sizeof(linebuff), fptr)) != NULL) {
-		linenum++;	
-		if (linenum != linetoadd) {
-			fputs(line, tmpfptr);
-		} else if (linenum == linetoadd) {
-			fputs(line, tmpfptr);
-			fprintf(tmpfptr, "%d,%d,%d,%s,%s,%d,%.2f\n",
-			ld->month, 
-			ld->day, 
-			ld->year, 
-			ld->category, 
-			ld->desc, 
-			ld->transtype, 
-			ld->amount
-		   );
-		}
-	}
-	
-	mv_tmp_to_record_file(tmpfptr, fptr);
-}
 
 /* Prints record from ld, in vertical format, 5 rows. */
 void nc_print_record_vert(WINDOW *wptr, struct LineData *ld, int x_off) {
@@ -668,151 +513,6 @@ bool duplicate_category_exists(struct Categories *psc, char *catg) {
 		}
 	}
 	return false;
-}
-
-bool nc_confirm_budget_category(char *catg, double amt) {
-	WINDOW *wptr = create_input_subwindow();
-	int maxy = getmaxy(wptr);
-	int maxx = getmaxx(wptr);
-	char *msg = "Confirm Category";
-	mvwprintw(wptr, 0, (maxx / 2 - strlen(msg) / 2), "%s", msg);
-	mvwprintw(wptr, 3, (maxx / 2 - strlen(catg) / 2), "%s", catg);
-	mvwprintw(wptr, 4, (maxx / 2 - intlen(amt) / 2) - 2, "$%.2f", amt);
-	mvwxcprintw(wptr, maxy - BOX_OFFSET, "(Y)es  /  (N)o");
-
-	bool retval = nc_confirm_input_loop(wptr);
-
-	nc_exit_window(wptr);
-	return retval;
-}
-
-/* For a la carte budget category creation, returns a malloc'd char * which
- * is free'd by the caller */
-char *nc_add_budget_category(int yr, int mo) {
-	if (mo == 0 || yr == 0) {
-		yr = nc_input_year();
-		if (yr == -1) {
-			return NULL;
-		}
-		mo = nc_input_month();
-		if (mo == -1) {
-			return NULL;
-		}
-	}
-	char *catg = nc_input_string("Enter Category");
-	if (catg == NULL) {
-		return NULL;
-	}
-	int transtype = nc_input_category_type();
-	if (transtype < 0) {
-		return NULL;
-	}
-
-	struct Categories *psc = get_budget_catg_by_date(mo, yr);
-	if (duplicate_category_exists(psc, catg)) {
-		nc_message("That Category Already Exists");
-		free(catg);
-		free_categories(psc);
-		return NULL;
-	}
-
-	double amt = nc_input_budget_amount();
-	if (nc_confirm_budget_category(catg, amt)) {
-		add_budget_category(catg, mo, yr, transtype, amt);
-	}
-
-	free_categories(psc);
-	return catg;
-}
-
-struct Datevals *nc_create_new_budget(void) {
-	struct Datevals *dv = malloc(sizeof(struct Datevals));
-	if (dv == NULL) {
-		memory_allocate_fail();
-	}
-
-	dv->year = nc_input_year();
-	if (dv->year < 0) {
-		free(dv);
-		return NULL;
-	}
-	dv->month = nc_input_month();
-	if (dv->month < 0) {
-		free(dv);
-		return NULL;
-	}
-	if (month_or_year_exists(dv->month, dv->year)) {
-		nc_message("A budget already exists for that month");
-		return dv;
-	}
-	char *catg = nc_add_budget_category(dv->year, dv->month);
-	if (catg == NULL) {
-		free(dv);
-		return NULL;
-	}
-
-	free(catg);
-	return dv;
-}
-
-/* Optional parameters int month, year. If add transaction is selected while
- * on the read screen these will be auto-filled. */
-void nc_add_transaction(int year, int month) {
-	struct LineData userlinedata_, *uld = &userlinedata_;
-	nc_print_input_footer(stdscr);
-
-	year > 0 ? (uld->year = year) : (uld->year = nc_input_year());
-	if (uld->year < 0) {
-		return;
-	}
-
-	month > 0 ? (uld->month = month) : (uld->month = nc_input_month());
-	if (uld->month < 0) {
-		return;
-	}
-
-	uld->day = nc_input_day(uld->month, uld->year);
-	if (uld->day < 0) {
-		return;
-	}
-
-	uld->category = nc_select_category(uld->month, uld->year);
-	if (uld->category == NULL) {
-		return;
-	}
-
-	uld->desc = nc_input_string("Enter Description");
-	if (uld->desc == NULL) {
-		free(uld->category);
-		return;
-	}
-
-	uld->transtype = nc_input_transaction_type();
-	if (uld->transtype < 0) {
-		goto input_quit;
-	}
-
-	uld->amount = nc_input_amount();
-	if (uld->amount < 0) {
-		goto input_quit;
-	}
-
-	if (!nc_confirm_record(uld)) {
-		goto input_quit;
-	}
-
-	unsigned int resultline = sort_record_csv(uld->month, uld->day, uld->year);
-	add_csv_record(resultline, uld);
-
-input_quit:
-	free(uld->category);
-	free(uld->desc);
-// 	This was causing the nc_read_setup function to be called twice
-//	nc_read_setup(uld->year, uld->month, sort);
-}
-
-void nc_add_transaction_default(void) {
-	nc_add_transaction(0, 0);
 }
 
 void add_transaction(void) {
@@ -1806,67 +1506,6 @@ void init_scroll_cursor_no_category(struct ScrollCursor *sc)
 	sc->sidebar_idx = 0;
 }
 
-struct MenuParams *init_add_main_menu(void) {
-	struct MenuParams *mp = malloc(sizeof(*mp) + (sizeof(char *) * 3));
-	if (mp == NULL) {
-		memory_allocate_fail();
-	}
-	mp->items = 3;
-	mp->title = "Select Data Type to Add";
-	mp->strings[0] = "Add Transaction";
-	mp->strings[1] = "Add Category";
-	mp->strings[2] = "Create New Budget";
-
-	return mp;
-}
-
-struct MenuParams *init_add_menu(void) {
-	struct MenuParams *mp = malloc(sizeof(*mp) + (sizeof(char *) * 2));
-	if (mp == NULL) {
-		memory_allocate_fail();
-	}
-	mp->items = 2;
-	mp->title = "Select Data Type to Add";
-	mp->strings[0] = "Add Transaction";
-	mp->strings[1] = "Add Category";
-
-	return mp;
-}
-
-void add_main_no_date(void) {
-	char *ret;
-	int c;
-	struct MenuParams *mp = init_add_main_menu();
-	c = nc_input_menu(mp);
-	free(mp);
-	switch (c) {
-	case 0:
-		nc_add_transaction_default();
-		break;
-	case 1:
-		ret = nc_add_budget_category(0, 0);
-		free(ret);
-		break;
-	case 2:
-		nc_create_new_budget();
-		break;
-	}
-}
-
-void add_main_with_date(struct Datevals *dv) {
-	char *ret;
-	int c;
-	struct MenuParams *mp = init_add_menu();
-	c = nc_input_menu(mp);
-	free(mp);
-	if (c == 0) {
-		nc_add_transaction(dv->year, dv->month);
-	} else if (c == 1) {
-		ret = nc_add_budget_category(dv->year, dv->month);
-		free(ret);
-	}
-}
-
 void debug_fields(void) {
 	move(0,0);
 	FILE *bfptr = open_budget_csv("r");
@@ -2041,9 +1680,8 @@ int nc_main_menu(WINDOW *wptr) {
 		case('a'):
 		case (KEY_F(ADD)):
 			wclear(wptr);
-			struct MenuParams *mp = init_add_main_menu();
-			add_sel = nc_input_menu(mp);
-			free(mp);
+			add_sel = get_add_selection();
+
 			switch(add_sel) {
 				case ADD_TRNS:
 					nc_add_transaction_default();
@@ -2314,6 +1952,7 @@ int main(int argc, char **argv) {
 			main_menu();
 		}
 	}
+	reset_color_pairs();
 	endwin();
 	return 0;
 }
