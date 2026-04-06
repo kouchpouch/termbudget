@@ -22,11 +22,9 @@
     - [X] Show selected month and year at the top of the screen after
             selection on read
     - [X] Remove all reallocarray() functions for portability
-
     - [ ] After main feature set is done and working, refactor to make main.c
             have a clearer control flow purpose
         - [X] Move read feature to its own source files
-
     - [X] Implement visual truncation when there are not enough columns to
             display all the field data
     - [ ] Move to integer/fixed point arithmetic for financial calculations
