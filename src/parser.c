@@ -236,6 +236,25 @@ void free_budget_tokens(struct BudgetTokens *pbt) {
 	free(pbt);
 }
 
+/* 
+ * Loop through each category in the budget. Returns true or false if the
+ * category exists for the given date range 
+ */
+bool category_exists_in_budget(char *catg, int month, int year) {
+	struct BudgetTokens bt, *pbt = &bt;
+	int i = 1;
+
+	while ((pbt = tokenize_budget_line(i)) != NULL) {
+		if (pbt->y == year && pbt->m == month && strcasecmp(pbt->catg, catg) == 0) {
+			free_budget_tokens(pbt);
+			return true;
+		}
+		free_budget_tokens(pbt);
+		i++;
+	}
+	return false;
+}
+
 bool month_or_year_exists(int m, int y) {
 	FILE *bfptr = open_budget_csv("r");
 	char linebuff[LINE_BUFFER];
