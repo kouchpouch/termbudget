@@ -36,10 +36,10 @@ unsigned int boff_to_linenum(long b) {
 	int linenum = 0;
 	
 	while (fgets(linebuff, sizeof(linebuff), fptr) != NULL) {
+		linenum++;
 		if (ftell(fptr) == b) {
 			break;
 		}
-		linenum++;
 	}
 
 	fclose(fptr);
@@ -53,10 +53,10 @@ unsigned int boff_to_linenum_budget(long b) {
 	int linenum = 0;
 	
 	while (fgets(linebuff, sizeof(linebuff), fptr) != NULL) {
+		linenum++;
 		if (ftell(fptr) == b) {
 			break;
 		}
-		linenum++;
 	}
 
 	fclose(fptr);
