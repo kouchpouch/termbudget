@@ -91,6 +91,10 @@ extern void nc_print_record_vert(WINDOW *wptr, struct LineData *ld, int x_off);
 // To be moved from main.h
 extern bool duplicate_category_exists(struct Categories *psc, char *catg);
 
+extern bool nc_confirm_record(struct LineData *ld);
+
+extern char *nc_select_category(int month, int year);
+
 extern int show_help_subwindow(void);
 
 extern void add_main_no_date(void);
