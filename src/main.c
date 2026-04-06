@@ -102,7 +102,6 @@ void nc_read_setup(int sel_year, int sel_month, int sort, struct ReadRet *rret);
 bool nc_confirm_record(struct LineData *ld);
 void nc_print_record_hr(WINDOW *wptr, struct ColWidth *cw, struct LineData *ld, int y);
 void nc_print_record_vert(WINDOW *wptr, struct LineData *ld, int x_off);
-/* struct Categories *get_categories(int month, int year); */
 int mv_tmp_to_record_file(FILE *tempfile, FILE *mainfile);
 int delete_csv_record(int linetodelete);
 Vec *get_matching_line_nums(FILE *fptr, int month, int year);
@@ -480,7 +479,7 @@ void replace_category(struct BudgetTokens *bt, long b) {
 	FILE *tmpfptr = open_temp_csv();
 	char *str;
 	char linebuff[LINE_BUFFER];
-	size_t line = boff_to_linenum_budget(b) + 2;
+	size_t line = boff_to_linenum_budget(b) + 1;
 	size_t linenum = 0;
 
 	while (1) {
@@ -887,20 +886,20 @@ bool nc_confirm_record(struct LineData *ld) {
 	return false;
 }
 
-int nc_edit_csv_record(int replaceln, int field, struct LineData *ld) {
+int nc_edit_csv_record(int replaceln, int edit_field, struct LineData *ld) {
 	if (replaceln == 0) {
 		puts("Cannot delete line 0");
 		return -1;
 	}
-
 	replaceln += 1;
 
+	enum EditRecordFields field = edit_field;
 	char linebuff[LINE_BUFFER];
 	char *line;
 	int linenum = 0;
 
 	switch(field) {
-	case 1:
+	case E_DATE:
 		ld->year = nc_input_year();
 		if (ld->year < 0) {
 			goto err_fail;
@@ -923,41 +922,45 @@ int nc_edit_csv_record(int replaceln, int field, struct LineData *ld) {
 		add_csv_record(sort_record_csv(ld->month, ld->day, ld->year), ld);
 		return 0;
 
-	case 2:
+	case E_CATG:
 		ld->category = nc_select_category(ld->month, ld->year);
 		if (ld->category == NULL) {
 			goto err_fail;
 		}
 		break;
-	case 3:
+
+	case E_DESC:
 		ld->desc = nc_input_string("Enter Description");
 		if (ld->desc == NULL) {
 			goto err_fail;
 		}
 		break;
-	case 4:
+
+	case E_TYPE:
 		ld->transtype = nc_input_transaction_type();
 		if (ld->transtype < 0) {
 			goto err_fail;
 		}
 		break;
-	case 5:
+
+	case E_AMNT:
 		ld->amount = nc_input_amount();
 		if (ld->amount < 0) {
 			goto err_fail;
 		}
 		break;
+
 	default:
 		puts("Not a valid choice, exiting");
 		return -1;
 	}
 
 	if (!nc_confirm_record(ld)) {
-		if (field == 2) {
+		if (field == E_CATG) {
 			free(ld->category);
 			ld->category = NULL;
 		}
-		if (field == 3) {
+		if (field == E_DESC) {
 			free(ld->desc);
 			ld->desc = NULL;
 		}
@@ -975,6 +978,7 @@ int nc_edit_csv_record(int replaceln, int field, struct LineData *ld) {
 		}
 
 		linenum++;	
+
 		if (linenum != replaceln) {
 			fputs(line, tmpfptr);
 		} else if (linenum == replaceln) {
@@ -993,11 +997,11 @@ int nc_edit_csv_record(int replaceln, int field, struct LineData *ld) {
 	/* mv_tmp_to_record_file() closes the file pointers */
 	mv_tmp_to_record_file(tmpfptr, fptr);
 
-	if (field == 2) {
+	if (field == E_CATG) {
 		free(ld->category);
 		ld->category = NULL;
 	}
-	if (field == 3) {
+	if (field == E_DESC) {
 		free(ld->desc);
 		ld->desc = NULL;
 	}
@@ -1534,7 +1538,6 @@ int nc_select_field_to_edit(WINDOW *wptr) {
 }
 
 void nc_edit_transaction(long b) {
-//	struct LineData linedata, *ld = &linedata;
 	struct LineData *ld = malloc(sizeof(*ld));
 	enum EditRecordFields field;
 
@@ -1573,35 +1576,36 @@ void nc_edit_transaction(long b) {
 		break;
 	case E_DATE:
 		nc_print_input_footer(stdscr);
-		nc_edit_csv_record(linenum + 1, 1, ld);
+		nc_edit_csv_record(linenum, E_DATE, ld);
 		break;
 	case E_CATG:
 		free(ld->category);
 		ld->category = NULL;
-		nc_edit_csv_record(linenum + 1, 2, ld);
+		nc_edit_csv_record(linenum, E_CATG, ld);
 		break;
 	case E_DESC:
 		nc_print_input_footer(stdscr);
 		free(ld->desc);
 		ld->desc = NULL;
-		nc_edit_csv_record(linenum + 1, 3, ld);
+		nc_edit_csv_record(linenum, E_DESC, ld);
 		break;
 	case E_TYPE:
 		nc_print_input_footer(stdscr);
-		nc_edit_csv_record(linenum + 1, 4, ld);
+		nc_edit_csv_record(linenum, E_TYPE, ld);
 		break;
 	case E_AMNT:
 		nc_print_input_footer(stdscr);
-		nc_edit_csv_record(linenum + 1, 5, ld);
+		nc_edit_csv_record(linenum, E_AMNT, ld);
 		break;
 	case DELETE:
 		nc_print_input_footer(stdscr);
 		if (nc_confirm_input("Confirm Delete")) {
-			if (delete_csv_record(linenum + 1) == 0) {
+			if (delete_csv_record(linenum) == 0) {
 				nc_message("Successfully Deleted");
 			}
 		}
 		break;
+
 	default:
 		return;
 	}
