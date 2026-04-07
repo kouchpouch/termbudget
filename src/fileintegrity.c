@@ -15,6 +15,7 @@
 
 #include "fileintegrity.h"
 #include "filemanagement.h"
+#include "create.h"
 #include "helper.h"
 #include "main.h"
 #include "parser.h"
@@ -139,4 +140,69 @@ bool record_len_verification(void) {
 	}
 
 	return true;
+}
+
+static int cmp_catg_and_fix
+(struct Categories *prc, struct Categories *pbc, int m, int y) 
+{
+	int corrected = 0;
+	bool cat_exists = false;
+	for (size_t i = 0; i < prc->size; i++) {
+		cat_exists = false;
+		for (size_t j = 0; j < pbc->size; j++) {
+			if (strcasecmp(prc->categories[i], pbc->categories[j]) == 0) {
+				cat_exists = true;
+			}
+		}
+		if (!cat_exists) {
+			insert_budget_record(prc->categories[i], m, y, 0, 0.0);
+			corrected++;
+		}
+	}
+	return corrected;
+}
+
+/*
+ * Ensures that if a category exists in RECORD_DIR(main.h)
+ * it will also exist in BUDGET_DIR(main.h). BUDGET_DIR is verified against
+ * RECORD_DIR, not the other way around. If a category exists in BUDGET_DIR
+ * and not RECORD_DIR leading to an orphaned category--this is not checked.
+ *
+ * Orphaned categories are expected and a normal part of the program that are
+ * used for budget planning.
+ *
+ * Returns a 0 or positive value of records that were corrected successfully.
+ * Returns -1 on failure.
+ */
+int verify_categories_exist_in_budget(void) {
+	FILE *rfptr = open_record_csv("r");
+	int corrected = 0;
+
+	/* Go through each year and find the matching months, then find the
+	 * matching categories, then compare. */
+
+	struct Categories prc_, *prc = &prc_;
+	struct Categories pbc_, *pbc = &pbc_;
+	Vec *years = get_years_with_data(rfptr, 2);
+	if (years == NULL) {
+		return 0;
+	}
+
+	for (size_t i = 0; i < years->size; i++) {
+		rewind(rfptr);
+		Vec *months = get_months_with_data(rfptr, years->data[i], 1);
+		for (size_t j = 0; j < months->size; j++) {
+			prc = get_categories(months->data[j], years->data[i]);
+			pbc = get_budget_catg_by_date(months->data[j], years->data[i]);
+			corrected += cmp_catg_and_fix(prc, pbc, months->data[j], years->data[i]);
+			free_categories(prc);
+			free_categories(pbc);
+		}
+		free(months);
+	}
+
+	free(years);
+	fclose(rfptr);
+
+	return corrected;
 }
