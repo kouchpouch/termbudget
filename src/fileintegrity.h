@@ -33,4 +33,18 @@ extern bool validate_budget_header(void);
  * lengths defined in main. False if not */
 extern bool record_len_verification(void);
 
+/*
+ * Ensures that if a category exists in RECORD_DIR(main.h)
+ * it will also exist in BUDGET_DIR(main.h). BUDGET_DIR is verified against
+ * RECORD_DIR, not the other way around. If a category exists in BUDGET_DIR
+ * and not RECORD_DIR leading to an orphaned category--this is not checked.
+ *
+ * Orphaned categories are expected and a normal part of the program that are
+ * used for budget planning.
+ *
+ * Returns a 0 or positive value of records that were corrected successfully.
+ * Returns -1 on failure.
+ */
+extern int verify_categories_exist_in_budget(void);
+
 #endif
