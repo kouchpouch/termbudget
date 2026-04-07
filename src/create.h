@@ -30,7 +30,7 @@ enum AddMainMenu {
 
 extern void add_csv_record(int linetoadd, struct LineData *ld);
 
-extern void add_budget_category(char *catg, int m, int y, int transtype, double amt);
+extern void insert_budget_record(char *catg, int m, int y, int transtype, double amt);
 
 extern char *nc_add_budget_category(int yr, int mo);
 
