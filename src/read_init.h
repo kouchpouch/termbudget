@@ -31,5 +31,6 @@ struct SelRecord {
 	long opt; // Optional flag
 };
 
+extern void nc_read_setup(int sel_year, int sel_month, int sort, struct ReadRet *rret);
 
 #endif
