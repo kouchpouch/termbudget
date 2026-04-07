@@ -17,7 +17,6 @@
 #include <ncurses.h>
 
 #include "main.h"
-#include "read_init.h"
 #include "sorter.h"
 #include "create.h"
 #include "tui.h"
@@ -42,7 +41,9 @@ static bool confirm_budget_category(char *catg, double amt) {
 	return retval;
 }
 
-void add_budget_category(char *catg, int m, int y, int transtype, double amt) {
+/* Writes the a csv record containing the data passed into the arguments
+ * to budget.csv into the appropriate line sorted by date. */
+void insert_budget_record(char *catg, int m, int y, int transtype, double amt) {
 	unsigned int linetoadd = sort_budget_csv(m, y);
 	FILE *fptr = open_budget_csv("r");
 	FILE *tmpfptr = open_temp_csv();
@@ -95,7 +96,7 @@ char *nc_add_budget_category(int yr, int mo) {
 
 	double amt = nc_input_budget_amount();
 	if (confirm_budget_category(catg, amt)) {
-		add_budget_category(catg, mo, yr, transtype, amt);
+		insert_budget_record(catg, mo, yr, transtype, amt);
 	}
 
 	free_categories(psc);
@@ -105,7 +106,7 @@ char *nc_add_budget_category(int yr, int mo) {
 /* Adds a record to the CSV on line linetoadd */
 void add_csv_record(int linetoadd, struct LineData *ld) {
 	if (!category_exists_in_budget(ld->category, ld->month, ld->year)) {
-		add_budget_category(ld->category, ld->month, ld->year, ld->transtype, 0.0);
+		insert_budget_record(ld->category, ld->month, ld->year, ld->transtype, 0.0);
 	} 
 
 	FILE *fptr = open_record_csv("r");
