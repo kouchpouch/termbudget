@@ -66,7 +66,7 @@ void insert_budget_record(char *catg, int m, int y, int transtype, double amt) {
 
 /* For a la carte budget category creation, returns a malloc'd char * which
  * is free'd by the caller */
-char *nc_add_budget_category(int yr, int mo) {
+char *create_budget_record(int yr, int mo) {
 	if (mo == 0 || yr == 0) {
 		yr = nc_input_year();
 		if (yr == -1) {
@@ -104,7 +104,7 @@ char *nc_add_budget_category(int yr, int mo) {
 }
 
 /* Adds a record to the CSV on line linetoadd */
-void add_csv_record(int linetoadd, struct LineData *ld) {
+void insert_transaction_record(int linetoadd, struct LineData *ld) {
 	if (!category_exists_in_budget(ld->category, ld->month, ld->year)) {
 		insert_budget_record(ld->category, ld->month, ld->year, ld->transtype, 0.0);
 	} 
@@ -139,7 +139,7 @@ void add_csv_record(int linetoadd, struct LineData *ld) {
 
 /* Optional parameters int month, year. If add transaction is selected while
  * on the read screen these will be auto-filled. */
-void nc_add_transaction(int year, int month) {
+void create_transaction(int year, int month) {
 	struct LineData userlinedata_, *uld = &userlinedata_;
 	nc_print_input_footer(stdscr);
 
@@ -184,7 +184,7 @@ void nc_add_transaction(int year, int month) {
 	}
 
 	unsigned int resultline = sort_record_csv(uld->month, uld->day, uld->year);
-	add_csv_record(resultline, uld);
+	insert_transaction_record(resultline, uld);
 
 input_quit:
 	free(uld->category);
@@ -193,8 +193,8 @@ input_quit:
 //	nc_read_setup(uld->year, uld->month, sort);
 }
 
-void nc_add_transaction_default(void) {
-	nc_add_transaction(0, 0);
+void create_transaction_default(void) {
+	create_transaction(0, 0);
 }
 
 static struct MenuParams *init_add_main_menu(void) {
@@ -254,7 +254,7 @@ struct Datevals *nc_create_new_budget(void) {
 		nc_message("A budget already exists for that month");
 		return dv;
 	}
-	char *catg = nc_add_budget_category(dv->year, dv->month);
+	char *catg = create_budget_record(dv->year, dv->month);
 	if (catg == NULL) {
 		free(dv);
 		return NULL;
@@ -276,11 +276,11 @@ void add_main_with_date(struct Datevals *dv) {
 
 	switch (add_sel) {
 	case ADD_TRNS:
-		nc_add_transaction(dv->year, dv->month);
+		create_transaction(dv->year, dv->month);
 		break;
 
 	case ADD_CATG:
-		ret = nc_add_budget_category(dv->year, dv->month);
+		ret = create_budget_record(dv->year, dv->month);
 		free(ret);
 		break;
 
@@ -303,11 +303,11 @@ void add_main_no_date(void) {
 
 	switch (add_sel) {
 	case ADD_TRNS:
-		nc_add_transaction_default();
+		create_transaction_default();
 		break;
 
 	case ADD_CATG:
-		ret = nc_add_budget_category(0, 0);
+		ret = create_budget_record(0, 0);
 		free(ret);
 		break;
 ;

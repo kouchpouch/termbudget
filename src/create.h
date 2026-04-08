@@ -28,19 +28,19 @@ enum AddMainMenu {
 	CREATE_BUDGET
 }; 
 
-extern void add_csv_record(int linetoadd, struct LineData *ld);
+extern void insert_transaction_record(int linetoadd, struct LineData *ld);
 
 extern void insert_budget_record(char *catg, int m, int y, int transtype, double amt);
 
-extern char *nc_add_budget_category(int yr, int mo);
+extern char *create_budget_record(int yr, int mo);
 
 extern struct Datevals *nc_create_new_budget(void);
 
 /* Optional parameters int month, year. If add transaction is selected while
  * on the read screen these will be auto-filled. */
-extern void nc_add_transaction(int year, int month);
+extern void create_transaction(int year, int month);
 
-extern void nc_add_transaction_default(void);
+extern void create_transaction_default(void);
 
 extern int get_add_selection(void);
 
