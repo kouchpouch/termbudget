@@ -32,7 +32,6 @@
 #include "sorter.h"
 #include "tui.h"
 #include "tui_input.h"
-#include "tui_input_menu.h"
 #include "vector.h"
 #include "parser.h"
 #include "categories.h"
@@ -393,7 +392,7 @@ manual_selection:
 			nc_exit_window(wptr_parent);
 			nc_exit_window(wptr);
 			nc_print_input_footer(stdscr);
-			return nc_add_budget_category(year, month);
+			return create_budget_record(year, month);
 		case('\n'):
 		case('\r'):
 		case(KEY_ENTER):
@@ -515,6 +514,7 @@ bool duplicate_category_exists(struct Categories *psc, char *catg) {
 	return false;
 }
 
+/* An old CLI function */
 void add_transaction(void) {
 	struct LineData userlinedata_, *uld = &userlinedata_;
 	FILE *fptr = open_record_csv("r");
@@ -547,7 +547,7 @@ void add_transaction(void) {
 		printf("Result line: %d\n", resultline);
 	}
 
-	add_csv_record(resultline, uld);
+	insert_transaction_record(resultline, uld);
 
 err_confirm:
 	free(uld->category);
@@ -620,7 +620,7 @@ int nc_edit_csv_record(int replaceln, int edit_field, struct LineData *ld) {
 		/* Have to add and delete here because the record will be placed
 		 * in a new position when the date changes */
 		delete_csv_record(replaceln - 1);
-		add_csv_record(sort_record_csv(ld->month, ld->day, ld->year), ld);
+		insert_transaction_record(sort_record_csv(ld->month, ld->day, ld->year), ld);
 		return 0;
 
 	case E_CATG:
@@ -734,7 +734,7 @@ int edit_csv_record(int linetoreplace, struct LineData *ld, int field) {
 		/* Have to add and delete here because the record will be placed
 		 * in a new position when the date changes */
 		delete_csv_record(linetoreplace - 1);
-		add_csv_record(sort_record_csv(ld->month, ld->day, ld->year), ld);
+		insert_transaction_record(sort_record_csv(ld->month, ld->day, ld->year), ld);
 		return 0;
 
 	case 2:
@@ -1684,10 +1684,10 @@ int nc_main_menu(WINDOW *wptr) {
 
 			switch(add_sel) {
 				case ADD_TRNS:
-					nc_add_transaction_default();
+					create_transaction_default();
 					break;
 				case ADD_CATG:
-					ret = nc_add_budget_category(0, 0);
+					ret = create_budget_record(0, 0);
 					free(ret);
 					break;
 				case ADD_BUDG:
@@ -1952,7 +1952,9 @@ int main(int argc, char **argv) {
 			main_menu();
 		}
 	}
+#ifdef reset_color_pairs
 	reset_color_pairs();
+#endif
 	endwin();
 	return 0;
 }
