@@ -1952,7 +1952,7 @@ int main(int argc, char **argv) {
 			main_menu();
 		}
 	}
-#ifdef reset_color_pairs
+#ifdef NCURSES_VERSION
 	reset_color_pairs();
 #endif
 	endwin();
