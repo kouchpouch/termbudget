@@ -21,6 +21,7 @@
 
 #include "read_init.h"
 #include "read_loops.h"
+#include "create.h"
 #include "main.h"
 #include "edit_categories.h"
 #include "get_date.h"
@@ -704,7 +705,7 @@ void nc_read_setup
 
 	nodes = create_category_nodes(dates->month, dates->year);
 	if (debug_flag) {
-//		debug_category_nodes(wins->data, nodes);
+//FIX debug_category_nodes(wins->data, nodes);
 	}
 
 	if (sidebar_exists) {

@@ -33,4 +33,8 @@ struct SelRecord {
 
 extern void nc_read_setup(int sel_year, int sel_month, int sort, struct ReadRet *rret);
 
+extern void nc_read_setup_default(struct ReadRet *rret);
+
+extern void nc_read_setup_year(int sel_year, struct ReadRet *rret);
+
 #endif
