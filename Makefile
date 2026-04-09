@@ -18,4 +18,5 @@ termbudget:
 		src/categories.c \
 		src/read_init.c \
 		src/read_loops.c \
+		src/create.c \
 		-lncurses -o termbudget

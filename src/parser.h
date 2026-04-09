@@ -100,6 +100,10 @@ extern int get_num_fields(FILE *fptr);
 /* Frees the struct and any applicable members */
 extern void free_budget_tokens(struct BudgetTokens *pbt);
 
+/* Loop through each category in the budget. Returns true or false if the
+ * category exists for the given date range */
+extern bool category_exists_in_budget(char *catg, int month, int year);
+
 /* Returns bool if a month or year exists. Only checks BUDGET_DIR, as any
  * record there must either contain records or categories. Month parameter
  * is optional, call function with the month paramater <= 0*/

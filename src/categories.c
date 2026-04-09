@@ -65,13 +65,13 @@ CategoryNode **create_category_nodes(int m, int y) {
 	unsigned long n = pcbo->size;
 	CategoryNode **pnode = malloc(sizeof(CategoryNode *) * n);
 	if (pnode == NULL) {
-		memory_allocate_fail();
+		mem_alloc_fail();
 	}
 
 	for (size_t i = 0; i < n; i++) {
 		pnode[i] = malloc(sizeof(CategoryNode));
 		if (pnode[i] == NULL) {
-			memory_allocate_fail();
+			mem_alloc_fail();
 		}
 
 		pnode[i]->catg_fp = pcbo->data[i];

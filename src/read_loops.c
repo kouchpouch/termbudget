@@ -877,6 +877,7 @@ void nc_read_loop
 				dc->last += scroll_ret;
 			}
 			break;
+
 		case('k'):
 		case(KEY_UP):
 			if (sc->select_idx > 0) {
@@ -904,6 +905,7 @@ void nc_read_loop
 				}
 			}
 			break;
+
 		case(KEY_PPAGE): // PAGE UP
 			for (int i = 0; i < 10; i++) {
 				if (sc->select_idx > 0) {
@@ -921,6 +923,7 @@ void nc_read_loop
 				dc->last += scroll_ret;
 			}
 			break;
+
 		case(KEY_HOME):
 			while (sc->select_idx > 0) {
 				nc_scroll_prev_read_loop(wins->data, sc, cw, fptr, psc);
@@ -935,48 +938,56 @@ void nc_read_loop
 				init_sidebar_body(wins->sidebar_body, nodes, sc->sidebar_idx);
 			}
 			break;
+
 		case(']'):
 			if (nodes[sc->sidebar_idx]->next != NULL) {
 				sc->sidebar_idx++;
 				init_sidebar_body(wins->sidebar_body, nodes, sc->sidebar_idx);
 			}
 			break;
+
 		case('A'):
 		case('a'):
 		case(KEY_F(ADD)):
 			sr->flag = ADD;
 			sr->index = psc->data[sc->select_idx];
 			return;
+
 		case('E'):
 		case('e'):
 		case(KEY_F(EDIT)):
 			sr->flag = EDIT;
 			sr->index = psc->data[sc->select_idx];
 			return;
+
 		case('R'):
 		case('r'):
 		case(KEY_F(READ)):
 			sr->flag = READ;
 			sr->index = 0;
 			return;
+				
 		case('Q'):
 		case('q'):
 		case(KEY_F(QUIT)):
 			sr->flag = QUIT;
 			sr->index = 0;
 			return;
+
 		case('S'):
 		case('s'):
 		case(KEY_F(SORT)):
 			sr->flag = SORT;
 			sr->index = 0;
 			return;
+
 		case('O'):
 		case('o'):
 		case(KEY_F(OVERVIEW)):
 			sr->flag = OVERVIEW;
 			sr->index = 0;
 			return;
+
 		case(KEY_RESIZE):
 			sr->flag = RESIZE;
 			sr->index = 0;

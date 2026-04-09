@@ -85,7 +85,7 @@ struct RecordHeader *parse_record_header(FILE *fptr) {
 	struct RecordHeader *rh = malloc(sizeof(*rh));
 	init_record_header_struct(rh);
 	if (rh == NULL) {
-		memory_allocate_fail();
+		mem_alloc_fail();
 	}
 	rewind(fptr);
 
@@ -153,7 +153,7 @@ struct BudgetHeader *parse_budget_header(FILE *fptr) {
 	struct BudgetHeader *bh = malloc(sizeof(*bh));
 	init_budget_header_struct(bh);
 	if (bh == NULL) {
-		memory_allocate_fail();
+		mem_alloc_fail();
 	}
 	rewind(fptr);
 
@@ -236,6 +236,25 @@ void free_budget_tokens(struct BudgetTokens *pbt) {
 	free(pbt);
 }
 
+/* 
+ * Loop through each category in the budget. Returns true or false if the
+ * category exists for the given date range 
+ */
+bool category_exists_in_budget(char *catg, int month, int year) {
+	struct BudgetTokens bt, *pbt = &bt;
+	int i = 1;
+
+	while ((pbt = tokenize_budget_line(i)) != NULL) {
+		if (pbt->y == year && pbt->m == month && strcasecmp(pbt->catg, catg) == 0) {
+			free_budget_tokens(pbt);
+			return true;
+		}
+		free_budget_tokens(pbt);
+		i++;
+	}
+	return false;
+}
+
 bool month_or_year_exists(int m, int y) {
 	FILE *bfptr = open_budget_csv("r");
 	char linebuff[LINE_BUFFER];
@@ -268,7 +287,7 @@ bool month_or_year_exists(int m, int y) {
 Vec *get_years_with_data(FILE *fptr, int field) {
 	Vec *pr = malloc(sizeof(*pr) + sizeof(long) * REALLOC_INCR);
 	if (pr == NULL) {
-		memory_allocate_fail();
+		mem_alloc_fail();
 	}
 
 	pr->size = 0;
@@ -304,7 +323,7 @@ Vec *get_years_with_data(FILE *fptr, int field) {
 			Vec *tmp = realloc(pr, sizeof(*pr) + (sizeof(long) * pr->capacity));
 			if (tmp == NULL) {
 				free(pr);
-				memory_allocate_fail();
+				mem_alloc_fail();
 			}
 			pr = tmp;
 		}
@@ -339,7 +358,7 @@ Vec *get_months_with_data(FILE *fptr, int matchyear, int field) {
 	Vec *months = malloc(sizeof(*months) + (sizeof(long) * MONTHS_IN_YEAR));
 
 	if (months == NULL) {
-		memory_allocate_fail();
+		mem_alloc_fail();
 	}
 
 	months->size = MONTHS_IN_YEAR;
@@ -376,7 +395,7 @@ Vec *get_matching_line_nums(FILE *fptr, int month, int year) {
 	rewind(fptr);
 	Vec *pl = malloc(sizeof(*pl) + (sizeof(long) * REALLOC_INCR));
 	if (pl == NULL) {
-		memory_allocate_fail();
+		mem_alloc_fail();
 	}
 
 	pl->size = 0;
@@ -409,7 +428,7 @@ Vec *get_matching_line_nums(FILE *fptr, int month, int year) {
 					realloc(pl, sizeof(*pl) + (sizeof(long) * pl->capacity));
 				if (tmp == NULL) {
 					free(pl);
-					memory_allocate_fail();
+					mem_alloc_fail();
 				}
 				pl = tmp;
 			}
@@ -464,7 +483,7 @@ struct Categories *get_categories(int month, int year) {
 			struct Categories *temp = realloc(pc, sizeof(struct Categories) + 
 										((pc->capacity) * sizeof(char *)));
 			if (temp == NULL) {
-				memory_allocate_fail();
+				mem_alloc_fail();
 			}
 			pc = temp;
 		}
@@ -496,7 +515,7 @@ Vec *get_records_by_any(int month, int day, int year, char *category,
 	FILE *fptr = open_record_csv("r");
 	Vec *prbc = malloc(sizeof(*prbc) + (sizeof(long) * REALLOC_INCR));
 	if (prbc == NULL) {
-		memory_allocate_fail();
+		mem_alloc_fail();
 	}
 
 	struct LineData ld_, *ld = &ld_;
@@ -592,7 +611,7 @@ Vec *get_records_by_any(int month, int day, int year, char *category,
 				Vec *tmp = realloc(prbc, sizeof(*prbc) + (sizeof(long) * prbc->capacity));
 				if (tmp == NULL) {
 					free(prbc);
-					memory_allocate_fail();
+					mem_alloc_fail();
 				}
 				prbc = tmp;
 			}
@@ -619,7 +638,7 @@ struct Categories *get_budget_catg_by_date(int month, int year) {
 		malloc((sizeof(*pc)) + (sizeof(char *) * REALLOC_INCR));
 
 	if (pc == NULL) {
-		memory_allocate_fail();
+		mem_alloc_fail();
 	}
 
 	pc->size = 0;
@@ -654,7 +673,7 @@ struct Categories *get_budget_catg_by_date(int month, int year) {
 				if (tmp == NULL) {
 					free(pc);
 					fclose(fptr);
-					memory_allocate_fail();
+					mem_alloc_fail();
 				}
 				pc = tmp;
 			}
@@ -670,7 +689,7 @@ struct Categories *get_budget_catg_by_date(int month, int year) {
 Vec *get_budget_catg_by_date_bo(int month, int year) {
 	Vec *pcbo = malloc((sizeof(*pcbo)) + (sizeof(long) * REALLOC_INCR));
 	if (pcbo == NULL) {
-		memory_allocate_fail();
+		mem_alloc_fail();
 	}
 
 	pcbo->capacity = REALLOC_INCR;
@@ -699,7 +718,7 @@ Vec *get_budget_catg_by_date_bo(int month, int year) {
 				Vec *tmp = realloc(pcbo, sizeof(Vec) + (sizeof(long) * pcbo->capacity));
 				if (tmp == NULL) {
 					free(pcbo);
-					memory_allocate_fail();
+					mem_alloc_fail();
 				}
 				pcbo = tmp;
 			}
@@ -719,7 +738,7 @@ struct BudgetTokens *tokenize_budget_byte_offset(long bo) {
 	}
 	struct BudgetTokens *pbt = malloc(sizeof(*pbt));
 	if (pbt == NULL) {
-		memory_allocate_fail();
+		mem_alloc_fail();
 	}
 
 	FILE *fptr = open_budget_csv("r");
@@ -737,7 +756,7 @@ struct BudgetTokens *tokenize_budget_byte_offset(long bo) {
 	char *tmp = strndup(strsep(&str, ","), MAX_LEN_CATG);
 	if (tmp == NULL) {
 		free(pbt);
-		memory_allocate_fail();
+		mem_alloc_fail();
 	}
 	pbt->catg = tmp;
 	pbt->transtype = atoi(strsep(&str, ","));
@@ -753,7 +772,7 @@ struct BudgetTokens *tokenize_budget_line(int line) {
 	}
 	struct BudgetTokens *pbt = malloc(sizeof(struct BudgetTokens));
 	if (pbt == NULL) {
-		memory_allocate_fail();
+		mem_alloc_fail();
 	}
 
 	FILE *fptr = open_budget_csv("r");
@@ -788,7 +807,7 @@ struct BudgetTokens *tokenize_budget_line(int line) {
 	char *tmp = strndup(strsep(&str, ","), MAX_LEN_CATG);
 	if (tmp == NULL) {
 		free(pbt);
-		memory_allocate_fail();
+		mem_alloc_fail();
 	}
 	pbt->catg = tmp;
 	pbt->transtype = atoi(strsep(&str, ","));
@@ -910,7 +929,7 @@ Vec *index_csv(FILE *fptr) {
 	Vec *pidx =
 		malloc(sizeof(Vec) + (sizeof(long) * INDEX_ALLOC));
 	if (pidx == NULL) {
-		memory_allocate_fail();
+		mem_alloc_fail();
 	}
 	pidx->capacity = INDEX_ALLOC;
 	pidx->size = 0;
@@ -931,7 +950,7 @@ Vec *index_csv(FILE *fptr) {
 				realloc(pidx, sizeof(Vec) + (sizeof(long) * pidx->capacity));
 			if (tmp == NULL) {
 				free(pidx);
-				memory_allocate_fail();
+				mem_alloc_fail();
 			}
 			pidx = tmp;
 		}

@@ -21,6 +21,7 @@
 
 #include "read_init.h"
 #include "read_loops.h"
+#include "create.h"
 #include "main.h"
 #include "edit_categories.h"
 #include "get_date.h"
@@ -124,7 +125,7 @@ static Vec *consolidate_years(Vec *vec1, Vec *vec2) {
 	if (result == NULL) {
 		free(vec1);
 		free(vec2);
-		memory_allocate_fail();
+		mem_alloc_fail();
 	}
 
 	result->size = 0;
@@ -180,7 +181,7 @@ static Vec *consolidate_months(Vec *vec1, Vec *vec2) {
 	if (result == NULL) {
 		free(vec1);
 		free(vec2);
-		memory_allocate_fail();
+		mem_alloc_fail();
 	}
 
 	result->size = 0;
@@ -522,7 +523,7 @@ static void debug_fields(void) {
 static Vec *sort_by_date(FILE *fptr, Vec *pidx, Vec *plines) {
 	Vec *psbd = malloc(sizeof(*psbd) + (sizeof(long) * plines->size));
 	if (psbd == NULL) {
-		memory_allocate_fail();
+		mem_alloc_fail();
 	}
 
 	psbd->capacity = plines->size;
@@ -546,7 +547,7 @@ static Vec *sort_by_category
 	if (prsc == NULL) {
 		free(pidx);
 		free(plines);
-		memory_allocate_fail();
+		mem_alloc_fail();
 	}
 
 	prsc->capacity = REALLOC_INCR;
@@ -704,7 +705,7 @@ void nc_read_setup
 
 	nodes = create_category_nodes(dates->month, dates->year);
 	if (debug_flag) {
-//		debug_category_nodes(wins->data, nodes);
+//FIX debug_category_nodes(wins->data, nodes);
 	}
 
 	if (sidebar_exists) {

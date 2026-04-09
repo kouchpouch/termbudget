@@ -76,7 +76,7 @@ struct Balances {
 };
 
 /* Exits the program with "exit(1)" and prints the error message. */
-extern void memory_allocate_fail(void);
+extern void mem_alloc_fail(void);
 
 /* Sets the values of struct members 'pb' using records in RECORD_DIR
  * at file positions of 'pbo' */
@@ -91,11 +91,11 @@ extern void nc_print_record_vert(WINDOW *wptr, struct LineData *ld, int x_off);
 // To be moved from main.h
 extern bool duplicate_category_exists(struct Categories *psc, char *catg);
 
+extern bool nc_confirm_record(struct LineData *ld);
+
+extern char *nc_select_category(int month, int year);
+
 extern int show_help_subwindow(void);
-
-extern void add_main_no_date(void);
-
-extern void add_main_with_date(struct Datevals *dv);
 
 extern void nc_edit_transaction(long b);
 

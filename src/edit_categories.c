@@ -173,7 +173,7 @@ static int select_catg_field(void) {
 	struct MenuParams *mp = malloc(sizeof(*mp) + (sizeof(char *) * n_options));
 
 	if (mp == NULL) {
-		memory_allocate_fail();
+		mem_alloc_fail();
 	}
 
 	mp->items = n_options;
@@ -240,13 +240,13 @@ static int replace_many_records_categories
 	size_t del_lines[n_recs];
 	struct LineData **lda = malloc(sizeof(struct LineData) * n_recs);
 	if (lda == NULL) {
-		memory_allocate_fail();
+		mem_alloc_fail();
 	}
 
 	for (size_t i = 0; i < n_recs; i++) {
 		lda[i] = malloc(sizeof(struct LineData));
 		if (lda[i] == NULL) {
-			memory_allocate_fail();
+			mem_alloc_fail();
 		}
 		tokenize_record_fpi(nodes[node_idx]->data->data[i], lda[i]);
 		free(lda[i]->category);
