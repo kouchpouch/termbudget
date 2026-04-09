@@ -22,7 +22,7 @@
 #include <ctype.h>
 #include <ncurses.h>
 #include <limits.h>
-#include <errno.h>
+/* #include <errno.h> */
 
 #include "main.h"
 #include "create.h"
@@ -79,9 +79,6 @@ const char *abbr_months[] = {
 	"DEC"
 };
 
-void mem_alloc_fail(void);
-void nc_read_setup_default(struct ReadRet *rret);
-void calculate_balance(struct Balances *pb, Vec *pbo);
 bool nc_confirm_record(struct LineData *ld);
 void nc_print_record_hr(WINDOW *wptr, struct ColWidth *cw, struct LineData *ld, int y);
 void nc_print_record_vert(WINDOW *wptr, struct LineData *ld, int x_off);
