@@ -96,7 +96,7 @@
     - [ ] After main feature set is done and working, refactor to make main.c
             have a clearer control flow purpose
         - [X] Move read feature to its own source files
-        - [ ] Move add feature to its own source files
+        - [X] Move add feature to its own source files
 
 #### Main Feature Set
     - [X] Create a transaction
