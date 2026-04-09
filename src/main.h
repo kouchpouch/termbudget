@@ -76,7 +76,7 @@ struct Balances {
 };
 
 /* Exits the program with "exit(1)" and prints the error message. */
-extern void memory_allocate_fail(void);
+extern void mem_alloc_fail(void);
 
 /* Sets the values of struct members 'pb' using records in RECORD_DIR
  * at file positions of 'pbo' */

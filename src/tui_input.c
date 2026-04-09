@@ -301,7 +301,7 @@ char *nc_input_string(char *msg) {
 int nc_input_category_type(void) {
 	struct MenuParams *mp = malloc(sizeof(*mp) + (sizeof(char *) * 2));
 	if (mp == NULL) {
-		memory_allocate_fail();
+		mem_alloc_fail();
 	}
 
 	mp->title = "This Category is to track:";
@@ -320,7 +320,7 @@ int nc_input_category_type(void) {
 int nc_input_transaction_type(void) {
 	struct MenuParams *mp = malloc(sizeof(*mp) + (sizeof(char *) * 2));
 	if (mp == NULL) {
-		memory_allocate_fail();
+		mem_alloc_fail();
 	}
 
 	mp->title = "Select Transaction Type";

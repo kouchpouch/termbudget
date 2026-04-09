@@ -198,11 +198,12 @@ void create_transaction_default(void) {
 }
 
 static struct MenuParams *init_add_main_menu(void) {
-	struct MenuParams *mp = malloc(sizeof(*mp) + (sizeof(char *) * 3));
+	int n_str = 3;
+	struct MenuParams *mp = malloc(sizeof(*mp) + (sizeof(char *) * n_str));
 	if (mp == NULL) {
-		memory_allocate_fail();
+		mem_alloc_fail();
 	}
-	mp->items = 3;
+	mp->items = n_str;
 	mp->title = "Select Data Type to Add";
 	mp->strings[0] = "Add Transaction";
 	mp->strings[1] = "Add Category";
@@ -224,7 +225,7 @@ int get_add_selection(void) {
 static struct MenuParams *init_add_menu(void) {
 	struct MenuParams *mp = malloc(sizeof(*mp) + (sizeof(char *) * 2));
 	if (mp == NULL) {
-		memory_allocate_fail();
+		mem_alloc_fail();
 	}
 	mp->items = 2;
 	mp->title = "Select Data Type to Add";
@@ -237,7 +238,7 @@ static struct MenuParams *init_add_menu(void) {
 struct Datevals *nc_create_new_budget(void) {
 	struct Datevals *dv = malloc(sizeof(struct Datevals));
 	if (dv == NULL) {
-		memory_allocate_fail();
+		mem_alloc_fail();
 	}
 
 	dv->year = nc_input_year();
