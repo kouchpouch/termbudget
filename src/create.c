@@ -13,9 +13,11 @@
  * with this program. If not, see <https://www.gnu.org/licenses/>. 
  */
 
+#include <assert.h>
 #include <stdio.h>
 #include <ncurses.h>
 
+#include "categories.h"
 #include "main.h"
 #include "sorter.h"
 #include "create.h"
@@ -30,12 +32,14 @@ static bool confirm_budget_category(char *catg, double amt) {
 	int maxy = getmaxy(wptr);
 	int maxx = getmaxx(wptr);
 	char *msg = "Confirm Category";
+	bool retval;
+
 	mvwprintw(wptr, 0, (maxx / 2 - strlen(msg) / 2), "%s", msg);
 	mvwprintw(wptr, 3, (maxx / 2 - strlen(catg) / 2), "%s", catg);
 	mvwprintw(wptr, 4, (maxx / 2 - intlen(amt) / 2) - 2, "$%.2f", amt);
 	mvwxcprintw(wptr, maxy - BOX_OFFSET, "(Y)es  /  (N)o");
 
-	bool retval = nc_confirm_input_loop(wptr);
+	retval = nc_confirm_input_loop(wptr);
 
 	nc_exit_window(wptr);
 	return retval;
@@ -61,12 +65,18 @@ void insert_budget_record(char *catg, int m, int y, int transtype, double amt) {
 			fprintf(tmpfptr, "%d,%d,%s,%d,%.2f\n", m, y, catg, transtype, amt);
 		}
 	}
+
 	mv_tmp_to_budget_file(tmpfptr, fptr);
 }
 
 /* For a la carte budget category creation, returns a malloc'd char * which
  * is free'd by the caller */
 char *create_budget_record(int yr, int mo) {
+	char *catg;
+	int transtype;
+	struct Categories *psc;
+	double amt;
+
 	if (mo == 0 || yr == 0) {
 		yr = nc_input_year();
 		if (yr == -1) {
@@ -77,16 +87,17 @@ char *create_budget_record(int yr, int mo) {
 			return NULL;
 		}
 	}
-	char *catg = nc_input_string("Enter Category");
+
+	catg = nc_input_string("Enter Category");
 	if (catg == NULL) {
 		return NULL;
 	}
-	int transtype = nc_input_category_type();
+	transtype = nc_input_category_type();
 	if (transtype < 0) {
 		return NULL;
 	}
 
-	struct Categories *psc = get_budget_catg_by_date(mo, yr);
+	psc = get_budget_catg_by_date(mo, yr);
 	if (duplicate_category_exists(psc, catg)) {
 		nc_message("That Category Already Exists");
 		free(catg);
@@ -94,7 +105,7 @@ char *create_budget_record(int yr, int mo) {
 		return NULL;
 	}
 
-	double amt = nc_input_budget_amount();
+	amt = nc_input_budget_amount();
 	if (confirm_budget_category(catg, amt)) {
 		insert_budget_record(catg, mo, yr, transtype, amt);
 	}
@@ -111,7 +122,6 @@ void insert_transaction_record(int linetoadd, struct LineData *ld) {
 
 	FILE *fptr = open_record_csv("r");
 	FILE *tmpfptr = open_temp_csv();
-
 	char linebuff[LINE_BUFFER];
 	char *line;
 	int linenum = 0;
@@ -141,6 +151,8 @@ void insert_transaction_record(int linetoadd, struct LineData *ld) {
  * on the read screen these will be auto-filled. */
 void create_transaction(int year, int month) {
 	struct LineData userlinedata_, *uld = &userlinedata_;
+	unsigned int result_line;
+
 	nc_print_input_footer(stdscr);
 
 	year > 0 ? (uld->year = year) : (uld->year = nc_input_year());
@@ -183,8 +195,8 @@ void create_transaction(int year, int month) {
 		goto input_quit;
 	}
 
-	unsigned int resultline = sort_record_csv(uld->month, uld->day, uld->year);
-	insert_transaction_record(resultline, uld);
+	result_line = sort_record_csv(uld->month, uld->day, uld->year);
+	insert_transaction_record(result_line, uld);
 
 input_quit:
 	free(uld->category);
@@ -199,15 +211,19 @@ void create_transaction_default(void) {
 
 static struct MenuParams *init_add_main_menu(void) {
 	int n_str = 3;
+	int idx = 0;
 	struct MenuParams *mp = malloc(sizeof(*mp) + (sizeof(char *) * n_str));
 	if (mp == NULL) {
 		mem_alloc_fail();
 	}
+
 	mp->items = n_str;
 	mp->title = "Select Data Type to Add";
-	mp->strings[0] = "Add Transaction";
-	mp->strings[1] = "Add Category";
-	mp->strings[2] = "Create New Budget";
+	mp->strings[idx++] = "Add Transaction";
+	mp->strings[idx++] = "Add Category";
+	mp->strings[idx++] = "Create New Budget";
+
+	assert(idx == n_str);
 
 	return mp;
 }
@@ -223,14 +239,19 @@ int get_add_selection(void) {
 }
 
 static struct MenuParams *init_add_menu(void) {
-	struct MenuParams *mp = malloc(sizeof(*mp) + (sizeof(char *) * 2));
+	int n_str = 2;
+	int idx = 0;
+	struct MenuParams *mp = malloc(sizeof(*mp) + (sizeof(char *) * n_str));
 	if (mp == NULL) {
 		mem_alloc_fail();
 	}
-	mp->items = 2;
+
+	mp->items = n_str;
 	mp->title = "Select Data Type to Add";
-	mp->strings[0] = "Add Transaction";
-	mp->strings[1] = "Add Category";
+	mp->strings[idx++] = "Add Transaction";
+	mp->strings[idx++] = "Add Category";
+
+	assert(idx == n_str);
 
 	return mp;
 }
@@ -240,22 +261,26 @@ struct Datevals *nc_create_new_budget(void) {
 	if (dv == NULL) {
 		mem_alloc_fail();
 	}
+	char *catg;
 
 	dv->year = nc_input_year();
 	if (dv->year < 0) {
 		free(dv);
 		return NULL;
 	}
+
 	dv->month = nc_input_month();
 	if (dv->month < 0) {
 		free(dv);
 		return NULL;
 	}
+
 	if (month_or_year_exists(dv->month, dv->year)) {
 		nc_message("A budget already exists for that month");
 		return dv;
 	}
-	char *catg = create_budget_record(dv->year, dv->month);
+
+	catg = create_budget_record(dv->year, dv->month);
 	if (catg == NULL) {
 		free(dv);
 		return NULL;
