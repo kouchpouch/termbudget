@@ -97,10 +97,6 @@ extern char *nc_select_category(int month, int year);
 
 extern int show_help_subwindow(void);
 
-extern void add_main_no_date(void);
-
-extern void add_main_with_date(struct Datevals *dv);
-
 extern void nc_edit_transaction(long b);
 
 extern void nc_overview_setup(int year);
