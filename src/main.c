@@ -22,6 +22,7 @@
 #include <ctype.h>
 #include <ncurses.h>
 #include <limits.h>
+#include <errno.h>
 
 #include "main.h"
 #include "create.h"
@@ -78,28 +79,21 @@ const char *abbr_months[] = {
 	"DEC"
 };
 
-void free_categories(struct Categories *pc);
-Vec *get_months_with_data(FILE *fptr, int matchyear, int field);
-Vec *get_years_with_data(FILE *fptr, int field);
-void memory_allocate_fail(void);
-int mv_tmp_to_budget_file(FILE *tmp, FILE* main);
+void mem_alloc_fail(void);
 void nc_read_setup_default(struct ReadRet *rret);
 void calculate_balance(struct Balances *pb, Vec *pbo);
 bool nc_confirm_record(struct LineData *ld);
 void nc_print_record_hr(WINDOW *wptr, struct ColWidth *cw, struct LineData *ld, int y);
 void nc_print_record_vert(WINDOW *wptr, struct LineData *ld, int x_off);
-int mv_tmp_to_record_file(FILE *tempfile, FILE *mainfile);
 int delete_csv_record(int linetodelete);
-Vec *get_matching_line_nums(FILE *fptr, int month, int year);
 void draw_scroll_indicator(WINDOW *wptr);
-void draw_read_window_borders_and_text(struct ReadWins *wins, Vec *psc);
 
 char *user_input(int n) {
 	size_t buffersize = n + 1;
 	char *buffer = (char *)malloc(buffersize);
 
 	if (buffer == NULL) {
-		memory_allocate_fail();
+		mem_alloc_fail();
 	}
 	if (fgets(buffer, buffersize, stdin) == NULL) {
 		printf("Invalid Input\n");
@@ -422,11 +416,12 @@ cleanup:
 //----------------------------USER INPUT ABOVE-------------------------------//
 //---------------------------------------------------------------------------//
 
-void memory_allocate_fail(void) {
-	perror("Failed to allocate memory");
+void mem_alloc_fail(void) {
+	perror("Failed to allocate memory\n");
 	exit(1);
 }
 
+/* CLI */
 void print_record_vert(struct LineData *ld) {
 	printf(
 		"1.) Date-->  %d/%d/%d\n"
@@ -444,6 +439,7 @@ void print_record_vert(struct LineData *ld) {
 	);
 }
 
+/* CLI */
 void print_record_hr(struct LineData *ld) {
 	printf(
 		"%d.) %d/%d/%d Category: %s Description: %s, %s, $%.2f\n",
@@ -1243,7 +1239,7 @@ void nc_edit_transaction(long b) {
 	enum EditRecordFields field;
 
 	if (ld == NULL) {
-		memory_allocate_fail();
+		mem_alloc_fail();
 		return;
 	}
 
@@ -1379,7 +1375,7 @@ void debug_category_nodes(WINDOW *wptr, CategoryNode **nodes) {
 struct Plannedvals *get_total_planned(CategoryNode **nodes) {
 	struct Plannedvals *pv = malloc(sizeof(*pv));
 	if (pv == NULL) {
-		memory_allocate_fail();
+		mem_alloc_fail();
 	}
 
 	pv->exp = 0.0;
@@ -1606,7 +1602,7 @@ void edit_transaction(void) {
 		free(pidx);
 		fclose(fptr);
 		fptr = NULL;
-		memory_allocate_fail();
+		mem_alloc_fail();
 	}
 
 	memcpy(pLd, ld, sizeof(*ld));
