@@ -358,6 +358,7 @@ static void init_color_palette(void) {
 	// program that used the devil.
 	init_pair(1, COLOR_RED, -1);
 	init_pair(2, COLOR_GREEN, -1);
+	init_pair(3, COLOR_YELLOW, -1);
 	init_pair(11, 75, -1);  // soft blue
 	init_pair(12, 69, -1);  // muted indigo
 	init_pair(13, 111, -1); // lavender
@@ -389,10 +390,49 @@ WINDOW *nc_init_stdscr(void) {
 	return stdscr;
 }
 
+static int print_logo(WINDOW *wptr) {
+	char *logo[8];
+	int start_y = 7;
+	int print_y;
+	int print_x;
+	int offset;
+	int ln = 0;
+	logo[ln++] = "   ||   \n";
+	logo[ln++] = " s$||$$ \n";
+	logo[ln++] = "$  ||  $\n";
+	logo[ln++] = " *$||   \n";
+	logo[ln++] = "   ||$s \n";
+	logo[ln++] = "$  ||  $\n";
+	logo[ln++] = " $$||$* \n";
+	logo[ln++] = "   ||   \n";
+
+	offset = strlen(logo[0]);
+
+	for (int i = 0; i < ln; i++, start_y--) {
+		print_y = (getmaxy(wptr) / 2) - start_y;
+		print_x = getmaxx(wptr) / 2;
+
+		/* Print ascii art */
+		mvwprintw(wptr, print_y, print_x - offset / 2, "%s", logo[i]);
+		/* Color the left 3 chars green */
+		mvwchgat(wptr, print_y, print_x - offset / 2, 3, A_NORMAL, 2, NULL);
+		/* Color the middle 2 chars yellow */
+		mvwchgat(wptr, print_y, print_x - 1, 2, A_NORMAL, 3, NULL);
+		/* Color the right 3 chars green */
+		mvwchgat(wptr, print_y, print_x + 1, 3, A_NORMAL, 2, NULL);
+	}
+
+	wrefresh(wptr);
+
+	return getcury(wptr);
+}
+
 void nc_print_welcome(WINDOW *wptr) {
+	int y = print_logo(wptr);
+	y++;
+	mvwxcprintw(wptr, ++y, "termBudget");
+	mvwxcprintw(wptr, ++y, "github.com/kouchpouch");
 	curs_set(0);
-	mvwxcprintw(wptr, getmaxy(wptr) / 2, "termBudget");
-	mvwxcprintw(wptr, getmaxy(wptr) / 2 + 1, "github.com/kouchpouch");
 }
 
 void nc_print_debug_flag(WINDOW *wptr) {
