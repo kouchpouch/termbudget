@@ -28,35 +28,37 @@ struct UserInputDigit {
 	int flag;
 };
 
-void nc_user_input(int n, WINDOW *wptr, struct UserInput *pui);
+extern void nc_user_input(int n, WINDOW *wptr, struct UserInput *pui);
 
-void nc_input_n_digits(struct UserInputDigit *puid, WINDOW *wptr, 
-					  size_t max_len, size_t min_len);
+extern void nc_input_n_digits
+(struct UserInputDigit *puid, WINDOW *wptr, size_t max_len, size_t min_len);
 
-bool nc_confirm_input_loop(WINDOW *wptr);
+extern bool nc_confirm_input_loop(WINDOW *wptr);
 
-bool nc_confirm_input(char *msg);
-
-/* Creates and destroys an ncurses input window and validates the input with
- * retries. Returns -1 on quit */
-int nc_input_month(void);
+extern bool nc_confirm_input(char *msg);
 
 /* Creates and destroys an ncurses input window and validates the input with
  * retries. Returns -1 on quit */
-int nc_input_year(void);
+extern int nc_input_month(void);
 
 /* Creates and destroys an ncurses input window and validates the input with
  * retries. Returns -1 on quit */
-int nc_input_day(int month, int year);
+extern int nc_input_year(void);
 
-char *nc_input_string(char *msg);
+/* Creates and destroys an ncurses input window and validates the input with
+ * retries. Returns -1 on quit */
+extern int nc_input_day(int month, int year);
 
-int nc_input_category_type(void);
+extern char *nc_input_string(char *msg);
 
-int nc_input_transaction_type(void);
+extern int nc_input_category_type(void);
 
-double nc_input_amount(void);
+extern int nc_input_transaction_type(void);
 
-double nc_input_budget_amount(void);
+extern double nc_input_amount(void);
+
+extern double nc_input_budget_amount(void);
+
+extern char *nc_select_category(int month, int year);
 
 #endif
