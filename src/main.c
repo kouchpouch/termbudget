@@ -978,6 +978,7 @@ void print_debug_node(WINDOW *wptr, CategoryNode *node) {
 void debug_category_nodes(WINDOW *wptr, CategoryNode **nodes) {
 	size_t i = 0;
 	wmove(wptr, 0, 0);
+
 	while (1) {
 		if (nodes[i]->next == NULL) {
 			print_debug_node(wptr, nodes[i]);
@@ -1013,6 +1014,7 @@ struct Plannedvals *get_total_planned(CategoryNode **nodes) {
 			free_budget_tokens(bt);
 			bt = NULL;
 			break;
+
 		} else {
 			if (bt->transtype == 1) {
 				pv->inc += bt->amount;
@@ -1022,6 +1024,7 @@ struct Plannedvals *get_total_planned(CategoryNode **nodes) {
 			free_budget_tokens(bt);
 			bt = NULL;
 		}
+
 		i++;
 	}
 	return pv;
