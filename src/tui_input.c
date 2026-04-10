@@ -17,11 +17,15 @@
 #include <string.h>
 #include <ncurses.h>
 #include <ctype.h>
+#include <limits.h>
+
 #include "tui.h"
 #include "tui_input.h"
 #include "tui_input_menu.h"
 #include "main.h"
 #include "helper.h"
+#include "create.h"
+#include "flags.h"
 
 static void init_input_window(int n, WINDOW *wptr) {
 	int max_y, max_x;
@@ -217,6 +221,37 @@ bool nc_confirm_input(char *msg) {
 	return retval;
 }
 
+bool nc_confirm_record(struct LineData *ld) {
+	WINDOW *wptr = create_input_subwindow();
+	mvwxcprintw(wptr, 0, "Confirm Record");
+	nc_print_record_vert(wptr, ld, BOX_OFFSET);
+	mvwxcprintw(wptr, getmaxy(wptr) - BOX_OFFSET, "(Y)es  /  (N)o");
+	wrefresh(wptr);
+
+	int c = 0;
+	while (c != KEY_F(QUIT) && c != 'q') {
+		c = wgetch(wptr);
+		switch(c) {
+		case('y'):
+		case('Y'):
+			nc_exit_window(wptr);
+			return true;
+		case('n'):
+		case('N'):
+		case(KEY_F(QUIT)):
+		case('q'):
+		case('Q'):
+			nc_exit_window(wptr);
+			return false;
+		default:
+			break;
+		}
+	}
+
+	nc_exit_window_key(wptr);
+	return false;
+}
+
 int nc_input_month(void) {
 	WINDOW *wptr_input = create_input_subwindow();
 	struct UserInputDigit puid_, *puid = &puid_;
@@ -380,4 +415,114 @@ double nc_input_budget_amount(void) {
 	} else {
 		return -1;
 	}
+}
+
+char *nc_select_category(int month, int year) {
+	struct Categories *pc = get_budget_catg_by_date(month, year);
+	WINDOW *wptr_parent = create_category_select_parent(pc->size);
+	WINDOW *wptr = create_category_select_subwindow(wptr_parent);
+	int sz;
+
+	if (debug_flag) {
+		curs_set(1);
+	}
+
+	if (pc->size == 0) {
+		goto manual_selection;
+	}
+
+	if (pc->size > INT_MAX) {
+		return NULL;
+	} else {
+		sz = (int)pc->size;
+	}
+
+	int displayed = 0;
+	/* Print intital data based on window size */
+	for (int i = 0; i < getmaxy(wptr) && i < sz; i++) {
+		mvwxcprintw(wptr, i, pc->categories[i]);
+		displayed++;
+	}
+
+	if (sz > displayed) {
+		draw_scroll_indicator(wptr_parent);
+	}
+
+	wrefresh(wptr);
+	mvwchgat(wptr, 0, 0, -1, A_REVERSE, REVERSE_COLOR, NULL);
+	int cur = 0; // Y=0 is the box and title, datalines start at 1.
+	int selection_idx = 0;
+	int c = 0;
+
+	int max_y = getmaxy(wptr);
+	keypad(wptr, true);
+
+	while (c != '\n' && c != '\r') {
+		wrefresh(wptr);
+		c = wgetch(wptr);
+		switch(c) {
+		case('j'):
+		case(KEY_DOWN):
+			if (selection_idx + 1 < sz) {
+				mvwchgat(wptr, cur, 0, -1, A_NORMAL, 0, NULL);
+				cur++;
+				selection_idx++;
+
+				if (displayed < sz && cur == max_y) {
+					wmove(wptr, 0, 0);
+					wdeleteln(wptr);
+					mvwxcprintw(wptr, max_y - 1, pc->categories[selection_idx]);
+					cur = max_y - 1;
+				}
+
+				mvwchgat(wptr, cur, 0, -1, A_REVERSE, REVERSE_COLOR, NULL);
+			}
+			break;
+		case('k'):
+		case(KEY_UP):
+			if (selection_idx - 1 >= 0) {
+				mvwchgat(wptr, cur, 0, -1, A_NORMAL, 0, NULL);
+				cur--;
+				selection_idx--;
+
+				if (selection_idx >= 0 && displayed < sz && cur == -1) {
+					wmove(wptr, 0, 0);
+					winsertln(wptr);
+					mvwxcprintw(wptr, 0, pc->categories[selection_idx]);
+					cur = 0;
+				}
+
+				mvwchgat(wptr, cur, 0, -1, A_REVERSE, REVERSE_COLOR, NULL);
+			}
+			break;
+		case('c'):
+manual_selection:
+			free_categories(pc);
+			nc_exit_window(wptr_parent);
+			nc_exit_window(wptr);
+			nc_print_input_footer(stdscr);
+			return create_budget_record(year, month);
+		case('\n'):
+		case('\r'):
+		case(KEY_ENTER):
+			break;
+		case('q'):
+		case(KEY_F(QUIT)):
+			goto cleanup;
+		}
+	}
+
+	if (selection_idx >= 0) {
+		char *tmp = strdup(pc->categories[selection_idx]); // Must be free'd
+		free_categories(pc);
+		nc_exit_window(wptr_parent);
+		nc_exit_window(wptr);
+		return tmp; // Will return NULL if stdup failed, callee checks
+	}
+
+cleanup:
+	free_categories(pc);
+	nc_exit_window(wptr_parent);
+	nc_exit_window(wptr);
+	return NULL;
 }
