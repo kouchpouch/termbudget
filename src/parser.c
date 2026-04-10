@@ -284,6 +284,22 @@ bool month_or_year_exists(int m, int y) {
 	return false;
 }
 
+/* Returns all income records subtracted by expense records */
+double get_expenditures_per_category(struct BudgetTokens *bt) {
+	double total = 0;
+	Vec *pi = get_records_by_any(bt->m, -1, bt->y, bt->catg, NULL, TT_INCOME, -1, NULL);
+	Vec *pe = get_records_by_any(bt->m, -1, bt->y, bt->catg, NULL, TT_EXPENSE, -1, NULL);
+	for (size_t i = 0; i < pi->size; i++) {
+		total += get_record_amount(pi->data[i]);
+	}
+	for (size_t i = 0; i < pe->size; i++) {
+		total += get_record_amount(pe->data[i]);
+	}
+	free(pe);
+	free(pi);
+	return total;
+}
+
 Vec *get_years_with_data(FILE *fptr, int field) {
 	Vec *pr = malloc(sizeof(*pr) + sizeof(long) * REALLOC_INCR);
 	if (pr == NULL) {
