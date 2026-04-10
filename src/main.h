@@ -93,13 +93,12 @@ extern bool duplicate_category_exists(struct Categories *psc, char *catg);
 
 extern bool nc_confirm_record(struct LineData *ld);
 
-extern char *nc_select_category(int month, int year);
-
 extern int show_help_subwindow(void);
 
 extern void nc_edit_transaction(long b);
 
 extern void nc_overview_setup(int year);
 
+extern void draw_scroll_indicator(WINDOW *wptr);
 
 #endif
