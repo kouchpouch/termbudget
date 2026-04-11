@@ -17,14 +17,15 @@
 #include <stdio.h>
 #include <ncurses.h>
 
-#include "categories.h"
 #include "main.h"
+#include "categories.h"
 #include "sorter.h"
 #include "create.h"
 #include "tui.h"
 #include "tui_input.h"
 #include "tui_input_menu.h"
 #include "filemanagement.h"
+#include "file_write.h"
 
 /* Creates an ncurses subwindow and returns the user's input as a boolean */
 static bool confirm_budget_category(char *catg, double amt) {
@@ -49,23 +50,14 @@ static bool confirm_budget_category(char *catg, double amt) {
  * to budget.csv into the appropriate line sorted by date. */
 void insert_budget_record(char *catg, int m, int y, int transtype, double amt) 
 {
-	unsigned int linetoadd = sort_budget_csv(m, y);
+	unsigned int insert_line = sort_budget_csv(m, y);
 	FILE *fptr = open_budget_csv("r");
-	FILE *tmpfptr = open_temp_csv();
+	char insert_str[LINE_BUFFER];
 
-	char linebuff[LINE_BUFFER];
-	char *line;
-	unsigned int linenum = 0;
+	snprintf(insert_str, sizeof(insert_str), 
+		  "%d,%d,%s,%d,%.2f\n", m, y, catg, transtype, amt);
 
-	while ((line = fgets(linebuff, sizeof(linebuff), fptr)) != NULL) {
-		linenum++;	
-		if (linenum != linetoadd) {
-			fputs(line, tmpfptr);
-		} else if (linenum == linetoadd) {
-			fputs(line, tmpfptr);
-			fprintf(tmpfptr, "%d,%d,%s,%d,%.2f\n", m, y, catg, transtype, amt);
-		}
-	}
+	FILE *tmpfptr = insert_into_file(fptr, insert_str, insert_line);
 
 	mv_tmp_to_budget_file(tmpfptr, fptr);
 }
@@ -116,34 +108,25 @@ char *create_budget_record(int yr, int mo) {
 }
 
 /* Adds a record to the CSV on line linetoadd */
-void insert_transaction_record(int linetoadd, struct LineData *ld) {
+void insert_transaction_record(int insert_line, struct LineData *ld) {
 	if (!category_exists_in_budget(ld->category, ld->month, ld->year)) {
 		insert_budget_record(ld->category, ld->month, ld->year, ld->transtype, 0.0);
 	} 
 
 	FILE *fptr = open_record_csv("r");
-	FILE *tmpfptr = open_temp_csv();
-	char linebuff[LINE_BUFFER];
-	char *line;
-	int linenum = 0;
+	char insert_str[LINE_BUFFER];
 
-	while ((line = fgets(linebuff, sizeof(linebuff), fptr)) != NULL) {
-		linenum++;	
-		if (linenum != linetoadd) {
-			fputs(line, tmpfptr);
-		} else if (linenum == linetoadd) {
-			fputs(line, tmpfptr);
-			fprintf(tmpfptr, "%d,%d,%d,%s,%s,%d,%.2f\n",
-			ld->month, 
-			ld->day, 
-			ld->year, 
-			ld->category, 
-			ld->desc, 
-			ld->transtype, 
-			ld->amount
-		   );
-		}
-	}
+	snprintf(insert_str, sizeof(insert_str),
+		  "%d,%d,%d,%s,%s,%d,%.2f\n",
+		  ld->month, 
+		  ld->day, 
+		  ld->year, 
+		  ld->category, 
+		  ld->desc, 
+		  ld->transtype, 
+		  ld->amount);
+
+	FILE *tmpfptr = insert_into_file(fptr, insert_str, insert_line);
 	
 	mv_tmp_to_record_file(tmpfptr, fptr);
 }
@@ -337,7 +320,7 @@ void add_main_no_date(void) {
 		ret = create_budget_record(0, 0);
 		free(ret);
 		break;
-;
+
 	case ADD_BUDG:
 		dv = nc_create_new_budget();
 		free(dv);
