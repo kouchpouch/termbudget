@@ -17,35 +17,43 @@
 #include <stdlib.h>
 #include "filemanagement.h"
 
+/* Opens file at "dir", checks if the fopen function fails and terminates
+ * program if it does. */
 FILE *open_file(char *mode, char *dir) {
 	FILE *fptr = fopen(dir, mode);
 	if (fptr == NULL) {
-		perror("Failed to open file");
+		perror(NULL);
 		exit(1);
 	} else {
 		return fptr;
 	}
 }
 
+/* Opens BUDGET_DIR with open_file() */
 FILE *open_budget_csv(char *mode) {
 	FILE *f = open_file(mode, BUDGET_DIR);
 	return f;
 }
 
+/* Opens RECORD_DIR with open_file() */
 FILE *open_record_csv(char *mode) {
 	FILE *f = open_file(mode, RECORD_DIR);
 	return f;
 }
 
+/* Creates a temporary file in TEMP_FILE_DIR, opens and truncates if it already
+ * exists, checks for fopen() failures. */
 FILE *open_temp_csv(void) {
 	FILE *tmpfptr = fopen(TEMP_FILE_DIR, "w+");
 	if (tmpfptr == NULL) {
-		perror("Failed to open file");
+		perror(NULL);
 		exit(1);
 	}
 	return tmpfptr;
 }
 
+/* Renames file "tmp" to file "main" in directory "dir" and creates a backup
+ * of "main" in "backdir". */
 static int move_tmp_to_main(FILE *tmp, FILE *main, char *dir, char *backdir) {
 	if (fclose(main) == -1) {
 		perror("Failed to close main file");
@@ -70,11 +78,15 @@ static int move_tmp_to_main(FILE *tmp, FILE *main, char *dir, char *backdir) {
 	return 0;
 }
 
+/* Calls move_tmp_to_main with "dir" as BUDGET_DIR and "backdir" as
+ * BUDGET_BAK_DIR */
 int mv_tmp_to_budget_file(FILE *tmp, FILE* main) {
 	int retval = move_tmp_to_main(tmp, main, BUDGET_DIR, BUDGET_BAK_DIR);
 	return retval;
 }
 
+/* Calls move_tmp_to_main with "dir" as RECORD_DIR and "backdir" as
+ * RECORD_BAK_DIR */
 int mv_tmp_to_record_file(FILE *tmp, FILE* main) {
 	int retval = move_tmp_to_main(tmp, main, RECORD_DIR, RECORD_BAK_DIR);
 	return retval;
