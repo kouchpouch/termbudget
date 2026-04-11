@@ -107,6 +107,10 @@ FILE *insert_into_file(FILE *fptr, char *insert_str, int insert_line)
 	return tmpfptr;
 }
 
+/* 
+ * Returns a temporary FILE* with the all of the contents of "fptr" except
+ * "replace_str" overwrites the contents of "replace_line".
+ */
 FILE *replace_in_file(FILE *fptr, char *replace_str, int replace_line)
 {
 	FILE *tmpfptr = open_temp_csv();
@@ -119,6 +123,10 @@ FILE *replace_in_file(FILE *fptr, char *replace_str, int replace_line)
 	return tmpfptr;
 }
 
+/* 
+ * Returns a temporary FILE* with the all of the contents of "fptr" minus
+ * the contents at "delete_line".
+ */
 FILE *delete_in_file(FILE *fptr, int delete_line)
 {
 	FILE *tmpfptr = open_temp_csv();
