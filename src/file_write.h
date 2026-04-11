@@ -19,6 +19,8 @@
 #include <stdio.h>
 #include <stdbool.h>
 
+int budget_tokens_to_string(char *buffer, size_t size, struct BudgetTokens *bt);
+int line_data_to_string(char *buffer, size_t size, struct LineData *ld);
 FILE *delete_in_file(FILE *fptr, int delete_line);
 FILE *replace_in_file(FILE *fptr, char *replace_str, int replace_line);
 FILE *insert_into_file(FILE *fptr, char *insert_str, int insert_line);

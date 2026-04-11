@@ -19,6 +19,32 @@
 #include "main.h"
 #include "filemanagement.h"
 
+int budget_tokens_to_string
+(char *buffer, size_t size, struct BudgetTokens *bt)
+{
+	return snprintf(buffer, size, 
+		"%d,%d,%s,%d,%.2f\n", 
+		bt->m, 
+		bt->y, 
+		bt->catg, 
+		bt->transtype,
+		bt->amount);
+}
+
+int line_data_to_string 
+(char *buffer, size_t size, struct LineData *ld)
+{
+	return snprintf(buffer, size,
+		  "%d,%d,%d,%s,%s,%d,%.2f\n",
+		  ld->month, 
+		  ld->day, 
+		  ld->year, 
+		  ld->category, 
+		  ld->desc, 
+		  ld->transtype, 
+		  ld->amount);
+}
+
 /*
  * If the string "write_str" is NULL and delete is false OR vice/versa, return
  * false.
