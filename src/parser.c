@@ -748,7 +748,7 @@ Vec *get_budget_catg_by_date_bo(int month, int year) {
 	return pcbo;
 }
 
-struct BudgetTokens *tokenize_budget_byte_offset(long bo) {
+struct BudgetTokens *tokenize_budget_fpi(long bo) {
 	if (bo == 0) {
 		return NULL;
 	}

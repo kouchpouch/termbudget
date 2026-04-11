@@ -179,7 +179,7 @@ int init_sidebar_body(WINDOW *wptr, CategoryNode **nodes, size_t i) {
 	double exp;
 
 	while (y < getmaxy(wptr) - 4) {
-		struct BudgetTokens *bt = tokenize_budget_byte_offset(nodes[i]->catg_fp);
+		struct BudgetTokens *bt = tokenize_budget_fpi(nodes[i]->catg_fp);
 		exp = get_expenditures_per_category(bt);
 		if (nodes[i]->next == NULL) {
 			y += print_body_categories(bt->catg, wptr, y, x, i);

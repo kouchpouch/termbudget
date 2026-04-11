@@ -160,7 +160,7 @@ void mv_category_to_top(CategoryNode **nodes, size_t i) {
 
 	long first = nodes[0]->catg_fp;
 	unsigned int insert_ln = boff_to_linenum_budget(first);
-	struct BudgetTokens *bt = tokenize_budget_byte_offset(nodes[i]->catg_fp);
+	struct BudgetTokens *bt = tokenize_budget_fpi(nodes[i]->catg_fp);
 
 	delete_category(nodes[i]->catg_fp);
 	insert_category(bt, insert_ln);
@@ -307,7 +307,7 @@ void nc_edit_category(long node_idx, long nmembers, CategoryNode **nodes) {
 	if (select < 0) {
 		return;
 	}
-	struct BudgetTokens *bt = tokenize_budget_byte_offset(b);
+	struct BudgetTokens *bt = tokenize_budget_fpi(b);
 	if (bt == NULL) {
 		return;
 	}

@@ -175,7 +175,7 @@ extern Vec *get_budget_catg_by_date_bo(int month, int year);
  * position indicator to bo. BudgetTokens catg is separately malloc'd and must 
  * be free'd. Use free_budget_tokens(). 
  * Returns NULL on failure, pointer to struct BudgetTokens on success. */
-extern struct BudgetTokens *tokenize_budget_byte_offset(long bo);
+extern struct BudgetTokens *tokenize_budget_fpi(long bo);
 
 /* Returns malloc'd tokenized variables in BudgetTokens which matches
  * line number line. BudgetTokens catg is separately malloc'd and must 

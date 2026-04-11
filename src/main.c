@@ -1004,7 +1004,7 @@ struct Plannedvals *get_total_planned(CategoryNode **nodes) {
 
 	int i = 0;
 	while (1) {
-		struct BudgetTokens *bt = tokenize_budget_byte_offset(nodes[i]->catg_fp);
+		struct BudgetTokens *bt = tokenize_budget_fpi(nodes[i]->catg_fp);
 		if (nodes[i]->next == NULL) {
 			if (bt->transtype == 1) {
 				pv->inc += bt->amount;

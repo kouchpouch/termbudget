@@ -193,7 +193,7 @@ static void print_init_budget_loop
 	for (int i = 0; sc->displayed < max_y && sc->displayed < sc->total_rows 
 		 && i < total_nodes; i++) 
 	{
-		struct BudgetTokens *bt = tokenize_budget_byte_offset(nodes[i]->catg_fp);
+		struct BudgetTokens *bt = tokenize_budget_fpi(nodes[i]->catg_fp);
 		print_category_hr(wptr, cw, bt, sc->displayed);
 		mvwchgat(wptr, sc->displayed, 0, -1, A_NORMAL, category_color(i), NULL); 
 		sc->displayed++;
@@ -340,7 +340,7 @@ static void nc_scroll_prev(long b, FILE *fptr, WINDOW *wptr, struct ColWidth *cw
 	}
 
 	if (catg) {
-		struct BudgetTokens *bt = tokenize_budget_byte_offset(b);
+		struct BudgetTokens *bt = tokenize_budget_fpi(b);
 		wmove(wptr, 0, 0);
 		winsertln(wptr);
 		print_category_hr(wptr, cw, bt, 0);
@@ -367,7 +367,7 @@ static void nc_scroll_next
 	}
 
 	if (catg) {
-		struct BudgetTokens *bt = tokenize_budget_byte_offset(b);
+		struct BudgetTokens *bt = tokenize_budget_fpi(b);
 		wmove(wptr, 0, 0);
 		wdeleteln(wptr);
 		wmove(wptr, getmaxy(wptr) - 1, 0);

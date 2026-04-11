@@ -21,8 +21,8 @@
 /*
  * CategoryNode is to be used as a doubly linked list which includes members
  * of CategoryNode pointer next and prev, long catg_fp stores the byte offset
- * of the category in BUDGET_DIR (from main.h), and a Vec containing all
- * records in RECORD_DIR (from main.h) that match the category field at catg_fp
+ * of the category in BUDGET_DIR, and a Vec containing all
+ * records in RECORD_DIR that match the category field at catg_fp
  * in BUDGET_DIR.
  */
 typedef struct CategoryNode CategoryNode;
@@ -30,7 +30,7 @@ typedef struct CategoryNode CategoryNode;
 struct CategoryNode {
 	CategoryNode *next;
 	CategoryNode *prev;
-	long catg_fp; // Category File Position
+	long catg_fp;
 	Vec *data;
 };
 
@@ -40,10 +40,8 @@ struct Categories {
 	char *categories[];
 };
 
-extern void free_categories(struct Categories *pc);
-
-extern void free_category_nodes(CategoryNode **nodes);
-
-extern CategoryNode **create_category_nodes(int m, int y);
+void free_categories(struct Categories *pc);
+void free_category_nodes(CategoryNode **nodes);
+CategoryNode **create_category_nodes(int m, int y);
 
 #endif
