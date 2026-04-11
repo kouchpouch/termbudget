@@ -27,6 +27,7 @@
 #include "read_init.h"
 #include "fileintegrity.h"
 #include "filemanagement.h"
+#include "file_write.h"
 #include "helper.h"
 #include "sorter.h"
 #include "tui.h"
