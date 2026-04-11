@@ -20,4 +20,5 @@ termbudget:
 		src/read_loops.c \
 		src/create.c \
 		src/input.c \
+		src/file_write.c \
 		-lncurses -o termbudget
