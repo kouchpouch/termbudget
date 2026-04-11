@@ -17,6 +17,7 @@
 #include <stdio.h>
 
 #include "edit_categories.h"
+#include "file_write.h"
 #include "main.h"
 #include "categories.h"
 #include "parser.h"
@@ -37,78 +38,35 @@ enum fields {
 
 static void replace_category(struct BudgetTokens *bt, long b) {
 	FILE *bfptr = open_budget_csv("r");
-	FILE *tmpfptr = open_temp_csv();
-	char *str;
-	char linebuff[LINE_BUFFER];
-	size_t line = boff_to_linenum_budget(b) + 1;
-	size_t linenum = 0;
+	FILE *tmpfptr;
+	int replace_line = boff_to_linenum_budget(b) + 1;
+	char replace_str[LINE_BUFFER];
 
-	while (1) {
-		str = fgets(linebuff, sizeof(linebuff), bfptr);
-		if (str == NULL) {
-			break;
-		}
-		linenum++;	
-		if (linenum != line) {
-			fputs(str, tmpfptr);
-		} else if (linenum == line) {
-			fprintf(tmpfptr, "%d,%d,%s,%d,%.2f\n", 
-				bt->m, 
-				bt->y, 
-				bt->catg, 
-				bt->transtype,
-				bt->amount);
-		}
-	}
+	budget_tokens_to_string(replace_str, sizeof(replace_str), bt);
+
+	tmpfptr = replace_in_file(bfptr, replace_str, replace_line);
 
 	mv_tmp_to_budget_file(tmpfptr, bfptr);
 }
 
-static void insert_category(struct BudgetTokens *bt, unsigned int ln) {
+static void insert_category(struct BudgetTokens *bt, int insert_line) {
 	FILE *bfptr = open_budget_csv("r");
-	FILE *tmpfptr = open_temp_csv();
-	
-	char linebuff[LINE_BUFFER];
-	char *line;
-	unsigned int linenum = 0;
+	FILE *tmpfptr;
+	char insert_str[LINE_BUFFER];
 
-	while ((line = fgets(linebuff, sizeof(linebuff), bfptr)) != NULL) {
-		linenum++;	
-		if (linenum != ln) {
-			fputs(line, tmpfptr);
-		} else if (linenum == ln) {
-			fputs(line, tmpfptr);
-			fprintf(tmpfptr, "%d,%d,%s,%d,%.2f\n", 
-				bt->m,
-				bt->y,
-				bt->catg,
-				bt->transtype,
-				bt->amount
-		   );
-		}
-	}
+	budget_tokens_to_string(insert_str, sizeof(insert_str), bt);
+	
+	tmpfptr = insert_into_file(bfptr, insert_str, insert_line);
 
 	mv_tmp_to_budget_file(tmpfptr, bfptr);
 }
 
 static void delete_category(long b) {
 	FILE *bfptr = open_budget_csv("r");
-	FILE *tmpfptr = open_temp_csv();
-	char *str;
-	char linebuff[LINE_BUFFER];
-	size_t line = boff_to_linenum_budget(b) + 1;
-	size_t linenum = 0;
+	FILE *tmpfptr;
+	size_t delete_line = boff_to_linenum_budget(b) + 1;
 
-	while (1) {
-		str = fgets(linebuff, sizeof(linebuff), bfptr);
-		if (str == NULL) {
-			break;
-		}
-		linenum++;	
-		if (linenum != line) {
-			fputs(str, tmpfptr);
-		}
-	}
+	tmpfptr = delete_in_file(bfptr, delete_line);
 
 	mv_tmp_to_budget_file(tmpfptr, bfptr);
 }
