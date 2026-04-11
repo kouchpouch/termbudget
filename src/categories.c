@@ -49,10 +49,10 @@ void free_category_nodes(CategoryNode **nodes) {
  * category.
  */
 static void init_category_nodes(CategoryNode *node, Vec *chunk, int m, int y) {
-	struct BudgetTokens *pbt = tokenize_budget_byte_offset(node->catg_fp);
-	Vec *pr = get_records_by_any(m, -1, y, pbt->catg, NULL, -1, -1, chunk);
-	node->data = pr;
-	free_budget_tokens(pbt);
+	struct BudgetTokens *budget_tokens = tokenize_budget_fpi(node->catg_fp);
+	Vec *recs = get_records_by_any(m, -1, y, budget_tokens->catg, NULL, -1, -1, chunk);
+	node->data = recs;
+	free_budget_tokens(budget_tokens);
 }
 
 /*
@@ -60,9 +60,9 @@ static void init_category_nodes(CategoryNode *node, Vec *chunk, int m, int y) {
  * linked list of CategoryNodes.
  */
 CategoryNode **create_category_nodes(int m, int y) {
-	Vec *pcbo = get_budget_catg_by_date_bo(m, y);
+	Vec *catgs_file_pos = get_budget_catg_by_date_bo(m, y);
 	Vec *chunk = get_records_by_mo_yr(m, y);
-	unsigned long n = pcbo->size;
+	unsigned long n = catgs_file_pos->size;
 	CategoryNode **pnode = malloc(sizeof(CategoryNode *) * n);
 	if (pnode == NULL) {
 		mem_alloc_fail();
@@ -74,8 +74,9 @@ CategoryNode **create_category_nodes(int m, int y) {
 			mem_alloc_fail();
 		}
 
-		pnode[i]->catg_fp = pcbo->data[i];
+		pnode[i]->catg_fp = catgs_file_pos->data[i];
 
+		/* The first node has no previous node, set to NULL */
 		if (i == 0) {
 			pnode[0]->prev = NULL;
 		} else if (i > 0) {
@@ -83,6 +84,7 @@ CategoryNode **create_category_nodes(int m, int y) {
 			pnode[i - 1]->next = pnode[i];		
 		}
 
+		/* The last node has no next node, set to NULL */
 		if (i == n - 1) {
 			pnode[i]->next = NULL;
 		}
@@ -91,6 +93,6 @@ CategoryNode **create_category_nodes(int m, int y) {
 	}
 
 	free(chunk);
-	free(pcbo);
+	free(catgs_file_pos);
 	return pnode;
 }
