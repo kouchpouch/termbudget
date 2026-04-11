@@ -116,15 +116,7 @@ void insert_transaction_record(int insert_line, struct LineData *ld) {
 	FILE *fptr = open_record_csv("r");
 	char insert_str[LINE_BUFFER];
 
-	snprintf(insert_str, sizeof(insert_str),
-		  "%d,%d,%d,%s,%s,%d,%.2f\n",
-		  ld->month, 
-		  ld->day, 
-		  ld->year, 
-		  ld->category, 
-		  ld->desc, 
-		  ld->transtype, 
-		  ld->amount);
+	line_data_to_string(insert_str, sizeof(insert_str), ld);
 
 	FILE *tmpfptr = insert_into_file(fptr, insert_str, insert_line);
 	
