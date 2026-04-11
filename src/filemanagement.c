@@ -15,6 +15,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+
 #include "filemanagement.h"
 
 /* Opens file at "dir", checks if the fopen function fails and terminates

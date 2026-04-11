@@ -47,7 +47,8 @@ static bool confirm_budget_category(char *catg, double amt) {
 
 /* Writes the a csv record containing the data passed into the arguments
  * to budget.csv into the appropriate line sorted by date. */
-void insert_budget_record(char *catg, int m, int y, int transtype, double amt) {
+void insert_budget_record(char *catg, int m, int y, int transtype, double amt) 
+{
 	unsigned int linetoadd = sort_budget_csv(m, y);
 	FILE *fptr = open_budget_csv("r");
 	FILE *tmpfptr = open_temp_csv();
