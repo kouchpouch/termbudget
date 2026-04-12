@@ -17,10 +17,10 @@
 #include <stdio.h>
 #include <ncurses.h>
 
+#include "create.h"
 #include "main.h"
 #include "categories.h"
 #include "sorter.h"
-#include "create.h"
 #include "tui.h"
 #include "tui_input.h"
 #include "tui_input_menu.h"
@@ -44,6 +44,12 @@ static bool confirm_budget_category(char *catg, double amt) {
 
 	nc_exit_window(wptr);
 	return retval;
+}
+
+static void insert_budget_record_from_ld(struct LineData *ld)
+{
+	insert_budget_record
+	(ld->category, ld->month, ld->year, ld->transtype, 0.0);
 }
 
 /* Writes the a csv record containing the data passed into the arguments
@@ -110,7 +116,7 @@ char *create_budget_record(int yr, int mo) {
 /* Adds a record to the CSV on line linetoadd */
 void insert_transaction_record(int insert_line, struct LineData *ld) {
 	if (!category_exists_in_budget(ld->category, ld->month, ld->year)) {
-		insert_budget_record(ld->category, ld->month, ld->year, ld->transtype, 0.0);
+		insert_budget_record_from_ld(ld);
 	} 
 
 	FILE *fptr = open_record_csv("r");
