@@ -44,6 +44,10 @@
 #define RRET_BYDATE 1
 #define RRET_QUIT 2
 
+#if (NCURSES_VERSION_MAJOR >= 6) && (NCURSES_VERSION_MINOR > 0)
+#define HAS_RESET_COLOR_PAIRS
+#endif
+
 /* GLOBAL FLAGS. Defined in flags.h, initialized here in main.c */
 int debug_flag;
 int cli_flag;
@@ -1572,9 +1576,11 @@ int main(int argc, char **argv) {
 			main_menu();
 		}
 	}
-#ifdef NCURSES_VERSION
+
+#ifdef HAS_RESET_COLOR_PAIRS
 	reset_color_pairs();
 #endif
+
 	endwin();
 	return 0;
 }
