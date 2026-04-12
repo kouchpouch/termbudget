@@ -17,6 +17,7 @@
 
 #include <stddef.h>
 #include <ncurses.h>
+
 #include "vector.h"
 #include "categories.h"
 #include "parser.h"
