@@ -58,12 +58,13 @@ void insert_budget_record(char *catg, int m, int y, int transtype, double amt)
 {
 	unsigned int insert_line = sort_budget_csv(m, y);
 	FILE *fptr = open_budget_csv("r");
+	FILE *tmpfptr;
 	char insert_str[LINE_BUFFER];
 
 	snprintf(insert_str, sizeof(insert_str), 
 		  "%d,%d,%s,%d,%.2f\n", m, y, catg, transtype, amt);
 
-	FILE *tmpfptr = insert_into_file(fptr, insert_str, insert_line);
+	tmpfptr = insert_into_file(fptr, insert_str, insert_line);
 
 	mv_tmp_to_budget_file(tmpfptr, fptr);
 }
@@ -120,11 +121,12 @@ void insert_transaction_record(int insert_line, struct LineData *ld) {
 	} 
 
 	FILE *fptr = open_record_csv("r");
+	FILE *tmpfptr;
 	char insert_str[LINE_BUFFER];
 
 	line_data_to_string(insert_str, sizeof(insert_str), ld);
 
-	FILE *tmpfptr = insert_into_file(fptr, insert_str, insert_line);
+	tmpfptr = insert_into_file(fptr, insert_str, insert_line);
 	
 	mv_tmp_to_record_file(tmpfptr, fptr);
 }
