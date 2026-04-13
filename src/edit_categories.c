@@ -84,24 +84,27 @@ static void invalid_delete_warning(void) {
 
 static bool nc_confirm_amount(double amt) {
 	WINDOW *wptr = create_input_subwindow();
+	int c = 0;
+
 	mvwxcprintw(wptr, 0, "Confirm Amount");
 	mvwxcprintw(wptr, 3, "Is this amount correct?");
 	mvwprintw(wptr, 4, (getmaxx(wptr) / 2) - (finlen(amt) / 2), "$%.2f", amt);
 	mvwxcprintw(wptr, getmaxy(wptr) - BOX_OFFSET, "(Y)es  /  (N)o");
 
-	int c = 0;
-
 	while (c != KEY_F(QUIT)) {
 		c = wgetch(wptr);
 		switch(c) {
+
 		case('y'):
 		case('Y'):
 			nc_exit_window(wptr);
 			return true;
+
 		case('n'):
 		case('N'):
 			nc_exit_window(wptr);
 			return false;
+
 		default:
 			break;
 		}
@@ -128,8 +131,8 @@ void mv_category_to_top(CategoryNode **nodes, size_t i) {
 
 static int select_catg_field(void) {
 	const size_t n_options = 6;
+	int retval;
 	struct MenuParams *mp = malloc(sizeof(*mp) + (sizeof(char *) * n_options));
-
 	if (mp == NULL) {
 		mem_alloc_fail();
 	}
@@ -143,19 +146,18 @@ static int select_catg_field(void) {
 	mp->strings[MOVE_TO_TOP] = "Move to top";
 	mp->strings[DEL_CATG] = "Delete";
 
-	int retval = nc_input_menu(mp);
+	retval = nc_input_menu(mp);
 
 	free(mp);
 	return retval;
 }
 
 static int rename_category(struct BudgetTokens *bt) {
+	struct Categories *psc = get_budget_catg_by_date(bt->m, bt->y);
 	char *catg = nc_input_string("Renaming Category");
 	if (catg == NULL) {
 		return -1;
 	}
-
-	struct Categories *psc = get_budget_catg_by_date(bt->m, bt->y);
 
 	if (duplicate_category_exists(psc, catg)) {
 		nc_message("That Category Already Exists");
@@ -261,16 +263,20 @@ static int replace_many_records_categories
 void nc_edit_category(long node_idx, long nmembers, CategoryNode **nodes) {
 	long b = nodes[node_idx]->catg_fp;
 	double tmp = 0.0;
-	enum fields select = select_catg_field();
+	enum fields select;
+	struct BudgetTokens *bt;
+
+	select = select_catg_field();
 	if (select < 0) {
 		return;
 	}
-	struct BudgetTokens *bt = tokenize_budget_fpi(b);
+	bt = tokenize_budget_fpi(b);
 	if (bt == NULL) {
 		return;
 	}
 
 	switch (select) {
+
 	case EDIT_AMNT:
 		bt->amount = nc_input_budget_amount();
 		if (bt->amount < 0.0) {
@@ -281,12 +287,14 @@ void nc_edit_category(long node_idx, long nmembers, CategoryNode **nodes) {
 			goto err_fail;
 		}
 		break;
+
 	case EDIT_TYPE:
 		bt->transtype = nc_input_category_type();
 		if (bt->transtype < 0.0) {
 			goto err_fail;
 		}
 		break;
+
 	case ZERO_AMNT:
 		tmp = get_expenditures_per_category(bt);
 		if (bt->transtype == TT_INCOME) {
@@ -301,15 +309,18 @@ void nc_edit_category(long node_idx, long nmembers, CategoryNode **nodes) {
 			bt->amount = -(tmp);
 		}
 		break;
+
 	case RENAME_CATG:
 		if (rename_category(bt) < 0) {
 			goto err_fail;
 		}
 		replace_many_records_categories(nodes, node_idx, bt->catg);
 		break;
+
 	case MOVE_TO_TOP:
 		mv_category_to_top(nodes, node_idx);
 		break;
+
 	case DEL_CATG:
 		if (nmembers > 0) {
 			invalid_delete_warning();

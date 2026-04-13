@@ -55,7 +55,9 @@ static void insert_record(struct LineData *ld) {
 		exit(1);
 	}
 
-	unsigned int linenum_insert = sort_converted_csv(ld->month, ld->day, ld->year, convfptr);
+	unsigned int linenum_insert = 
+		sort_converted_csv(ld->month, ld->day, ld->year, convfptr);
+
 	rewind(convfptr);
 
 	FILE *tmpfptr = open_temp_csv();

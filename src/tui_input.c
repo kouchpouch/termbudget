@@ -29,9 +29,10 @@
 
 static void init_input_window(int n, WINDOW *wptr) {
 	int max_y, max_x;
-	getmaxyx(wptr, max_y, max_x);
+	int center;
 
-	int center = max_x / 2 - n / 2;
+	getmaxyx(wptr, max_y, max_x);
+	center = max_x / 2 - n / 2;
 
 	/* Print a line of underscores to accept the user input */
 	for (int i = 0; i < n; i++) {
@@ -47,10 +48,10 @@ static void init_input_window(int n, WINDOW *wptr) {
 
 static bool validate_input_len(size_t buffer, char *input, WINDOW *wptr) {
 	size_t length = strnlen(input, buffer);
+	int c = 0;
 
 	if (input[length] != '\0') {
 		mvwxcprintw(wptr, getmaxy(wptr) - BOX_OFFSET, "Input is too long");
-		int c = 0;
 		while (c != '\n') {
 			c = getchar();
 		}
@@ -71,33 +72,40 @@ static bool validate_input_len(size_t buffer, char *input, WINDOW *wptr) {
 }
 
 void nc_user_input(int n, WINDOW *wptr, struct UserInput *pui) {
-	init_input_window(n, wptr);
-	pui->flag = 0;
 	int max_y, max_x;
-	getmaxyx(wptr, max_y, max_x);
 	size_t buffersize = n + 1; // Plus 1 to hold null terminator
-	int center = max_x / 2 - n / 2;
-
+	int center;
 	char temp[buffersize];
 	int c = 0;
 	int idx = 0;
-	int xcursor = center;
+	int xcursor;
+
+	getmaxyx(wptr, max_y, max_x);
+	center = max_x / 2 - n / 2;
+	xcursor = center;
+
+	init_input_window(n, wptr);
+	pui->flag = 0;
+	getmaxyx(wptr, max_y, max_x);
 	wmove(wptr, max_y - 4, center);
 	while (c != '\n' && c != '\r') {
 		wrefresh(wptr);
 		noecho();
 		c = wgetch(wptr);
 		switch (c) {
+
 		case('\n'):
 		case('\r'):
 			temp[idx] = '\0';
 			break;
+
 		case(27):
 		case(KEY_F(QUIT)):
 			noecho();
 			pui->flag = QUIT;
 			pui->str = NULL;
 			return;
+
 		case(KEY_BACKSPACE):
 		case(127):
 		case('\b'):
@@ -112,6 +120,7 @@ void nc_user_input(int n, WINDOW *wptr, struct UserInput *pui) {
 				wmove(wptr, max_y - 4, xcursor);
 			}
 			break;
+
 		default:
 			if (idx < n) { 
 				wprintw(wptr, "%c", c);
@@ -193,16 +202,20 @@ bool nc_confirm_input_loop(WINDOW *wptr) {
 	while (1) {
 		c = wgetch(wptr);
 		switch(c) {
+
 		case('y'):
 		case('Y'):
 			return true;	
+
 		case('n'):
 		case('N'):
 			return false;
+
 		case('q'):
 		case('Q'):
 		case(KEY_F(QUIT)):
 			return false;
+
 		default:
 			break;
 		}
@@ -211,31 +224,35 @@ bool nc_confirm_input_loop(WINDOW *wptr) {
 
 bool nc_confirm_input(char *msg) {
 	WINDOW *wptr = create_input_subwindow();
+	bool retval;
 
 	mvwxcprintw(wptr, 3, msg);
 	mvwxcprintw(wptr, getmaxy(wptr) - BOX_OFFSET, "(Y)es  /  (N)o");
 	wrefresh(wptr);
 
-	bool retval = nc_confirm_input_loop(wptr);
+	retval = nc_confirm_input_loop(wptr);
 	nc_exit_window(wptr);
 	return retval;
 }
 
 bool nc_confirm_record(struct LineData *ld) {
 	WINDOW *wptr = create_input_subwindow();
+	int c = 0;
+
 	mvwxcprintw(wptr, 0, "Confirm Record");
 	nc_print_record_vert(wptr, ld, BOX_OFFSET);
 	mvwxcprintw(wptr, getmaxy(wptr) - BOX_OFFSET, "(Y)es  /  (N)o");
 	wrefresh(wptr);
 
-	int c = 0;
 	while (c != KEY_F(QUIT) && c != 'q') {
 		c = wgetch(wptr);
 		switch(c) {
+
 		case('y'):
 		case('Y'):
 			nc_exit_window(wptr);
 			return true;
+
 		case('n'):
 		case('N'):
 		case(KEY_F(QUIT)):
@@ -243,6 +260,7 @@ bool nc_confirm_record(struct LineData *ld) {
 		case('Q'):
 			nc_exit_window(wptr);
 			return false;
+
 		default:
 			break;
 		}
@@ -255,6 +273,7 @@ bool nc_confirm_record(struct LineData *ld) {
 int nc_input_month(void) {
 	WINDOW *wptr_input = create_input_subwindow();
 	struct UserInputDigit puid_, *puid = &puid_;
+
 	mvwxcprintw(wptr_input, INPUT_MSG_Y_OFFSET, "Enter Month");
 	wrefresh(wptr_input);
 
@@ -277,6 +296,7 @@ int nc_input_month(void) {
 int nc_input_year(void) {
 	WINDOW *wptr_input = create_input_subwindow();
 	struct UserInputDigit puid_, *puid = &puid_;
+
 	mvwxcprintw(wptr_input, INPUT_MSG_Y_OFFSET, "Enter Year");
 	wrefresh(wptr_input);
 
@@ -296,6 +316,7 @@ int nc_input_year(void) {
 int nc_input_day(int month, int year) {
 	WINDOW *wptr_input = create_input_subwindow();
 	struct UserInputDigit puid_, *puid = &puid_;
+
 	mvwxcprintw(wptr_input, INPUT_MSG_Y_OFFSET, "Enter Day");
 	wrefresh(wptr_input);
 
@@ -324,6 +345,7 @@ int nc_input_day(int month, int year) {
 char *nc_input_string(char *msg) {
 	WINDOW *wptr_input = create_input_subwindow();
 	struct UserInput pui_, *pui = &pui_;
+
 	mvwxcprintw(wptr_input, INPUT_MSG_Y_OFFSET, msg);
 	do {
 		nc_user_input(STDIN_LARGE_BUFF, wptr_input, pui);
@@ -334,6 +356,7 @@ char *nc_input_string(char *msg) {
 }
 
 int nc_input_category_type(void) {
+	int retval;
 	struct MenuParams *mp = malloc(sizeof(*mp) + (sizeof(char *) * 2));
 	if (mp == NULL) {
 		mem_alloc_fail();
@@ -345,7 +368,7 @@ int nc_input_category_type(void) {
 	mp->strings[1] = "Income";
 
 	/* Transaction type 0 = expense, 1 = income. */
-	int retval = nc_input_menu(mp);
+	retval = nc_input_menu(mp);
 
 	free(mp);
 
@@ -353,6 +376,7 @@ int nc_input_category_type(void) {
 }
 
 int nc_input_transaction_type(void) {
+	int retval;
 	struct MenuParams *mp = malloc(sizeof(*mp) + (sizeof(char *) * 2));
 	if (mp == NULL) {
 		mem_alloc_fail();
@@ -364,7 +388,7 @@ int nc_input_transaction_type(void) {
 	mp->strings[1] = "Income";
 
 	/* Transaction type 0 = expense, 1 = income. */
-	int retval = nc_input_menu(mp);
+	retval = nc_input_menu(mp);
 
 	free(mp);
 
@@ -374,9 +398,10 @@ int nc_input_transaction_type(void) {
 double nc_input_amount(void) {
 	WINDOW *wptr_input = create_input_subwindow();
 	struct UserInput pui_, *pui = &pui_;
+	double amount;
+
 	mvwxcprintw(wptr_input, INPUT_MSG_Y_OFFSET, "Enter Amount");
 	keypad(wptr_input, true);
-	double amount;
 
 	nc_user_input(MAX_LEN_AMOUNT, wptr_input, pui);
 	while (pui->str == NULL && pui->flag != QUIT) {
@@ -397,9 +422,10 @@ double nc_input_amount(void) {
 double nc_input_budget_amount(void) {
 	WINDOW *wptr_input = create_input_subwindow();
 	struct UserInput pui_, *pui = &pui_;
+	double amount;
+
 	mvwxcprintw(wptr_input, INPUT_MSG_Y_OFFSET, "Enter Planned Amount for this Category");
 	keypad(wptr_input, true);
-	double amount;
 
 	nc_user_input(MAX_LEN_AMOUNT, wptr_input, pui);
 	while (pui->str == NULL && pui->flag != QUIT) {
@@ -421,6 +447,12 @@ char *nc_select_category(int month, int year) {
 	struct Categories *pc = get_budget_catg_by_date(month, year);
 	WINDOW *wptr_parent = create_category_select_parent(pc->size);
 	WINDOW *wptr = create_category_select_subwindow(wptr_parent);
+	char *tmp;
+	int displayed = 0;
+	int cur = 0; // Y=0 is the box and title, datalines start at 1.
+	int selection_idx = 0;
+	int c = 0;
+	int max_y = getmaxy(wptr);
 	int sz;
 
 	if (debug_flag) {
@@ -437,7 +469,6 @@ char *nc_select_category(int month, int year) {
 		sz = (int)pc->size;
 	}
 
-	int displayed = 0;
 	/* Print intital data based on window size */
 	for (int i = 0; i < getmaxy(wptr) && i < sz; i++) {
 		mvwxcprintw(wptr, i, pc->categories[i]);
@@ -450,11 +481,6 @@ char *nc_select_category(int month, int year) {
 
 	wrefresh(wptr);
 	mvwchgat(wptr, 0, 0, -1, A_REVERSE, REVERSE_COLOR, NULL);
-	int cur = 0; // Y=0 is the box and title, datalines start at 1.
-	int selection_idx = 0;
-	int c = 0;
-
-	int max_y = getmaxy(wptr);
 	keypad(wptr, true);
 
 	while (c != '\n' && c != '\r') {
@@ -513,7 +539,7 @@ manual_selection:
 	}
 
 	if (selection_idx >= 0) {
-		char *tmp = strdup(pc->categories[selection_idx]); // Must be free'd
+		tmp = strdup(pc->categories[selection_idx]); // Must be free'd
 		free_categories(pc);
 		nc_exit_window(wptr_parent);
 		nc_exit_window(wptr);

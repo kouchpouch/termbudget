@@ -72,18 +72,17 @@ bool validate_budget_header(void) {
 
 bool record_len_verification(void) {
 	FILE *fptr = open_record_csv("r");
-
 	struct LineData ld, *pld = &ld;
-
 	char linebuff[1024];
 	char *str;
-
-	seek_beyond_header(fptr);
 
 	/* This is a human readable line number, not to be used for indexing or
 	 * other parsing functions. This number is for error printing only 
 	 * starting at 2. Header was 1. */
 	unsigned int linenumber = 2;
+
+	seek_beyond_header(fptr);
+
 
 	while (1) {
 		str = fgets(linebuff, sizeof(linebuff), fptr);
@@ -147,6 +146,7 @@ static int cmp_catg_and_fix
 {
 	int corrected = 0;
 	bool cat_exists = false;
+
 	for (size_t i = 0; i < prc->size; i++) {
 		cat_exists = false;
 		for (size_t j = 0; j < pbc->size; j++) {
@@ -176,21 +176,22 @@ static int cmp_catg_and_fix
  */
 int verify_categories_exist_in_budget(void) {
 	FILE *rfptr = open_record_csv("r");
+	Vec *years;
+	Vec *months;
 	int corrected = 0;
+	struct Categories prc_, *prc = &prc_;
+	struct Categories pbc_, *pbc = &pbc_;
 
 	/* Go through each year and find the matching months, then find the
 	 * matching categories, then compare. */
-
-	struct Categories prc_, *prc = &prc_;
-	struct Categories pbc_, *pbc = &pbc_;
-	Vec *years = get_years_with_data(rfptr, 2);
+	years = get_years_with_data(rfptr, 2);
 	if (years == NULL) {
 		return 0;
 	}
 
 	for (size_t i = 0; i < years->size; i++) {
 		rewind(rfptr);
-		Vec *months = get_months_with_data(rfptr, years->data[i], 1);
+		months = get_months_with_data(rfptr, years->data[i], 1);
 		for (size_t j = 0; j < months->size; j++) {
 			prc = get_categories(months->data[j], years->data[i]);
 			pbc = get_budget_catg_by_date(months->data[j], years->data[i]);

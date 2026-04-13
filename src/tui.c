@@ -100,6 +100,9 @@ int calculate_overview_columns(WINDOW *wptr) {
 }
 
 void calculate_columns(struct ColWidth *cw, int max_x) {
+	int static_columns;
+	int small_scr;
+
 	cw->amnt = AMNT_X;
 
 	if (max_x < MIN_COLUMNS) {
@@ -110,12 +113,12 @@ void calculate_columns(struct ColWidth *cw, int max_x) {
 		cw->date = DATE_X;
 	}
 
-	int static_columns = cw->date + cw->trns + cw->amnt;
+	static_columns = cw->date + cw->trns + cw->amnt;
 
 	if (max_x < MIN_COLUMNS + SHORTEN_THRESH) {
 		cw->date = strlen("00/00 ");
 		cw->trns = strlen("+- ");
-		int small_scr = cw->date + cw->trns + cw->amnt;
+		small_scr = cw->date + cw->trns + cw->amnt;
 		cw->catg = (max_x - small_scr) / 3;
 		cw->desc = (max_x - small_scr) / 3 + cw->catg;
 	} else if ((max_x - static_columns) / 2 < 64) {
@@ -129,7 +132,6 @@ void calculate_columns(struct ColWidth *cw, int max_x) {
 
 void print_column_headers(WINDOW *wptr, int x_off) {
 	struct ColWidth column_width, *cw = &column_width;
-	
 	int cur = x_off;
 	int y = 1;
 
@@ -235,7 +237,10 @@ struct ReadWins *create_read_windows(void) {
 }
 
 WINDOW *create_category_select_parent(int n) {
-	int win_y;
+	int win_y, win_x;
+	int begin_y, begin_x;
+	WINDOW *wptr;
+
 	if (n + BOX_OFFSET > getmaxy(stdscr) 
 		&& n + BOX_OFFSET <= MAX_Y_CATG_SELECT) {
 		win_y = getmaxy(stdscr) - BOX_OFFSET;
@@ -245,16 +250,15 @@ WINDOW *create_category_select_parent(int n) {
 		win_y = n + BOX_OFFSET;
 	}
 
-	int win_x;
 	if (getmaxx(stdscr) >= MAX_LEN_CATG) {
 		win_x = MAX_LEN_CATG + BOX_OFFSET;
 	} else {
 		win_x = getmaxx(stdscr);
 	}
 
-	int begin_y = getmaxy(stdscr) / 2 - win_y / 2;
-	int begin_x = getmaxx(stdscr) / 2 - win_x / 2;
-	WINDOW *wptr = newwin(win_y, win_x, begin_y, begin_x);
+	begin_y = getmaxy(stdscr) / 2 - win_y / 2;
+	begin_x = getmaxx(stdscr) / 2 - win_x / 2;
+	wptr = newwin(win_y, win_x, begin_y, begin_x);
 	if (wptr == NULL) {
 		window_creation_fail();
 	}
@@ -266,7 +270,8 @@ WINDOW *create_category_select_parent(int n) {
 	return wptr;
 }
 
-WINDOW *create_category_select_subwindow(WINDOW *wptr_parent) {
+WINDOW *create_category_select_subwindow(WINDOW *wptr_parent)
+{
 	WINDOW *wptr = newwin(getmaxy(wptr_parent) - BOX_OFFSET,
 					   	  getmaxx(wptr_parent) - BOX_OFFSET,
 					   	  getmaxy(stdscr) / 2 - getmaxy(wptr_parent) / 2 + 1, 
@@ -280,9 +285,11 @@ WINDOW *create_category_select_subwindow(WINDOW *wptr_parent) {
 
 WINDOW *create_input_subwindow_n_rows(int n) {
 	int max_y, max_x;
-	getmaxyx(stdscr, max_y, max_x);
 	int win_y, win_x;
+	WINDOW *wptr;
 	
+	getmaxyx(stdscr, max_y, max_x);
+
 	if (n <= INPUT_WIN_ROWS + BOX_OFFSET) {
 		if (n % 2 == 0) {
 			win_y = INPUT_WIN_ROWS;
@@ -303,9 +310,7 @@ WINDOW *create_input_subwindow_n_rows(int n) {
 		win_x = max_x;
 	}
 
-	WINDOW *wptr = newwin(win_y, win_x, 
-					   	 (max_y / 2) - win_y / 2, 
-					   	 (max_x / 2) - win_x / 2);
+	wptr = newwin(win_y, win_x, (max_y / 2) - win_y / 2, (max_x / 2) - win_x / 2);
 
 	if (wptr == NULL) {
 		window_creation_fail();
@@ -318,9 +323,10 @@ WINDOW *create_input_subwindow_n_rows(int n) {
 
 WINDOW *create_input_subwindow(void) {
 	int max_y, max_x;
-	getmaxyx(stdscr, max_y, max_x);
 	int win_y, win_x;
+	WINDOW *wptr;
 	
+	getmaxyx(stdscr, max_y, max_x);
 	win_y = INPUT_WIN_ROWS;
 
 	if (max_x >= MIN_COLUMNS + 20) {
@@ -329,9 +335,7 @@ WINDOW *create_input_subwindow(void) {
 		win_x = max_x;
 	}
 
-	WINDOW *wptr = newwin(win_y, win_x, 
-					   	 (max_y / 2) - win_y / 2, 
-					   	 (max_x / 2) - win_x / 2);
+	wptr = newwin(win_y, win_x, (max_y / 2) - win_y / 2, (max_x / 2) - win_x / 2);
 
 	if (wptr == NULL) {
 		window_creation_fail();

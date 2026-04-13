@@ -48,7 +48,9 @@ void free_category_nodes(CategoryNode **nodes) {
  * the file position byte offsets for the records that match the CategoryNode's
  * category.
  */
-static void init_category_nodes(CategoryNode *node, Vec *chunk, int m, int y) {
+static void init_category_nodes
+(CategoryNode *node, Vec *chunk, int m, int y)
+{
 	struct BudgetTokens *budget_tokens = tokenize_budget_fpi(node->catg_fp);
 	Vec *recs = get_records_by_any(m, -1, y, budget_tokens->catg, NULL, -1, -1, chunk);
 	node->data = recs;
