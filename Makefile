@@ -3,6 +3,7 @@
 termbudget:
 	gcc -g -Wall -Wextra -Wpedantic \
 		src/main.c \
+		src/cli.c \
 		src/tui.c \
 		src/tui_input.c \
 		src/helper.c \
