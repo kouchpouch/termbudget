@@ -33,6 +33,34 @@
 #include "categories.h"
 #include "flags.h"
 
+struct ScrollCursor {
+	/* Total size of the data that can be shown. */
+	int total_rows; 
+
+	/* Total number of records and/or categories displayed on the screen. */
+	int displayed; 
+	int select_idx;
+	int cur_y;
+	int catg_node;
+	int catg_data;
+	size_t sidebar_idx;
+};
+
+struct DispCursor {
+	int first;
+	int last;
+};
+
+static void print_debug_line(WINDOW *wptr, struct ScrollCursor *sc) {
+	mvwhline(wptr, getmaxy(wptr) - 1, 1, 0, getmaxx(wptr) - 2);
+	mvwprintw(wptr, getmaxy(wptr) - 1, getmaxx(wptr) - 55, "SELIDX: %d", sc->select_idx);
+	mvwprintw(wptr, getmaxy(wptr) - 1, getmaxx(wptr) - 40, "DATA: %d", sc->displayed);
+	mvwprintw(wptr, getmaxy(wptr) - 1, getmaxx(wptr) - 30, "DATA: %d", sc->catg_data);
+	mvwprintw(wptr, getmaxy(wptr) - 1, getmaxx(wptr) - 20, "NODE: %d", sc->catg_node);
+	mvwprintw(wptr, getmaxy(wptr) - 1, getmaxx(wptr) - 10, "CURS: %d", sc->cur_y);
+	wrefresh(wptr);
+}
+
 static void print_catg_balances
 (WINDOW *wptr, int tt, double planned, double exp, int width)
 {
@@ -637,7 +665,7 @@ void nc_read_budget_loop
 		refresh_displayed_counter(wins->parent, sc, dc);
 
 		if (debug_flag) {
-//			nc_print_debug_line(wins->parent, sc);
+			print_debug_line(wins->parent, sc);
 		}
 		c = wgetch(wins->data);
 

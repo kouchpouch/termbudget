@@ -40,9 +40,9 @@
 #define RRET_BYDATE 1
 #define RRET_QUIT 2
 
-enum SortBy {
-	SORT_DATE = 0,
-	SORT_CATG = 1
+struct Plannedvals {
+	double inc;
+	double exp;
 };
 
 static const char *abbr_months[] = {
@@ -640,6 +640,51 @@ static void free_windows(struct ReadWins *wins) {
 		nc_exit_window(wins->sidebar_body);
 	}
 	free(wins);
+}
+
+static struct Plannedvals *get_total_planned(CategoryNode **nodes) {
+	struct Plannedvals *pv = malloc(sizeof(*pv));
+	if (pv == NULL) {
+		mem_alloc_fail();
+	}
+
+	pv->exp = 0.0;
+	pv->inc = 0.0;
+
+	int i = 0;
+	while (1) {
+		struct BudgetTokens *bt = tokenize_budget_fpi(nodes[i]->catg_fp);
+		if (nodes[i]->next == NULL) {
+			if (bt->transtype == 1) {
+				pv->inc += bt->amount;
+			} else {
+				pv->exp += bt->amount;
+			}
+			free_budget_tokens(bt);
+			bt = NULL;
+			break;
+
+		} else {
+			if (bt->transtype == 1) {
+				pv->inc += bt->amount;
+			} else {
+				pv->exp += bt->amount;
+			}
+			free_budget_tokens(bt);
+			bt = NULL;
+		}
+
+		i++;
+	}
+	return pv;
+}
+
+static double get_left_to_budget(CategoryNode **nodes) {
+	struct Plannedvals *pv = get_total_planned(nodes);
+	double ret = pv->inc - pv->exp;
+	free(pv);
+	pv = NULL;
+	return ret;
 }
 
 void nc_read_setup
