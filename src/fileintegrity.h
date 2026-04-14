@@ -23,15 +23,15 @@
 
 /* Returns true if all fields are initialized with a field value, false if
  * any field value is less than 0. */
-extern bool validate_record_header(void);
+bool validate_record_header(void);
 
 /* Returns true if all fields are initialized with a field value, false if
  * any field value is less than 0. */
-extern bool validate_budget_header(void);
+bool validate_budget_header(void);
 
 /* Returns true if record csv fields are equal to or less than the maximum
  * lengths defined in main. False if not */
-extern bool record_len_verification(void);
+bool record_len_verification(void);
 
 /*
  * Ensures that if a category exists in RECORD_DIR(main.h)
@@ -45,6 +45,8 @@ extern bool record_len_verification(void);
  * Returns a 0 or positive value of records that were corrected successfully.
  * Returns -1 on failure.
  */
-extern int verify_categories_exist_in_budget(void);
+int verify_categories_exist_in_budget(void);
+
+int verify_files_exist(void);
 
 #endif

@@ -207,3 +207,84 @@ int verify_categories_exist_in_budget(void) {
 
 	return corrected;
 }
+
+static void fix_budget_header(void) {
+	int linetodelete = 0;
+	FILE *fptr = open_budget_csv("r");
+	FILE *tmpfptr = open_temp_csv();
+
+	char linebuff[LINE_BUFFER * 2];
+	char *line;
+	int linenum = 0;
+	do {
+		line = fgets(linebuff, sizeof(linebuff), fptr);
+		if (line == NULL) break;
+		if (linenum != linetodelete) {
+			fputs(line, tmpfptr);
+		} else {
+			fputs("month,year,category,transtype,value\n", tmpfptr);
+		}
+		linenum++;	
+	} while (line != NULL);
+	mv_tmp_to_budget_file(tmpfptr, fptr);
+}
+
+static void fix_record_header(void) {
+	int linetodelete = 0;
+	FILE *fptr = open_record_csv("r");
+	FILE *tmpfptr = open_temp_csv();
+
+	char linebuff[LINE_BUFFER * 2];
+	char *line;
+	int linenum = 0;
+	do {
+		line = fgets(linebuff, sizeof(linebuff), fptr);
+		if (line == NULL) break;
+		if (linenum != linetodelete) {
+			fputs(line, tmpfptr);
+		} else {
+			fputs("month,day,year,category,description,transtype,value\n", tmpfptr);
+		}
+		linenum++;	
+	} while (line != NULL);
+	mv_tmp_to_record_file(tmpfptr, fptr);
+}
+
+/* Verifies that the files needed to run termbudget exist and writes headers */
+int verify_files_exist(void) {
+	FILE *rfptr = open_record_csv("a");
+	if (rfptr == NULL) {
+		perror("Failed to open/create record file");
+		return -1;
+	}
+	fseek(rfptr, 0, SEEK_END);
+	if (ftell(rfptr) == 0) {
+		fputs("month,day,year,category,description,transtype,value\n", rfptr);
+	}
+	fclose(rfptr);
+
+	if (!validate_record_header()) {
+		printf("data.csv header failed validation, has it been edited?");
+		fix_record_header();
+		getchar();
+	}
+
+	FILE *bfptr = open_budget_csv("a");
+	if (bfptr == NULL) {
+		perror("Failed to open/create budget file");
+		return -1;
+	}
+	fseek(bfptr, 0, SEEK_END);
+	if (ftell(bfptr) == 0) {
+		fputs("month,year,category,transtype,value\n", bfptr);
+	}
+	fclose(bfptr);
+
+	if (!validate_budget_header()) {
+		printf("budget.csv header failed validation, has it been edited?");
+		fix_budget_header();
+		getchar();
+	}
+
+	return 0;
+}
