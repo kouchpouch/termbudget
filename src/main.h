@@ -96,7 +96,9 @@ extern bool nc_confirm_record(struct LineData *ld);
 
 extern int show_help_subwindow(void);
 
-extern void nc_edit_transaction(long b);
+//extern void nc_edit_transaction(long b);
+
+extern void cli_read_csv(void);
 
 extern void nc_overview_setup(int year);
 
