@@ -43,32 +43,14 @@
 #define MIN_INPUT_CHAR 2
 #define INPUT_MSG_Y_OFFSET 2
 
-struct ScrollCursor {
-	/* Total size of the data that can be shown. */
-	int total_rows; 
-
-	/* Total number of records and/or categories displayed on the screen. */
-	int displayed; 
-	int select_idx;
-	int cur_y;
-	int catg_node;
-	int catg_data;
-	size_t sidebar_idx;
-};
-
-struct DispCursor {
-	int first;
-	int last;
+enum SortBy {
+	SORT_DATE = 0,
+	SORT_CATG = 1
 };
 
 struct Datevals {
 	int year;
 	int month;
-};
-
-struct Plannedvals {
-	double inc;
-	double exp;
 };
 
 struct Balances {
@@ -77,31 +59,20 @@ struct Balances {
 };
 
 /* Exits the program with "exit(1)" and prints the error message. */
-extern void mem_alloc_fail(void);
+void mem_alloc_fail(void);
 
 /* Sets the values of struct members 'pb' using records in RECORD_DIR
  * at file positions of 'pbo' */
-extern void calculate_balance(struct Balances *pb, Vec *pbo);
+void calculate_balance(struct Balances *pb, Vec *pbo);
 
-extern struct Plannedvals *get_total_planned(CategoryNode **nodes);
+void nc_print_record_vert(WINDOW *wptr, struct LineData *ld, int x_off);
 
-extern double get_left_to_budget(CategoryNode **nodes);
+bool nc_confirm_record(struct LineData *ld);
 
-extern void nc_print_record_vert(WINDOW *wptr, struct LineData *ld, int x_off);
+int show_help_subwindow(void);
 
-// To be moved from main.h
-extern bool duplicate_category_exists(struct Categories *psc, char *catg);
+void nc_overview_setup(int year);
 
-extern bool nc_confirm_record(struct LineData *ld);
-
-extern int show_help_subwindow(void);
-
-//extern void nc_edit_transaction(long b);
-
-extern void cli_read_csv(void);
-
-extern void nc_overview_setup(int year);
-
-extern void draw_scroll_indicator(WINDOW *wptr);
+void draw_scroll_indicator(WINDOW *wptr);
 
 #endif
