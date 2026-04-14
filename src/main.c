@@ -673,7 +673,7 @@ void print_bar_graph(double expense, double income) {
 	printf("Total:   $%.2f\n", income - expense);
 }
 
-void legacy_read_csv(void) {
+void cli_read_csv(void) {
 	int useryear;
 	int usermonth;
 	double income = 0;
@@ -770,134 +770,134 @@ void debug_columns(WINDOW *wptr, struct ColWidth *cw) {
 	wgetch(wptr);
 }
 
-int nc_select_field_to_edit(WINDOW *wptr) {
-	mvwchgat(wptr, 1, 0, -1, A_REVERSE, REVERSE_COLOR, NULL);
-	keypad(wptr, true);
-	int select = 1;
-	int c = 0;
+//int nc_select_field_to_edit(WINDOW *wptr) {
+//	mvwchgat(wptr, 1, 0, -1, A_REVERSE, REVERSE_COLOR, NULL);
+//	keypad(wptr, true);
+//	int select = 1;
+//	int c = 0;
+//
+//	box(wptr, 0, 0);
+//	mvwxcprintw(wptr, 0, "Select Field to Edit");
+//	wrefresh(wptr);
+//	while (c != KEY_F(QUIT) && c != 'q') { 
+//		box(wptr, 0, 0);
+//		mvwxcprintw(wptr, 0, "Select Field to Edit");
+//		wrefresh(wptr);
+//		c = wgetch(wptr);
+//
+//		switch(c) {
+//		case('j'):
+//		case(KEY_DOWN):
+//			if (select + 1 <= (INPUT_WIN_ROWS - BOX_OFFSET)) {
+//				mvwchgat(wptr, select, 0, -1, A_NORMAL, 0, NULL);
+//				select++;
+//				mvwchgat(wptr, select, 0, -1, A_REVERSE, REVERSE_COLOR, NULL);
+//			} else {
+//				mvwchgat(wptr, select, 0, -1, A_NORMAL, 0, NULL);
+//				select = 1;
+//				mvwchgat(wptr, select, 0, -1, A_REVERSE, REVERSE_COLOR, NULL);
+//			}
+//			break;
+//		case('k'):
+//		case(KEY_UP):
+//			if (select - 1 > 0) {
+//				mvwchgat(wptr, select, 0, -1, A_NORMAL, 0, NULL);
+//				select--;
+//				mvwchgat(wptr, select, 0, -1, A_REVERSE, REVERSE_COLOR, NULL);
+//			} else {
+//				mvwchgat(wptr, select, 0, -1, A_NORMAL, 0, NULL);
+//				select = INPUT_WIN_ROWS - BOX_OFFSET;
+//				mvwchgat(wptr, select, 0, -1, A_REVERSE, REVERSE_COLOR, NULL);
+//			}
+//			break;
+//		case('\n'):
+//		case('\r'):
+//			return select;
+//		case('q'):
+//		case(KEY_F(QUIT)):
+//			break;
+//		}
+//	}
+//	return 0;
+//}
 
-	box(wptr, 0, 0);
-	mvwxcprintw(wptr, 0, "Select Field to Edit");
-	wrefresh(wptr);
-	while (c != KEY_F(QUIT) && c != 'q') { 
-		box(wptr, 0, 0);
-		mvwxcprintw(wptr, 0, "Select Field to Edit");
-		wrefresh(wptr);
-		c = wgetch(wptr);
-
-		switch(c) {
-		case('j'):
-		case(KEY_DOWN):
-			if (select + 1 <= (INPUT_WIN_ROWS - BOX_OFFSET)) {
-				mvwchgat(wptr, select, 0, -1, A_NORMAL, 0, NULL);
-				select++;
-				mvwchgat(wptr, select, 0, -1, A_REVERSE, REVERSE_COLOR, NULL);
-			} else {
-				mvwchgat(wptr, select, 0, -1, A_NORMAL, 0, NULL);
-				select = 1;
-				mvwchgat(wptr, select, 0, -1, A_REVERSE, REVERSE_COLOR, NULL);
-			}
-			break;
-		case('k'):
-		case(KEY_UP):
-			if (select - 1 > 0) {
-				mvwchgat(wptr, select, 0, -1, A_NORMAL, 0, NULL);
-				select--;
-				mvwchgat(wptr, select, 0, -1, A_REVERSE, REVERSE_COLOR, NULL);
-			} else {
-				mvwchgat(wptr, select, 0, -1, A_NORMAL, 0, NULL);
-				select = INPUT_WIN_ROWS - BOX_OFFSET;
-				mvwchgat(wptr, select, 0, -1, A_REVERSE, REVERSE_COLOR, NULL);
-			}
-			break;
-		case('\n'):
-		case('\r'):
-			return select;
-		case('q'):
-		case(KEY_F(QUIT)):
-			break;
-		}
-	}
-	return 0;
-}
-
-void nc_edit_transaction(long b) {
-	struct LineData *ld = malloc(sizeof(*ld));
-	enum EditRecordFields field;
-
-	if (ld == NULL) {
-		mem_alloc_fail();
-		return;
-	}
-
-	WINDOW *wptr_edit = create_input_subwindow();
-	FILE *fptr = open_record_csv("r+");
-	fseek(fptr, b, SEEK_SET);
-	unsigned int linenum = boff_to_linenum(b);
-
-	char linebuff[LINE_BUFFER];
-	char *line = fgets(linebuff, sizeof(linebuff), fptr);
-
-	if (line == NULL) {
-		exit(1);
-	}
-
-	tokenize_record(ld, &line);
-
-	nc_print_record_vert(wptr_edit, ld, BOX_OFFSET);
-
-	mvwprintw(wptr_edit, INPUT_WIN_ROWS - BOX_OFFSET, BOX_OFFSET, "%s", "Delete");
-	box(wptr_edit, 0, 0);
-	wrefresh(wptr_edit);
-
-	field = nc_select_field_to_edit(wptr_edit);
-
-	fclose(fptr);
-	nc_exit_window(wptr_edit);
-
-	switch(field) {
-	case NO_SEL:
-		break;
-	case E_DATE:
-		nc_print_input_footer(stdscr);
-		nc_edit_csv_record(linenum, E_DATE, ld);
-		break;
-	case E_CATG:
-		free(ld->category);
-		ld->category = NULL;
-		nc_edit_csv_record(linenum, E_CATG, ld);
-		break;
-	case E_DESC:
-		nc_print_input_footer(stdscr);
-		free(ld->desc);
-		ld->desc = NULL;
-		nc_edit_csv_record(linenum, E_DESC, ld);
-		break;
-	case E_TYPE:
-		nc_print_input_footer(stdscr);
-		nc_edit_csv_record(linenum, E_TYPE, ld);
-		break;
-	case E_AMNT:
-		nc_print_input_footer(stdscr);
-		nc_edit_csv_record(linenum, E_AMNT, ld);
-		break;
-	case DELETE:
-		nc_print_input_footer(stdscr);
-		if (nc_confirm_input("Confirm Delete")) {
-			if (delete_csv_record(linenum) == 0) {
-				nc_message("Successfully Deleted");
-			}
-		}
-		break;
-
-	default:
-		return;
-	}
-
-	free_tokenized_record_strings(ld);
-	free(ld);
-	ld = NULL;
-}
+//void nc_edit_transaction(long b) {
+//	struct LineData *ld = malloc(sizeof(*ld));
+//	enum EditRecordFields field;
+//
+//	if (ld == NULL) {
+//		mem_alloc_fail();
+//		return;
+//	}
+//
+//	WINDOW *wptr_edit = create_input_subwindow();
+//	FILE *fptr = open_record_csv("r+");
+//	fseek(fptr, b, SEEK_SET);
+//	unsigned int linenum = boff_to_linenum(b);
+//
+//	char linebuff[LINE_BUFFER];
+//	char *line = fgets(linebuff, sizeof(linebuff), fptr);
+//
+//	if (line == NULL) {
+//		exit(1);
+//	}
+//
+//	tokenize_record(ld, &line);
+//
+//	nc_print_record_vert(wptr_edit, ld, BOX_OFFSET);
+//
+//	mvwprintw(wptr_edit, INPUT_WIN_ROWS - BOX_OFFSET, BOX_OFFSET, "%s", "Delete");
+//	box(wptr_edit, 0, 0);
+//	wrefresh(wptr_edit);
+//
+//	field = nc_select_field_to_edit(wptr_edit);
+//
+//	fclose(fptr);
+//	nc_exit_window(wptr_edit);
+//
+//	switch(field) {
+//	case NO_SEL:
+//		break;
+//	case E_DATE:
+//		nc_print_input_footer(stdscr);
+//		nc_edit_csv_record(linenum, E_DATE, ld);
+//		break;
+//	case E_CATG:
+//		free(ld->category);
+//		ld->category = NULL;
+//		nc_edit_csv_record(linenum, E_CATG, ld);
+//		break;
+//	case E_DESC:
+//		nc_print_input_footer(stdscr);
+//		free(ld->desc);
+//		ld->desc = NULL;
+//		nc_edit_csv_record(linenum, E_DESC, ld);
+//		break;
+//	case E_TYPE:
+//		nc_print_input_footer(stdscr);
+//		nc_edit_csv_record(linenum, E_TYPE, ld);
+//		break;
+//	case E_AMNT:
+//		nc_print_input_footer(stdscr);
+//		nc_edit_csv_record(linenum, E_AMNT, ld);
+//		break;
+//	case DELETE:
+//		nc_print_input_footer(stdscr);
+//		if (nc_confirm_input("Confirm Delete")) {
+//			if (delete_csv_record(linenum) == 0) {
+//				nc_message("Successfully Deleted");
+//			}
+//		}
+//		break;
+//
+//	default:
+//		return;
+//	}
+//
+//	free_tokenized_record_strings(ld);
+//	free(ld);
+//	ld = NULL;
+//}
 
 void nc_print_debug_line(WINDOW *wptr, struct ScrollCursor *sc) {
 	mvwhline(wptr, getmaxy(wptr) - 1, 1, 0, getmaxx(wptr) - 2);
@@ -1146,98 +1146,99 @@ int delete_csv_record(int linetodelete) {
 	return 0;
 }
 
-void edit_transaction(void) {
-	int target;
-	int humantarget;
-	struct LineData linedata, *ld = &linedata;
-
-	FILE *fptr = open_record_csv("r+");
-	assert(ftell(fptr) == 0);
-
-	legacy_read_csv();
-	
-	Vec *pidx = index_csv(fptr);
-
-	assert(pidx->size < INT_MAX);
-
-	do {
-		puts("Enter line number");
-		humantarget = input_n_digits(sizeof(size_t) + 1, 2);
-	} while (humantarget <= 0 || humantarget > (int)pidx->size);
-
-	target = humantarget - 1;
-
-	if (debug_flag) {
-		printf("TARGET: %d\n", target);
-		printf("TARGET OFFSET: %ld\n", pidx->data[target]);
-	}
-
-	fseek(fptr, pidx->data[target], SEEK_SET);
-
-	if (debug_flag) {
-		printf("COMMANDED SEEK OFFSET: %ld\n", pidx->data[target]);
-	}
-	
-	char linebuff[LINE_BUFFER];
-	char *str = fgets(linebuff, sizeof(linebuff), fptr);
-	if (str == NULL) {
-		puts("failed to read line");
-		exit(1);
-	}
-
-	tokenize_record(ld, &str);
-
-	struct LineData *pLd = malloc(sizeof(*ld));
-	if (pLd == NULL) {
-		free(pidx);
-		fclose(fptr);
-		fptr = NULL;
-		mem_alloc_fail();
-	}
-
-	memcpy(pLd, ld, sizeof(*ld));
-
-	print_record_vert(ld);
-	
-	int fieldtoedit;
-	do {
-		puts("Enter field to edit or press \"0\" to delete this transaction");
-		fieldtoedit = input_n_digits(1, 1); // Only input 1 digit
-	} while (fieldtoedit > 5 || fieldtoedit < 0);
-
-	switch(fieldtoedit) {
-	case 0:
-		if (delete_csv_record(humantarget) == 0) {
-			puts("Successfully Deleted Transaction");
-		}
-		break;
-	case 1:
-		edit_csv_record(humantarget, pLd, 1);
-		break;
-	case 2:
-		edit_csv_record(humantarget, pLd, 2);
-		break;
-	case 3:
-		edit_csv_record(humantarget, pLd, 3);
-		break;
-	case 4:
-		edit_csv_record(humantarget, pLd, 4);
-		break;
-	case 5:
-		edit_csv_record(humantarget, pLd, 5);
-		break;
-	default:
-		return;
-	}
-
-	free_tokenized_record_strings(pLd);
-	free(pLd);
-	pLd = NULL;
-	free(pidx);
-	pidx = NULL;
-	fclose(fptr);
-	fptr = NULL;
-}
+/* CLI Implementation */
+//void edit_transaction(void) {
+//	int target;
+//	int humantarget;
+//	struct LineData linedata, *ld = &linedata;
+//
+//	FILE *fptr = open_record_csv("r+");
+//	assert(ftell(fptr) == 0);
+//
+//	cli_read_csv();
+//	
+//	Vec *pidx = index_csv(fptr);
+//
+//	assert(pidx->size < INT_MAX);
+//
+//	do {
+//		puts("Enter line number");
+//		humantarget = input_n_digits(sizeof(size_t) + 1, 2);
+//	} while (humantarget <= 0 || humantarget > (int)pidx->size);
+//
+//	target = humantarget - 1;
+//
+//	if (debug_flag) {
+//		printf("TARGET: %d\n", target);
+//		printf("TARGET OFFSET: %ld\n", pidx->data[target]);
+//	}
+//
+//	fseek(fptr, pidx->data[target], SEEK_SET);
+//
+//	if (debug_flag) {
+//		printf("COMMANDED SEEK OFFSET: %ld\n", pidx->data[target]);
+//	}
+//	
+//	char linebuff[LINE_BUFFER];
+//	char *str = fgets(linebuff, sizeof(linebuff), fptr);
+//	if (str == NULL) {
+//		puts("failed to read line");
+//		exit(1);
+//	}
+//
+//	tokenize_record(ld, &str);
+//
+//	struct LineData *pLd = malloc(sizeof(*ld));
+//	if (pLd == NULL) {
+//		free(pidx);
+//		fclose(fptr);
+//		fptr = NULL;
+//		mem_alloc_fail();
+//	}
+//
+//	memcpy(pLd, ld, sizeof(*ld));
+//
+//	print_record_vert(ld);
+//	
+//	int fieldtoedit;
+//	do {
+//		puts("Enter field to edit or press \"0\" to delete this transaction");
+//		fieldtoedit = input_n_digits(1, 1); // Only input 1 digit
+//	} while (fieldtoedit > 5 || fieldtoedit < 0);
+//
+//	switch(fieldtoedit) {
+//	case 0:
+//		if (delete_csv_record(humantarget) == 0) {
+//			puts("Successfully Deleted Transaction");
+//		}
+//		break;
+//	case 1:
+//		edit_csv_record(humantarget, pLd, 1);
+//		break;
+//	case 2:
+//		edit_csv_record(humantarget, pLd, 2);
+//		break;
+//	case 3:
+//		edit_csv_record(humantarget, pLd, 3);
+//		break;
+//	case 4:
+//		edit_csv_record(humantarget, pLd, 4);
+//		break;
+//	case 5:
+//		edit_csv_record(humantarget, pLd, 5);
+//		break;
+//	default:
+//		return;
+//	}
+//
+//	free_tokenized_record_strings(pLd);
+//	free(pLd);
+//	pLd = NULL;
+//	free(pidx);
+//	pidx = NULL;
+//	fclose(fptr);
+//	fptr = NULL;
+//}
 
 int nc_main_menu(WINDOW *wptr) {
 	struct ReadRet rr_, *rret = &rr_;
@@ -1369,7 +1370,7 @@ void main_menu(void) {
 		break;
 	case('R'):
 		printf("-*-READ CSV-*-\n");
-		legacy_read_csv();
+		cli_read_csv();
 		break;
 	case('Q'):
 		printf("Quiting\n");
