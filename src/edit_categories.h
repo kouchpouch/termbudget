@@ -16,14 +16,17 @@
 #ifndef EDIT_CATEGORIES_H
 #define EDIT_CATEGORIES_H
 
+#include <stdbool.h>
+
 #include "main.h"
 #include "categories.h"
 
+bool duplicate_category_exists(struct Categories *psc, char *catg);
 /* Moves the category found at FPI nodes[i]->catg_fp to the top of its
  * siblings with the same date range. */
-extern void mv_category_to_top(CategoryNode **nodes, size_t i);
+void mv_category_to_top(CategoryNode **nodes, size_t i);
 
 /* Allows the user to edit the category at file position b. */
-extern void nc_edit_category(long b, long nmembers, CategoryNode **nodes);
+void nc_edit_category(long b, long nmembers, CategoryNode **nodes);
 
 #endif
