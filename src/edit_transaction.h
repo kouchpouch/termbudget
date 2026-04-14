@@ -28,6 +28,4 @@ enum EditRecordFields {
 
 void nc_edit_transaction(long b);
 
-void cli_edit_transaction(void);
-
 #endif
