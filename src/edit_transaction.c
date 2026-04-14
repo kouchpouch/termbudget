@@ -93,7 +93,6 @@ static int nc_edit_csv_record
 		puts("Cannot delete line 0");
 		return -1;
 	}
-	replace_line += 1;
 
 	enum EditRecordFields field = edit_field;
 	char replace_str[LINE_BUFFER];
@@ -121,7 +120,8 @@ static int nc_edit_csv_record
 		/* Have to add and delete here because the record will be placed
 		 * in a new position when the date changes */
 		fptr = open_record_csv("r");
-		delete_in_file(fptr, replace_line);
+		tmpfptr = delete_in_file(fptr, replace_line);
+		mv_tmp_to_record_file(tmpfptr, fptr);
 		insert_transaction_record(sort_record_csv(ld->month, ld->day, ld->year), ld);
 		return 0;
 
@@ -192,6 +192,12 @@ err_fail:
 	return -1;
 }
 
+static void delete_transaction(int line) {
+	FILE *fptr = open_record_csv("r");
+	FILE *tmpfptr = delete_in_file(fptr, line);
+	mv_tmp_to_record_file(tmpfptr, fptr);
+}
+
 void nc_edit_transaction(long b) {
 	struct LineData *ld = malloc(sizeof(*ld));
 	enum EditRecordFields field;
@@ -205,7 +211,6 @@ void nc_edit_transaction(long b) {
 	FILE *fptr = open_record_csv("r+");
 	fseek(fptr, b, SEEK_SET);
 	unsigned int linenum = boff_to_linenum(b);
-
 	char linebuff[LINE_BUFFER];
 	char *line = fgets(linebuff, sizeof(linebuff), fptr);
 
@@ -262,7 +267,7 @@ void nc_edit_transaction(long b) {
 	case DELETE:
 		nc_print_input_footer(stdscr);
 		if (nc_confirm_input("Confirm Delete")) {
-				// FIX IMPLEMENT
+				delete_transaction(linenum + 1);
 		}
 		break;
 
