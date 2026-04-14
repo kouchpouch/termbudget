@@ -224,17 +224,19 @@ err_category:
 	free(pidx);
 }
 
-int nc_edit_csv_record(int replaceln, int edit_field, struct LineData *ld) {
-	if (replaceln == 0) {
+int nc_edit_csv_record
+(int replace_line, int edit_field, struct LineData *ld)
+{
+	if (replace_line == 0) {
 		puts("Cannot delete line 0");
 		return -1;
 	}
-	replaceln += 1;
+	replace_line += 1;
 
 	enum EditRecordFields field = edit_field;
-	char linebuff[LINE_BUFFER];
-	char *line;
-	int linenum = 0;
+	char replace_str[LINE_BUFFER];
+	FILE *fptr;
+	FILE *tmpfptr;
 
 	switch(field) {
 	case E_DATE:
@@ -256,7 +258,7 @@ int nc_edit_csv_record(int replaceln, int edit_field, struct LineData *ld) {
 
 		/* Have to add and delete here because the record will be placed
 		 * in a new position when the date changes */
-		delete_csv_record(replaceln - 1);
+		delete_csv_record(replace_line - 1);
 		insert_transaction_record(sort_record_csv(ld->month, ld->day, ld->year), ld);
 		return 0;
 
@@ -305,32 +307,9 @@ int nc_edit_csv_record(int replaceln, int edit_field, struct LineData *ld) {
 		goto err_fail;
 	}
 
-	FILE *fptr = open_record_csv("r");
-	FILE *tmpfptr = open_temp_csv();
-
-	do {
-		line = fgets(linebuff, sizeof(linebuff), fptr);
-
-		if (line == NULL) {
-			break;
-		}
-
-		linenum++;	
-
-		if (linenum != replaceln) {
-			fputs(line, tmpfptr);
-		} else if (linenum == replaceln) {
-			fprintf(tmpfptr, "%d,%d,%d,%s,%s,%d,%.2f\n",
-			ld->month, 
-			ld->day, 
-			ld->year, 
-			ld->category, 
-			ld->desc, 
-			ld->transtype, 
-			ld->amount
-		   );
-		}
-	} while (line != NULL);
+	fptr = open_record_csv("r");
+	line_data_to_string(replace_str, sizeof(replace_str), ld);
+	tmpfptr = replace_in_file(fptr, replace_str, replace_line);
 
 	/* mv_tmp_to_record_file() closes the file pointers */
 	mv_tmp_to_record_file(tmpfptr, fptr);
@@ -350,19 +329,20 @@ err_fail:
 	return -1;
 }
 
-int edit_csv_record(int linetoreplace, struct LineData *ld, int field) {
-	if (linetoreplace == 0) {
+int edit_csv_record(int replace_line, struct LineData *ld, int field) {
+	if (replace_line == 0) {
 		puts("Cannot delete line 0");
 		return -1;
 	}
 
-	linetoreplace += 1;
+	replace_line += 1;
 
-	char linebuff[LINE_BUFFER * 2];
-	char *line;
-	int linenum = 0;
+	char replace_str[LINE_BUFFER];
+	FILE *fptr;
+	FILE *tmpfptr;
 
 	switch(field) {
+
 	case 1:
 		ld->year = input_year();
 		ld->month = input_month();
@@ -370,52 +350,34 @@ int edit_csv_record(int linetoreplace, struct LineData *ld, int field) {
 
 		/* Have to add and delete here because the record will be placed
 		 * in a new position when the date changes */
-		delete_csv_record(linetoreplace - 1);
+		delete_csv_record(replace_line - 1);
 		insert_transaction_record(sort_record_csv(ld->month, ld->day, ld->year), ld);
 		return 0;
 
 	case 2:
 		ld->category = input_category(ld->month, ld->year);
 		break;
+
 	case 3:
 		ld->desc = input_str_retry("Enter Description");	
 		break;
+
 	case 4:
 		ld->transtype = input_transaction_type();
 		break;
+
 	case 5:
 		ld->amount = input_amount();
 		break;
+
 	default:
 		puts("Not a valid choice, exiting");
 		return -1;
 	}
 
-	FILE *fptr = open_record_csv("r");
-	FILE *tmpfptr = open_temp_csv();
-
-	do {
-		line = fgets(linebuff, sizeof(linebuff), fptr);
-
-		if (line == NULL) {
-			break;
-		}
-
-		linenum++;	
-		if (linenum != linetoreplace) {
-			fputs(line, tmpfptr);
-		} else if (linenum == linetoreplace) {
-			fprintf(tmpfptr, "%d,%d,%d,%s,%s,%d,%.2f\n",
-			ld->month, 
-			ld->day, 
-			ld->year, 
-			ld->category, 
-			ld->desc, 
-			ld->transtype, 
-			ld->amount
-		   );
-		}
-	} while (line != NULL);
+	fptr = open_record_csv("r");
+	line_data_to_string(replace_str, sizeof(replace_str), ld);
+	tmpfptr = replace_in_file(fptr, replace_str, replace_line);
 
 	/* mv_tmp_to_record_file() closes the file pointers */
 	mv_tmp_to_record_file(tmpfptr, fptr);
