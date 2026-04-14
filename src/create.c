@@ -20,6 +20,7 @@
 #include "create.h"
 #include "main.h"
 #include "categories.h"
+#include "edit_categories.h"
 #include "sorter.h"
 #include "tui.h"
 #include "tui_input.h"
