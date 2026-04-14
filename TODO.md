@@ -91,6 +91,8 @@
     - [X] Allow user to move categories to the top of the screen
     - [X] Add help menu
     - [X] Create one function for handling window borders in the read loop
+    - [ ] Add more to the overview function. Like money spent per category
+            breakdown.
 
 #### Refactors
     - [ ] After main feature set is done and working, refactor to make main.c
@@ -98,6 +100,10 @@
         - [X] Move read feature to its own source files
         - [X] Move create feature to its own source files
         - [X] Move input feature to its own source files
+        - [X] Move edit feature to its own source files
+        - [X] Move CLI feature to its own source files
+        - [ ] Move overview feature to its own source files
+    - [ ] cli.c/h
 
 #### Main Feature Set
     - [X] Create a transaction
