@@ -23,6 +23,7 @@
 #include "read_loops.h"
 #include "create.h"
 #include "main.h"
+#include "edit_transaction.h"
 #include "edit_categories.h"
 #include "get_date.h"
 #include "filemanagement.h"
