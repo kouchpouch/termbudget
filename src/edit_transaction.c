@@ -22,13 +22,16 @@
 #include "create.h"
 #include "sorter.h"
 #include "edit_transaction.h"
-#include "input.h"
 #include "tui.h"
 #include "tui_input.h"
-#include "tui_input_menu.h"
 #include "filemanagement.h"
 #include "file_write.h"
-#include "flags.h"
+
+static void delete_transaction(int line) {
+	FILE *fptr = open_record_csv("r");
+	FILE *tmpfptr = delete_in_file(fptr, line);
+	mv_tmp_to_record_file(tmpfptr, fptr);
+}
 
 int nc_select_field_to_edit(WINDOW *wptr) {
 	mvwchgat(wptr, 1, 0, -1, A_REVERSE, REVERSE_COLOR, NULL);
@@ -94,6 +97,8 @@ static int nc_edit_csv_record
 		return -1;
 	}
 
+	replace_line++;
+
 	enum EditRecordFields field = edit_field;
 	char replace_str[LINE_BUFFER];
 	FILE *fptr;
@@ -119,9 +124,7 @@ static int nc_edit_csv_record
 
 		/* Have to add and delete here because the record will be placed
 		 * in a new position when the date changes */
-		fptr = open_record_csv("r");
-		tmpfptr = delete_in_file(fptr, replace_line);
-		mv_tmp_to_record_file(tmpfptr, fptr);
+		delete_transaction(replace_line);
 		insert_transaction_record(sort_record_csv(ld->month, ld->day, ld->year), ld);
 		return 0;
 
@@ -190,12 +193,6 @@ static int nc_edit_csv_record
 
 err_fail:
 	return -1;
-}
-
-static void delete_transaction(int line) {
-	FILE *fptr = open_record_csv("r");
-	FILE *tmpfptr = delete_in_file(fptr, line);
-	mv_tmp_to_record_file(tmpfptr, fptr);
 }
 
 void nc_edit_transaction(long b) {
