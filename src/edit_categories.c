@@ -36,6 +36,16 @@ enum fields {
 	DEL_CATG
 };
 
+/* Returns true if a duplicate is found, false if not */
+bool duplicate_category_exists(struct Categories *psc, char *catg) {
+	for (size_t i = 0; i < psc->size; i++) {
+		if (strcasecmp(psc->categories[i], catg) == 0) {
+			return true;
+		}
+	}
+	return false;
+}
+
 static void replace_category(struct BudgetTokens *bt, long b) {
 	FILE *bfptr = open_budget_csv("r");
 	FILE *tmpfptr;
