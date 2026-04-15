@@ -18,6 +18,22 @@
 
 #include "main.h"
 #include "filemanagement.h"
+#include "flags.h"
+
+typedef struct __file_write_t {
+	char *string;
+	int line;
+	bool replace;
+	bool delete;
+} _file_write_t;
+
+static void print_lines_written_debug(int lines_written)
+{
+	if (debug_flag) {
+		printw("Lines written: %d\n", lines_written);
+		getch();
+	};
+}
 
 int budget_tokens_to_string
 (char *buffer, size_t size, struct BudgetTokens *bt)
@@ -67,6 +83,15 @@ static bool assert_null_check_when_deleting
 	}
 }
 
+static void print_invalid_opt_error_and_exit(void)
+{
+	puts("Cannot write a NULL string");
+	puts("OR");
+	puts("Attempting to delete a line from file");
+	puts("whilst providing a string to write");
+	exit(1);
+}
+
 /* 
  * Writes "write_str" to "tmpfptr" on line "write_line", the contents of
  * "fptr" will be written to "tmpfptr" as well.
@@ -83,20 +108,15 @@ static bool assert_null_check_when_deleting
  *
  * Returns number of lines written.
  */
-static int write_string_to_file
-(FILE *fptr, FILE *tmpfptr, char *write_str, int write_line, bool replace,
- bool delete)
+static void write_string_to_file
+(FILE *fptr, FILE* tmpfptr, _file_write_t *opts)
 {
 	char line_buffer[LINE_BUFFER];
 	char *line_str;
 	int current_line = 0;
 
-	if (!assert_null_check_when_deleting(write_str, delete)) {
-		puts("Cannot write a NULL string");
-		puts("OR");
-		puts("Attempting to delete a line from file");
-	    puts("whilst providing a string to write");
-		exit(1);
+	if (!assert_null_check_when_deleting(opts->string, opts->delete)) {
+		print_invalid_opt_error_and_exit();
 	}
 
 	rewind(fptr);
@@ -104,17 +124,17 @@ static int write_string_to_file
 	while ((line_str = fgets(line_buffer, sizeof(line_buffer), fptr)) != NULL) {
 		current_line++;	
 
-		if (current_line != write_line) {
+		if (current_line != opts->line) {
 			fputs(line_str, tmpfptr);
-		} else if (current_line == write_line && delete == false) {
-			if (!replace) {
+		} else if (current_line == opts->line && opts->delete == false) {
+			if (opts->replace == false) {
 				fputs(line_str, tmpfptr);
 			}
-			fputs(write_str, tmpfptr);
+			fputs(opts->string, tmpfptr);
 		}
 	}
 
-	return current_line;
+	print_lines_written_debug(current_line);
 }
 
 /* 
@@ -123,12 +143,15 @@ static int write_string_to_file
  */
 FILE *insert_into_file(FILE *fptr, char *insert_str, int insert_line)
 {
-	FILE *tmpfptr = open_temp_csv();
-	bool replace = false;
-	bool delete = false;
+	_file_write_t opts = {
+		.string = insert_str,
+		.line = insert_line,
+		.replace = false,
+		.delete = false
+	};
 
-	int lines_written = write_string_to_file(
-		fptr, tmpfptr, insert_str, insert_line, replace, delete);
+	FILE *tmpfptr = open_temp_csv();
+	write_string_to_file(fptr, tmpfptr, &opts);
 
 	return tmpfptr;
 }
@@ -139,12 +162,15 @@ FILE *insert_into_file(FILE *fptr, char *insert_str, int insert_line)
  */
 FILE *replace_in_file(FILE *fptr, char *replace_str, int replace_line)
 {
-	FILE *tmpfptr = open_temp_csv();
-	bool replace = true;
-	bool delete = false;
+	_file_write_t opts = {
+		.string = replace_str,
+		.line = replace_line,
+		.replace = true,
+		.delete = false
+	};
 
-	int lines_written =	write_string_to_file(
-		fptr, tmpfptr, replace_str, replace_line, replace, delete);
+	FILE *tmpfptr = open_temp_csv();
+	write_string_to_file(fptr, tmpfptr, &opts);
 
 	return tmpfptr;
 }
@@ -155,12 +181,15 @@ FILE *replace_in_file(FILE *fptr, char *replace_str, int replace_line)
  */
 FILE *delete_in_file(FILE *fptr, int delete_line)
 {
-	FILE *tmpfptr = open_temp_csv();
-	bool replace = false;
-	bool delete = true;
+	_file_write_t opts = {
+		.string = NULL,
+		.line = delete_line,
+		.replace = false,
+		.delete = true
+	};
 
-	int lines_written =	write_string_to_file(
-		fptr, tmpfptr, NULL, delete_line, replace, delete);
+	FILE *tmpfptr = open_temp_csv();
+	write_string_to_file(fptr, tmpfptr, &opts);
 
 	return tmpfptr;
 }
