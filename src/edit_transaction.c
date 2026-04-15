@@ -13,6 +13,7 @@
  * with this program. If not, see <https://www.gnu.org/licenses/>. 
  */
 
+#include <ncurses.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -33,18 +34,20 @@ static void delete_transaction(int line) {
 	mv_tmp_to_record_file(tmpfptr, fptr);
 }
 
-int nc_select_field_to_edit(WINDOW *wptr) {
-	mvwchgat(wptr, 1, 0, -1, A_REVERSE, REVERSE_COLOR, NULL);
-	keypad(wptr, true);
+static int nc_select_field_to_edit(WINDOW *wptr) {
 	int select = 1;
 	int c = 0;
+	int max_x = getmaxx(wptr);
+	int start_x = BOX_OFFSET;
+	int nx = max_x - (BOX_OFFSET * 2);
 
+	mvwchgat(wptr, 1, start_x, nx, A_REVERSE, REVERSE_COLOR, NULL);
+	keypad(wptr, true);
 	box(wptr, 0, 0);
 	mvwxcprintw(wptr, 0, "Select Field to Edit");
 	wrefresh(wptr);
+
 	while (c != KEY_F(QUIT) && c != 'q') { 
-		box(wptr, 0, 0);
-		mvwxcprintw(wptr, 0, "Select Field to Edit");
 		wrefresh(wptr);
 		c = wgetch(wptr);
 
@@ -53,26 +56,26 @@ int nc_select_field_to_edit(WINDOW *wptr) {
 		case('j'):
 		case(KEY_DOWN):
 			if (select + 1 <= (INPUT_WIN_ROWS - BOX_OFFSET)) {
-				mvwchgat(wptr, select, 0, -1, A_NORMAL, 0, NULL);
+				mvwchgat(wptr, select, start_x, nx, A_NORMAL, 0, NULL);
 				select++;
-				mvwchgat(wptr, select, 0, -1, A_REVERSE, REVERSE_COLOR, NULL);
+				mvwchgat(wptr, select, start_x, nx, A_REVERSE, REVERSE_COLOR, NULL);
 			} else {
-				mvwchgat(wptr, select, 0, -1, A_NORMAL, 0, NULL);
+				mvwchgat(wptr, select, start_x, nx, A_NORMAL, 0, NULL);
 				select = 1;
-				mvwchgat(wptr, select, 0, -1, A_REVERSE, REVERSE_COLOR, NULL);
+				mvwchgat(wptr, select, start_x, nx, A_REVERSE, REVERSE_COLOR, NULL);
 			}
 			break;
 
 		case('k'):
 		case(KEY_UP):
 			if (select - 1 > 0) {
-				mvwchgat(wptr, select, 0, -1, A_NORMAL, 0, NULL);
+				mvwchgat(wptr, select, start_x, nx, A_NORMAL, 0, NULL);
 				select--;
-				mvwchgat(wptr, select, 0, -1, A_REVERSE, REVERSE_COLOR, NULL);
+				mvwchgat(wptr, select, start_x, nx, A_REVERSE, REVERSE_COLOR, NULL);
 			} else {
-				mvwchgat(wptr, select, 0, -1, A_NORMAL, 0, NULL);
+				mvwchgat(wptr, select, start_x, nx, A_NORMAL, 0, NULL);
 				select = INPUT_WIN_ROWS - BOX_OFFSET;
-				mvwchgat(wptr, select, 0, -1, A_REVERSE, REVERSE_COLOR, NULL);
+				mvwchgat(wptr, select, start_x, nx, A_REVERSE, REVERSE_COLOR, NULL);
 			}
 			break;
 
@@ -197,26 +200,23 @@ err_fail:
 
 void nc_edit_transaction(long b) {
 	struct LineData *ld = malloc(sizeof(*ld));
-	enum EditRecordFields field;
-
 	if (ld == NULL) {
 		mem_alloc_fail();
-		return;
 	}
 
+	enum EditRecordFields field;
 	WINDOW *wptr_edit = create_input_subwindow();
 	FILE *fptr = open_record_csv("r+");
 	fseek(fptr, b, SEEK_SET);
+
 	unsigned int linenum = boff_to_linenum(b);
 	char linebuff[LINE_BUFFER];
 	char *line = fgets(linebuff, sizeof(linebuff), fptr);
-
 	if (line == NULL) {
 		exit(1);
 	}
 
 	tokenize_record(ld, &line);
-
 	nc_print_record_vert(wptr_edit, ld, BOX_OFFSET);
 
 	mvwprintw(wptr_edit, INPUT_WIN_ROWS - BOX_OFFSET, BOX_OFFSET, "%s", "Delete");
