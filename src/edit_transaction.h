@@ -16,16 +16,6 @@
 #ifndef EDIT_TRANSACTION_H
 #define EDIT_TRANSACTION_H
 
-enum EditRecordFields {
-	NO_SEL,
-	E_DATE,
-	E_CATG,
-	E_DESC,
-	E_TYPE,
-	E_AMNT,
-	DELETE,
-};
-
 void nc_edit_transaction(long b);
 
 #endif

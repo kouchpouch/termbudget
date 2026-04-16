@@ -28,64 +28,97 @@
 #include "filemanagement.h"
 #include "file_write.h"
 
-static void delete_transaction(int line) {
+enum EditRecordFields {
+	NO_RCRD_SELECT,
+	EDIT_RCRD_DATE,
+	EDIT_RCRD_CATG,
+	EDIT_RCRD_DESC,
+	EDIT_RCRD_TYPE,
+	EDIT_RCRD_AMNT,
+	DELETE,
+};
+
+typedef struct __field_select_scroll {
+	int y_cursor;
+	int choice;
+	int max_x;
+	int start_x;
+	int nx;
+} _field_select_scroll_t;
+
+static void delete_transaction(int line)
+{
 	FILE *fptr = open_record_csv("r");
 	FILE *tmpfptr = delete_in_file(fptr, line);
 	mv_tmp_to_record_file(tmpfptr, fptr);
 }
 
-static int nc_select_field_to_edit(WINDOW *wptr) {
-	int select = 1;
-	int c = 0;
-	int max_x = getmaxx(wptr);
-	int start_x = BOX_OFFSET;
-	int nx = max_x - (BOX_OFFSET * 2);
+static void edit_field_loop_scroll_prev
+(_field_select_scroll_t *fs, WINDOW *wptr)
+{
+	if (fs->y_cursor - 1 > 0) {
+		mvwchgat(wptr, fs->y_cursor, fs->start_x, fs->nx, A_NORMAL, 0, NULL);
+		fs->y_cursor--;
+		mvwchgat(wptr, fs->y_cursor, fs->start_x, fs->nx, A_REVERSE, REVERSE_COLOR, NULL);
+	} else {
+		mvwchgat(wptr, fs->y_cursor, fs->start_x, fs->nx, A_NORMAL, 0, NULL);
+		fs->y_cursor = INPUT_WIN_ROWS - BOX_OFFSET;
+		mvwchgat(wptr, fs->y_cursor, fs->start_x, fs->nx, A_REVERSE, REVERSE_COLOR, NULL);
+	}
+}
 
-	mvwchgat(wptr, 1, start_x, nx, A_REVERSE, REVERSE_COLOR, NULL);
+static void edit_field_loop_scroll_next
+(_field_select_scroll_t *fs, WINDOW *wptr)
+{
+	if (fs->y_cursor + 1 <= (INPUT_WIN_ROWS - BOX_OFFSET)) {
+		mvwchgat(wptr, fs->y_cursor, fs->start_x, fs->nx, A_NORMAL, 0, NULL);
+		fs->y_cursor++;
+		mvwchgat(wptr, fs->y_cursor, fs->start_x, fs->nx, A_REVERSE, REVERSE_COLOR, NULL);
+	} else {
+		mvwchgat(wptr, fs->y_cursor, fs->start_x, fs->nx, A_NORMAL, 0, NULL);
+		fs->y_cursor = 1;
+		mvwchgat(wptr, fs->y_cursor, fs->start_x, fs->nx, A_REVERSE, REVERSE_COLOR, NULL);
+	}
+}
+
+static int select_edit_field_loop(WINDOW *wptr)
+{
+	_field_select_scroll_t fs;
+	fs.y_cursor = 1;
+	fs.choice = 0;
+	fs.max_x = getmaxx(wptr);
+	fs.start_x = BOX_OFFSET;
+	fs.nx = fs.max_x - (BOX_OFFSET * 2);
+
+	mvwchgat(wptr, 1, fs.start_x, fs.nx, A_REVERSE, REVERSE_COLOR, NULL);
 	keypad(wptr, true);
 	box(wptr, 0, 0);
 	mvwxcprintw(wptr, 0, "Select Field to Edit");
 	wrefresh(wptr);
 
-	while (c != KEY_F(QUIT) && c != 'q') { 
+	while (1) { 
 		wrefresh(wptr);
-		c = wgetch(wptr);
+		fs.choice = wgetch(wptr);
 
-		switch(c) {
+		switch(fs.choice) {
 
 		case('j'):
 		case(KEY_DOWN):
-			if (select + 1 <= (INPUT_WIN_ROWS - BOX_OFFSET)) {
-				mvwchgat(wptr, select, start_x, nx, A_NORMAL, 0, NULL);
-				select++;
-				mvwchgat(wptr, select, start_x, nx, A_REVERSE, REVERSE_COLOR, NULL);
-			} else {
-				mvwchgat(wptr, select, start_x, nx, A_NORMAL, 0, NULL);
-				select = 1;
-				mvwchgat(wptr, select, start_x, nx, A_REVERSE, REVERSE_COLOR, NULL);
-			}
+			edit_field_loop_scroll_next(&fs, wptr);
 			break;
 
 		case('k'):
 		case(KEY_UP):
-			if (select - 1 > 0) {
-				mvwchgat(wptr, select, start_x, nx, A_NORMAL, 0, NULL);
-				select--;
-				mvwchgat(wptr, select, start_x, nx, A_REVERSE, REVERSE_COLOR, NULL);
-			} else {
-				mvwchgat(wptr, select, start_x, nx, A_NORMAL, 0, NULL);
-				select = INPUT_WIN_ROWS - BOX_OFFSET;
-				mvwchgat(wptr, select, start_x, nx, A_REVERSE, REVERSE_COLOR, NULL);
-			}
+			edit_field_loop_scroll_prev(&fs, wptr);
 			break;
 
 		case('\n'):
 		case('\r'):
-			return select;
+			return fs.y_cursor;
 
 		case('q'):
 		case(KEY_F(QUIT)):
-			break;
+			return 0;
 		}
 	}
 	return 0;
@@ -108,7 +141,7 @@ static int nc_edit_csv_record
 	FILE *tmpfptr;
 
 	switch(field) {
-	case E_DATE:
+	case EDIT_RCRD_DATE:
 		ld->year = nc_input_year();
 		if (ld->year < 0) {
 			goto err_fail;
@@ -131,28 +164,28 @@ static int nc_edit_csv_record
 		insert_transaction_record(sort_record_csv(ld->month, ld->day, ld->year), ld);
 		return 0;
 
-	case E_CATG:
+	case EDIT_RCRD_CATG:
 		ld->category = nc_select_category(ld->month, ld->year);
 		if (ld->category == NULL) {
 			goto err_fail;
 		}
 		break;
 
-	case E_DESC:
+	case EDIT_RCRD_DESC:
 		ld->desc = nc_input_string("Enter Description");
 		if (ld->desc == NULL) {
 			goto err_fail;
 		}
 		break;
 
-	case E_TYPE:
+	case EDIT_RCRD_TYPE:
 		ld->transtype = nc_input_transaction_type();
 		if (ld->transtype < 0) {
 			goto err_fail;
 		}
 		break;
 
-	case E_AMNT:
+	case EDIT_RCRD_AMNT:
 		ld->amount = nc_input_amount();
 		if (ld->amount < 0) {
 			goto err_fail;
@@ -165,11 +198,11 @@ static int nc_edit_csv_record
 	}
 
 	if (!nc_confirm_record(ld)) {
-		if (field == E_CATG) {
+		if (field == EDIT_RCRD_CATG) {
 			free(ld->category);
 			ld->category = NULL;
 		}
-		if (field == E_DESC) {
+		if (field == EDIT_RCRD_DESC) {
 			free(ld->desc);
 			ld->desc = NULL;
 		}
@@ -183,11 +216,11 @@ static int nc_edit_csv_record
 	/* mv_tmp_to_record_file() closes the file pointers */
 	mv_tmp_to_record_file(tmpfptr, fptr);
 
-	if (field == E_CATG) {
+	if (field == EDIT_RCRD_CATG) {
 		free(ld->category);
 		ld->category = NULL;
 	}
-	if (field == E_DESC) {
+	if (field == EDIT_RCRD_DESC) {
 		free(ld->desc);
 		ld->desc = NULL;
 	}
@@ -223,42 +256,42 @@ void nc_edit_transaction(long b) {
 	box(wptr_edit, 0, 0);
 	wrefresh(wptr_edit);
 
-	field = nc_select_field_to_edit(wptr_edit);
+	field = select_edit_field_loop(wptr_edit);
 
 	fclose(fptr);
 	nc_exit_window(wptr_edit);
 
 	switch(field) {
 
-	case NO_SEL:
+	case NO_RCRD_SELECT:
 		break;
 
-	case E_DATE:
+	case EDIT_RCRD_DATE:
 		nc_print_input_footer(stdscr);
-		nc_edit_csv_record(linenum, E_DATE, ld);
+		nc_edit_csv_record(linenum, EDIT_RCRD_DATE, ld);
 		break;
 
-	case E_CATG:
+	case EDIT_RCRD_CATG:
 		free(ld->category);
 		ld->category = NULL;
-		nc_edit_csv_record(linenum, E_CATG, ld);
+		nc_edit_csv_record(linenum, EDIT_RCRD_CATG, ld);
 		break;
 
-	case E_DESC:
+	case EDIT_RCRD_DESC:
 		nc_print_input_footer(stdscr);
 		free(ld->desc);
 		ld->desc = NULL;
-		nc_edit_csv_record(linenum, E_DESC, ld);
+		nc_edit_csv_record(linenum, EDIT_RCRD_DESC, ld);
 		break;
 
-	case E_TYPE:
+	case EDIT_RCRD_TYPE:
 		nc_print_input_footer(stdscr);
-		nc_edit_csv_record(linenum, E_TYPE, ld);
+		nc_edit_csv_record(linenum, EDIT_RCRD_TYPE, ld);
 		break;
 
-	case E_AMNT:
+	case EDIT_RCRD_AMNT:
 		nc_print_input_footer(stdscr);
-		nc_edit_csv_record(linenum, E_AMNT, ld);
+		nc_edit_csv_record(linenum, EDIT_RCRD_AMNT, ld);
 		break;
 
 	case DELETE:
