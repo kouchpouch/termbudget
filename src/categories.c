@@ -44,15 +44,15 @@ void free_category_nodes(CategoryNode **nodes) {
 }
 
 /*
- * Initializes CategoryNode.data. The data is a Vec which contains all of
+ * Initializes CategoryNode.data. The data is a _vector_t which contains all of
  * the file position byte offsets for the records that match the CategoryNode's
  * category.
  */
 static void init_category_nodes
-(CategoryNode *node, Vec *chunk, int m, int y)
+(CategoryNode *node, _vector_t *chunk, int m, int y)
 {
-	struct BudgetTokens *budget_tokens = tokenize_budget_fpi(node->catg_fp);
-	Vec *recs = get_records_by_any(m, -1, y, budget_tokens->catg, NULL, -1, -1, chunk);
+	_budget_tokens_t *budget_tokens = tokenize_budget_fpi(node->catg_fp);
+	_vector_t *recs = get_records_by_any(m, -1, y, budget_tokens->catg, NULL, -1, -1, chunk);
 	node->data = recs;
 	free_budget_tokens(budget_tokens);
 }
@@ -62,8 +62,8 @@ static void init_category_nodes
  * linked list of CategoryNodes.
  */
 CategoryNode **create_category_nodes(int m, int y) {
-	Vec *catgs_file_pos = get_budget_catg_by_date_bo(m, y);
-	Vec *chunk = get_records_by_mo_yr(m, y);
+	_vector_t *catgs_file_pos = get_budget_catg_by_date_bo(m, y);
+	_vector_t *chunk = get_records_by_mo_yr(m, y);
 	unsigned long n = catgs_file_pos->size;
 	CategoryNode **pnode = malloc(sizeof(CategoryNode *) * n);
 	if (pnode == NULL) {

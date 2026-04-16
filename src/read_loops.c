@@ -121,7 +121,7 @@ static bool shorten_string(WINDOW *wptr)
  * if the window is too small.
  */
 static void print_record_hr
-(WINDOW *wptr, struct ColWidth *cw, struct LineData *ld, int y)
+(WINDOW *wptr, struct ColWidth *cw, _transact_tokens_t *ld, int y)
 {
 	char *etc = "..";
 	int lenetc = (int)strlen(etc);
@@ -164,7 +164,7 @@ static void print_record_hr
 }
 
 static void print_category_hr
-(WINDOW *wptr, struct ColWidth *cw, struct BudgetTokens *bt, int y)
+(WINDOW *wptr, struct ColWidth *cw, _budget_tokens_t *bt, int y)
 {
 	char *etc = "..";
 	int lenetc = (int)strlen(etc);
@@ -214,7 +214,7 @@ static void print_init_budget_loop
 	int total_nodes = get_total_nodes(nodes);
 	char *line_str;
 	char linebuff[LINE_BUFFER];
-	struct LineData ld;
+	_transact_tokens_t ld;
 
 	/* 
 	 * For each category print the budget line and the records that match 
@@ -224,7 +224,7 @@ static void print_init_budget_loop
 	for (int i = 0; sc->displayed < max_y && sc->displayed < sc->total_rows 
 		 && i < total_nodes; i++) 
 	{
-		struct BudgetTokens *bt = tokenize_budget_fpi(nodes[i]->catg_fp);
+		_budget_tokens_t *bt = tokenize_budget_fpi(nodes[i]->catg_fp);
 		print_category_hr(wptr, cw, bt, sc->displayed);
 		mvwchgat(wptr, sc->displayed, 0, -1, A_NORMAL, category_color(i), NULL); 
 		sc->displayed++;
@@ -291,7 +291,7 @@ static void init_scroll_cursor(struct ScrollCursor *sc, CategoryNode **nodes)
 	sc->sidebar_idx = 0;
 }
 
-static void print_balances_text(WINDOW *wptr, Vec *psc)
+static void print_balances_text(WINDOW *wptr, _vector_t *psc)
 {
 	struct Balances pb_, *pb = &pb_;
 	calculate_balance(pb, psc);
@@ -311,7 +311,7 @@ static void print_balances_text(WINDOW *wptr, Vec *psc)
 /* Draws all of the window borders, then the border text on top. Call this
  * function any time the borders/text need to be updated. */
 static void draw_read_window_borders_and_text
-(struct ReadWins *wins, Vec *psc)
+(struct ReadWins *wins, _vector_t *psc)
 {
 	// Draw borders in order for correct intersecting lines
 	if (wins->sidebar_parent != NULL || wins->sidebar_body != NULL) {
@@ -335,7 +335,7 @@ static int show_detail_subwindow(char *line)
 	box(wptr_detail, 0, 0);
 	mvwxcprintw(wptr_detail, 0, "Details");
 
-	struct LineData linedata_, *ld = &linedata_;
+	_transact_tokens_t linedata_, *ld = &linedata_;
 	tokenize_record(ld, &line);
 
 	nc_print_record_vert(wptr_detail, ld, BOX_OFFSET);
@@ -374,13 +374,13 @@ static void nc_scroll_prev
 	}
 
 	if (catg) {
-		struct BudgetTokens *bt = tokenize_budget_fpi(b);
+		_budget_tokens_t *bt = tokenize_budget_fpi(b);
 		wmove(wptr, 0, 0);
 		winsertln(wptr);
 		print_category_hr(wptr, cw, bt, 0);
 		free_budget_tokens(bt);
 	} else {
-		struct LineData linedata_, *ld = &linedata_;
+		_transact_tokens_t linedata_, *ld = &linedata_;
 		tokenize_record(ld, &line_str);
 		wmove(wptr, 0, 0);
 		winsertln(wptr);
@@ -401,14 +401,14 @@ static void nc_scroll_next
 	}
 
 	if (catg) {
-		struct BudgetTokens *bt = tokenize_budget_fpi(b);
+		_budget_tokens_t *bt = tokenize_budget_fpi(b);
 		wmove(wptr, 0, 0);
 		wdeleteln(wptr);
 		wmove(wptr, getmaxy(wptr) - 1, 0);
 		print_category_hr(wptr, cw, bt, getmaxy(wptr) - 1);
 		free_budget_tokens(bt);
 	} else {
-		struct LineData linedata_, *ld = &linedata_;
+		_transact_tokens_t linedata_, *ld = &linedata_;
 		tokenize_record(ld, &line_str);
 		wmove(wptr, 0, 0);
 		wdeleteln(wptr);
@@ -421,7 +421,7 @@ static void nc_scroll_next
 /* Returns 1 if the text was scrolled down, 0 if a normal scroll occured */
 static int nc_scroll_prev_read_loop
 (WINDOW *wptr, struct ScrollCursor *sc, struct ColWidth *cw, FILE *fptr, 
- Vec *psc)
+ _vector_t *psc)
 {
 	int retval = 0;
 
@@ -449,7 +449,7 @@ static int nc_scroll_prev_read_loop
 /* Returns 1 if the text was scrolled up, 0 if a normal scroll occured */
 static int nc_scroll_next_read_loop
 (WINDOW *wptr, struct ScrollCursor *sc, struct ColWidth *cw, FILE *fptr, 
- Vec *psc)
+ _vector_t *psc)
 {
 	int retval = 0;
 
@@ -641,7 +641,7 @@ static void refresh_budget_loop
  */
 void nc_read_budget_loop
 (struct ReadWins *wins, FILE *rfptr, FILE *bfptr, struct SelRecord *sr,
- Vec *psc, CategoryNode **nodes)
+ _vector_t *psc, CategoryNode **nodes)
 {
 	struct ColWidth cw_, *cw = &cw_;
 	struct ScrollCursor sc_, *sc = &sc_;
@@ -840,11 +840,11 @@ static void init_scroll_cursor_no_category(struct ScrollCursor *sc)
 /* Print initial lines based on screen size for nc_read_loop */
 static void nc_print_initial_read_loop
 (WINDOW *wptr, struct ScrollCursor *sc, struct ColWidth *cw, 
- FILE *fptr, Vec *psc)
+ FILE *fptr, _vector_t *psc)
 {
 	char *line_str;
 	char linebuff[LINE_BUFFER];
-	struct LineData ld;
+	_transact_tokens_t ld;
 
 	/* For safe cast */
 	assert(sc->displayed >= 0);
@@ -872,7 +872,7 @@ static void nc_print_initial_read_loop
  * of psc->data. Sort occurs before this function in nc_read_setup.
  */
 void nc_read_loop
-(struct ReadWins *wins, FILE *fptr, struct SelRecord *sr, Vec *psc,
+(struct ReadWins *wins, FILE *fptr, struct SelRecord *sr, _vector_t *psc,
  CategoryNode **nodes)
 {
 	struct ColWidth cw_, *cw = &cw_;

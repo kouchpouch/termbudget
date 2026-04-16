@@ -21,7 +21,7 @@
 /*
  * CategoryNode is to be used as a doubly linked list which includes members
  * of CategoryNode pointer next and prev, long catg_fp stores the byte offset
- * of the category in BUDGET_DIR, and a Vec containing all
+ * of the category in BUDGET_DIR, and a _vector_t containing all
  * records in RECORD_DIR that match the category field at catg_fp
  * in BUDGET_DIR.
  */
@@ -31,7 +31,7 @@ struct CategoryNode {
 	CategoryNode *next;
 	CategoryNode *prev;
 	long catg_fp;
-	Vec *data;
+	_vector_t *data;
 };
 
 typedef struct __category_list_t {

@@ -187,7 +187,7 @@ int init_sidebar_body(WINDOW *wptr, CategoryNode **nodes, size_t i)
 	double exp;
 
 	while (y < getmaxy(wptr) - 4) {
-		struct BudgetTokens *bt = tokenize_budget_fpi(nodes[i]->catg_fp);
+		_budget_tokens_t *bt = tokenize_budget_fpi(nodes[i]->catg_fp);
 		exp = get_expenditures_per_category(bt);
 		if (nodes[i]->next == NULL) {
 			y += print_body_categories(bt->catg, wptr, y, x, i);
@@ -217,7 +217,7 @@ int init_sidebar_body(WINDOW *wptr, CategoryNode **nodes, size_t i)
 	return n_displayed;
 }
 
-static int print_parent_header(WINDOW *wptr, Vec *psc, double leftover)
+static int print_parent_header(WINDOW *wptr, _vector_t *psc, double leftover)
 {
 	int x = 1;
 	int y = 1;
@@ -256,7 +256,7 @@ void draw_sidebar_parent_border(WINDOW *wptr)
 	write_parent_title(wptr);
 }
 
-void init_sidebar_parent(WINDOW *wptr, Vec *psc, double leftover)
+void init_sidebar_parent(WINDOW *wptr, _vector_t *psc, double leftover)
 {
 	draw_sidebar_parent_border(wptr);
 	print_parent_header(wptr, psc, leftover);

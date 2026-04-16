@@ -19,6 +19,7 @@
 #include <ctype.h>
 #include <limits.h>
 
+#include "parser.h"
 #include "tui.h"
 #include "tui_input.h"
 #include "tui_input_menu.h"
@@ -240,7 +241,7 @@ bool nc_confirm_input(char *msg)
 	return retval;
 }
 
-bool nc_confirm_record(struct LineData *ld)
+bool nc_confirm_record(_transact_tokens_t *ld)
 {
 	WINDOW *wptr = create_input_subwindow();
 	int c = 0;

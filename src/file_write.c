@@ -19,6 +19,7 @@
 #include "main.h"
 #include "filemanagement.h"
 #include "flags.h"
+#include "parser.h"
 
 typedef struct __file_write_t {
 	char *string;
@@ -36,7 +37,7 @@ static void print_lines_written_debug(int lines_written)
 }
 
 int budget_tokens_to_string
-(char *buffer, size_t size, struct BudgetTokens *bt)
+(char *buffer, size_t size, _budget_tokens_t *bt)
 {
 	return snprintf(buffer, size, 
 		"%d,%d,%s,%d,%.2f\n", 
@@ -48,7 +49,7 @@ int budget_tokens_to_string
 }
 
 int line_data_to_string 
-(char *buffer, size_t size, struct LineData *ld)
+(char *buffer, size_t size, _transact_tokens_t *ld)
 {
 	return snprintf(buffer, size,
 		  "%d,%d,%d,%s,%s,%d,%.2f\n",

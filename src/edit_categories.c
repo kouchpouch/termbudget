@@ -54,7 +54,7 @@ bool duplicate_category_exists(_category_list_t *psc, char *catg)
 	return false;
 }
 
-static void replace_category(struct BudgetTokens *bt, long b)
+static void replace_category(_budget_tokens_t *bt, long b)
 {
 	FILE *bfptr = open_budget_csv("r");
 	FILE *tmpfptr;
@@ -68,7 +68,7 @@ static void replace_category(struct BudgetTokens *bt, long b)
 	mv_tmp_to_budget_file(tmpfptr, bfptr);
 }
 
-static void insert_category(struct BudgetTokens *bt, int insert_line)
+static void insert_category(_budget_tokens_t *bt, int insert_line)
 {
 	FILE *bfptr = open_budget_csv("r");
 	FILE *tmpfptr;
@@ -145,7 +145,7 @@ void mv_category_to_top(CategoryNode **nodes, size_t i)
 
 	long first = nodes[0]->catg_fp;
 	unsigned int insert_ln = boff_to_linenum_budget(first);
-	struct BudgetTokens *bt = tokenize_budget_fpi(nodes[i]->catg_fp);
+	_budget_tokens_t *bt = tokenize_budget_fpi(nodes[i]->catg_fp);
 
 	delete_category(nodes[i]->catg_fp);
 	insert_category(bt, insert_ln);
@@ -177,7 +177,7 @@ static int select_catg_field(void)
 	return retval;
 }
 
-static int rename_category(struct BudgetTokens *bt)
+static int rename_category(_budget_tokens_t *bt)
 {
 	_category_list_t *psc = get_budget_catg_by_date(bt->m, bt->y);
 	char *catg = nc_input_string("Renaming Category");
@@ -198,7 +198,7 @@ static int rename_category(struct BudgetTokens *bt)
 	}
 }
 
-static void free_lda(struct LineData **lda, size_t sz)
+static void free_lda(_transact_tokens_t **lda, size_t sz)
 {
 	for (size_t i = 0; i < sz; i++) {
 		free_tokenized_record_strings(lda[i]);
@@ -213,7 +213,7 @@ static void free_lda(struct LineData **lda, size_t sz)
  * one by one. Instead we want to have an array of line numbers to replace
  * all in one chunk. The records are already sorted, we just need a way to
  * store their current line number and some index to determine which
- * linedata to print at which line. Maybe a struct LineData **ld_head
+ * linedata to print at which line. Maybe a _transact_tokens_t **ld_head
  * indexed to match a vec of FPIs. */
 
 /*---*/
@@ -231,14 +231,14 @@ static int replace_many_records_categories
 	size_t n_recs = nodes[node_idx]->data->size;
 	size_t del_lines[n_recs];
 
-	struct LineData **lda = malloc(sizeof(struct LineData) * n_recs);
+	_transact_tokens_t **lda = malloc(sizeof(_transact_tokens_t) * n_recs);
 
 	if (lda == NULL) {
 		mem_alloc_fail();
 	}
 
 	for (size_t i = 0; i < n_recs; i++) {
-		lda[i] = malloc(sizeof(struct LineData));
+		lda[i] = malloc(sizeof(_transact_tokens_t));
 		if (lda[i] == NULL) {
 			mem_alloc_fail();
 		}
@@ -294,7 +294,7 @@ void nc_edit_category(long node_idx, long nmembers, CategoryNode **nodes)
 	long b = nodes[node_idx]->catg_fp;
 	double tmp = 0.0;
 	enum fields select;
-	struct BudgetTokens *bt;
+	_budget_tokens_t *bt;
 
 	select = select_catg_field();
 	if (select < 0) {

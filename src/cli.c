@@ -27,7 +27,7 @@
 #include "file_write.h"
 #include "flags.h"
 
-static void print_record_vert(struct LineData *ld)
+static void print_record_vert(_transact_tokens_t *ld)
 {
 	printf(
 		"1.) Date-->  %d/%d/%d\n"
@@ -45,7 +45,7 @@ static void print_record_vert(struct LineData *ld)
 	);
 }
 
-static void print_record_hr(struct LineData *ld)
+static void print_record_hr(_transact_tokens_t *ld)
 {
 	printf(
 		"%d.) %d/%d/%d Category: %s Description: %s, %s, $%.2f\n",
@@ -87,9 +87,9 @@ static int delete_csv_record(int linetodelete)
 /* An old CLI function */
 static void add_transaction(void)
 {
-	struct LineData userlinedata_, *uld = &userlinedata_;
+	_transact_tokens_t userlinedata_, *uld = &userlinedata_;
 	FILE *fptr = open_record_csv("r");
-	Vec *pidx = index_csv(fptr);
+	_vector_t *pidx = index_csv(fptr);
 	fclose(fptr);
 
 	uld->year = input_year();
@@ -128,7 +128,7 @@ err_category:
 }
 
 static int edit_csv_record
-(int replace_line, struct LineData *ld, int field)
+(int replace_line, _transact_tokens_t *ld, int field)
 {
 	if (replace_line == 0) {
 		puts("Cannot delete line 0");
@@ -243,9 +243,9 @@ static void cli_read_csv(void)
 	bool month_record_exists = false;
 	bool year_record_exists = false;
 
-	struct LineData linedata_, *ld = &linedata_;
+	_transact_tokens_t linedata_, *ld = &linedata_;
 
-	Vec *years = get_years_with_data(fptr, 2);
+	_vector_t *years = get_years_with_data(fptr, 2);
 	rewind(fptr);
 
 	while (year_record_exists == false) {
@@ -266,7 +266,7 @@ static void cli_read_csv(void)
 	years = NULL;
 	rewind(fptr);
 
-	Vec *months = get_months_with_data(fptr, useryear, 1);
+	_vector_t *months = get_months_with_data(fptr, useryear, 1);
 
 	while (month_record_exists == false) {
 		usermonth = input_month();
@@ -324,14 +324,14 @@ static void cli_edit_transaction(void)
 {
 	int target;
 	int humantarget;
-	struct LineData linedata, *ld = &linedata;
+	_transact_tokens_t linedata, *ld = &linedata;
 
 	FILE *fptr = open_record_csv("r+");
 	assert(ftell(fptr) == 0);
 
 	cli_read_csv();
 	
-	Vec *pidx = index_csv(fptr);
+	_vector_t *pidx = index_csv(fptr);
 
 	assert(pidx->size < INT_MAX);
 
@@ -362,7 +362,7 @@ static void cli_edit_transaction(void)
 
 	tokenize_record(ld, &str);
 
-	struct LineData *pLd = malloc(sizeof(*ld));
+	_transact_tokens_t *pLd = malloc(sizeof(*ld));
 	if (pLd == NULL) {
 		free(pidx);
 		fclose(fptr);

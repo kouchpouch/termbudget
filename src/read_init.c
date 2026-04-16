@@ -60,7 +60,7 @@ static const char *abbr_months[] = {
 	"DEC"
 };
 
-static bool duplicate_data_exists(Vec *vec, long y)
+static bool duplicate_data_exists(_vector_t *vec, long y)
 {
 	for (size_t i = 0; i < vec->size; i++) {
 		if (vec->data[i] == y) {
@@ -70,7 +70,7 @@ static bool duplicate_data_exists(Vec *vec, long y)
 	return false;
 }
 
-static void combine_dedup_vectors(Vec *vec1, Vec *vec2, Vec *result)
+static void combine_dedup_vectors(_vector_t *vec1, _vector_t *vec2, _vector_t *result)
 {
 	size_t tmp1;
 	size_t tmp2;
@@ -118,11 +118,11 @@ static void combine_dedup_vectors(Vec *vec1, Vec *vec2, Vec *result)
 	}
 }
 
-/* Returns a Vec of deduplicated and sorted data from record_years and 
+/* Returns a _vector_t of deduplicated and sorted data from record_years and 
  * budget_years */
-static Vec *consolidate_years(Vec *vec1, Vec *vec2)
+static _vector_t *consolidate_years(_vector_t *vec1, _vector_t *vec2)
 {
-	Vec *result = malloc(sizeof(*result) 
+	_vector_t *result = malloc(sizeof(*result) 
 					     + (sizeof(long) * vec1->size) 
 					     + (sizeof(long) * vec2->size));
 
@@ -143,16 +143,16 @@ static Vec *consolidate_years(Vec *vec1, Vec *vec2)
 }
 
 /* Retrieves years with data from RECORD_DIR and BUDGET_DIR CSVs, combines
- * and deduplicates the data, and returns a malloc'd Vec containing an array
+ * and deduplicates the data, and returns a malloc'd _vector_t containing an array
  * of years that can be selected for viewing. */
-static Vec *init_select_year(void)
+static _vector_t *init_select_year(void)
 {
 	FILE *rfptr = open_record_csv("r");
 	FILE *bfptr = open_budget_csv("r");
 
-	Vec *pr = get_years_with_data(rfptr, 2);
-	Vec *pb = get_years_with_data(bfptr, 1);
-	Vec *retval;
+	_vector_t *pr = get_years_with_data(rfptr, 2);
+	_vector_t *pb = get_years_with_data(bfptr, 1);
+	_vector_t *retval;
 
 	if (pr == NULL && pb != NULL) {
 		fclose(rfptr);
@@ -181,9 +181,9 @@ static Vec *init_select_year(void)
 	return retval;
 }
 
-static Vec *consolidate_months(Vec *vec1, Vec *vec2)
+static _vector_t *consolidate_months(_vector_t *vec1, _vector_t *vec2)
 {
-	Vec *result = malloc(sizeof(*result) + (sizeof(long) * MONTHS_IN_YEAR));
+	_vector_t *result = malloc(sizeof(*result) + (sizeof(long) * MONTHS_IN_YEAR));
 	if (result == NULL) {
 		free(vec1);
 		free(vec2);
@@ -201,16 +201,16 @@ static Vec *consolidate_months(Vec *vec1, Vec *vec2)
 }
 
 /* Retrieves months with data from RECORD_DIR and BUDGET_DIR CSVs, combines
- * and deduplicates the data, and returns a malloc'd Vec containing an array
+ * and deduplicates the data, and returns a malloc'd _vector_t containing an array
  * of months that can be selected for viewing. */
-static Vec *init_select_month(int year)
+static _vector_t *init_select_month(int year)
 {
 	FILE *rfptr = open_record_csv("r");
 	FILE *bfptr = open_budget_csv("r");
 
-	Vec *pr = get_months_with_data(rfptr, year, 1);
-	Vec *pb = get_months_with_data(bfptr, year, 0);
-	Vec *retval;
+	_vector_t *pr = get_months_with_data(rfptr, year, 1);
+	_vector_t *pb = get_months_with_data(bfptr, year, 0);
+	_vector_t *retval;
 
 	fclose(rfptr);
 	fclose(bfptr);
@@ -227,7 +227,7 @@ static Vec *init_select_month(int year)
 
 /* Iterates through 'months' vector's data member and returns the index of
  * the current month */
-static int get_current_mo_idx(Vec *months)
+static int get_current_mo_idx(_vector_t *months)
 {
 	int mo = get_current_month();
 
@@ -244,7 +244,7 @@ static int get_current_mo_idx(Vec *months)
 /* On a non-select, the return value is the inverted menukeys value */
 static int select_month(WINDOW *wptr, int year)
 {
-	Vec *months_data = init_select_month(year);
+	_vector_t *months_data = init_select_month(year);
 
 	int selected_month = 0;
 	int monlen = strlen(abbr_months[0]);
@@ -349,7 +349,7 @@ static int select_year(WINDOW *wptr)
 {
 	keypad(wptr, true);	
 
-	Vec *years = init_select_year();
+	_vector_t *years = init_select_year();
 	if (years == NULL) {
 		return -(NO_RCRD);
 	}
@@ -498,9 +498,9 @@ static void get_dates(struct SelRecord *sr, struct Datevals *dates)
 static void debug_fields(void)
 {
 	FILE *bfptr = open_budget_csv("r");
-	struct BudgetHeader *bh = parse_budget_header(bfptr);
+	_budget_header_t *bh = parse_budget_header(bfptr);
 	FILE *fptr = open_record_csv("r");
-	struct RecordHeader *rh = parse_record_header(fptr);
+	_record_header_t *rh = parse_record_header(fptr);
 
 	move(0,0);
 
@@ -533,9 +533,9 @@ static void debug_fields(void)
  * just moving memory around for the sake of portability and other sorting
  * selections.
  */
-static Vec *sort_by_date(FILE *fptr, Vec *pidx, Vec *plines)
+static _vector_t *sort_by_date(FILE *fptr, _vector_t *pidx, _vector_t *plines)
 {
-	Vec *psbd = malloc(sizeof(*psbd) + (sizeof(long) * plines->size));
+	_vector_t *psbd = malloc(sizeof(*psbd) + (sizeof(long) * plines->size));
 	if (psbd == NULL) {
 		mem_alloc_fail();
 	}
@@ -554,10 +554,10 @@ static Vec *sort_by_date(FILE *fptr, Vec *pidx, Vec *plines)
 
 /* Returns an array of integers representing the byte offsets of records 
  * sorted by category */
-static Vec *sort_by_category
-(FILE *fptr, Vec *pidx, Vec *plines, int yr, int mo)
+static _vector_t *sort_by_category
+(FILE *fptr, _vector_t *pidx, _vector_t *plines, int yr, int mo)
 {
-	Vec *prsc = malloc(sizeof(*prsc) + (sizeof(long) * REALLOC_INCR));
+	_vector_t *prsc = malloc(sizeof(*prsc) + (sizeof(long) * REALLOC_INCR));
 	if (prsc == NULL) {
 		free(pidx);
 		free(plines);
@@ -583,7 +583,7 @@ static Vec *sort_by_category
 			 * to mark the spaces between categories */
 			if (prsc->size + 1 >= prsc->capacity) {
 				prsc->capacity += REALLOC_INCR;
-				Vec *tmp = realloc(prsc, sizeof(*prsc) 
+				_vector_t *tmp = realloc(prsc, sizeof(*prsc) 
 					    		   + (prsc->capacity * sizeof(char *)));
 				if (tmp == NULL) {
 					free(prsc);
@@ -671,7 +671,7 @@ static struct Plannedvals *get_total_planned(CategoryNode **nodes)
 
 	int i = 0;
 	while (1) {
-		struct BudgetTokens *bt = tokenize_budget_fpi(nodes[i]->catg_fp);
+		_budget_tokens_t *bt = tokenize_budget_fpi(nodes[i]->catg_fp);
 		if (nodes[i]->next == NULL) {
 			if (bt->transtype == 1) {
 				pv->inc += bt->amount;
@@ -728,9 +728,9 @@ void nc_read_setup
 
 	CategoryNode **nodes;
 	FILE *fptr = open_record_csv("r");
-	Vec *pidx = index_csv(fptr);
-	Vec *plines;
-	Vec *psc;
+	_vector_t *pidx = index_csv(fptr);
+	_vector_t *plines;
+	_vector_t *psc;
 	size_t n_records;
 	bool sidebar_exists;
 	/* To hold the return value of wgetch()/getch() */

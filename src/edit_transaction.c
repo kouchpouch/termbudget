@@ -126,7 +126,7 @@ static int select_edit_field_loop(WINDOW *wptr)
 
 /* Ncurses implementation to do the actual file writing */
 static int nc_edit_csv_record
-(int replace_line, int edit_field, struct LineData *ld)
+(int replace_line, int edit_field, _transact_tokens_t *ld)
 {
 	if (replace_line == 0) {
 		puts("Cannot delete line 0");
@@ -233,7 +233,7 @@ err_fail:
 
 void nc_edit_transaction(long b)
 {
-	struct LineData *ld = malloc(sizeof(*ld));
+	_transact_tokens_t *ld = malloc(sizeof(*ld));
 	if (ld == NULL) {
 		mem_alloc_fail();
 	}

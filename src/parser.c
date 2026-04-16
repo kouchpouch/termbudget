@@ -75,7 +75,7 @@ void seek_n_fields(char **line, int n)
 	}
 }
 
-static void init_record_header_struct(struct RecordHeader *rh)
+static void init_record_header_struct(_record_header_t *rh)
 {
 	rh->month = -1;
 	rh->day = -1;
@@ -87,9 +87,9 @@ static void init_record_header_struct(struct RecordHeader *rh)
 	rh->n_fields = -1;
 }
 
-struct RecordHeader *parse_record_header(FILE *fptr)
+_record_header_t *parse_record_header(FILE *fptr)
 {
-	struct RecordHeader *rh = malloc(sizeof(*rh));
+	_record_header_t *rh = malloc(sizeof(*rh));
 	init_record_header_struct(rh);
 	if (rh == NULL) {
 		mem_alloc_fail();
@@ -147,7 +147,7 @@ end_of_str:
 	return rh;
 }
 
-static void init_budget_header_struct(struct BudgetHeader *bh)
+static void init_budget_header_struct(_budget_header_t *bh)
 {
 	bh->month = -1;
 	bh->year = -1;
@@ -157,9 +157,9 @@ static void init_budget_header_struct(struct BudgetHeader *bh)
 	bh->n_fields = -1;
 }
 
-struct BudgetHeader *parse_budget_header(FILE *fptr)
+_budget_header_t *parse_budget_header(FILE *fptr)
 {
-	struct BudgetHeader *bh = malloc(sizeof(*bh));
+	_budget_header_t *bh = malloc(sizeof(*bh));
 	init_budget_header_struct(bh);
 	if (bh == NULL) {
 		mem_alloc_fail();
@@ -242,7 +242,7 @@ int get_num_fields(FILE *fptr)
 	return n;
 }
 
-void free_budget_tokens(struct BudgetTokens *pbt)
+void free_budget_tokens(_budget_tokens_t *pbt)
 {
 	free(pbt->catg);
 	free(pbt);
@@ -254,7 +254,7 @@ void free_budget_tokens(struct BudgetTokens *pbt)
  */
 bool category_exists_in_budget(char *catg, int month, int year)
 {
-	struct BudgetTokens bt, *pbt = &bt;
+	_budget_tokens_t bt, *pbt = &bt;
 	int i = 1;
 
 	while ((pbt = tokenize_budget_line(i)) != NULL) {
@@ -299,11 +299,11 @@ bool month_or_year_exists(int m, int y)
 }
 
 /* Returns all income records subtracted by expense records */
-double get_expenditures_per_category(struct BudgetTokens *bt)
+double get_expenditures_per_category(_budget_tokens_t *bt)
 {
 	double total = 0;
-	Vec *pi = get_records_by_any(bt->m, -1, bt->y, bt->catg, NULL, TT_INCOME, -1, NULL);
-	Vec *pe = get_records_by_any(bt->m, -1, bt->y, bt->catg, NULL, TT_EXPENSE, -1, NULL);
+	_vector_t *pi = get_records_by_any(bt->m, -1, bt->y, bt->catg, NULL, TT_INCOME, -1, NULL);
+	_vector_t *pe = get_records_by_any(bt->m, -1, bt->y, bt->catg, NULL, TT_EXPENSE, -1, NULL);
 	for (size_t i = 0; i < pi->size; i++) {
 		total += get_record_amount(pi->data[i]);
 	}
@@ -315,9 +315,9 @@ double get_expenditures_per_category(struct BudgetTokens *bt)
 	return total;
 }
 
-Vec *get_years_with_data(FILE *fptr, int field)
+_vector_t *get_years_with_data(FILE *fptr, int field)
 {
-	Vec *pr = malloc(sizeof(*pr) + sizeof(long) * REALLOC_INCR);
+	_vector_t *pr = malloc(sizeof(*pr) + sizeof(long) * REALLOC_INCR);
 	if (pr == NULL) {
 		mem_alloc_fail();
 	}
@@ -352,7 +352,7 @@ Vec *get_years_with_data(FILE *fptr, int field)
 	while ((str = fgets(linebuff, sizeof(linebuff), fptr)) != NULL) {
 		if (pr->size >= pr->capacity) {
 			pr->capacity += REALLOC_INCR;
-			Vec *tmp = realloc(pr, sizeof(*pr) + (sizeof(long) * pr->capacity));
+			_vector_t *tmp = realloc(pr, sizeof(*pr) + (sizeof(long) * pr->capacity));
 			if (tmp == NULL) {
 				free(pr);
 				mem_alloc_fail();
@@ -371,7 +371,7 @@ Vec *get_years_with_data(FILE *fptr, int field)
 	return pr;
 }
 
-static void init_data_array(Vec *vec)
+static void init_data_array(_vector_t *vec)
 {
 	for (size_t i = 0; i < vec->size; i++) {
 		vec->data[i] = 0;
@@ -385,11 +385,11 @@ static void init_data_array(Vec *vec)
  * temporary and a new function will be added to find which fields to read
  * based on the header.
  */
-Vec *get_months_with_data(FILE *fptr, int matchyear, int field)
+_vector_t *get_months_with_data(FILE *fptr, int matchyear, int field)
 {
 	char linebuff[LINE_BUFFER];
 	char *str;
-	Vec *months = malloc(sizeof(*months) + (sizeof(long) * MONTHS_IN_YEAR));
+	_vector_t *months = malloc(sizeof(*months) + (sizeof(long) * MONTHS_IN_YEAR));
 
 	if (months == NULL) {
 		mem_alloc_fail();
@@ -425,10 +425,10 @@ Vec *get_months_with_data(FILE *fptr, int matchyear, int field)
 	return months;
 }
 
-Vec *get_matching_line_nums(FILE *fptr, int month, int year)
+_vector_t *get_matching_line_nums(FILE *fptr, int month, int year)
 {
 	rewind(fptr);
-	Vec *pl = malloc(sizeof(*pl) + (sizeof(long) * REALLOC_INCR));
+	_vector_t *pl = malloc(sizeof(*pl) + (sizeof(long) * REALLOC_INCR));
 	if (pl == NULL) {
 		mem_alloc_fail();
 	}
@@ -459,7 +459,7 @@ Vec *get_matching_line_nums(FILE *fptr, int month, int year)
 		if (year == line_year && month == line_month) {
 			if (pl->size >= pl->capacity) {
 				pl->capacity += REALLOC_INCR;
-				Vec *tmp = 
+				_vector_t *tmp = 
 					realloc(pl, sizeof(*pl) + (sizeof(long) * pl->capacity));
 				if (tmp == NULL) {
 					free(pl);
@@ -536,27 +536,27 @@ duplicate_exists:
 	return pc; // Struct and each index of categories must be free'd
 }
 
-Vec *get_records_by_yr(int year)
+_vector_t *get_records_by_yr(int year)
 {
 	return get_records_by_any(-1, -1, year, NULL, NULL, -1, -1, NULL);
 }
 
-Vec *get_records_by_mo_yr(int month, int year)
+_vector_t *get_records_by_mo_yr(int month, int year)
 {
 	return get_records_by_any(month, -1, year, NULL, NULL, -1, -1, NULL);
 }
 
-Vec *get_records_by_any
+_vector_t *get_records_by_any
 (int month, int day, int year, char *category, char *description, 
- int transtype, double amount, Vec *chunk) 
+ int transtype, double amount, _vector_t *chunk) 
 {
 	FILE *fptr = open_record_csv("r");
-	Vec *prbc = malloc(sizeof(*prbc) + (sizeof(long) * REALLOC_INCR));
+	_vector_t *prbc = malloc(sizeof(*prbc) + (sizeof(long) * REALLOC_INCR));
 	if (prbc == NULL) {
 		mem_alloc_fail();
 	}
 
-	struct LineData ld_, *ld = &ld_;
+	_transact_tokens_t ld_, *ld = &ld_;
 	char linebuff[LINE_BUFFER];
 	char *str;
 	bool date = false;
@@ -646,7 +646,7 @@ Vec *get_records_by_any
 		if (date && cat && desc && tt && amt) {
 			if (prbc->size >= prbc->capacity) {
 				prbc->capacity += REALLOC_INCR;
-				Vec *tmp = realloc(prbc, sizeof(*prbc) + (sizeof(long) * prbc->capacity));
+				_vector_t *tmp = realloc(prbc, sizeof(*prbc) + (sizeof(long) * prbc->capacity));
 				if (tmp == NULL) {
 					free(prbc);
 					mem_alloc_fail();
@@ -725,9 +725,9 @@ _category_list_t *get_budget_catg_by_date(int month, int year)
 	return pc;
 }
 
-Vec *get_budget_catg_by_date_bo(int month, int year)
+_vector_t *get_budget_catg_by_date_bo(int month, int year)
 {
-	Vec *pcbo = malloc((sizeof(*pcbo)) + (sizeof(long) * REALLOC_INCR));
+	_vector_t *pcbo = malloc((sizeof(*pcbo)) + (sizeof(long) * REALLOC_INCR));
 	if (pcbo == NULL) {
 		mem_alloc_fail();
 	}
@@ -755,7 +755,7 @@ Vec *get_budget_catg_by_date_bo(int month, int year)
 		if (y == year && m == month) {
 			if (pcbo->size >= pcbo->capacity) {
 				pcbo->capacity += REALLOC_INCR;
-				Vec *tmp = realloc(pcbo, sizeof(Vec) + (sizeof(long) * pcbo->capacity));
+				_vector_t *tmp = realloc(pcbo, sizeof(_vector_t) + (sizeof(long) * pcbo->capacity));
 				if (tmp == NULL) {
 					free(pcbo);
 					mem_alloc_fail();
@@ -772,12 +772,12 @@ Vec *get_budget_catg_by_date_bo(int month, int year)
 	return pcbo;
 }
 
-struct BudgetTokens *tokenize_budget_fpi(long bo)
+_budget_tokens_t *tokenize_budget_fpi(long bo)
 {
 	if (bo == 0) {
 		return NULL;
 	}
-	struct BudgetTokens *pbt = malloc(sizeof(*pbt));
+	_budget_tokens_t *pbt = malloc(sizeof(*pbt));
 	if (pbt == NULL) {
 		mem_alloc_fail();
 	}
@@ -807,12 +807,12 @@ struct BudgetTokens *tokenize_budget_fpi(long bo)
 	return pbt;
 }
 
-struct BudgetTokens *tokenize_budget_line(int line)
+_budget_tokens_t *tokenize_budget_line(int line)
 {
 	if (line == 0) {
 		return NULL;
 	}
-	struct BudgetTokens *pbt = malloc(sizeof(struct BudgetTokens));
+	_budget_tokens_t *pbt = malloc(sizeof(_budget_tokens_t));
 	if (pbt == NULL) {
 		mem_alloc_fail();
 	}
@@ -858,7 +858,7 @@ struct BudgetTokens *tokenize_budget_line(int line)
 	return pbt;
 }
 
-void free_tokenized_record_strings(struct LineData *ld)
+void free_tokenized_record_strings(_transact_tokens_t *ld)
 {
 	if (ld->category != NULL) {
 		free(ld->category);
@@ -870,7 +870,7 @@ void free_tokenized_record_strings(struct LineData *ld)
 	}
 }
 
-int tokenize_record_fpi(long b, struct LineData *ld)
+int tokenize_record_fpi(long b, _transact_tokens_t *ld)
 {
 	FILE *fptr = open_record_csv("r");
 	fseek(fptr, b, SEEK_SET);
@@ -885,7 +885,7 @@ int tokenize_record_fpi(long b, struct LineData *ld)
 	return 0;
 }
 
-void tokenize_record(struct LineData *ld, char **str)
+void tokenize_record(_transact_tokens_t *ld, char **str)
 {
 	char *token;
 	for (int i = 0; i < CSV_FIELDS; i++) {
@@ -972,10 +972,10 @@ int get_int_field(int line, int field)
 	return atoi(strsep(&str, ","));
 }
 
-Vec *index_csv(FILE *fptr)
+_vector_t *index_csv(FILE *fptr)
 {
-	Vec *pidx =
-		malloc(sizeof(Vec) + (sizeof(long) * INDEX_ALLOC));
+	_vector_t *pidx =
+		malloc(sizeof(_vector_t) + (sizeof(long) * INDEX_ALLOC));
 	if (pidx == NULL) {
 		mem_alloc_fail();
 	}
@@ -994,8 +994,8 @@ Vec *index_csv(FILE *fptr)
 			} else {
 				pidx->capacity += MAX_ALLOC;
 			}
-			Vec *tmp =
-				realloc(pidx, sizeof(Vec) + (sizeof(long) * pidx->capacity));
+			_vector_t *tmp =
+				realloc(pidx, sizeof(_vector_t) + (sizeof(long) * pidx->capacity));
 			if (tmp == NULL) {
 				free(pidx);
 				mem_alloc_fail();

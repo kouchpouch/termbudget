@@ -65,9 +65,9 @@ int debug_flag;
 int cli_flag;
 int verify_flag;
 
-bool nc_confirm_record(struct LineData *ld);
-void nc_print_record_hr(WINDOW *wptr, struct ColWidth *cw, struct LineData *ld, int y);
-void nc_print_record_vert(WINDOW *wptr, struct LineData *ld, int x_off);
+bool nc_confirm_record(_transact_tokens_t *ld);
+void nc_print_record_hr(WINDOW *wptr, struct ColWidth *cw, _transact_tokens_t *ld, int y);
+void nc_print_record_vert(WINDOW *wptr, _transact_tokens_t *ld, int x_off);
 
 void mem_alloc_fail(void) 
 {
@@ -85,7 +85,7 @@ void mem_alloc_fail(void)
 //}
 
 /* Prints record from ld, in vertical format, 5 rows. */
-void nc_print_record_vert(WINDOW *wptr, struct LineData *ld, int x_off)
+void nc_print_record_vert(WINDOW *wptr, _transact_tokens_t *ld, int x_off)
 {
 	mvwprintw(wptr, 1, x_off, "Date--> %d/%d/%d", ld->month, ld->day, ld->year);
 	mvwprintw(wptr, 2, x_off, "Cat.--> %s", ld->category);
@@ -120,7 +120,7 @@ static double get_max_value(int elements, double *arr)
 	return max;
 }
 
-void nc_print_overview_graphs(WINDOW *wptr, Vec *months, int year)
+void nc_print_overview_graphs(WINDOW *wptr, _vector_t *months, int year)
 {
 	double ratios[12] = {0.0}; // Holds each month's income/expense ratio
 	double maxvals[12] = {0.0};
@@ -135,7 +135,7 @@ void nc_print_overview_graphs(WINDOW *wptr, Vec *months, int year)
 
 	for (size_t i = 0; i < months->size && mo <= 12; i++, mo++) {
 		if (months->data[i] == mo) {
-			Vec *pbo = get_records_by_mo_yr(months->data[i], year);
+			_vector_t *pbo = get_records_by_mo_yr(months->data[i], year);
 			calculate_balance(pb, pbo);
 			if (pb->income == 0) { // Prevent a div by zero
 				ratios[mo - 1] = NO_INCOME;
@@ -218,7 +218,7 @@ void nc_print_overview_graphs(WINDOW *wptr, Vec *months, int year)
 	}
 }
 
-void nc_print_overview_balances(WINDOW *wptr, Vec *months, int year)
+void nc_print_overview_balances(WINDOW *wptr, _vector_t *months, int year)
 {
 	int tmpx = 0;
 	int space = calculate_overview_columns(wptr);
@@ -230,7 +230,7 @@ void nc_print_overview_balances(WINDOW *wptr, Vec *months, int year)
 		tmpx = 0;
 
 		if (months->data[i] == mo) {
-			Vec *pbo = get_records_by_mo_yr(months->data[i], year);
+			_vector_t *pbo = get_records_by_mo_yr(months->data[i], year);
 			calculate_balance(pb, pbo);
 			tmpx = intlen(pb->income) / 2;
 			wmove(wptr, y, cur - tmpx);
@@ -281,7 +281,7 @@ void nc_print_overview_months(WINDOW *wptr)
 	}
 }
 
-unsigned int nc_overview_loop(WINDOW *wptr, Vec *months, int year)
+unsigned int nc_overview_loop(WINDOW *wptr, _vector_t *months, int year)
 {
 	unsigned int flag = 0;
 	int c;
@@ -327,7 +327,7 @@ void nc_overview_setup(int year)
 	wrefresh(wptr_parent);
 	
 	FILE *fptr = open_record_csv("r");
-	Vec *months = get_months_with_data(fptr, year, 1);
+	_vector_t *months = get_months_with_data(fptr, year, 1);
 	fclose(fptr);
 
 	unsigned int flag = nc_overview_loop(wptr_data, months, year);
@@ -357,7 +357,7 @@ void debug_columns(WINDOW *wptr, struct ColWidth *cw)
 	wgetch(wptr);
 }
 
-void calculate_balance(struct Balances *pb, Vec *pbo)
+void calculate_balance(struct Balances *pb, _vector_t *pbo)
 {
 	FILE *fptr = open_record_csv("r");
 	pb->income = 0.0;
@@ -492,7 +492,7 @@ void debug_fields(void)
 {
 	move(0,0);
 	FILE *bfptr = open_budget_csv("r");
-	struct BudgetHeader *bh = parse_budget_header(bfptr);
+	_budget_header_t *bh = parse_budget_header(bfptr);
 
 	printw("Budget Fields: %d, %d, %d, %d, %d\n",
 	 bh->month,
@@ -504,7 +504,7 @@ void debug_fields(void)
 	free(bh);
 	fclose(bfptr);
 	FILE *fptr = open_record_csv("r");
-	struct RecordHeader *rh = parse_record_header(fptr);
+	_record_header_t *rh = parse_record_header(fptr);
 
 	printw("Record Fields: %d, %d, %d, %d, %d, %d, %d\n", 
 	 rh->month,

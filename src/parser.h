@@ -31,16 +31,16 @@ enum transtypes {
 	TT_INCOME = 1
 };
 
-struct BudgetHeader {
+typedef struct __budget_header_t {
 	int month;
 	int year;
 	int catg;
 	int transtype;
 	int value;
 	int n_fields;
-};
+} _budget_header_t;
 
-struct RecordHeader {
+typedef struct __record_header_t {
 	int month;
 	int day;
 	int year;
@@ -49,17 +49,17 @@ struct RecordHeader {
 	int transtype;
 	int value;
 	int n_fields;
-};
+} _record_header_t;
 
-struct BudgetTokens {
+typedef struct __budget_tokens_t {
 	int m;
 	int y;
 	char *catg;
 	int transtype;
 	double amount;
-};
+} _budget_tokens_t;
 
-struct LineData {
+typedef struct __transact_tokens_t {
 	int month;
 	int day;
 	int year;
@@ -68,53 +68,53 @@ struct LineData {
 	int transtype;
 	double amount;
 	int linenum;
-};
+} _transact_tokens_t;
 
 /* Returns total lines in the CSV */
-extern int get_total_csv_lines(void);
+int get_total_csv_lines(void);
 
 /* Returns the line number of byte-offset b in file CSV_DIR */
-extern unsigned int boff_to_linenum(long b);
+unsigned int boff_to_linenum(long b);
 
 /* Returns the line number of byte-offset b in file BUDGET_DIR */
-extern unsigned int boff_to_linenum_budget(long b);
+unsigned int boff_to_linenum_budget(long b);
 
 /* Moves char * forward n fields in the CSV */
-extern void seek_n_fields(char **line, int n);
+void seek_n_fields(char **line, int n);
 
 /* Returns struct initialized with the values of the field number which
  * that member starts at, the first field is 0. If a field was not found,
  * the member is set to -1 */
-extern struct RecordHeader *parse_record_header(FILE *fptr);
+_record_header_t *parse_record_header(FILE *fptr);
 
 /* Returns struct initialized with the values of the field number which
  * that member starts at, the first field is 0. If a field was not found,
  * the member is set to -1 */
-extern struct BudgetHeader *parse_budget_header(FILE *fptr);
+_budget_header_t *parse_budget_header(FILE *fptr);
 
 /* Reads the header of the file until a newline is found */
-extern int seek_beyond_header(FILE *fptr);
+int seek_beyond_header(FILE *fptr);
 
 /* Returns the number of fields by reading the header of fptr */
-extern int get_num_fields(FILE *fptr);
+int get_num_fields(FILE *fptr);
 
 /* Frees the struct and any applicable members */
-extern void free_budget_tokens(struct BudgetTokens *pbt);
+void free_budget_tokens(_budget_tokens_t *pbt);
 
 /* Loop through each category in the budget. Returns true or false if the
  * category exists for the given date range */
-extern bool category_exists_in_budget(char *catg, int month, int year);
+bool category_exists_in_budget(char *catg, int month, int year);
 
 /* Returns bool if a month or year exists. Only checks BUDGET_DIR, as any
  * record there must either contain records or categories. Month parameter
  * is optional, call function with the month paramater <= 0*/
-extern bool month_or_year_exists(int m, int y);
+bool month_or_year_exists(int m, int y);
 
 /* Returns all income records subtracted by expense records */
-extern double get_expenditures_per_category(struct BudgetTokens *bt);
+double get_expenditures_per_category(_budget_tokens_t *bt);
 
 /* Returns a vector of years which contain data */
-extern Vec *get_years_with_data(FILE *fptr, int field);
+_vector_t *get_years_with_data(FILE *fptr, int field);
 
 /*
  * Returns a malloc'd vector containing all months with records in file 'fptr',
@@ -123,27 +123,27 @@ extern Vec *get_years_with_data(FILE *fptr, int field);
  * temporary and a new function will be added to find which fields to read
  * based on the header.
  */
-extern Vec *get_months_with_data(FILE *fptr, int matchyear, int field);
+_vector_t *get_months_with_data(FILE *fptr, int matchyear, int field);
 
 /*
  * Returns a vector containing the line numbers of the records with matching
  * month and year.
  */
-extern Vec *get_matching_line_nums(FILE *fptr, int month, int year);
+_vector_t *get_matching_line_nums(FILE *fptr, int month, int year);
 
 /*
  * For a given month and year, return an array of strings from the category
  * field of the RECORD_DIR csv file.
  */
-extern _category_list_t *get_categories(int month, int year);
+_category_list_t *get_categories(int month, int year);
 
 /* Uses get_records_by_any with all parameters except year as NULL
  * or -1, omitting the search for other fields */
-extern Vec *get_records_by_yr(int year);
+_vector_t *get_records_by_yr(int year);
 
 /* Uses get_records_by_any with all parameters except month and year as NULL
  * or -1, omitting the search for other fields */
-extern Vec *get_records_by_mo_yr(int month, int year);
+_vector_t *get_records_by_mo_yr(int month, int year);
 
 /* Generic function for getting record byte offsets by some parameter.
  * To disregard an argument, pass a negative value for any int or double and
@@ -157,48 +157,48 @@ extern Vec *get_records_by_mo_yr(int month, int year);
  * Get records by category in a defined chunk: 
  *     get_records_by_any(-1, -1, -1, paychecks, NULL, -1, -1, chunk);
  * 													   
- * Returns a Vec data member containing byte offset values of records that
- * match and Vec data member size with the total number of records that
+ * Returns a _vector_t data member containing byte offset values of records that
+ * match and _vector_t data member size with the total number of records that
  * matched. */
-extern Vec *get_records_by_any(int month, int day, int year, char *category,
+_vector_t *get_records_by_any(int month, int day, int year, char *category,
 							   char *description, int transtype, double amount,
-							   Vec *chunk);
+							   _vector_t *chunk);
 
 /* Returns number of categories and the string literal categories of given
  * month and year in BUDGET_DIR */
-extern _category_list_t *get_budget_catg_by_date(int month, int year);
+_category_list_t *get_budget_catg_by_date(int month, int year);
 
-/* Returns Vec containing byte offsets of each category that matches month,
+/* Returns _vector_t containing byte offsets of each category that matches month,
  * year in BUDGET_DIR. */
-extern Vec *get_budget_catg_by_date_bo(int month, int year);
+_vector_t *get_budget_catg_by_date_bo(int month, int year);
 
 /* Returns malloc'd tokenized variables in BudgetTokens by seeking the file
  * position indicator to bo. BudgetTokens catg is separately malloc'd and must 
  * be free'd. Use free_budget_tokens(). 
- * Returns NULL on failure, pointer to struct BudgetTokens on success. */
-extern struct BudgetTokens *tokenize_budget_fpi(long bo);
+ * Returns NULL on failure, pointer to _budget_tokens_t on success. */
+_budget_tokens_t *tokenize_budget_fpi(long bo);
 
 /* Returns malloc'd tokenized variables in BudgetTokens which matches
  * line number line. BudgetTokens catg is separately malloc'd and must 
  * be free'd. Use free_budget_tokens().
- * Returns NULL on failure, pointer to struct BudgetTokens on success. */
-extern struct BudgetTokens *tokenize_budget_line(int line);
+ * Returns NULL on failure, pointer to _budget_tokens_t on success. */
+_budget_tokens_t *tokenize_budget_line(int line);
 
 /* Frees the strings inside of 'ld', if they are not NULL */
-extern void free_tokenized_record_strings(struct LineData *ld);
+void free_tokenized_record_strings(_transact_tokens_t *ld);
 
 /* Populates ld members with tokens from fpi b */
-extern int tokenize_record_fpi(long b, struct LineData *ld);
+int tokenize_record_fpi(long b, _transact_tokens_t *ld);
 
 /* Populates ld members with tokens from str */
-extern void tokenize_record(struct LineData *ld, char **str);
+void tokenize_record(_transact_tokens_t *ld, char **str);
 
 /* Returns the amount value in RECORD_DIR from file position b */
-extern double get_record_amount(long b);
+double get_record_amount(long b);
 
 /* Returns an integer value of a given line number line and of field number 
  * field. Field numbers start at 1 */
-extern int get_int_field(int line, int field);
+int get_int_field(int line, int field);
 
 /* 
  * Rewrite of index_csv to include amortized memory allocation. Amortization on
@@ -215,9 +215,9 @@ extern int get_int_field(int line, int field);
  * REALLOC_INCR which is used in cases where realistically not many values
  * will be stored in the array.
  *
- * Also changed return type to be a Vec. Removes the local variable to keep
+ * Also changed return type to be a _vector_t. Removes the local variable to keep
  * track of capacity, it is now apart of the struct.
  */
-extern Vec *index_csv(FILE *fptr);
+_vector_t *index_csv(FILE *fptr);
 
 #endif

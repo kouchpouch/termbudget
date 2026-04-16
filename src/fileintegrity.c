@@ -30,7 +30,7 @@
 bool validate_record_header(void)
 {
 	FILE *fptr = open_record_csv("r");
-	struct RecordHeader *rh = parse_record_header(fptr);
+	_record_header_t *rh = parse_record_header(fptr);
 	fclose(fptr);
 
 	if (rh->n_fields < 0) {
@@ -53,7 +53,7 @@ bool validate_record_header(void)
 bool validate_budget_header(void)
 {
 	FILE *fptr = open_budget_csv("r");
-	struct BudgetHeader *bh = parse_budget_header(fptr);
+	_budget_header_t *bh = parse_budget_header(fptr);
 	fclose(fptr);
 
 	if (bh->n_fields < 0) {
@@ -76,7 +76,7 @@ bool validate_budget_header(void)
 bool record_len_verification(void)
 {
 	FILE *fptr = open_record_csv("r");
-	struct LineData ld, *pld = &ld;
+	_transact_tokens_t ld, *pld = &ld;
 	char linebuff[1024];
 	char *str;
 
@@ -181,8 +181,8 @@ static int cmp_catg_and_fix
 int verify_categories_exist_in_budget(void)
 {
 	FILE *rfptr = open_record_csv("r");
-	Vec *years;
-	Vec *months;
+	_vector_t *years;
+	_vector_t *months;
 	int corrected = 0;
 	_category_list_t prc_, *prc = &prc_;
 	_category_list_t pbc_, *pbc = &pbc_;

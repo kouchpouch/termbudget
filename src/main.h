@@ -63,11 +63,11 @@ void mem_alloc_fail(void);
 
 /* Sets the values of struct members 'pb' using records in RECORD_DIR
  * at file positions of 'pbo' */
-void calculate_balance(struct Balances *pb, Vec *pbo);
+void calculate_balance(struct Balances *pb, _vector_t *pbo);
 
-void nc_print_record_vert(WINDOW *wptr, struct LineData *ld, int x_off);
+void nc_print_record_vert(WINDOW *wptr, _transact_tokens_t *ld, int x_off);
 
-bool nc_confirm_record(struct LineData *ld);
+bool nc_confirm_record(_transact_tokens_t *ld);
 
 int show_help_subwindow(void);
 

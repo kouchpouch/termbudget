@@ -16,10 +16,10 @@
 #define VECTOR_H
 #include <stdio.h>
 
-typedef struct {
+typedef struct __vector_t {
 	size_t capacity;
 	size_t size;
 	long data[];
-} Vec;
+} _vector_t;
 
 #endif
