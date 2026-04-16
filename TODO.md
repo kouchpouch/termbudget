@@ -104,6 +104,7 @@
         - [X] Move CLI feature to its own source files
         - [ ] Move overview feature to its own source files
     - [ ] cli.c/h
+    - [ ] 1st pass--Rename structs, extract functions, general code cleanup
 
 #### Main Feature Set
     - [X] Create a transaction
