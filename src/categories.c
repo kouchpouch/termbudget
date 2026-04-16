@@ -20,14 +20,16 @@
 #include "main.h"
 #include "parser.h"
 
-void free_categories(_category_list_t *pc) {
+void free_categories(_category_list_t *pc)
+{
 	for (size_t i = 0; i < pc->size; i++) {
 		free(pc->categories[i]);
 	}
 	free(pc);
 }
 
-void free_category_nodes(CategoryNode **nodes) {
+void free_category_nodes(CategoryNode **nodes)
+{
 	int i = 0;
 	while (1) {
 		if (nodes[i]->next == NULL) {
