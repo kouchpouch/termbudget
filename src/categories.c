@@ -20,14 +20,16 @@
 #include "main.h"
 #include "parser.h"
 
-void free_categories(_category_list_t *pc) {
+void free_categories(_category_list_t *pc)
+{
 	for (size_t i = 0; i < pc->size; i++) {
 		free(pc->categories[i]);
 	}
 	free(pc);
 }
 
-void free_category_nodes(CategoryNode **nodes) {
+void free_category_nodes(CategoryNode **nodes)
+{
 	int i = 0;
 	while (1) {
 		if (nodes[i]->next == NULL) {
@@ -61,7 +63,8 @@ static void init_category_nodes
  * Returns a pointer to a pointer to the first CategoryNode in a doubly 
  * linked list of CategoryNodes.
  */
-CategoryNode **create_category_nodes(int m, int y) {
+CategoryNode **create_category_nodes(int m, int y)
+{
 	Vec *catgs_file_pos = get_budget_catg_by_date_bo(m, y);
 	Vec *chunk = get_records_by_mo_yr(m, y);
 	unsigned long n = catgs_file_pos->size;

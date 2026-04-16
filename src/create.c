@@ -29,7 +29,8 @@
 #include "file_write.h"
 
 /* Creates an ncurses subwindow and returns the user's input as a boolean */
-static bool confirm_budget_category(char *catg, double amt) {
+static bool confirm_budget_category(char *catg, double amt)
+{
 	WINDOW *wptr = create_input_subwindow();
 	int maxy = getmaxy(wptr);
 	int maxx = getmaxx(wptr);
@@ -72,7 +73,8 @@ void insert_budget_record(char *catg, int m, int y, int transtype, double amt)
 
 /* For a la carte budget category creation, returns a malloc'd char * which
  * is free'd by the caller */
-char *create_budget_record(int yr, int mo) {
+char *create_budget_record(int yr, int mo)
+{
 	char *catg;
 	int transtype;
 	_category_list_t *psc;
@@ -116,7 +118,8 @@ char *create_budget_record(int yr, int mo) {
 }
 
 /* Adds a record to the CSV on line linetoadd */
-void insert_transaction_record(int insert_line, struct LineData *ld) {
+void insert_transaction_record(int insert_line, struct LineData *ld)
+{
 	if (!category_exists_in_budget(ld->category, ld->month, ld->year)) {
 		insert_budget_record_from_ld(ld);
 	} 
@@ -134,7 +137,8 @@ void insert_transaction_record(int insert_line, struct LineData *ld) {
 
 /* Optional parameters int month, year. If add transaction is selected while
  * on the read screen these will be auto-filled. */
-void create_transaction(int year, int month) {
+void create_transaction(int year, int month)
+{
 	struct LineData userlinedata_, *uld = &userlinedata_;
 	unsigned int result_line;
 
@@ -190,11 +194,13 @@ input_quit:
 //	nc_read_setup(uld->year, uld->month, sort);
 }
 
-void create_transaction_default(void) {
+void create_transaction_default(void)
+{
 	create_transaction(0, 0);
 }
 
-static struct MenuParams *init_add_main_menu(void) {
+static struct MenuParams *init_add_main_menu(void)
+{
 	int n_str = 3;
 	int idx = 0;
 	struct MenuParams *mp = malloc(sizeof(*mp) + (sizeof(char *) * n_str));
@@ -215,7 +221,8 @@ static struct MenuParams *init_add_main_menu(void) {
 
 /* Creates an ncurses selection menu and returns the value of the selected
  * item */
-int get_add_selection(void) {
+int get_add_selection(void)
+{
 	enum AddMainMenu add_sel;
 	struct MenuParams *mp = init_add_main_menu();
 	add_sel = nc_input_menu(mp);
@@ -223,7 +230,8 @@ int get_add_selection(void) {
 	return add_sel;
 }
 
-static struct MenuParams *init_add_menu(void) {
+static struct MenuParams *init_add_menu(void)
+{
 	int n_str = 2;
 	int idx = 0;
 	struct MenuParams *mp = malloc(sizeof(*mp) + (sizeof(char *) * n_str));
@@ -241,7 +249,8 @@ static struct MenuParams *init_add_menu(void) {
 	return mp;
 }
 
-struct Datevals *nc_create_new_budget(void) {
+struct Datevals *nc_create_new_budget(void)
+{
 	struct Datevals *dv = malloc(sizeof(struct Datevals));
 	if (dv == NULL) {
 		mem_alloc_fail();
@@ -275,7 +284,8 @@ struct Datevals *nc_create_new_budget(void) {
 	return dv;
 }
 
-void add_main_with_date(struct Datevals *dv) {
+void add_main_with_date(struct Datevals *dv)
+{
 	enum add_sel {
 		ADD_TRNS = 0,
 		ADD_CATG
@@ -300,7 +310,8 @@ void add_main_with_date(struct Datevals *dv) {
 	}
 }
 
-void add_main_no_date(void) {
+void add_main_no_date(void)
+{
 	enum add_sel {
 		ADD_TRNS = 0,
 		ADD_CATG,
@@ -331,4 +342,3 @@ void add_main_no_date(void) {
 		break;
 	}
 }
-
