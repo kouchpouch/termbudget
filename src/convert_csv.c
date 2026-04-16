@@ -24,12 +24,14 @@
 #include "sorter.h"
 #include "filemanagement.h"
 
-static void write_temp_header(FILE *convfptr) {
+static void write_temp_header(FILE *convfptr)
+{
 	char *header = "month,day,year,category,description,transtype,value";
 	fprintf(convfptr, "%s\n", header); 
 }
 
-static void create_csv(void) {
+static void create_csv(void)
+{
 	FILE *fptr = fopen(CONVERTED_FILE_DIR, "w+");
 	if (fptr == NULL) {
 		perror("Failed to open file");
@@ -39,7 +41,8 @@ static void create_csv(void) {
 	fclose(fptr);
 }
 
-static FILE *open_csv(char *dir) {
+static FILE *open_csv(char *dir)
+{
 	FILE *fptr = fopen(dir, "r");
 	if (fptr == NULL) {
 		perror("Failed to open file");
@@ -48,7 +51,8 @@ static FILE *open_csv(char *dir) {
 	return fptr;
 }
 
-static void insert_record(struct LineData *ld) {
+static void insert_record(struct LineData *ld)
+{
 	FILE *convfptr = fopen(CONVERTED_FILE_DIR, "r");
 	if (convfptr == NULL) {
 		perror("Failed to open file");
@@ -91,7 +95,8 @@ static void insert_record(struct LineData *ld) {
 	fclose(tmpfptr);
 }
 
-static size_t tokenize_and_convert(FILE *fptr) {
+static size_t tokenize_and_convert(FILE *fptr)
+{
 	struct LineData _ld, *ld = &_ld;
 	char *str;
 	char buffer[LINE_BUFFER];
@@ -130,7 +135,8 @@ static size_t tokenize_and_convert(FILE *fptr) {
 	return count;
 }
 
-size_t convert_chase_csv(char *dir) {
+size_t convert_chase_csv(char *dir)
+{
 	printf("FILE: %s\n", dir);
 	printf("CONVERTED: %s\n", CONVERTED_FILE_DIR);
 	FILE *fptr = open_csv(dir);

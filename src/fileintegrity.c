@@ -14,6 +14,7 @@
  */
 
 #include "fileintegrity.h"
+#include "categories.h"
 #include "filemanagement.h"
 #include "create.h"
 #include "helper.h"
@@ -26,7 +27,8 @@
 #include <stdbool.h>
 #include <string.h>
 
-bool validate_record_header(void) {
+bool validate_record_header(void)
+{
 	FILE *fptr = open_record_csv("r");
 	struct RecordHeader *rh = parse_record_header(fptr);
 	fclose(fptr);
@@ -48,7 +50,8 @@ bool validate_record_header(void) {
 	return true;
 }
 
-bool validate_budget_header(void) {
+bool validate_budget_header(void)
+{
 	FILE *fptr = open_budget_csv("r");
 	struct BudgetHeader *bh = parse_budget_header(fptr);
 	fclose(fptr);
@@ -70,7 +73,8 @@ bool validate_budget_header(void) {
 	return true;
 }
 
-bool record_len_verification(void) {
+bool record_len_verification(void)
+{
 	FILE *fptr = open_record_csv("r");
 	struct LineData ld, *pld = &ld;
 	char linebuff[1024];
@@ -142,7 +146,7 @@ bool record_len_verification(void) {
 }
 
 static int cmp_catg_and_fix
-(struct Categories *prc, struct Categories *pbc, int m, int y) 
+(_category_list_t *prc, _category_list_t *pbc, int m, int y) 
 {
 	int corrected = 0;
 	bool cat_exists = false;
@@ -174,13 +178,14 @@ static int cmp_catg_and_fix
  * Returns a 0 or positive value of records that were corrected successfully.
  * Returns -1 on failure.
  */
-int verify_categories_exist_in_budget(void) {
+int verify_categories_exist_in_budget(void)
+{
 	FILE *rfptr = open_record_csv("r");
 	Vec *years;
 	Vec *months;
 	int corrected = 0;
-	struct Categories prc_, *prc = &prc_;
-	struct Categories pbc_, *pbc = &pbc_;
+	_category_list_t prc_, *prc = &prc_;
+	_category_list_t pbc_, *pbc = &pbc_;
 
 	/* Go through each year and find the matching months, then find the
 	 * matching categories, then compare. */
@@ -208,7 +213,8 @@ int verify_categories_exist_in_budget(void) {
 	return corrected;
 }
 
-static void fix_budget_header(void) {
+static void fix_budget_header(void)
+{
 	int linetodelete = 0;
 	FILE *fptr = open_budget_csv("r");
 	FILE *tmpfptr = open_temp_csv();
@@ -229,7 +235,8 @@ static void fix_budget_header(void) {
 	mv_tmp_to_budget_file(tmpfptr, fptr);
 }
 
-static void fix_record_header(void) {
+static void fix_record_header(void)
+{
 	int linetodelete = 0;
 	FILE *fptr = open_record_csv("r");
 	FILE *tmpfptr = open_temp_csv();
@@ -251,7 +258,8 @@ static void fix_record_header(void) {
 }
 
 /* Verifies that the files needed to run termbudget exist and writes headers */
-int verify_files_exist(void) {
+int verify_files_exist(void)
+{
 	FILE *rfptr = open_record_csv("a");
 	if (rfptr == NULL) {
 		perror("Failed to open/create record file");

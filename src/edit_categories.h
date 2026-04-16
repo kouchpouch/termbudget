@@ -21,7 +21,7 @@
 #include "main.h"
 #include "categories.h"
 
-bool duplicate_category_exists(struct Categories *psc, char *catg);
+bool duplicate_category_exists(_category_list_t *psc, char *catg);
 /* Moves the category found at FPI nodes[i]->catg_fp to the top of its
  * siblings with the same date range. */
 void mv_category_to_top(CategoryNode **nodes, size_t i);

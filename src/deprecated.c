@@ -21,7 +21,8 @@
 /* Returns a calloc'd array of months in which records exist in fptr which
  * match the year of matchyear. The month value is '0' if that month doesn't
  * exist. The size of the array is always 12. */
-[[deprecated]] int *list_records_by_month_old(FILE *fptr, int matchyear) {
+[[deprecated]] int *list_records_by_month_old(FILE *fptr, int matchyear)
+{
 	char linebuff[LINE_BUFFER];
 	char *str;
 	int *months = calloc(12, sizeof(int));
@@ -55,7 +56,8 @@
 // From main.c
 /* Returns an malloc'd array of integers containing the years in which records
  * are found in fptr. A '0' marks the end of the array. */
-[[deprecated]] int *list_records_by_year_old(FILE *fptr) {
+[[deprecated]] int *list_records_by_year_old(FILE *fptr)
+{
 	char linebuff[LINE_BUFFER];
 	char *str;
 	int *years = calloc(1, sizeof(int));

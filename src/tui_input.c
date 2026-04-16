@@ -27,7 +27,8 @@
 #include "create.h"
 #include "flags.h"
 
-static void init_input_window(int n, WINDOW *wptr) {
+static void init_input_window(int n, WINDOW *wptr)
+{
 	int max_y, max_x;
 	int center;
 
@@ -46,7 +47,8 @@ static void init_input_window(int n, WINDOW *wptr) {
 	wrefresh(wptr);
 }
 
-static bool validate_input_len(size_t buffer, char *input, WINDOW *wptr) {
+static bool validate_input_len(size_t buffer, char *input, WINDOW *wptr)
+{
 	size_t length = strnlen(input, buffer);
 	int c = 0;
 
@@ -71,7 +73,8 @@ static bool validate_input_len(size_t buffer, char *input, WINDOW *wptr) {
 	return true;
 }
 
-void nc_user_input(int n, WINDOW *wptr, struct UserInput *pui) {
+void nc_user_input(int n, WINDOW *wptr, struct UserInput *pui)
+{
 	int max_y, max_x;
 	size_t buffersize = n + 1; // Plus 1 to hold null terminator
 	int center;
@@ -153,8 +156,8 @@ void nc_user_input(int n, WINDOW *wptr, struct UserInput *pui) {
 	}
 }
 
-void nc_input_n_digits(struct UserInputDigit *puid, 
-					   WINDOW *wptr, size_t max_len, size_t min_len) 
+void nc_input_n_digits
+(struct UserInputDigit *puid, WINDOW *wptr, size_t max_len, size_t min_len) 
 {
 	struct UserInput pui_, *pui = &pui_;
 	puid->flag = 0;
@@ -197,7 +200,8 @@ void nc_input_n_digits(struct UserInputDigit *puid,
 	pui->str = NULL;
 }
 
-bool nc_confirm_input_loop(WINDOW *wptr) {
+bool nc_confirm_input_loop(WINDOW *wptr)
+{
 	int c = 0;
 	while (1) {
 		c = wgetch(wptr);
@@ -222,7 +226,8 @@ bool nc_confirm_input_loop(WINDOW *wptr) {
 	}
 }
 
-bool nc_confirm_input(char *msg) {
+bool nc_confirm_input(char *msg)
+{
 	WINDOW *wptr = create_input_subwindow();
 	bool retval;
 
@@ -235,7 +240,8 @@ bool nc_confirm_input(char *msg) {
 	return retval;
 }
 
-bool nc_confirm_record(struct LineData *ld) {
+bool nc_confirm_record(struct LineData *ld)
+{
 	WINDOW *wptr = create_input_subwindow();
 	int c = 0;
 
@@ -270,7 +276,8 @@ bool nc_confirm_record(struct LineData *ld) {
 	return false;
 }
 
-int nc_input_month(void) {
+int nc_input_month(void)
+{
 	WINDOW *wptr_input = create_input_subwindow();
 	struct UserInputDigit puid_, *puid = &puid_;
 
@@ -293,7 +300,8 @@ int nc_input_month(void) {
 	}
 }
 
-int nc_input_year(void) {
+int nc_input_year(void)
+{
 	WINDOW *wptr_input = create_input_subwindow();
 	struct UserInputDigit puid_, *puid = &puid_;
 
@@ -313,7 +321,8 @@ int nc_input_year(void) {
 	}
 }
 
-int nc_input_day(int month, int year) {
+int nc_input_day(int month, int year)
+{
 	WINDOW *wptr_input = create_input_subwindow();
 	struct UserInputDigit puid_, *puid = &puid_;
 
@@ -342,7 +351,8 @@ int nc_input_day(int month, int year) {
 }
 
 // Returns NULL on quit
-char *nc_input_string(char *msg) {
+char *nc_input_string(char *msg)
+{
 	WINDOW *wptr_input = create_input_subwindow();
 	struct UserInput pui_, *pui = &pui_;
 
@@ -355,7 +365,8 @@ char *nc_input_string(char *msg) {
 	return pui->str;
 }
 
-int nc_input_category_type(void) {
+int nc_input_category_type(void)
+{
 	int retval;
 	struct MenuParams *mp = malloc(sizeof(*mp) + (sizeof(char *) * 2));
 	if (mp == NULL) {
@@ -375,7 +386,8 @@ int nc_input_category_type(void) {
 	return retval;
 }
 
-int nc_input_transaction_type(void) {
+int nc_input_transaction_type(void)
+{
 	int retval;
 	struct MenuParams *mp = malloc(sizeof(*mp) + (sizeof(char *) * 2));
 	if (mp == NULL) {
@@ -395,7 +407,8 @@ int nc_input_transaction_type(void) {
 	return retval;
 }
 
-double nc_input_amount(void) {
+double nc_input_amount(void)
+{
 	WINDOW *wptr_input = create_input_subwindow();
 	struct UserInput pui_, *pui = &pui_;
 	double amount;
@@ -419,7 +432,8 @@ double nc_input_amount(void) {
 	}
 }
 
-double nc_input_budget_amount(void) {
+double nc_input_budget_amount(void)
+{
 	WINDOW *wptr_input = create_input_subwindow();
 	struct UserInput pui_, *pui = &pui_;
 	double amount;
@@ -443,8 +457,9 @@ double nc_input_budget_amount(void) {
 	}
 }
 
-char *nc_select_category(int month, int year) {
-	struct Categories *pc = get_budget_catg_by_date(month, year);
+char *nc_select_category(int month, int year)
+{
+	_category_list_t *pc = get_budget_catg_by_date(month, year);
 	WINDOW *wptr_parent = create_category_select_parent(pc->size);
 	WINDOW *wptr = create_category_select_subwindow(wptr_parent);
 	char *tmp;

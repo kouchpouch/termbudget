@@ -17,11 +17,13 @@
 #include <stdlib.h>
 #include <ctype.h>
 
+#include "categories.h"
 #include "main.h"
 #include "helper.h"
 #include "flags.h"
 
-char *user_input(int n) {
+char *user_input(int n)
+{
 	size_t buffersize = n + 1;
 	char *buffer = (char *)malloc(buffersize);
 
@@ -62,7 +64,8 @@ err_fail:
 	return buffer;
 }
 
-int input_n_digits(size_t max_len, size_t min_len) {
+int input_n_digits(size_t max_len, size_t min_len)
+{
 	char *str = user_input(max_len + 1);
 
 	while (str == NULL) {
@@ -92,7 +95,8 @@ int input_n_digits(size_t max_len, size_t min_len) {
 	return digits;
 }
 
-int confirm_input(void) {
+int confirm_input(void)
+{
 	char *confirm = user_input(STDIN_SMALL_BUFF);
 	if (confirm == NULL) {
 		return -1;
@@ -113,7 +117,8 @@ int confirm_input(void) {
 	return -1;
 }
 
-int input_month(void) {
+int input_month(void)
+{
 	int month;
 	puts("Enter Month");
 	while ((month = input_n_digits(MAX_LEN_DAY_MON, MIN_LEN_DAY_MON)) == -1
@@ -124,7 +129,8 @@ int input_month(void) {
 	return month;
 }
 
-int input_year(void) {
+int input_year(void)
+{
 	int year;
 	if (cli_flag) {
 		puts("Enter Year");
@@ -133,7 +139,8 @@ int input_year(void) {
 	return year;
 }
 
-int input_day(int month, int year) {
+int input_day(int month, int year)
+{
 	int day;
 	puts("Enter Day");
 
@@ -146,7 +153,8 @@ int input_day(int month, int year) {
 	return day;
 }
 
-int input_transaction_type(void) {
+int input_transaction_type(void)
+{
 	int t;
 
 	/* 0 is an expense and 1 is income in the CSV */
@@ -160,7 +168,8 @@ int input_transaction_type(void) {
 	return t - 1; // sub 1 to convert human readable to CSV format
 }
 
-double input_amount(void) {
+double input_amount(void)
+{
 	puts("$ Amount:");
 	char *str = user_input(MAX_LEN_AMOUNT);
 	while (str == NULL) {
@@ -177,7 +186,8 @@ double input_amount(void) {
  * Takes a user's input and displays msg, on failure to read the user's
  * input the user's input is read again. The newline character is removed 
  */
-char *input_str_retry(char *msg) {
+char *input_str_retry(char *msg)
+{
 	puts(msg);
 	int len;
 	char *str = user_input(STDIN_LARGE_BUFF);	
@@ -192,10 +202,11 @@ char *input_str_retry(char *msg) {
 }
 
 /* Returns a malloc'd char * */
-char *input_category(int month, int year) {
+char *input_category(int month, int year)
+{
 	char *str;
 	bool cat_exists = false;
-	struct Categories *pc = get_categories(month, year);
+	_category_list_t *pc = get_categories(month, year);
 
 	if (pc->size > 0) {
 		puts("Categories:");

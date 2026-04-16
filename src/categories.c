@@ -20,7 +20,7 @@
 #include "main.h"
 #include "parser.h"
 
-void free_categories(struct Categories *pc) {
+void free_categories(_category_list_t *pc) {
 	for (size_t i = 0; i < pc->size; i++) {
 		free(pc->categories[i]);
 	}

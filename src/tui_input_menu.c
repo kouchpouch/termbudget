@@ -19,7 +19,8 @@
 #include <ncurses.h>
 #include <string.h>
 
-void print_items(struct MenuParams *mp, WINDOW *wptr, int first_y) {
+void print_items(struct MenuParams *mp, WINDOW *wptr, int first_y)
+{
 	mvwxcprintw(wptr, 0, mp->title);
 	for (int i = 0; i < mp->items; i++) {
 		mvwxcprintw(wptr, first_y + i, mp->strings[i]);
@@ -27,11 +28,13 @@ void print_items(struct MenuParams *mp, WINDOW *wptr, int first_y) {
 	wrefresh(wptr);
 }
 
-int first_y_pos(int items, int max_items) {
+int first_y_pos(int items, int max_items)
+{
 	return (max_items / 2) - (items / 2) + 1;
 }
 
-int nc_input_menu(struct MenuParams *mp) {
+int nc_input_menu(struct MenuParams *mp)
+{
 //	WINDOW *wptr = create_input_subwindow();
 	WINDOW *wptr = create_input_subwindow_n_rows(mp->items);
 	int c = 0;

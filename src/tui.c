@@ -33,12 +33,14 @@ struct Footer {
 	unsigned short quit;
 };
 
-void window_creation_fail(void) {
+void window_creation_fail(void)
+{
 	perror("Failed to create ncurses window");
 	exit(1);
 }
 
-int test_terminal_size(void) {
+int test_terminal_size(void)
+{
 	if (getmaxy(stdscr) < MIN_ROWS || getmaxx(stdscr) < MIN_COLUMNS) {
 		mvprintw(0, 0, "Terminal is too small");
 		refresh();
@@ -47,7 +49,8 @@ int test_terminal_size(void) {
 	return 0;
 }
 
-void nc_exit_window_key(WINDOW *wptr) {
+void nc_exit_window_key(WINDOW *wptr)
+{
 	wrefresh(wptr);
 	wgetch(wptr);
 	wclear(wptr);
@@ -55,20 +58,23 @@ void nc_exit_window_key(WINDOW *wptr) {
 	delwin(wptr);
 }
 
-void nc_exit_window(WINDOW *wptr) {
+void nc_exit_window(WINDOW *wptr)
+{
 	wclear(wptr);
 	wrefresh(wptr);
 	delwin(wptr);
 }
 
-void clear_input_error_message(WINDOW *wptr) {
+void clear_input_error_message(WINDOW *wptr)
+{
 	wmove(wptr, getmaxy(wptr) - 4, 0);
 	wclrtobot(wptr);
 	box(wptr, 0, 0);
 	wrefresh(wptr);
 }
 
-int calculate_overview_columns(WINDOW *wptr) {
+int calculate_overview_columns(WINDOW *wptr)
+{
 	/* 
 	 * There will be an expense and an income bar, each 1 column wide. =2
 	 * There will also be text with the abbreviated month. =3
@@ -99,7 +105,8 @@ int calculate_overview_columns(WINDOW *wptr) {
 	return space > 20 ? 20 : space;
 }
 
-void calculate_columns(struct ColWidth *cw, int max_x) {
+void calculate_columns(struct ColWidth *cw, int max_x)
+{
 	int static_columns;
 	int small_scr;
 
@@ -130,7 +137,8 @@ void calculate_columns(struct ColWidth *cw, int max_x) {
 	}
 }
 
-void print_column_headers(WINDOW *wptr, int x_off) {
+void print_column_headers(WINDOW *wptr, int x_off)
+{
 	struct ColWidth column_width, *cw = &column_width;
 	int cur = x_off;
 	int y = 1;
@@ -164,31 +172,36 @@ void print_column_headers(WINDOW *wptr, int x_off) {
 	wrefresh(wptr);
 }
 
-int mvwxctr(WINDOW *wptr, int y, int len) {
+int mvwxctr(WINDOW *wptr, int y, int len)
+{
 	int ret = wmove(wptr, y, getmaxx(wptr) / 2 - len / 2);
 	return ret;
 }
 
-int mvwxcprintw(WINDOW *wptr, int y, char *str) {
+int mvwxcprintw(WINDOW *wptr, int y, char *str)
+{
 	if (mvwxctr(wptr, y, strlen(str)) < 0) return -1;
 	int ret = wprintw(wptr, "%s", str);
 	return ret;
 }
 
-int mvwxcprintw_digit(WINDOW *wptr, int y, int d) {
+int mvwxcprintw_digit(WINDOW *wptr, int y, int d)
+{
 	if (mvwxctr(wptr, y, intlen(d)) < 0) return -1;
 	int ret = wprintw(wptr, "%d", d);
 	return ret;
 }
 
-static bool verify_sidebar_width(WINDOW *wptr) {
+static bool verify_sidebar_width(WINDOW *wptr)
+{
 	if (getmaxx(wptr) >= MIN_COLUMNS_SIDEBAR) {
 		return true;
 	}
 	return false;
 }
 
-WINDOW *create_lines_subwindow(int max_y, int max_x, int y_off, int x_off) {
+WINDOW *create_lines_subwindow(int max_y, int max_x, int y_off, int x_off)
+{
 	WINDOW *wptr = newwin(max_y - y_off * 2, max_x - x_off * 2, y_off + 1, x_off);
 	if (wptr == NULL) {
 		window_creation_fail();
@@ -197,7 +210,8 @@ WINDOW *create_lines_subwindow(int max_y, int max_x, int y_off, int x_off) {
 	return wptr;
 }
 
-struct ReadWins *create_read_windows(void) {
+struct ReadWins *create_read_windows(void)
+{
 	struct ReadWins *wins = malloc(sizeof(*wins));
 	int parent_y, parent_x;
 	int y, x;
@@ -236,7 +250,8 @@ struct ReadWins *create_read_windows(void) {
 	return wins;
 }
 
-WINDOW *create_category_select_parent(int n) {
+WINDOW *create_category_select_parent(int n)
+{
 	int win_y, win_x;
 	int begin_y, begin_x;
 	WINDOW *wptr;
@@ -283,7 +298,8 @@ WINDOW *create_category_select_subwindow(WINDOW *wptr_parent)
 	return wptr;
 }
 
-WINDOW *create_input_subwindow_n_rows(int n) {
+WINDOW *create_input_subwindow_n_rows(int n)
+{
 	int max_y, max_x;
 	int win_y, win_x;
 	WINDOW *wptr;
@@ -321,7 +337,8 @@ WINDOW *create_input_subwindow_n_rows(int n) {
 	return wptr;
 }
 
-WINDOW *create_input_subwindow(void) {
+WINDOW *create_input_subwindow(void)
+{
 	int max_y, max_x;
 	int win_y, win_x;
 	WINDOW *wptr;
@@ -346,18 +363,21 @@ WINDOW *create_input_subwindow(void) {
 	return wptr;
 }
 
-void nc_message(char *str) {
+void nc_message(char *str)
+{
 	WINDOW *wptr_msg = create_input_subwindow();
 	mvwxcprintw(wptr_msg, 3, str);
 	wrefresh(wptr_msg);
 	nc_exit_window_key(wptr_msg);
 }
 
-int category_color(int x) {
+int category_color(int x)
+{
 	return x % 10 + 11;
 }
 
-static void init_color_palette(void) {
+static void init_color_palette(void)
+{
 	// These colors were picked by a clanker, the only thing in the entire
 	// program that used the devil.
 	init_pair(1, COLOR_RED, -1);
@@ -376,7 +396,8 @@ static void init_color_palette(void) {
 	init_pair(REVERSE_COLOR, 251, -1);
 }
 
-WINDOW *nc_init_stdscr(void) {
+WINDOW *nc_init_stdscr(void)
+{
 	stdscr = initscr(); 
 	if (stdscr == NULL) {
 		return NULL;
@@ -394,7 +415,8 @@ WINDOW *nc_init_stdscr(void) {
 	return stdscr;
 }
 
-static int print_logo(WINDOW *wptr) {
+static int print_logo(WINDOW *wptr)
+{
 	char *logo[8];
 	int start_y = 7;
 	int print_y;
@@ -431,7 +453,8 @@ static int print_logo(WINDOW *wptr) {
 	return getcury(wptr);
 }
 
-void nc_print_welcome(WINDOW *wptr) {
+void nc_print_welcome(WINDOW *wptr)
+{
 	int y = print_logo(wptr);
 	y++;
 	mvwxcprintw(wptr, ++y, "termBudget");
@@ -439,7 +462,8 @@ void nc_print_welcome(WINDOW *wptr) {
 	curs_set(0);
 }
 
-void nc_print_debug_flag(WINDOW *wptr) {
+void nc_print_debug_flag(WINDOW *wptr)
+{
 	char debug_text[] = "DEBUG";
 	wmove(wptr, getmaxy(wptr) - 1, getmaxx(wptr) - (int)strlen(debug_text) - 1);
 	wattron(wptr, COLOR_PAIR(1));
@@ -447,7 +471,8 @@ void nc_print_debug_flag(WINDOW *wptr) {
 	wattroff(wptr, COLOR_PAIR(1));
 }
 
-static void nc_print_footer(WINDOW *wptr, struct Footer *pf) {
+static void nc_print_footer(WINDOW *wptr, struct Footer *pf)
+{
 	int max_y, cur;
 	max_y = getmaxy(wptr);
 	//mvwchgat(wptr, max_y - 1, 0, getmaxx(wptr), A_INVIS, 0, NULL);
@@ -547,7 +572,8 @@ static void nc_print_footer(WINDOW *wptr, struct Footer *pf) {
 	wrefresh(wptr);
 }
 
-void nc_print_main_menu_footer(WINDOW *wptr) {
+void nc_print_main_menu_footer(WINDOW *wptr)
+{
 	struct Footer f, *pf = &f;
 	pf->extended = false;
 	pf->add = ON;
@@ -557,7 +583,8 @@ void nc_print_main_menu_footer(WINDOW *wptr) {
 	nc_print_footer(wptr, pf);
 }
 
-void nc_print_read_footer(WINDOW *wptr) {
+void nc_print_read_footer(WINDOW *wptr)
+{
 	struct Footer f, *pf = &f;
 	pf->extended = true;
 	pf->add = ON;
@@ -567,7 +594,8 @@ void nc_print_read_footer(WINDOW *wptr) {
 	nc_print_footer(wptr, pf);
 }
 
-void nc_print_quit_footer(WINDOW *wptr) {
+void nc_print_quit_footer(WINDOW *wptr)
+{
 	struct Footer f, *pf = &f;
 	pf->extended = false;
 	pf->add = DIM;
@@ -577,7 +605,8 @@ void nc_print_quit_footer(WINDOW *wptr) {
 	nc_print_footer(wptr, pf);
 }
 
-void nc_print_input_footer(WINDOW *wptr) {
+void nc_print_input_footer(WINDOW *wptr)
+{
 	struct Footer f, *pf = &f;
 	pf->extended = false;
 	pf->add = DIM;

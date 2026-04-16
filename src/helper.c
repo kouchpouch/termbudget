@@ -28,7 +28,8 @@
 // 97 to 122 == lowercase, 65 to 90 == uppercase ASCII codes. 32 between //
 // --------------------------------------------------------------------- //
 
-int upper(char *ltr) {
+int upper(char *ltr)
+{
 	if (*ltr > SCHAR_MAX - 32) { // Check integer overflow
 		;
 	} else {
@@ -47,7 +48,8 @@ int upper(char *ltr) {
 	return 0;
 }
 
-int lower(char *ltr) {
+int lower(char *ltr)
+{
 	if (*ltr < SCHAR_MAX) {
 		;
 	} else {
@@ -68,7 +70,8 @@ int lower(char *ltr) {
 	return 0;
 }
 
-bool dayexists(int d, int m, int y) {
+bool dayexists(int d, int m, int y)
+{
 	int thirtyones[] = {1, 3, 5, 7, 8, 10, 12};
 
 	if (m == 2 && y % 4 == 0 && (y % 100 != 0 || y % 400 == 0)) {
@@ -100,7 +103,8 @@ bool dayexists(int d, int m, int y) {
 	return false;
 }
 
-int intlen(int n) {
+int intlen(int n)
+{
 	if (n < 0) {
 		n = -(n);
 	}
@@ -111,25 +115,30 @@ int intlen(int n) {
 	return len == 0 ? 1 : len;
 }
 
-int finlen(int n) {
+int finlen(int n)
+{
 	int add;
 	n >= 0 ? (add = 3) : (add = 4);
 	return intlen(n) + add;
 }
 
-long max_val(long a, long b) {
+long max_val(long a, long b)
+{
 	return a >= b ? a : b;
 }
 
-long min_val(long a, long b) {
+long min_val(long a, long b)
+{
 	return a >= b ? b : a;
 }
 
-int compare_for_sort(const void *a, const void *b) {
+int compare_for_sort(const void *a, const void *b)
+{
 	return (*(long *)a - *(long *)b);
 }
 
-int size_to_int(size_t n) {
+int size_to_int(size_t n)
+{
 	if (n <= INT_MAX) {
 		return (int)n;
 	} else {
@@ -137,7 +146,8 @@ int size_to_int(size_t n) {
 	}
 }
 
-bool int_to_size_safe(int n) {
+bool int_to_size_safe(int n)
+{
 	bool ret;
 	n >= 0 ? (ret = true) : (ret = false);
 	return ret;

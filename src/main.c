@@ -69,13 +69,15 @@ bool nc_confirm_record(struct LineData *ld);
 void nc_print_record_hr(WINDOW *wptr, struct ColWidth *cw, struct LineData *ld, int y);
 void nc_print_record_vert(WINDOW *wptr, struct LineData *ld, int x_off);
 
-void mem_alloc_fail(void) {
+void mem_alloc_fail(void) 
+{
 	perror("Failed to allocate memory\n");
 	exit(1);
 }
 
 //FIX Implement
-//int remove_category_orphans(void) {
+//int remove_category_orphans(void) 
+//{
 //	FILE *bfptr = open_budget_csv("r");
 //	FILE *rfptr = open_record_csv("r");
 //
@@ -83,7 +85,8 @@ void mem_alloc_fail(void) {
 //}
 
 /* Prints record from ld, in vertical format, 5 rows. */
-void nc_print_record_vert(WINDOW *wptr, struct LineData *ld, int x_off) {
+void nc_print_record_vert(WINDOW *wptr, struct LineData *ld, int x_off)
+{
 	mvwprintw(wptr, 1, x_off, "Date--> %d/%d/%d", ld->month, ld->day, ld->year);
 	mvwprintw(wptr, 2, x_off, "Cat.--> %s", ld->category);
 	mvwprintw(wptr, 3, x_off, "Desc--> %s", ld->desc);
@@ -92,15 +95,18 @@ void nc_print_record_vert(WINDOW *wptr, struct LineData *ld, int x_off) {
 }
 
 /* Returns the row on the bottom 4th of wptr */
-static int last_quarter_row(WINDOW *wptr) {
+static int last_quarter_row(WINDOW *wptr)
+{
 	return getmaxy(wptr) - getmaxy(wptr) / 4;
 }
 
-static int first_quarter_row(WINDOW *wptr) {
+static int first_quarter_row(WINDOW *wptr)
+{
 	return getmaxy(wptr) / 4;
 }
 
-static double get_max_value(int elements, double *arr) {
+static double get_max_value(int elements, double *arr)
+{
 	double tmp = 0.0;
 	double max = 0.0;
 
@@ -114,7 +120,8 @@ static double get_max_value(int elements, double *arr) {
 	return max;
 }
 
-void nc_print_overview_graphs(WINDOW *wptr, Vec *months, int year) {
+void nc_print_overview_graphs(WINDOW *wptr, Vec *months, int year)
+{
 	double ratios[12] = {0.0}; // Holds each month's income/expense ratio
 	double maxvals[12] = {0.0};
 	struct Balances pb_, *pb = &pb_;
@@ -211,7 +218,8 @@ void nc_print_overview_graphs(WINDOW *wptr, Vec *months, int year) {
 	}
 }
 
-void nc_print_overview_balances(WINDOW *wptr, Vec *months, int year) {
+void nc_print_overview_balances(WINDOW *wptr, Vec *months, int year)
+{
 	int tmpx = 0;
 	int space = calculate_overview_columns(wptr);
 	int y = last_quarter_row(wptr) + 2;
@@ -253,7 +261,8 @@ void nc_print_overview_balances(WINDOW *wptr, Vec *months, int year) {
 	wrefresh(wptr);
 }
 
-void nc_print_overview_months(WINDOW *wptr) {
+void nc_print_overview_months(WINDOW *wptr)
+{
 	int space = calculate_overview_columns(wptr);
 	int y = last_quarter_row(wptr);
 	int cur = (getmaxx(wptr) - space * 11) / 2;
@@ -272,7 +281,8 @@ void nc_print_overview_months(WINDOW *wptr) {
 	}
 }
 
-unsigned int nc_overview_loop(WINDOW *wptr, Vec *months, int year) {
+unsigned int nc_overview_loop(WINDOW *wptr, Vec *months, int year)
+{
 	unsigned int flag = 0;
 	int c;
 	int space = calculate_overview_columns(wptr);
@@ -305,7 +315,8 @@ unsigned int nc_overview_loop(WINDOW *wptr, Vec *months, int year) {
 	return flag;
 }
 
-void nc_overview_setup(int year) {
+void nc_overview_setup(int year)
+{
 	WINDOW *wptr_parent = newwin(LINES - 1, 0, 0, 0);
 	WINDOW *wptr_data = create_lines_subwindow(getmaxy(wptr_parent) - 1,
 									getmaxx(wptr_parent), 1, BOX_OFFSET);
@@ -337,7 +348,8 @@ void nc_overview_setup(int year) {
 }
 
 /* Prints the value of each struct ColWidth memeber to the window wptr */
-void debug_columns(WINDOW *wptr, struct ColWidth *cw) {
+void debug_columns(WINDOW *wptr, struct ColWidth *cw)
+{
 	wmove(wptr, 5, 10);
 	wprintw(wptr, "DATE: %d CATG: %d, DESC: %d, TRNS: %d, AMNT: %d\n",
 	cw->date, cw->catg,	cw->desc, cw->trns, cw->amnt);
@@ -345,7 +357,8 @@ void debug_columns(WINDOW *wptr, struct ColWidth *cw) {
 	wgetch(wptr);
 }
 
-void calculate_balance(struct Balances *pb, Vec *pbo) {
+void calculate_balance(struct Balances *pb, Vec *pbo)
+{
 	FILE *fptr = open_record_csv("r");
 	pb->income = 0.0;
 	pb->expense = 0.0;
@@ -370,7 +383,8 @@ void calculate_balance(struct Balances *pb, Vec *pbo) {
 	fclose(fptr);
 }
 
-void print_debug_node(WINDOW *wptr, CategoryNode *node) {
+void print_debug_node(WINDOW *wptr, CategoryNode *node)
+{
 	wprintw(wptr, "Data sz: %lu, Next: %p, Prev: %p, FPI: %lu\n", 
 		 node->data->size, 
 		 (void *)node->next, 
@@ -378,7 +392,8 @@ void print_debug_node(WINDOW *wptr, CategoryNode *node) {
 		 node->catg_fp);
 }
 
-void debug_category_nodes(WINDOW *wptr, CategoryNode **nodes) {
+void debug_category_nodes(WINDOW *wptr, CategoryNode **nodes)
+{
 	size_t i = 0;
 	wmove(wptr, 0, 0);
 
@@ -396,7 +411,8 @@ void debug_category_nodes(WINDOW *wptr, CategoryNode **nodes) {
 	wclear(wptr);
 }
 
-void draw_scroll_indicator(WINDOW *wptr) {
+void draw_scroll_indicator(WINDOW *wptr)
+{
 	char *etc = "...";
 	int y = getmaxy(wptr) - 1;
 	int x = getmaxx(wptr) - (strlen(etc) + BOX_OFFSET);
@@ -404,11 +420,13 @@ void draw_scroll_indicator(WINDOW *wptr) {
 	wrefresh(wptr);
 }
 
-static int n_spaces(int max_x, char *str1, char *str2) {
+static int n_spaces(int max_x, char *str1, char *str2)
+{
 	return (int)(max_x - (BOX_OFFSET * 2) - strlen(str1) - strlen(str2));
 }
 
-int show_help_subwindow(void) {
+int show_help_subwindow(void)
+{
 	int rows = 15;
 	WINDOW *wptr = create_input_subwindow_n_rows(rows);
 	int y = 1;
@@ -470,7 +488,8 @@ int show_help_subwindow(void) {
 	return my;
 }
 
-void debug_fields(void) {
+void debug_fields(void)
+{
 	move(0,0);
 	FILE *bfptr = open_budget_csv("r");
 	struct BudgetHeader *bh = parse_budget_header(bfptr);
@@ -501,7 +520,8 @@ void debug_fields(void) {
 	getch();
 }
 
-int nc_main_menu(WINDOW *wptr) {
+int nc_main_menu(WINDOW *wptr)
+{
 	struct ReadRet rr_, *rret = &rr_;
 	struct Datevals *dv;
 
@@ -595,7 +615,8 @@ int nc_main_menu(WINDOW *wptr) {
 	return 0;
 }
 
-static void print_usage(void) {
+static void print_usage(void)
+{
 	printf("\x1b[1mUsage: termbudget [OPTIONS]\x1b[0m\n\n");
 	printf("OPTIONS:\n");
 	printf("-c               CLI MODE\n");
@@ -604,7 +625,8 @@ static void print_usage(void) {
 	printf("--convert FILE   Converts FILE to termbudget compatible CSV\n");
 }
 
-int main(int argc, char **argv) {
+int main(int argc, char **argv)
+{
 	if (verify_files_exist() == -1) {
 		exit(1);
 	}

@@ -24,18 +24,21 @@
 
 #define GRAPH_LENGTH 30
 
-void draw_body_border(WINDOW *wptr) {
+void draw_body_border(WINDOW *wptr)
+{
 	wborder(wptr, 0, 0, 0, 0, ACS_LTEE, ACS_RTEE, ACS_BTEE, 0);
 	mvwxcprintw(wptr, 0, "Categories");
 	wrefresh(wptr);
 }
 
-static void write_parent_title(WINDOW *wptr) {
+static void write_parent_title(WINDOW *wptr)
+{
 	mvwxcprintw(wptr, 0, "Summary");
 	wrefresh(wptr);
 }
 
-static bool check_y_fit(WINDOW *wptr, int y) {
+static bool check_y_fit(WINDOW *wptr, int y)
+{
 	if (y >= getmaxy(wptr) - 1) {
 		return false;
 	} else {
@@ -43,7 +46,8 @@ static bool check_y_fit(WINDOW *wptr, int y) {
 	}
 }
 
-WINDOW *create_sidebar_parent(WINDOW *wptr_parent, int std_y, int std_x) {
+WINDOW *create_sidebar_parent(WINDOW *wptr_parent, int std_y, int std_x)
+{
 	int parent_x = getmaxx(wptr_parent);
 	WINDOW *wptr = newwin(std_y - 1, std_x - parent_x + 1, 0, parent_x - 1);
 	if (wptr == NULL) {
@@ -53,7 +57,8 @@ WINDOW *create_sidebar_parent(WINDOW *wptr_parent, int std_y, int std_x) {
 	return wptr;
 }
 
-WINDOW *create_sidebar_body(WINDOW *wptr_parent, WINDOW *wptr_sidebar_parent) {
+WINDOW *create_sidebar_body(WINDOW *wptr_parent, WINDOW *wptr_sidebar_parent)
+{
 	// This really should come from the return value of print_parent_header
 	int head_y = 5;
 	WINDOW *wptr = newwin(getmaxy(wptr_sidebar_parent) - head_y, SIDEBAR_COLUMNS + 1, head_y, getmaxx(wptr_parent) - 1); 
@@ -64,7 +69,8 @@ WINDOW *create_sidebar_body(WINDOW *wptr_parent, WINDOW *wptr_sidebar_parent) {
 	return wptr;
 }
 
-static bool verify_sidebar_strlen(char *str, WINDOW *wptr) {
+static bool verify_sidebar_strlen(char *str, WINDOW *wptr)
+{
 	if ((int)strnlen(str, INT_MAX) > getmaxx(wptr) - BOX_OFFSET) {
 		return false;
 	} else {
@@ -73,7 +79,8 @@ static bool verify_sidebar_strlen(char *str, WINDOW *wptr) {
 }
 
 /* Prints the string 'str' and returns the number of rows printed to */
-static int print_body_categories(char *str, WINDOW *wptr, int y, int x, int i) {
+static int print_body_categories(char *str, WINDOW *wptr, int y, int x, int i)
+{
 	if (!check_y_fit(wptr, y)) {
 		return 0;
 	}
@@ -169,7 +176,8 @@ static int print_body_graphs_and_values
 	return 4;
 }
 
-int init_sidebar_body(WINDOW *wptr, CategoryNode **nodes, size_t i) {
+int init_sidebar_body(WINDOW *wptr, CategoryNode **nodes, size_t i)
+{
 	wclear(wptr);
 	draw_body_border(wptr);
 //	int i = 0;
@@ -209,7 +217,8 @@ int init_sidebar_body(WINDOW *wptr, CategoryNode **nodes, size_t i) {
 	return n_displayed;
 }
 
-static int print_parent_header(WINDOW *wptr, Vec *psc, double leftover) {
+static int print_parent_header(WINDOW *wptr, Vec *psc, double leftover)
+{
 	int x = 1;
 	int y = 1;
 	int max_x = getmaxx(wptr);
@@ -241,12 +250,14 @@ static int print_parent_header(WINDOW *wptr, Vec *psc, double leftover) {
 	return y;
 }
 
-void draw_sidebar_parent_border(WINDOW *wptr) {
+void draw_sidebar_parent_border(WINDOW *wptr)
+{
 	wborder(wptr, 0, 0, 0, 0, ACS_TTEE, 0, 0, 0);
 	write_parent_title(wptr);
 }
 
-void init_sidebar_parent(WINDOW *wptr, Vec *psc, double leftover) {
+void init_sidebar_parent(WINDOW *wptr, Vec *psc, double leftover)
+{
 	draw_sidebar_parent_border(wptr);
 	print_parent_header(wptr, psc, leftover);
 }

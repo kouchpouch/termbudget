@@ -24,7 +24,8 @@
 #include "parser.h"
 #include "filemanagement.h"
 
-static int lines_to_last_occurance(FILE *fptr, int month, int year) {
+static int lines_to_last_occurance(FILE *fptr, int month, int year)
+{
 	char *str;
 	char linebuff[LINE_BUFFER];
 	int l = 0;
@@ -50,7 +51,8 @@ static int lines_to_last_occurance(FILE *fptr, int month, int year) {
 /* We assume that the CSV is sorted by date already. Because every operation
  * to edit or add a transaction will go through the sorting function to
  * determine where to insert the record. */
-unsigned int sort_budget_csv(int month, int year) {
+unsigned int sort_budget_csv(int month, int year)
+{
 	FILE *fptr = open_budget_csv("r");
 	unsigned int result_line = 1;
 	unsigned int line = 1;
@@ -118,7 +120,8 @@ unsigned int sort_budget_csv(int month, int year) {
 /* We assume that the CSV is sorted by date already. Because every operation
  * to edit or add a transaction will go through the sorting function to
  * determine where to insert the record. */
-unsigned int sort_record_csv(int month, int day, int year) {
+unsigned int sort_record_csv(int month, int day, int year)
+{
 	FILE *fptr = open_record_csv("r");
 	unsigned int line = 1; // Line starts at 1 to skip the header
 	unsigned int result_line = 1;
@@ -201,7 +204,8 @@ unsigned int sort_record_csv(int month, int day, int year) {
 	return result_line;
 }
 
-unsigned int sort_converted_csv(int month, int day, int year, FILE *fptr) {
+unsigned int sort_converted_csv(int month, int day, int year, FILE *fptr)
+{
 	unsigned int line = 1; // Line starts at 1 to skip the header
 	unsigned int result_line = 1;
 	unsigned int lessdayline = 0;

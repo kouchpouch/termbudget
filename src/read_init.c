@@ -60,7 +60,8 @@ static const char *abbr_months[] = {
 	"DEC"
 };
 
-static bool duplicate_data_exists(Vec *vec, long y) {
+static bool duplicate_data_exists(Vec *vec, long y)
+{
 	for (size_t i = 0; i < vec->size; i++) {
 		if (vec->data[i] == y) {
 			return true;
@@ -69,7 +70,8 @@ static bool duplicate_data_exists(Vec *vec, long y) {
 	return false;
 }
 
-static void combine_dedup_vectors(Vec *vec1, Vec *vec2, Vec *result) {
+static void combine_dedup_vectors(Vec *vec1, Vec *vec2, Vec *result)
+{
 	size_t tmp1;
 	size_t tmp2;
 	size_t max = max_val(vec1->size, vec2->size);
@@ -118,7 +120,8 @@ static void combine_dedup_vectors(Vec *vec1, Vec *vec2, Vec *result) {
 
 /* Returns a Vec of deduplicated and sorted data from record_years and 
  * budget_years */
-static Vec *consolidate_years(Vec *vec1, Vec *vec2) {
+static Vec *consolidate_years(Vec *vec1, Vec *vec2)
+{
 	Vec *result = malloc(sizeof(*result) 
 					     + (sizeof(long) * vec1->size) 
 					     + (sizeof(long) * vec2->size));
@@ -142,7 +145,8 @@ static Vec *consolidate_years(Vec *vec1, Vec *vec2) {
 /* Retrieves years with data from RECORD_DIR and BUDGET_DIR CSVs, combines
  * and deduplicates the data, and returns a malloc'd Vec containing an array
  * of years that can be selected for viewing. */
-static Vec *init_select_year(void) {
+static Vec *init_select_year(void)
+{
 	FILE *rfptr = open_record_csv("r");
 	FILE *bfptr = open_budget_csv("r");
 
@@ -177,7 +181,8 @@ static Vec *init_select_year(void) {
 	return retval;
 }
 
-static Vec *consolidate_months(Vec *vec1, Vec *vec2) {
+static Vec *consolidate_months(Vec *vec1, Vec *vec2)
+{
 	Vec *result = malloc(sizeof(*result) + (sizeof(long) * MONTHS_IN_YEAR));
 	if (result == NULL) {
 		free(vec1);
@@ -198,7 +203,8 @@ static Vec *consolidate_months(Vec *vec1, Vec *vec2) {
 /* Retrieves months with data from RECORD_DIR and BUDGET_DIR CSVs, combines
  * and deduplicates the data, and returns a malloc'd Vec containing an array
  * of months that can be selected for viewing. */
-static Vec *init_select_month(int year) {
+static Vec *init_select_month(int year)
+{
 	FILE *rfptr = open_record_csv("r");
 	FILE *bfptr = open_budget_csv("r");
 
@@ -221,7 +227,8 @@ static Vec *init_select_month(int year) {
 
 /* Iterates through 'months' vector's data member and returns the index of
  * the current month */
-static int get_current_mo_idx(Vec *months) {
+static int get_current_mo_idx(Vec *months)
+{
 	int mo = get_current_month();
 
 	/* months->size can never be more than MONTHS_IN_YEAR or less than zero,
@@ -235,7 +242,8 @@ static int get_current_mo_idx(Vec *months) {
 }
 
 /* On a non-select, the return value is the inverted menukeys value */
-static int select_month(WINDOW *wptr, int year) {
+static int select_month(WINDOW *wptr, int year)
+{
 	Vec *months_data = init_select_month(year);
 
 	int selected_month = 0;
@@ -337,7 +345,8 @@ static int select_month(WINDOW *wptr, int year) {
 }
 
 /* On a non-select, the return value is the inverted menukeys value */
-static int select_year(WINDOW *wptr) {
+static int select_year(WINDOW *wptr)
+{
 	keypad(wptr, true);	
 
 	Vec *years = init_select_year();
@@ -438,7 +447,8 @@ static int select_year(WINDOW *wptr) {
 	return selected_year;
 }
 
-static int input_year(WINDOW *wptr) {
+static int input_year(WINDOW *wptr)
+{
 	int yr = select_year(wptr);
 
 	if (yr == -(NO_RCRD)) {
@@ -453,7 +463,8 @@ static int input_year(WINDOW *wptr) {
 	return yr;
 }
 
-static void get_dates(struct SelRecord *sr, struct Datevals *dates) {
+static void get_dates(struct SelRecord *sr, struct Datevals *dates)
+{
 	WINDOW *wptr = newwin(LINES - 1, 0, 0, 0);
 	box(wptr, 0, 0);
 
@@ -484,7 +495,8 @@ static void get_dates(struct SelRecord *sr, struct Datevals *dates) {
 	nc_exit_window(wptr);
 }
 
-static void debug_fields(void) {
+static void debug_fields(void)
+{
 	FILE *bfptr = open_budget_csv("r");
 	struct BudgetHeader *bh = parse_budget_header(bfptr);
 	FILE *fptr = open_record_csv("r");
@@ -521,7 +533,8 @@ static void debug_fields(void) {
  * just moving memory around for the sake of portability and other sorting
  * selections.
  */
-static Vec *sort_by_date(FILE *fptr, Vec *pidx, Vec *plines) {
+static Vec *sort_by_date(FILE *fptr, Vec *pidx, Vec *plines)
+{
 	Vec *psbd = malloc(sizeof(*psbd) + (sizeof(long) * plines->size));
 	if (psbd == NULL) {
 		mem_alloc_fail();
@@ -554,7 +567,7 @@ static Vec *sort_by_category
 	prsc->capacity = REALLOC_INCR;
 	prsc->size = 0;
 
-	struct Categories *pc = get_categories(mo, yr);
+	_category_list_t *pc = get_categories(mo, yr);
 
 	char linebuff[LINE_BUFFER];
 	char *line;
@@ -610,19 +623,22 @@ err_null:
 
 /* Draws a border around the window 'wptr' with "T" shaped characters to
  * mesh seamlessly with the window border of the sidebar. */
-static void draw_parent_box_with_sidebar(WINDOW *wptr) {
+static void draw_parent_box_with_sidebar(WINDOW *wptr)
+{
 	wborder(wptr, 0, 0, 0, 0, 0, ACS_TTEE, 0, ACS_BTEE);
 	wrefresh(wptr);
 }
 
-static void print_date(WINDOW *wptr, int yr, int mo) {
+static void print_date(WINDOW *wptr, int yr, int mo)
+{
 	int y = 0;
 	int x = BOX_OFFSET;
 	mvwprintw(wptr, y, x, "%s %d", abbr_months[mo - 1], yr);
 	wrefresh(wptr);
 }
 
-static void print_sort_text(WINDOW *wptr, int sort) {
+static void print_sort_text(WINDOW *wptr, int sort)
+{
 	char *text;
 	sort == SORT_DATE ? (text = "Date") : (text = "Category");
 	int y = 0;
@@ -632,7 +648,8 @@ static void print_sort_text(WINDOW *wptr, int sort) {
 	wrefresh(wptr);
 }
 
-static void free_windows(struct ReadWins *wins) {
+static void free_windows(struct ReadWins *wins)
+{
 	nc_exit_window(wins->data);
 	nc_exit_window(wins->parent);
 	if (wins->sidebar_parent != NULL) {
@@ -642,7 +659,8 @@ static void free_windows(struct ReadWins *wins) {
 	free(wins);
 }
 
-static struct Plannedvals *get_total_planned(CategoryNode **nodes) {
+static struct Plannedvals *get_total_planned(CategoryNode **nodes)
+{
 	struct Plannedvals *pv = malloc(sizeof(*pv));
 	if (pv == NULL) {
 		mem_alloc_fail();
@@ -679,7 +697,8 @@ static struct Plannedvals *get_total_planned(CategoryNode **nodes) {
 	return pv;
 }
 
-static double get_left_to_budget(CategoryNode **nodes) {
+static double get_left_to_budget(CategoryNode **nodes)
+{
 	struct Plannedvals *pv = get_total_planned(nodes);
 	double ret = pv->inc - pv->exp;
 	free(pv);
@@ -891,10 +910,12 @@ err_select_date_fail:
 	refresh();
 }
 
-void nc_read_setup_default(struct ReadRet *rret) {
+void nc_read_setup_default(struct ReadRet *rret)
+{
 	nc_read_setup(0, 0, SORT_CATG, rret);
 }
 
-void nc_read_setup_year(int sel_year, struct ReadRet *rret) {
+void nc_read_setup_year(int sel_year, struct ReadRet *rret)
+{
 	nc_read_setup(sel_year, 0, SORT_CATG, rret);
 }

@@ -34,13 +34,13 @@ struct CategoryNode {
 	Vec *data;
 };
 
-struct Categories {
+typedef struct __category_list_t {
 	size_t capacity;
 	size_t size;
 	char *categories[];
-};
+} _category_list_t;
 
-void free_categories(struct Categories *pc);
+void free_categories(_category_list_t *pc);
 void free_category_nodes(CategoryNode **nodes);
 CategoryNode **create_category_nodes(int m, int y);
 

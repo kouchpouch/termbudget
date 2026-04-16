@@ -15,14 +15,16 @@
 
 #include <time.h>
 
-int get_current_month(void) {
+int get_current_month(void)
+{
 	time_t timer;
 	time(&timer);
 	struct tm *tm = localtime(&timer);
 	return tm->tm_mon;
 }
 
-int get_current_year(void) {
+int get_current_year(void)
+{
 	time_t timer;
 	time(&timer);
 	struct tm *tm = localtime(&timer);

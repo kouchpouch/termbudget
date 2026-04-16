@@ -36,8 +36,16 @@ enum fields {
 	DEL_CATG
 };
 
+typedef struct __replace_records_t {
+	size_t line;
+	size_t temp_line;
+	size_t temp_idx;
+	int changed;
+} _replace_records_t;
+
 /* Returns true if a duplicate is found, false if not */
-bool duplicate_category_exists(struct Categories *psc, char *catg) {
+bool duplicate_category_exists(_category_list_t *psc, char *catg)
+{
 	for (size_t i = 0; i < psc->size; i++) {
 		if (strcasecmp(psc->categories[i], catg) == 0) {
 			return true;
@@ -46,7 +54,8 @@ bool duplicate_category_exists(struct Categories *psc, char *catg) {
 	return false;
 }
 
-static void replace_category(struct BudgetTokens *bt, long b) {
+static void replace_category(struct BudgetTokens *bt, long b)
+{
 	FILE *bfptr = open_budget_csv("r");
 	FILE *tmpfptr;
 	int replace_line = boff_to_linenum_budget(b) + 1;
@@ -59,7 +68,8 @@ static void replace_category(struct BudgetTokens *bt, long b) {
 	mv_tmp_to_budget_file(tmpfptr, bfptr);
 }
 
-static void insert_category(struct BudgetTokens *bt, int insert_line) {
+static void insert_category(struct BudgetTokens *bt, int insert_line)
+{
 	FILE *bfptr = open_budget_csv("r");
 	FILE *tmpfptr;
 	char insert_str[LINE_BUFFER];
@@ -71,7 +81,8 @@ static void insert_category(struct BudgetTokens *bt, int insert_line) {
 	mv_tmp_to_budget_file(tmpfptr, bfptr);
 }
 
-static void delete_category(long b) {
+static void delete_category(long b)
+{
 	FILE *bfptr = open_budget_csv("r");
 	FILE *tmpfptr;
 	size_t delete_line = boff_to_linenum_budget(b) + 1;
@@ -85,14 +96,16 @@ static void delete_category(long b) {
  * If the user tries to delete a category that contains members, this warns
  * the user that the action cannot be completed.
  */
-static void invalid_delete_warning(void) {
+static void invalid_delete_warning(void)
+{
 	WINDOW *wptr = create_input_subwindow();
 	mvwxcprintw(wptr, 3, "Cannot delete a category");
 	mvwxcprintw(wptr, 4, "which contains records");
 	nc_exit_window_key(wptr);
 }
 
-static bool nc_confirm_amount(double amt) {
+static bool nc_confirm_amount(double amt)
+{
 	WINDOW *wptr = create_input_subwindow();
 	int c = 0;
 
@@ -124,7 +137,8 @@ static bool nc_confirm_amount(double amt) {
 	return false;
 }
 
-void mv_category_to_top(CategoryNode **nodes, size_t i) {
+void mv_category_to_top(CategoryNode **nodes, size_t i)
+{
 	if (i == 0) {
 		return;
 	}
@@ -139,7 +153,8 @@ void mv_category_to_top(CategoryNode **nodes, size_t i) {
 	free_budget_tokens(bt);
 }
 
-static int select_catg_field(void) {
+static int select_catg_field(void)
+{
 	const size_t n_options = 6;
 	int retval;
 	struct MenuParams *mp = malloc(sizeof(*mp) + (sizeof(char *) * n_options));
@@ -162,8 +177,9 @@ static int select_catg_field(void) {
 	return retval;
 }
 
-static int rename_category(struct BudgetTokens *bt) {
-	struct Categories *psc = get_budget_catg_by_date(bt->m, bt->y);
+static int rename_category(struct BudgetTokens *bt)
+{
+	_category_list_t *psc = get_budget_catg_by_date(bt->m, bt->y);
 	char *catg = nc_input_string("Renaming Category");
 	if (catg == NULL) {
 		return -1;
@@ -182,7 +198,8 @@ static int rename_category(struct BudgetTokens *bt) {
 	}
 }
 
-static void free_lda(struct LineData **lda, size_t sz) {
+static void free_lda(struct LineData **lda, size_t sz)
+{
 	for (size_t i = 0; i < sz; i++) {
 		free_tokenized_record_strings(lda[i]);
 		free(lda[i]);
@@ -206,9 +223,16 @@ static void free_lda(struct LineData **lda, size_t sz) {
 static int replace_many_records_categories
 (CategoryNode **nodes, size_t node_idx, char *catg)
 {
+	_replace_records_t rr = {0};
+	FILE *fptr;
+	FILE *tmpfptr;
+	char *str;
+	char linebuff[LINE_BUFFER];
 	size_t n_recs = nodes[node_idx]->data->size;
 	size_t del_lines[n_recs];
+
 	struct LineData **lda = malloc(sizeof(struct LineData) * n_recs);
+
 	if (lda == NULL) {
 		mem_alloc_fail();
 	}
@@ -224,53 +248,49 @@ static int replace_many_records_categories
 		del_lines[i] = boff_to_linenum(nodes[node_idx]->data->data[i]) + 1;
 	}
 
-	FILE *fptr = open_record_csv("r");
-	FILE *tmpfptr = open_temp_csv();
-	char *str;
-	char linebuff[LINE_BUFFER];
-	size_t line = 0;
-	size_t temp_line;
-	size_t temp_idx;
-	int changed = 0;
+	fptr = open_record_csv("r");
+	tmpfptr = open_temp_csv();
 
 	while ((str = fgets(linebuff, sizeof(linebuff), fptr)) != NULL) {
-		line++;
-		temp_line = 0;
+		rr.line++;
+		rr.temp_line = 0;
 		for (size_t i = 0; i < n_recs; i++) {
-			if (del_lines[i] == line) {
-				temp_line = del_lines[i];
-				temp_idx = i;
+			if (del_lines[i] == rr.line) {
+				rr.temp_line = del_lines[i];
+				rr.temp_idx = i;
 				break;
 			}
 		}
-		if (temp_line == 0) {
+
+		if (rr.temp_line == 0) {
 			fputs(str, tmpfptr);
 		} else {
 			fprintf(tmpfptr, "%d,%d,%d,%s,%s,%d,%.2f\n",
-			lda[temp_idx]->month, 
-			lda[temp_idx]->day, 
-			lda[temp_idx]->year, 
-			lda[temp_idx]->category, 
-			lda[temp_idx]->desc, 
-			lda[temp_idx]->transtype, 
-			lda[temp_idx]->amount
+			lda[rr.temp_idx]->month, 
+			lda[rr.temp_idx]->day, 
+			lda[rr.temp_idx]->year, 
+			lda[rr.temp_idx]->category, 
+			lda[rr.temp_idx]->desc, 
+			lda[rr.temp_idx]->transtype, 
+			lda[rr.temp_idx]->amount
 		   );
-			changed++;
+			rr.changed++;
 		}
 	}
 
 	free_lda(lda, n_recs);
 
 	if (debug_flag) {
-		printw("CHANGED: %d\n", changed);
+		printw("CHANGED: %d\n", rr.changed);
 		getch();
 	}
 
 	mv_tmp_to_record_file(tmpfptr, fptr);
-	return changed;
+	return rr.changed;
 }
 
-void nc_edit_category(long node_idx, long nmembers, CategoryNode **nodes) {
+void nc_edit_category(long node_idx, long nmembers, CategoryNode **nodes)
+{
 	long b = nodes[node_idx]->catg_fp;
 	double tmp = 0.0;
 	enum fields select;
@@ -280,6 +300,7 @@ void nc_edit_category(long node_idx, long nmembers, CategoryNode **nodes) {
 	if (select < 0) {
 		return;
 	}
+
 	bt = tokenize_budget_fpi(b);
 	if (bt == NULL) {
 		return;

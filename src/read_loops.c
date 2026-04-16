@@ -51,7 +51,8 @@ struct DispCursor {
 	int last;
 };
 
-static void print_debug_line(WINDOW *wptr, struct ScrollCursor *sc) {
+static void print_debug_line(WINDOW *wptr, struct ScrollCursor *sc)
+{
 	mvwhline(wptr, getmaxy(wptr) - 1, 1, 0, getmaxx(wptr) - 2);
 	mvwprintw(wptr, getmaxy(wptr) - 1, getmaxx(wptr) - 55, "SELIDX: %d", sc->select_idx);
 	mvwprintw(wptr, getmaxy(wptr) - 1, getmaxx(wptr) - 40, "DATA: %d", sc->displayed);
@@ -105,7 +106,8 @@ static void print_catg_balances
 	}
 }
 
-static bool shorten_string(WINDOW *wptr) {
+static bool shorten_string(WINDOW *wptr)
+{
 	if (getmaxx(wptr) + BOX_OFFSET < MIN_COLUMNS + SHORTEN_THRESH) {
 		return true;
 	} else {
@@ -195,7 +197,8 @@ static void print_category_hr
 }
 
 /* Returns the total number of nodes in 'nodes' */
-static int get_total_nodes(CategoryNode **nodes) {
+static int get_total_nodes(CategoryNode **nodes)
+{
 	int n = 1;
 	for (int i = 0; nodes[i]->next != NULL; i++) {
 		n++;
@@ -257,7 +260,8 @@ static void print_init_budget_loop
  * The return value is calculated by adding up add CategoryNodes and their
  * data member's size.
  */
-static int get_total_displayed_rows(CategoryNode **nodes) {
+static int get_total_displayed_rows(CategoryNode **nodes)
+{
 	int rows = 0;
 	int i = 0;
 
@@ -287,7 +291,8 @@ static void init_scroll_cursor(struct ScrollCursor *sc, CategoryNode **nodes)
 	sc->sidebar_idx = 0;
 }
 
-static void print_balances_text(WINDOW *wptr, Vec *psc) {
+static void print_balances_text(WINDOW *wptr, Vec *psc)
+{
 	struct Balances pb_, *pb = &pb_;
 	calculate_balance(pb, psc);
 	int total_len = intlen(pb->income) + intlen(pb->expense) + strlen("Expenses: $.00 Income: $.00");
@@ -322,7 +327,8 @@ static void draw_read_window_borders_and_text
  * the selected record at index i of pidx->data. Following the format style
  * from edit_transaction()
  */
-static int show_detail_subwindow(char *line) {
+static int show_detail_subwindow(char *line)
+{
 	WINDOW *wptr_detail = create_input_subwindow();
 	int y = getmaxy(wptr_detail);
 
@@ -357,8 +363,8 @@ static void refresh_displayed_counter
 	}
 }
 
-static void nc_scroll_prev(long b, FILE *fptr, WINDOW *wptr, struct ColWidth *cw, 
-					bool catg) 
+static void nc_scroll_prev
+(long b, FILE *fptr, WINDOW *wptr, struct ColWidth *cw, bool catg) 
 {
 	fseek(fptr, b, SEEK_SET);
 	char linebuff[LINE_BUFFER];
@@ -591,8 +597,8 @@ static void refresh_on_detail_close_uniform
  * as many lines as is required to get the data back on the screen after a
  * subwindow closes. */
 static void refresh_budget_loop
-(WINDOW *data, CategoryNode **nodes, struct ScrollCursor *sc, struct ColWidth *cw,
- FILE *rfptr, FILE *bfptr, int subwin_y)
+(WINDOW *data, CategoryNode **nodes, struct ScrollCursor *sc,
+ struct ColWidth *cw, FILE *rfptr, FILE *bfptr, int subwin_y)
 {
 	int tmp_idx = sc->select_idx;
 	int subw_y_upper = (getmaxy(stdscr) / 2) - (subwin_y / 2) - BOX_OFFSET;

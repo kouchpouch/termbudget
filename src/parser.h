@@ -21,6 +21,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include "categories.h"
 #include "vector.h"
 
 #define CSV_FIELDS 7
@@ -134,7 +135,7 @@ extern Vec *get_matching_line_nums(FILE *fptr, int month, int year);
  * For a given month and year, return an array of strings from the category
  * field of the RECORD_DIR csv file.
  */
-extern struct Categories *get_categories(int month, int year);
+extern _category_list_t *get_categories(int month, int year);
 
 /* Uses get_records_by_any with all parameters except year as NULL
  * or -1, omitting the search for other fields */
@@ -165,7 +166,7 @@ extern Vec *get_records_by_any(int month, int day, int year, char *category,
 
 /* Returns number of categories and the string literal categories of given
  * month and year in BUDGET_DIR */
-extern struct Categories *get_budget_catg_by_date(int month, int year);
+extern _category_list_t *get_budget_catg_by_date(int month, int year);
 
 /* Returns Vec containing byte offsets of each category that matches month,
  * year in BUDGET_DIR. */

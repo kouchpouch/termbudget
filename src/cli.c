@@ -320,7 +320,8 @@ static void cli_read_csv(void)
 	fptr = NULL;
 }
 
-static void cli_edit_transaction(void) {
+static void cli_edit_transaction(void)
+{
 	int target;
 	int humantarget;
 	struct LineData linedata, *ld = &linedata;
@@ -419,7 +420,8 @@ static void cli_edit_transaction(void) {
 	fptr = NULL;
 }
 
-void cli_main_menu(void) {
+void cli_main_menu(void)
+{
 	int choice;
 	printf("Make a selection:\n");
 	printf("a - Add Transaction\n");

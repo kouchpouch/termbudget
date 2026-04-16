@@ -75,7 +75,7 @@ void insert_budget_record(char *catg, int m, int y, int transtype, double amt)
 char *create_budget_record(int yr, int mo) {
 	char *catg;
 	int transtype;
-	struct Categories *psc;
+	_category_list_t *psc;
 	double amt;
 
 	if (mo == 0 || yr == 0) {

@@ -16,11 +16,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include "parser.h"
+#include "categories.h"
 #include "main.h"
 #include "tui.h"
 #include "filemanagement.h"
 
-int get_total_csv_lines(void) {
+int get_total_csv_lines(void)
+{
 	FILE *fptr = fopen(RECORD_DIR, "r");
 	int lines = 0;
 	char buff[256];
@@ -30,7 +32,8 @@ int get_total_csv_lines(void) {
 	return lines;
 }
 
-unsigned int boff_to_linenum(long b) {
+unsigned int boff_to_linenum(long b)
+{
 	FILE *fptr = open_record_csv("r");
 	char linebuff[LINE_BUFFER];
 	int linenum = 0;
@@ -47,7 +50,8 @@ unsigned int boff_to_linenum(long b) {
 	return linenum;
 }
 
-unsigned int boff_to_linenum_budget(long b) {
+unsigned int boff_to_linenum_budget(long b)
+{
 	FILE *fptr = open_budget_csv("r");
 	char linebuff[LINE_BUFFER];
 	int linenum = 0;
@@ -64,13 +68,15 @@ unsigned int boff_to_linenum_budget(long b) {
 	return linenum;
 }
 
-void seek_n_fields(char **line, int n) {
+void seek_n_fields(char **line, int n)
+{
 	for (int i = 0; i < n; i++) {
 		strsep(line, ",");
 	}
 }
 
-static void init_record_header_struct(struct RecordHeader *rh) {
+static void init_record_header_struct(struct RecordHeader *rh)
+{
 	rh->month = -1;
 	rh->day = -1;
 	rh->year = -1;
@@ -81,7 +87,8 @@ static void init_record_header_struct(struct RecordHeader *rh) {
 	rh->n_fields = -1;
 }
 
-struct RecordHeader *parse_record_header(FILE *fptr) {
+struct RecordHeader *parse_record_header(FILE *fptr)
+{
 	struct RecordHeader *rh = malloc(sizeof(*rh));
 	init_record_header_struct(rh);
 	if (rh == NULL) {
@@ -140,7 +147,8 @@ end_of_str:
 	return rh;
 }
 
-static void init_budget_header_struct(struct BudgetHeader *bh) {
+static void init_budget_header_struct(struct BudgetHeader *bh)
+{
 	bh->month = -1;
 	bh->year = -1;
 	bh->catg = -1;
@@ -149,7 +157,8 @@ static void init_budget_header_struct(struct BudgetHeader *bh) {
 	bh->n_fields = -1;
 }
 
-struct BudgetHeader *parse_budget_header(FILE *fptr) {
+struct BudgetHeader *parse_budget_header(FILE *fptr)
+{
 	struct BudgetHeader *bh = malloc(sizeof(*bh));
 	init_budget_header_struct(bh);
 	if (bh == NULL) {
@@ -202,7 +211,8 @@ end_of_str:
 	return bh;
 }
 
-int seek_beyond_header(FILE *fptr) {
+int seek_beyond_header(FILE *fptr)
+{
 	int i = 0;
 	char c = getc(fptr);
 	while (c != '\n' && c != EOF) {
@@ -216,7 +226,8 @@ int seek_beyond_header(FILE *fptr) {
 	}
 }
 
-int get_num_fields(FILE *fptr) {
+int get_num_fields(FILE *fptr)
+{
 	int n = 1;
 	rewind(fptr);
 
@@ -231,7 +242,8 @@ int get_num_fields(FILE *fptr) {
 	return n;
 }
 
-void free_budget_tokens(struct BudgetTokens *pbt) {
+void free_budget_tokens(struct BudgetTokens *pbt)
+{
 	free(pbt->catg);
 	free(pbt);
 }
@@ -240,7 +252,8 @@ void free_budget_tokens(struct BudgetTokens *pbt) {
  * Loop through each category in the budget. Returns true or false if the
  * category exists for the given date range 
  */
-bool category_exists_in_budget(char *catg, int month, int year) {
+bool category_exists_in_budget(char *catg, int month, int year)
+{
 	struct BudgetTokens bt, *pbt = &bt;
 	int i = 1;
 
@@ -255,7 +268,8 @@ bool category_exists_in_budget(char *catg, int month, int year) {
 	return false;
 }
 
-bool month_or_year_exists(int m, int y) {
+bool month_or_year_exists(int m, int y)
+{
 	FILE *bfptr = open_budget_csv("r");
 	char linebuff[LINE_BUFFER];
 	char *str;
@@ -285,7 +299,8 @@ bool month_or_year_exists(int m, int y) {
 }
 
 /* Returns all income records subtracted by expense records */
-double get_expenditures_per_category(struct BudgetTokens *bt) {
+double get_expenditures_per_category(struct BudgetTokens *bt)
+{
 	double total = 0;
 	Vec *pi = get_records_by_any(bt->m, -1, bt->y, bt->catg, NULL, TT_INCOME, -1, NULL);
 	Vec *pe = get_records_by_any(bt->m, -1, bt->y, bt->catg, NULL, TT_EXPENSE, -1, NULL);
@@ -300,7 +315,8 @@ double get_expenditures_per_category(struct BudgetTokens *bt) {
 	return total;
 }
 
-Vec *get_years_with_data(FILE *fptr, int field) {
+Vec *get_years_with_data(FILE *fptr, int field)
+{
 	Vec *pr = malloc(sizeof(*pr) + sizeof(long) * REALLOC_INCR);
 	if (pr == NULL) {
 		mem_alloc_fail();
@@ -355,7 +371,8 @@ Vec *get_years_with_data(FILE *fptr, int field) {
 	return pr;
 }
 
-static void init_data_array(Vec *vec) {
+static void init_data_array(Vec *vec)
+{
 	for (size_t i = 0; i < vec->size; i++) {
 		vec->data[i] = 0;
 	}
@@ -368,7 +385,8 @@ static void init_data_array(Vec *vec) {
  * temporary and a new function will be added to find which fields to read
  * based on the header.
  */
-Vec *get_months_with_data(FILE *fptr, int matchyear, int field) {
+Vec *get_months_with_data(FILE *fptr, int matchyear, int field)
+{
 	char linebuff[LINE_BUFFER];
 	char *str;
 	Vec *months = malloc(sizeof(*months) + (sizeof(long) * MONTHS_IN_YEAR));
@@ -407,7 +425,8 @@ Vec *get_months_with_data(FILE *fptr, int matchyear, int field) {
 	return months;
 }
 
-Vec *get_matching_line_nums(FILE *fptr, int month, int year) {
+Vec *get_matching_line_nums(FILE *fptr, int month, int year)
+{
 	rewind(fptr);
 	Vec *pl = malloc(sizeof(*pl) + (sizeof(long) * REALLOC_INCR));
 	if (pl == NULL) {
@@ -461,12 +480,13 @@ Vec *get_matching_line_nums(FILE *fptr, int month, int year) {
  * For a given month and year, return an array of strings from the category
  * field of the RECORD_DIR csv file.
  */
-struct Categories *get_categories(int month, int year) {
+_category_list_t *get_categories(int month, int year)
+{
 	FILE *fptr = open_record_csv("r");
 	char *line;
 	char *token;
 	char linebuff[LINE_BUFFER];
-	struct Categories *pc = malloc(sizeof(*pc) + (sizeof(char *) * REALLOC_INCR));
+	_category_list_t *pc = malloc(sizeof(*pc) + (sizeof(char *) * REALLOC_INCR));
 	pc->size = 0;
 	pc->capacity = REALLOC_INCR;
 
@@ -496,7 +516,7 @@ struct Categories *get_categories(int month, int year) {
 
 		if (pc->size >= pc->capacity) {
 			pc->capacity += REALLOC_INCR;
-			struct Categories *temp = realloc(pc, sizeof(struct Categories) + 
+			_category_list_t *temp = realloc(pc, sizeof(_category_list_t) + 
 										((pc->capacity) * sizeof(char *)));
 			if (temp == NULL) {
 				mem_alloc_fail();
@@ -516,17 +536,19 @@ duplicate_exists:
 	return pc; // Struct and each index of categories must be free'd
 }
 
-Vec *get_records_by_yr(int year) {
+Vec *get_records_by_yr(int year)
+{
 	return get_records_by_any(-1, -1, year, NULL, NULL, -1, -1, NULL);
 }
 
-Vec *get_records_by_mo_yr(int month, int year) {
+Vec *get_records_by_mo_yr(int month, int year)
+{
 	return get_records_by_any(month, -1, year, NULL, NULL, -1, -1, NULL);
 }
 
-Vec *get_records_by_any(int month, int day, int year, char *category, 
-						char *description, int transtype, double amount,
-						Vec *chunk) 
+Vec *get_records_by_any
+(int month, int day, int year, char *category, char *description, 
+ int transtype, double amount, Vec *chunk) 
 {
 	FILE *fptr = open_record_csv("r");
 	Vec *prbc = malloc(sizeof(*prbc) + (sizeof(long) * REALLOC_INCR));
@@ -649,8 +671,9 @@ Vec *get_records_by_any(int month, int day, int year, char *category,
 	return prbc;
 }
 
-struct Categories *get_budget_catg_by_date(int month, int year) {
-	struct Categories *pc = 
+_category_list_t *get_budget_catg_by_date(int month, int year)
+{
+	_category_list_t *pc = 
 		malloc((sizeof(*pc)) + (sizeof(char *) * REALLOC_INCR));
 
 	if (pc == NULL) {
@@ -682,8 +705,8 @@ struct Categories *get_budget_catg_by_date(int month, int year) {
 		if (y == year && m == month) {
 			if (pc->size >= pc->capacity) {
 				pc->capacity += REALLOC_INCR;
-				struct Categories *tmp = 
-					realloc(pc, sizeof(struct Categories) + 
+				_category_list_t *tmp = 
+					realloc(pc, sizeof(_category_list_t) + 
 			 				(sizeof(char *) * pc->capacity));
 
 				if (tmp == NULL) {
@@ -702,7 +725,8 @@ struct Categories *get_budget_catg_by_date(int month, int year) {
 	return pc;
 }
 
-Vec *get_budget_catg_by_date_bo(int month, int year) {
+Vec *get_budget_catg_by_date_bo(int month, int year)
+{
 	Vec *pcbo = malloc((sizeof(*pcbo)) + (sizeof(long) * REALLOC_INCR));
 	if (pcbo == NULL) {
 		mem_alloc_fail();
@@ -748,7 +772,8 @@ Vec *get_budget_catg_by_date_bo(int month, int year) {
 	return pcbo;
 }
 
-struct BudgetTokens *tokenize_budget_fpi(long bo) {
+struct BudgetTokens *tokenize_budget_fpi(long bo)
+{
 	if (bo == 0) {
 		return NULL;
 	}
@@ -782,7 +807,8 @@ struct BudgetTokens *tokenize_budget_fpi(long bo) {
 	return pbt;
 }
 
-struct BudgetTokens *tokenize_budget_line(int line) {
+struct BudgetTokens *tokenize_budget_line(int line)
+{
 	if (line == 0) {
 		return NULL;
 	}
@@ -832,7 +858,8 @@ struct BudgetTokens *tokenize_budget_line(int line) {
 	return pbt;
 }
 
-void free_tokenized_record_strings(struct LineData *ld) {
+void free_tokenized_record_strings(struct LineData *ld)
+{
 	if (ld->category != NULL) {
 		free(ld->category);
 		ld->category = NULL;
@@ -843,7 +870,8 @@ void free_tokenized_record_strings(struct LineData *ld) {
 	}
 }
 
-int tokenize_record_fpi(long b, struct LineData *ld) {
+int tokenize_record_fpi(long b, struct LineData *ld)
+{
 	FILE *fptr = open_record_csv("r");
 	fseek(fptr, b, SEEK_SET);
 	char linebuff[LINE_BUFFER];
@@ -857,7 +885,8 @@ int tokenize_record_fpi(long b, struct LineData *ld) {
 	return 0;
 }
 
-void tokenize_record(struct LineData *ld, char **str) {
+void tokenize_record(struct LineData *ld, char **str)
+{
 	char *token;
 	for (int i = 0; i < CSV_FIELDS; i++) {
 		token = strsep(str, ",");
@@ -890,7 +919,8 @@ void tokenize_record(struct LineData *ld, char **str) {
 	}
 }
 
-double get_record_amount(long b) {
+double get_record_amount(long b)
+{
 	FILE *fptr = open_record_csv("r");
 	char linebuff[LINE_BUFFER];
 	char *str;
@@ -908,7 +938,8 @@ double get_record_amount(long b) {
 	}
 }
 
-int get_int_field(int line, int field) {
+int get_int_field(int line, int field)
+{
 	FILE *fptr = open_record_csv("r");
 
 	if (field > get_num_fields(fptr) || field < 1) {
@@ -941,7 +972,8 @@ int get_int_field(int line, int field) {
 	return atoi(strsep(&str, ","));
 }
 
-Vec *index_csv(FILE *fptr) {
+Vec *index_csv(FILE *fptr)
+{
 	Vec *pidx =
 		malloc(sizeof(Vec) + (sizeof(long) * INDEX_ALLOC));
 	if (pidx == NULL) {

@@ -231,7 +231,8 @@ err_fail:
 	return -1;
 }
 
-void nc_edit_transaction(long b) {
+void nc_edit_transaction(long b)
+{
 	struct LineData *ld = malloc(sizeof(*ld));
 	if (ld == NULL) {
 		mem_alloc_fail();
