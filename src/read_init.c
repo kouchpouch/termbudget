@@ -60,6 +60,13 @@ static const char *abbr_months[] = {
 	"DEC"
 };
 
+typedef struct __date_scroll_t {
+	int selected_date;
+	int date_idx;
+	int scroll_idx;
+	int tmp;
+} _date_scroll_t;
+
 static bool duplicate_data_exists(_vector_t *vec, long y)
 {
 	for (size_t i = 0; i < vec->size; i++) {
@@ -145,7 +152,7 @@ static _vector_t *consolidate_years(_vector_t *vec1, _vector_t *vec2)
 /* Retrieves years with data from RECORD_DIR and BUDGET_DIR CSVs, combines
  * and deduplicates the data, and returns a malloc'd _vector_t containing an array
  * of years that can be selected for viewing. */
-static _vector_t *init_select_year(void)
+static _vector_t *get_all_years(void)
 {
 	FILE *rfptr = open_record_csv("r");
 	FILE *bfptr = open_budget_csv("r");
@@ -203,7 +210,7 @@ static _vector_t *consolidate_months(_vector_t *vec1, _vector_t *vec2)
 /* Retrieves months with data from RECORD_DIR and BUDGET_DIR CSVs, combines
  * and deduplicates the data, and returns a malloc'd _vector_t containing an array
  * of months that can be selected for viewing. */
-static _vector_t *init_select_month(int year)
+static _vector_t *get_all_months(int year)
 {
 	FILE *rfptr = open_record_csv("r");
 	FILE *bfptr = open_budget_csv("r");
@@ -241,33 +248,38 @@ static int get_current_mo_idx(_vector_t *months)
 	return -1;
 }
 
+static void scroll_month
+(WINDOW *wptr, int tmp, int monlen, int *idx, bool next)
+{
+	mvwchgat(wptr, tmp, BOX_OFFSET, monlen, A_NORMAL, 0, NULL);
+	next ? tmp++ : tmp--;
+	mvwchgat(wptr, tmp, BOX_OFFSET, monlen, A_REVERSE, REVERSE_COLOR, NULL);
+	wrefresh(wptr);
+	next ? (*idx)++ : (*idx)--;
+}
+
 /* On a non-select, the return value is the inverted menukeys value */
 static int select_month(WINDOW *wptr, int year)
 {
-	_vector_t *months_data = init_select_month(year);
-
-	int selected_month = 0;
+	_vector_t *months_data = get_all_months(year);
+	_date_scroll_t scroll = { 0 };
 	int monlen = strlen(abbr_months[0]);
-
 	int c = 0;
-	int temp_y = 0;
-	int scr_idx = 0;
-	int cur_idx = 0;
 	int current_mo_idx = get_current_mo_idx(months_data);
 
 	wmove(wptr, BOX_OFFSET, BOX_OFFSET);
 	for (size_t i = 0; i < months_data->size; i++) {
-		temp_y = getcury(wptr);
+		scroll.tmp = getcury(wptr);
 		if (months_data->data[i] != 0) {
-			wmove(wptr, temp_y, BOX_OFFSET);
+			wmove(wptr, scroll.tmp, BOX_OFFSET);
 			wprintw(wptr, "%s\n", abbr_months[months_data->data[i] - 1]);
-			scr_idx++;
+			scroll.scroll_idx++;
 		}
 	}
 
 	if (year == get_current_year() && current_mo_idx != -1) {
 		wmove(wptr, BOX_OFFSET + current_mo_idx, BOX_OFFSET);
-		cur_idx = current_mo_idx;
+		scroll.date_idx = current_mo_idx;
 		wchgat(wptr, monlen, A_REVERSE, REVERSE_COLOR, NULL);
 	} else {
 		wmove(wptr, BOX_OFFSET, BOX_OFFSET);
@@ -279,28 +291,20 @@ static int select_month(WINDOW *wptr, int year)
 
 	while (c != KEY_F(QUIT) && c != 'q') {
 		c = wgetch(wptr);
-		temp_y = getcury(wptr);
+		scroll.tmp = getcury(wptr);
 		switch(c) {
 
 		case('j'):
 		case(KEY_DOWN):
-			if (temp_y - BOX_OFFSET + 1 < scr_idx) {
-				mvwchgat(wptr, temp_y, BOX_OFFSET, monlen, A_NORMAL, 0, NULL);
-				mvwchgat(wptr, temp_y + 1, BOX_OFFSET, monlen, 
-			 			 A_REVERSE, REVERSE_COLOR, NULL);
-				wrefresh(wptr);
-				cur_idx++;
+			if (scroll.tmp - BOX_OFFSET + 1 < scroll.scroll_idx) {
+				scroll_month(wptr, scroll.tmp, monlen, &scroll.date_idx, true);
 			}
 			break;
 
 		case('k'):
 		case(KEY_UP):
-			if (temp_y - 1 >= BOX_OFFSET) {
-				mvwchgat(wptr, temp_y, BOX_OFFSET, monlen, A_NORMAL, 0, NULL);
-				mvwchgat(wptr, temp_y - 1, BOX_OFFSET, monlen, 
-						 A_REVERSE, REVERSE_COLOR, NULL);
-				wrefresh(wptr);
-				cur_idx--;
+			if (scroll.tmp - 1 >= BOX_OFFSET) {
+				scroll_month(wptr, scroll.tmp, monlen, &scroll.date_idx, false);
 			}
 			break;
 
@@ -321,10 +325,10 @@ static int select_month(WINDOW *wptr, int year)
 
 		case('\n'):
 		case('\r'):
-			selected_month = months_data->data[cur_idx];
+			scroll.selected_date = months_data->data[scroll.date_idx];
 			free(months_data);
 			months_data = NULL;
-			return selected_month;
+			return scroll.selected_date;
 
 		case('Q'):
 		case('q'):
@@ -341,7 +345,17 @@ static int select_month(WINDOW *wptr, int year)
 	free(months_data);
 	months_data = NULL;
 
-	return selected_month;
+	return scroll.selected_date;
+}
+
+static void scroll_year
+(WINDOW *wptr, int print_y, int tmp, int *idx, bool next)
+{
+	mvwchgat(wptr, print_y, tmp, 4, A_NORMAL, 0, NULL);
+	next ? (tmp += 5) : (tmp -= 5);
+	mvwchgat(wptr, print_y, tmp, 4, A_REVERSE, REVERSE_COLOR, NULL);
+	wrefresh(wptr);
+	next ? (*idx)++ : (*idx)--;
 }
 
 /* On a non-select, the return value is the inverted menukeys value */
@@ -349,19 +363,19 @@ static int select_year(WINDOW *wptr)
 {
 	keypad(wptr, true);	
 
-	_vector_t *years = init_select_year();
+	_vector_t *years = get_all_years();
 	if (years == NULL) {
 		return -(NO_RCRD);
 	}
-
-	int selected_year = 0;
+	int n_years = size_to_int(years->size);
+	if (n_years < 0) {
+		printf("Too many years");
+		exit(1);
+	}
+	_date_scroll_t scroll = { 0 };
 	int print_y = 1;
 	int print_x = 2;
-	size_t year_index = 0;
-	size_t scr_idx = 0;
-	
 	int c = 0;
-	int temp_x;
 	int init_rv_x = print_x;
 
 	box(wptr, 0, 0);
@@ -370,16 +384,16 @@ static int select_year(WINDOW *wptr)
 
 	for (size_t i = 0; i < years->size; i++) {
 		if (years->data[i] == get_current_year()) {
-			year_index = i;
+			scroll.date_idx = i;
 		}
 		wprintw(wptr, "%ld ", years->data[i]);
 		wrefresh(wptr);
 	}
 
 	/* Initially highlight the current year and move cursor to it */
-	if (year_index > 0) {
-		init_rv_x += (4 * year_index) + year_index;
-		scr_idx = year_index;
+	if (scroll.date_idx > 0) {
+		init_rv_x += (4 * scroll.date_idx) + scroll.date_idx;
+		scroll.scroll_idx = scroll.date_idx;
 	}
 	
 	mvwchgat(wptr, print_y, init_rv_x, 4, A_REVERSE, REVERSE_COLOR, NULL);
@@ -387,28 +401,20 @@ static int select_year(WINDOW *wptr)
 
 	while (c != KEY_F(QUIT) && c != 'q') {
 		c = wgetch(wptr);
-		temp_x = getcurx(wptr);
+		scroll.tmp = getcurx(wptr);
 		switch(c) {
-
-		case('h'):
-		case(KEY_LEFT):
-			if (scr_idx > 0) {
-				mvwchgat(wptr, print_y, temp_x, 4, A_NORMAL, 0, NULL);
-				mvwchgat(wptr, print_y, temp_x - 5, 4, A_REVERSE, 
-			 			 REVERSE_COLOR, NULL);
-				wrefresh(wptr);
-				scr_idx--;
-			}
-			break;
 
 		case('l'):
 		case(KEY_RIGHT):
-			if (scr_idx + 1 < years->size) {
-				mvwchgat(wptr, print_y, temp_x, 4, A_NORMAL, 0, NULL);
-				mvwchgat(wptr, print_y, temp_x + 5, 4, A_REVERSE, 
-			 			 REVERSE_COLOR, NULL);
-				wrefresh(wptr);
-				scr_idx++;
+			if (scroll.scroll_idx + 1 < n_years) {
+				scroll_year(wptr, print_y, scroll.tmp, &scroll.scroll_idx, true);
+			}
+			break;
+
+		case('h'):
+		case(KEY_LEFT):
+			if (scroll.scroll_idx > 0) {
+				scroll_year(wptr, print_y, scroll.tmp, &scroll.scroll_idx, false);
 			}
 			break;
 
@@ -425,10 +431,10 @@ static int select_year(WINDOW *wptr)
 
 		case('\n'):
 		case('\r'):
-			selected_year = years->data[scr_idx];
+			scroll.selected_date = years->data[scroll.scroll_idx];
 			free(years);
 			years = NULL;
-			return selected_year;
+			return scroll.selected_date;
 
 		case('Q'):
 		case('q'):
@@ -444,7 +450,7 @@ static int select_year(WINDOW *wptr)
 	free(years);
 	years = NULL;
 
-	return selected_year;
+	return scroll.selected_date;
 }
 
 static int input_year(WINDOW *wptr)
