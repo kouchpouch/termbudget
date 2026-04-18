@@ -77,7 +77,7 @@ char *create_budget_record(int yr, int mo)
 {
 	char *catg;
 	int transtype;
-	_category_list_t *psc;
+	_category_vec_t *psc;
 	double amt;
 
 	if (mo == 0 || yr == 0) {

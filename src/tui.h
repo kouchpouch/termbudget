@@ -82,105 +82,105 @@ struct ReadWins {
 	WINDOW *data;
 };
 
-extern void window_creation_fail(void);
+void window_creation_fail(void);
 
 /* Tests that the stdscr is big enough to handle this program */
-extern int test_terminal_size(void);
+int test_terminal_size(void);
 
 /* Exits the window wptr and hangs the terminal until a key is pressed */
-extern void nc_exit_window_key(WINDOW *wptr);
+void nc_exit_window_key(WINDOW *wptr);
 
 /* Exits window wptr */
-extern void nc_exit_window(WINDOW *wptr);
+void nc_exit_window(WINDOW *wptr);
 
 /* Removes and refreshes wptr to remove error message.
  * For use with input subwindows. Dimensions are hard coded to be 4 above
  * the maximum y coordinate */
-extern void clear_input_error_message(WINDOW *wptr);
+void clear_input_error_message(WINDOW *wptr);
 
 /* Returns the number of spaces between each bar graph for the overview
  * option */
-extern int calculate_overview_columns(WINDOW *wptr);
+int calculate_overview_columns(WINDOW *wptr);
 
 /* 
  * Calculate column offsets for ncurses formatting, sets date width into date,
  * category width into catg, description width into desc, transaction type
  * width into trns, and amount into amnt.
  */
-extern void calculate_columns(struct ColWidth *cw, int max_x);
+void calculate_columns(struct ColWidth *cw, int max_x);
 
 /*
  * Print headers for the reading data to wptr, column width is calculated
  * by calculate_columns() automatically. Offsets calculation by an offset
  * of x_off
  */
-extern void print_column_headers(WINDOW *wptr, int x_off);
+void print_column_headers(WINDOW *wptr, int x_off);
 
 /* Moves cursor in wptr to y-coord y for a string len
  * of len */
-extern int mvwxctr(WINDOW *wptr, int y, int len);
+int mvwxctr(WINDOW *wptr, int y, int len);
 
 /* Prints str centered on the X axis of wptr and y-coord
  * of y */
-extern int mvwxcprintw(WINDOW *wptr, int y, char *str);
+int mvwxcprintw(WINDOW *wptr, int y, char *str);
 
 /* Same as mvwxcprintw but for a digit value */
-extern int mvwxcprintw_digit(WINDOW *wptr, int y, int d);
+int mvwxcprintw_digit(WINDOW *wptr, int y, int d);
 
 /* Creates all three (or two, if the sidebar width check does not return true),
  * for the nc_read_setup function in main.c. If the sidebar window is not
  * created, it is closed with delwin() and the pointer is set to NULL. */
-extern struct ReadWins *create_read_windows(void);
+struct ReadWins *create_read_windows(void);
 
 /* Creates the subwindow for the read function */
-extern WINDOW *create_lines_subwindow(int max_y, int max_x, int y_off, int x_off);
+WINDOW *create_lines_subwindow(int max_y, int max_x, int y_off, int x_off);
 
 /* Creates the parent window to select a category, with dimensions based on
  * n categories but not larger in the Y axis than MAX_Y_CATG_SELECT */
-extern WINDOW *create_category_select_parent(int n);
+WINDOW *create_category_select_parent(int n);
 
 /* Creates the subwindow inside of wptr_parent for holding data */
-extern WINDOW *create_category_select_subwindow(WINDOW *wptr_parent);
+WINDOW *create_category_select_subwindow(WINDOW *wptr_parent);
 
 /* Creates a subwindow for user input with dimensions based on parameter n,
  * this function ensures that the window can center the data in the window. 
  * n is the number of menu items the window should hold. The window will at
  * least be y INPUT_WIN_ROWS units long. */
-extern WINDOW *create_input_subwindow_n_rows(int n);
+WINDOW *create_input_subwindow_n_rows(int n);
 
 /* Creates a subwindow for user input with dimensions based on stdscr */
-extern WINDOW *create_input_subwindow(void);
+WINDOW *create_input_subwindow(void);
 
 /* Show a message str in an input subwindow which exits on key press */
-extern void nc_message(char *str);
+void nc_message(char *str);
 
 /* Returns the color pair for the index 'x' of each category */
-extern int category_color(int x);
+int category_color(int x);
 
 /* Initializes the stdscr */
-extern WINDOW *nc_init_stdscr(void);
+WINDOW *nc_init_stdscr(void);
 
 /* Prints the welcome splash screen */
-extern void nc_print_welcome(WINDOW *wptr);
+void nc_print_welcome(WINDOW *wptr);
 
 /* Prints the string "DEBUG" on the bottom right of wptr */
-extern void nc_print_debug_flag(WINDOW *wptr);
+void nc_print_debug_flag(WINDOW *wptr);
 
 ///* Prints the footer with menu options */
-//extern void nc_print_footer(WINDOW *wptr, struct Footer *pf);
+//void nc_print_footer(WINDOW *wptr, struct Footer *pf);
 
 /* Prints standard F1-F4 options on wptr */
-extern void nc_print_main_menu_footer(WINDOW *wptr);
+void nc_print_main_menu_footer(WINDOW *wptr);
 
-extern void nc_print_read_footer(WINDOW *wptr);
+void nc_print_read_footer(WINDOW *wptr);
 
 /* Prints the footer with extended options on wptr */
-extern void nc_print_extended_footer(WINDOW *wptr);
+void nc_print_extended_footer(WINDOW *wptr);
 
 /* Prints the footer with only the quit key on, every other key is set to
  * A_DIM and extended mode is set to FALSE */
-extern void nc_print_quit_footer(WINDOW *wptr);
+void nc_print_quit_footer(WINDOW *wptr);
 
-extern void nc_print_input_footer(WINDOW *wptr);
+void nc_print_input_footer(WINDOW *wptr);
 
 #endif

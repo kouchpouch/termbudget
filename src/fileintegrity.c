@@ -146,7 +146,7 @@ bool record_len_verification(void)
 }
 
 static int cmp_catg_and_fix
-(_category_list_t *prc, _category_list_t *pbc, int m, int y) 
+(_category_vec_t *prc, _category_vec_t *pbc, int m, int y) 
 {
 	int corrected = 0;
 	bool cat_exists = false;
@@ -184,8 +184,8 @@ int verify_categories_exist_in_budget(void)
 	_vector_t *years;
 	_vector_t *months;
 	int corrected = 0;
-	_category_list_t prc_, *prc = &prc_;
-	_category_list_t pbc_, *pbc = &pbc_;
+	_category_vec_t prc_, *prc = &prc_;
+	_category_vec_t pbc_, *pbc = &pbc_;
 
 	/* Go through each year and find the matching months, then find the
 	 * matching categories, then compare. */

@@ -20,6 +20,6 @@
 
 #include <stdio.h>
 
-extern size_t convert_chase_csv(char *dir);
+size_t convert_chase_csv(char *dir);
 
 #endif

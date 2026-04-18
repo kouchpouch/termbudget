@@ -460,7 +460,7 @@ double nc_input_budget_amount(void)
 
 char *nc_select_category(int month, int year)
 {
-	_category_list_t *pc = get_budget_catg_by_date(month, year);
+	_category_vec_t *pc = get_budget_catg_by_date(month, year);
 	WINDOW *wptr_parent = create_category_select_parent(pc->size);
 	WINDOW *wptr = create_category_select_subwindow(wptr_parent);
 	char *tmp;

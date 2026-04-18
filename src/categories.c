@@ -20,7 +20,7 @@
 #include "main.h"
 #include "parser.h"
 
-void free_categories(_category_list_t *pc)
+void free_categories(_category_vec_t *pc)
 {
 	for (size_t i = 0; i < pc->size; i++) {
 		free(pc->categories[i]);
@@ -28,7 +28,7 @@ void free_categories(_category_list_t *pc)
 	free(pc);
 }
 
-void free_category_nodes(CategoryNode **nodes)
+void free_category_nodes(_catg_nodes_t **nodes)
 {
 	int i = 0;
 	while (1) {
@@ -46,12 +46,12 @@ void free_category_nodes(CategoryNode **nodes)
 }
 
 /*
- * Initializes CategoryNode.data. The data is a _vector_t which contains all of
- * the file position byte offsets for the records that match the CategoryNode's
+ * Initializes _catg_nodes_t.data. The data is a _vector_t which contains all of
+ * the file position byte offsets for the records that match the _catg_nodes_t's
  * category.
  */
 static void init_category_nodes
-(CategoryNode *node, _vector_t *chunk, int m, int y)
+(_catg_nodes_t *node, _vector_t *chunk, int m, int y)
 {
 	_budget_tokens_t *budget_tokens = tokenize_budget_fpi(node->catg_fp);
 	_vector_t *recs = get_records_by_any(m, -1, y, budget_tokens->catg, NULL, -1, -1, chunk);
@@ -60,20 +60,20 @@ static void init_category_nodes
 }
 
 /*
- * Returns a pointer to a pointer to the first CategoryNode in a doubly 
- * linked list of CategoryNodes.
+ * Returns a pointer to a pointer to the first _catg_nodes_t in a doubly 
+ * linked list of _catg_nodes_ts.
  */
-CategoryNode **create_category_nodes(int m, int y) {
+_catg_nodes_t **create_category_nodes(int m, int y) {
 	_vector_t *catgs_file_pos = get_budget_catg_by_date_bo(m, y);
 	_vector_t *chunk = get_records_by_mo_yr(m, y);
 	unsigned long n = catgs_file_pos->size;
-	CategoryNode **pnode = malloc(sizeof(CategoryNode *) * n);
+	_catg_nodes_t **pnode = malloc(sizeof(_catg_nodes_t *) * n);
 	if (pnode == NULL) {
 		mem_alloc_fail();
 	}
 
 	for (size_t i = 0; i < n; i++) {
-		pnode[i] = malloc(sizeof(CategoryNode));
+		pnode[i] = malloc(sizeof(_catg_nodes_t));
 		if (pnode[i] == NULL) {
 			mem_alloc_fail();
 		}

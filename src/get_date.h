@@ -17,9 +17,9 @@
 #define GET_DATE_H
 
 /* Returns the current month [0-11] */
-extern int get_current_month(void);
+int get_current_month(void);
 
 /* Returns the current year */
-extern int get_current_year(void);
+int get_current_year(void);
 
 #endif

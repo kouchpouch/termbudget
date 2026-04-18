@@ -480,13 +480,13 @@ _vector_t *get_matching_line_nums(FILE *fptr, int month, int year)
  * For a given month and year, return an array of strings from the category
  * field of the RECORD_DIR csv file.
  */
-_category_list_t *get_categories(int month, int year)
+_category_vec_t *get_categories(int month, int year)
 {
 	FILE *fptr = open_record_csv("r");
 	char *line;
 	char *token;
 	char linebuff[LINE_BUFFER];
-	_category_list_t *pc = malloc(sizeof(*pc) + (sizeof(char *) * REALLOC_INCR));
+	_category_vec_t *pc = malloc(sizeof(*pc) + (sizeof(char *) * REALLOC_INCR));
 	pc->size = 0;
 	pc->capacity = REALLOC_INCR;
 
@@ -516,7 +516,7 @@ _category_list_t *get_categories(int month, int year)
 
 		if (pc->size >= pc->capacity) {
 			pc->capacity += REALLOC_INCR;
-			_category_list_t *temp = realloc(pc, sizeof(_category_list_t) + 
+			_category_vec_t *temp = realloc(pc, sizeof(_category_vec_t) + 
 										((pc->capacity) * sizeof(char *)));
 			if (temp == NULL) {
 				mem_alloc_fail();
@@ -671,9 +671,9 @@ _vector_t *get_records_by_any
 	return prbc;
 }
 
-_category_list_t *get_budget_catg_by_date(int month, int year)
+_category_vec_t *get_budget_catg_by_date(int month, int year)
 {
-	_category_list_t *pc = 
+	_category_vec_t *pc = 
 		malloc((sizeof(*pc)) + (sizeof(char *) * REALLOC_INCR));
 
 	if (pc == NULL) {
@@ -705,8 +705,8 @@ _category_list_t *get_budget_catg_by_date(int month, int year)
 		if (y == year && m == month) {
 			if (pc->size >= pc->capacity) {
 				pc->capacity += REALLOC_INCR;
-				_category_list_t *tmp = 
-					realloc(pc, sizeof(_category_list_t) + 
+				_category_vec_t *tmp = 
+					realloc(pc, sizeof(_category_vec_t) + 
 			 				(sizeof(char *) * pc->capacity));
 
 				if (tmp == NULL) {

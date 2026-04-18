@@ -19,32 +19,32 @@
 #include <stdlib.h>
 
 /* Returns ltr ascii value to uppercase */
-extern int upper(char *ltr);
+int upper(char *ltr);
 
 /* Returns ltr ascii value to lowercase */
-extern int lower(char *ltr);
+int lower(char *ltr);
 
 /* Checks to see if a day exists in a month, 
  * returns maximum days in that month */
-extern bool dayexists(int d, int m, int y);
+bool dayexists(int d, int m, int y);
 
 /* Returns the len of n */
-extern int intlen(int n);
+int intlen(int n);
 
 /* (fin)ancial (len)gth.
  * Returns the len of n + 3, to add a '.' and two decimal places */
-extern int finlen(int n);
+int finlen(int n);
 
 /* Returns the larger of a or b, or a if a == b */
-extern long max_val(long a, long b);
+long max_val(long a, long b);
 
 /* Returns the smaller of a or b, or b if a == b */
-extern long min_val(long a, long b);
+long min_val(long a, long b);
 
-extern int compare_for_sort(const void *a, const void *b);
+int compare_for_sort(const void *a, const void *b);
 
 /* Safely casts size_t to and integer. Returns -1 on unsafe cast */
-extern int size_to_int(size_t n);
+int size_to_int(size_t n);
 
-extern bool int_to_size_safe(int n);
+bool int_to_size_safe(int n);
 #endif

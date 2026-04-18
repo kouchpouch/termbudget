@@ -573,7 +573,7 @@ static _vector_t *sort_by_category
 	prsc->capacity = REALLOC_INCR;
 	prsc->size = 0;
 
-	_category_list_t *pc = get_categories(mo, yr);
+	_category_vec_t *pc = get_categories(mo, yr);
 
 	char linebuff[LINE_BUFFER];
 	char *line;
@@ -665,7 +665,7 @@ static void free_windows(struct ReadWins *wins)
 	free(wins);
 }
 
-static struct Plannedvals *get_total_planned(CategoryNode **nodes)
+static struct Plannedvals *get_total_planned(_catg_nodes_t **nodes)
 {
 	struct Plannedvals *pv = malloc(sizeof(*pv));
 	if (pv == NULL) {
@@ -703,7 +703,7 @@ static struct Plannedvals *get_total_planned(CategoryNode **nodes)
 	return pv;
 }
 
-static double get_left_to_budget(CategoryNode **nodes)
+static double get_left_to_budget(_catg_nodes_t **nodes)
 {
 	struct Plannedvals *pv = get_total_planned(nodes);
 	double ret = pv->inc - pv->exp;
@@ -732,7 +732,7 @@ void nc_read_setup
 		goto err_select_date_fail;
 	}
 
-	CategoryNode **nodes;
+	_catg_nodes_t **nodes;
 	FILE *fptr = open_record_csv("r");
 	_vector_t *pidx = index_csv(fptr);
 	_vector_t *plines;

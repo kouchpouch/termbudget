@@ -18,24 +18,24 @@
 
 #include <stdio.h>
 
-extern char *user_input(int n);
+char *user_input(int n);
 
-extern int input_n_digits(size_t max_len, size_t min_len);
+int input_n_digits(size_t max_len, size_t min_len);
 
-extern int confirm_input(void);
+int confirm_input(void);
 
-extern int input_month(void);
+int input_month(void);
 
-extern int input_year(void);
+int input_year(void);
 
-extern int input_day(int month, int year);
+int input_day(int month, int year);
 
-extern int input_transaction_type(void);
+int input_transaction_type(void);
 
-extern double input_amount(void);
+double input_amount(void);
 
-extern char *input_str_retry(char *msg);
+char *input_str_retry(char *msg);
 
-extern char *input_category(int month, int year);
+char *input_category(int month, int year);
 
 #endif

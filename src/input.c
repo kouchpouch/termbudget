@@ -206,7 +206,7 @@ char *input_category(int month, int year)
 {
 	char *str;
 	bool cat_exists = false;
-	_category_list_t *pc = get_categories(month, year);
+	_category_vec_t *pc = get_categories(month, year);
 
 	if (pc->size > 0) {
 		puts("Categories:");

@@ -22,11 +22,11 @@
 #include <stdio.h>
 
 /* Returns the line sorted by date to insert data for budget.csv */
-extern unsigned int sort_budget_csv(int month, int year);
+unsigned int sort_budget_csv(int month, int year);
 
 /* A new version of sort_csv() with less chaos */
-extern unsigned int sort_record_csv(int month, int day, int year);
+unsigned int sort_record_csv(int month, int day, int year);
 
-extern unsigned int sort_converted_csv(int month, int day, int year, FILE *fptr);
+unsigned int sort_converted_csv(int month, int day, int year, FILE *fptr);
 
 #endif
