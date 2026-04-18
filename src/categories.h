@@ -12,36 +12,60 @@
  * You should have received a copy of the GNU General Public License along 
  * with this program. If not, see <https://www.gnu.org/licenses/>. 
  */
+
 #ifndef CATEGORIES_H
 #define CATEGORIES_H
 
 #include <stdio.h>
+#include "tui.h"
 #include "vector.h"
 
 /*
- * CategoryNode is to be used as a doubly linked list which includes members
- * of CategoryNode pointer next and prev, long catg_fp stores the byte offset
+ * _catg_nodes_t is a doubly linked list which includes members
+ * of _catg_nodes_t pointer next and prev, long catg_fp stores the byte offset
  * of the category in BUDGET_DIR, and a _vector_t containing all
  * records in RECORD_DIR that match the category field at catg_fp
  * in BUDGET_DIR.
- */
-typedef struct CategoryNode CategoryNode;
 
-struct CategoryNode {
-	CategoryNode *next;
-	CategoryNode *prev;
+         |----------|
+         |   Head   | // _catg_nodes_t **
+         |----------|
+              |
+              V
+         |------------|      |------------|      |------------|
+         |    next    | ---> |    next    | ---> |    next    | ---> NULL
+         |  1st Node  |      |  2nd Node  | .... |  nth Node  |
+NULL <---|    prev    | <--- |    prev    | <--- |    prev    |
+         |------------|      |------------|      |------------|
+           |       |
+           |       |_________
+           V                |
+        catg_fp             |
+                            V
+                      |----------|
+                      |   size   |
+                      | capacity |
+                      |  []data  | // Each record's FPI that belongs to the
+                      |----------| // node's category.
+*/
+
+typedef struct __catg_nodes_t _catg_nodes_t;
+
+struct __catg_nodes_t { 
+	_catg_nodes_t *next;
+	_catg_nodes_t *prev;
 	long catg_fp;
 	_vector_t *data;
 };
 
-typedef struct __category_list_t {
+typedef struct __category_vec_t {
 	size_t capacity;
 	size_t size;
 	char *categories[];
-} _category_list_t;
+} _category_vec_t;
 
-void free_categories(_category_list_t *pc);
-void free_category_nodes(CategoryNode **nodes);
-CategoryNode **create_category_nodes(int m, int y);
+void free_categories(_category_vec_t *pc);
+void free_category_nodes(_catg_nodes_t **nodes);
+_catg_nodes_t **create_category_nodes(int m, int y);
 
 #endif
