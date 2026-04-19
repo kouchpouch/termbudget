@@ -23,4 +23,5 @@ termbudget:
 		src/create.c \
 		src/input.c \
 		src/file_write.c \
+		src/overview.c \
 		-lncurses -o termbudget
