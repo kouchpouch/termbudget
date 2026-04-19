@@ -119,15 +119,6 @@ void debug_category_nodes(WINDOW *wptr, _catg_nodes_t **nodes)
 	wclear(wptr);
 }
 
-void draw_scroll_indicator(WINDOW *wptr)
-{
-	char *etc = "...";
-	int y = getmaxy(wptr) - 1;
-	int x = getmaxx(wptr) - (strlen(etc) + BOX_OFFSET);
-	mvwprintw(wptr, y, x, "%s", etc);
-	wrefresh(wptr);
-}
-
 static int n_spaces(int max_x, char *str1, char *str2)
 {
 	return (int)(max_x - (BOX_OFFSET * 2) - strlen(str1) - strlen(str2));
