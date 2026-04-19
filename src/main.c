@@ -28,7 +28,6 @@
 #include "read_init.h"
 #include "fileintegrity.h"
 #include "filemanagement.h"
-#include "helper.h"
 #include "tui.h"
 #include "vector.h"
 #include "parser.h"
@@ -45,21 +44,6 @@
 #define HAS_RESET_COLOR_PAIRS
 #endif
 
-static const char *abbr_months[] = {
-	"JAN", 
-	"FEB", 
-	"MAR", 
-	"APR",
-	"MAY",
-	"JUN",
-	"JUL",
-	"AUG",
-	"SEP",
-	"OCT",
-	"NOV",
-	"DEC"
-};
-
 /* GLOBAL FLAGS. Defined in flags.h, initialized here in main.c */
 int debug_flag;
 int cli_flag;
@@ -75,276 +59,15 @@ void mem_alloc_fail(void)
 	exit(1);
 }
 
-//FIX Implement
-//int remove_category_orphans(void) 
-//{
-//	FILE *bfptr = open_budget_csv("r");
-//	FILE *rfptr = open_record_csv("r");
-//
-//	return 0;
-//}
-
 /* Prints record from ld, in vertical format, 5 rows. */
 void nc_print_record_vert(WINDOW *wptr, _transact_tokens_t *ld, int x_off)
 {
-	mvwprintw(wptr, 1, x_off, "Date--> %d/%d/%d", ld->month, ld->day, ld->year);
-	mvwprintw(wptr, 2, x_off, "Cat.--> %s", ld->category);
-	mvwprintw(wptr, 3, x_off, "Desc--> %s", ld->desc);
-	mvwprintw(wptr, 4, x_off, "Type--> %s", ld->transtype == 0 ? "Expense" : "Income");
-	mvwprintw(wptr, 5, x_off, "Amt.--> %.2f", ld->amount);
-}
-
-/* Returns the row on the bottom 4th of wptr */
-static int last_quarter_row(WINDOW *wptr)
-{
-	return getmaxy(wptr) - getmaxy(wptr) / 4;
-}
-
-static int first_quarter_row(WINDOW *wptr)
-{
-	return getmaxy(wptr) / 4;
-}
-
-static double get_max_value(int elements, double *arr)
-{
-	double tmp = 0.0;
-	double max = 0.0;
-
-	for (int i = 0; i < elements; i++) {
-		tmp = arr[i];
-		if (tmp > max) {
-			max = tmp;	
-		}
-	}
-
-	return max;
-}
-
-void nc_print_overview_graphs(WINDOW *wptr, _vector_t *months, int year)
-{
-	double ratios[12] = {0.0}; // Holds each month's income/expense ratio
-	double maxvals[12] = {0.0};
-	struct Balances pb_, *pb = &pb_;
-	int space = calculate_overview_columns(wptr);
-	int mo = 1;
-
-	enum GraphRatios {
-		NO_INCOME = -1,
-		NO_EXPENSE = -2,
-	};
-
-	for (size_t i = 0; i < months->size && mo <= 12; i++, mo++) {
-		if (months->data[i] == mo) {
-			_vector_t *pbo = get_records_by_mo_yr(months->data[i], year);
-			calculate_balance(pb, pbo);
-			if (pb->income == 0) { // Prevent a div by zero
-				ratios[mo - 1] = NO_INCOME;
-			} else if (pb->expense == 0) {
-				ratios[mo - 1] = NO_EXPENSE;
-			} else {
-				ratios[mo - 1] = pb->expense / pb->income;
-			}
-			maxvals[mo - 1] = pb->expense >= pb->income ? pb->expense : pb->income;
-			free(pbo);
-		} else {
-			i--;
-		}
-	}
-
-	int bar_width = 3;
-	int cur = (getmaxx(wptr) - space * 11) / 2 - 1;
-	double exp_bar_len = 0;
-	double inc_bar_len = 0;
-	int max_bar_len = (last_quarter_row(wptr) - 2) - first_quarter_row(wptr) + 4;
-
-	double maxval = get_max_value(12, maxvals);
-
-	if (debug_flag) {
-		wmove(wptr, 1, 1);
-		for (int i = 0; i < 12; i++) {
-			wprintw(wptr, "RAT: %.2f VAL: %.2f\n", ratios[i], maxvals[i]);
-		}
-	}
-
-	for (int i = 0; i < 12; i++) {
-		if (maxvals[i] == 0) {
-			cur += space;
-			continue;
-		}
-
-		if (ratios[i] > 1) {
-			// Expenses are greater than income
-			exp_bar_len = maxvals[i] / maxval;
-			exp_bar_len = max_bar_len * exp_bar_len;
-			inc_bar_len = exp_bar_len / ratios[i];
-
-		} else if (ratios[i] == NO_INCOME) {
-			// There are only expenses
-			exp_bar_len = max_bar_len * (maxvals[i] / maxval);
-			inc_bar_len = 0;
-
-		} else if (ratios[i] == NO_EXPENSE) {
-			inc_bar_len = max_bar_len * (maxvals[i] / maxval);
-			exp_bar_len = 0;
-
-		} else {
-			// Income is greater than expenses
-			inc_bar_len = maxvals[i] / maxval;
-			inc_bar_len = max_bar_len * inc_bar_len;
-			exp_bar_len = inc_bar_len * ratios[i];
-		}
-
-		if (inc_bar_len > 0 && inc_bar_len < 1) {
-			inc_bar_len = 1;
-		}
-
-		if (exp_bar_len > 0 && exp_bar_len < 1) {
-			exp_bar_len = 1;
-		}
-
-		for (int j = 0; j < (int)inc_bar_len; j++) {
-			mvwchgat(wptr, last_quarter_row(wptr) - 2 - j, cur, bar_width, 
-					 A_REVERSE, COLOR_GREEN, NULL);
-		}
-
-		cur += bar_width;
-
-		for (int j = 0; j < (int)exp_bar_len; j++) {
-			mvwchgat(wptr, last_quarter_row(wptr) - 2 - j, cur, bar_width, 
-					 A_REVERSE, COLOR_RED, NULL);
-		}
-
-		cur += space - bar_width;
-	}
-}
-
-void nc_print_overview_balances(WINDOW *wptr, _vector_t *months, int year)
-{
-	int tmpx = 0;
-	int space = calculate_overview_columns(wptr);
-	int y = last_quarter_row(wptr) + 2;
-	int cur = (getmaxx(wptr) - space * 11) / 2;
-	int mo = 1;
-	struct Balances pb_, *pb = &pb_;
-	for (size_t i = 0; i < months->size && mo <= 12; i++, mo++) {
-		tmpx = 0;
-
-		if (months->data[i] == mo) {
-			_vector_t *pbo = get_records_by_mo_yr(months->data[i], year);
-			calculate_balance(pb, pbo);
-			tmpx = intlen(pb->income) / 2;
-			wmove(wptr, y, cur - tmpx);
-			wattron(wptr, COLOR_PAIR(2));
-			wprintw(wptr, "+$%.0f", pb->income);
-			wattroff(wptr, COLOR_PAIR(2));
-			tmpx = intlen(pb->expense) / 2;
-			wmove(wptr, y + 1, cur - tmpx);
-			wattron(wptr, COLOR_PAIR(1));
-			wprintw(wptr, "-$%.0f", pb->expense);
-			wattron(wptr, COLOR_PAIR(1));
-			free(pbo);
-			cur += space;
-		} else {
-			wmove(wptr, y, cur);
-			wattron(wptr, COLOR_PAIR(2));
-			wprintw(wptr, "+$0");
-			wattroff(wptr, COLOR_PAIR(2));
-			wmove(wptr, y + 1, cur);
-			wattron(wptr, COLOR_PAIR(1));
-			wprintw(wptr, "-$0");
-			wattron(wptr, COLOR_PAIR(1));
-			cur += space;
-			i--;
-		}
-	}
-
-	wrefresh(wptr);
-}
-
-void nc_print_overview_months(WINDOW *wptr)
-{
-	int space = calculate_overview_columns(wptr);
-	int y = last_quarter_row(wptr);
-	int cur = (getmaxx(wptr) - space * 11) / 2;
-
-	if (debug_flag) {
-		wprintw(wptr, "INIT CUR: %d ", cur);
-		wprintw(wptr, "SPACE: %d ", space);
-		wprintw(wptr, "SPACEx11: %d ", space * 11);
-		wprintw(wptr, "MAX X: %d ", getmaxx(wptr));
-	}
-
-	for (int i = 0; i < 12; i++) {
-		wmove(wptr, y, cur);
-		wprintw(wptr, "%s", abbr_months[i]);
-		cur += space;
-	}
-}
-
-unsigned int nc_overview_loop(WINDOW *wptr, _vector_t *months, int year)
-{
-	unsigned int flag = 0;
-	int c;
-	int space = calculate_overview_columns(wptr);
-	if (space > 0) {
-		nc_print_overview_months(wptr);
-		nc_print_overview_balances(wptr, months, year);
-		nc_print_overview_graphs(wptr, months, year);
-		nc_print_quit_footer(stdscr);
-		wrefresh(wptr);
-	} else {
-		wprintw(wptr, "Terminal is too small");
-		wrefresh(wptr);
-	}
-
-	while (1) {
-		c = wgetch(wptr);
-		switch(c) {
-		case(KEY_RESIZE):
-			return RESIZE;
-		case('Q'):
-		case('q'):
-		case(KEY_F(QUIT)):
-			return QUIT;
-		default:
-			flag = NO_SELECT;
-			break;
-		}
-	}
-
-	return flag;
-}
-
-void nc_overview_setup(int year)
-{
-	WINDOW *wptr_parent = newwin(LINES - 1, 0, 0, 0);
-	WINDOW *wptr_data = create_lines_subwindow(getmaxy(wptr_parent) - 1,
-									getmaxx(wptr_parent), 1, BOX_OFFSET);
-	init_pair(1, COLOR_RED, -1);
-	init_pair(2, COLOR_GREEN, -1);
-	box(wptr_parent, 0, 0);
-	mvwxcprintw_digit(wptr_parent, 0, year);
-	wrefresh(wptr_parent);
-	
-	FILE *fptr = open_record_csv("r");
-	_vector_t *months = get_months_with_data(fptr, year, 1);
-	fclose(fptr);
-
-	unsigned int flag = nc_overview_loop(wptr_data, months, year);
-
-	free(months);
-	nc_exit_window(wptr_parent);
-	nc_exit_window(wptr_data);
-
-	switch(flag) {
-	case(RESIZE):
-		nc_overview_setup(year);
-		break;
-	case(QUIT):
-		break;
-	default:
-		break;
-	}
+	int y = 1; /* Y-coord to print on, to start. */
+	mvwprintw(wptr, y++, x_off, "Date--> %d/%d/%d", ld->month, ld->day, ld->year);
+	mvwprintw(wptr, y++, x_off, "Cat.--> %s", ld->category);
+	mvwprintw(wptr, y++, x_off, "Desc--> %s", ld->desc);
+	mvwprintw(wptr, y++, x_off, "Type--> %s", ld->transtype == 0 ? "Expense" : "Income");
+	mvwprintw(wptr, y++, x_off, "Amt.--> %.2f", ld->amount);
 }
 
 /* Prints the value of each struct ColWidth memeber to the window wptr */
@@ -486,38 +209,6 @@ int show_help_subwindow(void)
 	wrefresh(wptr);
 	nc_exit_window_key(wptr);
 	return my;
-}
-
-void debug_fields(void)
-{
-	move(0,0);
-	FILE *bfptr = open_budget_csv("r");
-	_budget_header_t *bh = parse_budget_header(bfptr);
-
-	printw("Budget Fields: %d, %d, %d, %d, %d\n",
-	 bh->month,
-	 bh->year,
-	 bh->catg,
-	 bh->transtype, 
-	 bh->value);
-
-	free(bh);
-	fclose(bfptr);
-	FILE *fptr = open_record_csv("r");
-	_record_header_t *rh = parse_record_header(fptr);
-
-	printw("Record Fields: %d, %d, %d, %d, %d, %d, %d\n", 
-	 rh->month,
-	 rh->day,
-	 rh->year,
-	 rh->catg,
-	 rh->desc,
-	 rh->transtype,
-	 rh->value);
-
-	free(rh);
-	fclose(fptr);
-	getch();
 }
 
 int nc_main_menu(WINDOW *wptr)
