@@ -18,9 +18,11 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <limits.h>
+#include <string.h>
 
 #include "main.h"
 #include "create.h"
+#include "parser.h"
 #include "sorter.h"
 #include "edit_transaction.h"
 #include "tui.h"
@@ -142,15 +144,15 @@ static int nc_edit_csv_record
 
 	switch(field) {
 	case EDIT_RCRD_DATE:
-		ld->year = nc_input_year();
+		ld->year = nc_input_year(ld->year);
 		if (ld->year < 0) {
 			goto err_fail;
 		}
-		ld->month = nc_input_month();
+		ld->month = nc_input_month(ld->month, ld->year);
 		if (ld->month < 0) {
 			goto err_fail;
 		}
-		ld->day = nc_input_day(ld->month, ld->year);
+		ld->day = nc_input_day(ld->month, ld->year, ld->day);
 		if (ld->day < 0) {
 			goto err_fail;
 		}

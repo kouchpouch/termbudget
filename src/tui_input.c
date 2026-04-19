@@ -28,21 +28,20 @@
 #include "create.h"
 #include "flags.h"
 
-static void init_input_window(int n, WINDOW *wptr)
+static void init_input_window(int n, WINDOW *wptr, int input_y)
 {
-	int max_y, max_x;
+	int max_x = getmaxx(wptr);
 	int center;
 
-	getmaxyx(wptr, max_y, max_x);
 	center = max_x / 2 - n / 2;
 
 	/* Print a line of underscores to accept the user input */
 	for (int i = 0; i < n; i++) {
-		mvwprintw(wptr, max_y - 4, center + i, "%c", '_');
+		mvwprintw(wptr, input_y, center + i, "%c", '_');
 	}
 
 	keypad(wptr, true);
-	wmove(wptr, max_y - 4, center);
+	wmove(wptr, input_y, center);
 	echo();
 	curs_set(1);
 	wrefresh(wptr);
@@ -83,15 +82,17 @@ void nc_user_input(int n, WINDOW *wptr, struct UserInput *pui)
 	int c = 0;
 	int idx = 0;
 	int xcursor;
+	int input_y;
 
 	getmaxyx(wptr, max_y, max_x);
 	center = max_x / 2 - n / 2;
 	xcursor = center;
+	input_y = max_y - 3;
 
-	init_input_window(n, wptr);
+	init_input_window(n, wptr, input_y);
 	pui->flag = 0;
 	getmaxyx(wptr, max_y, max_x);
-	wmove(wptr, max_y - 4, center);
+	wmove(wptr, input_y, center);
 	while (c != '\n' && c != '\r') {
 		wrefresh(wptr);
 		noecho();
@@ -117,11 +118,11 @@ void nc_user_input(int n, WINDOW *wptr, struct UserInput *pui)
 				idx--;
 				xcursor--;
 				temp[idx] = '\0';
-				wmove(wptr, max_y - 4, xcursor);
+				wmove(wptr, input_y, xcursor);
 				wprintw(wptr, "%c", '_');
-				wmove(wptr, max_y - 4, xcursor);
+				wmove(wptr, input_y, xcursor);
 			} else {
-				wmove(wptr, max_y - 4, xcursor);
+				wmove(wptr, input_y, xcursor);
 			}
 			break;
 
@@ -133,7 +134,7 @@ void nc_user_input(int n, WINDOW *wptr, struct UserInput *pui)
 				xcursor++;
 			} else {
 				erasechar();
-				wmove(wptr, max_y - 4, xcursor);
+				wmove(wptr, input_y, xcursor);
 			}
 			break;
 		}
@@ -277,7 +278,7 @@ bool nc_confirm_record(_transact_tokens_t *ld)
 	return false;
 }
 
-int nc_input_month(void)
+int nc_input_month(int old_month, int old_year)
 {
 	WINDOW *wptr_input = create_input_subwindow();
 	struct UserInputDigit puid_, *puid = &puid_;
@@ -301,19 +302,26 @@ int nc_input_month(void)
 	}
 }
 
-int nc_input_year(void)
+int nc_input_year(int old_year)
 {
-	WINDOW *wptr_input = create_input_subwindow();
+	WINDOW *wptr = create_input_subwindow();
 	struct UserInputDigit puid_, *puid = &puid_;
+	int y = INPUT_MSG_Y_OFFSET;
+	char *txt = "Editing Year:";
+	int x_center;
 
-	mvwxcprintw(wptr_input, INPUT_MSG_Y_OFFSET, "Enter Year");
-	wrefresh(wptr_input);
+	mvwxcprintw(wptr, y++, "Enter Year");
+	if (old_year > 0) {
+		x_center = getmaxx(wptr) / 2 - (intlen(old_year) + strlen(txt)) / 2;
+		mvwprintw(wptr, y++, x_center, "%s %d", txt, old_year);
+	}
+	wrefresh(wptr);
 
 	do {
-		nc_input_n_digits(puid, wptr_input, MAX_LEN_YEAR, MIN_LEN_YEAR);
+		nc_input_n_digits(puid, wptr, MAX_LEN_YEAR, MIN_LEN_YEAR);
 	} while (puid->data < 0 && puid->flag != QUIT);
 
-	nc_exit_window(wptr_input);
+	nc_exit_window(wptr);
 
 	if (puid->flag == QUIT) {
 		return -1;
@@ -322,27 +330,34 @@ int nc_input_year(void)
 	}
 }
 
-int nc_input_day(int month, int year)
+int nc_input_day(int month, int year, int old_day)
 {
-	WINDOW *wptr_input = create_input_subwindow();
+	WINDOW *wptr = create_input_subwindow();
 	struct UserInputDigit puid_, *puid = &puid_;
+	int y = INPUT_MSG_Y_OFFSET;
+	char *txt = "Editing Date:";
+	int x_center = getmaxx(wptr) / 2 - 
+		(intlen(month) + intlen(year) + intlen(old_day) + strlen(txt) + strlen("//")) / 2;
 
-	mvwxcprintw(wptr_input, INPUT_MSG_Y_OFFSET, "Enter Day");
-	wrefresh(wptr_input);
+	mvwxcprintw(wptr, y++, "Enter Day");
+	if (old_day > 0) {
+		mvwprintw(wptr, y, x_center, "%s %d/%d/%d", txt, month, old_day, year);
+	}
+	wrefresh(wptr);
 
-	nc_input_n_digits(puid, wptr_input, MAX_LEN_DAY_MON, MIN_LEN_DAY_MON);
+	nc_input_n_digits(puid, wptr, MAX_LEN_DAY_MON, MIN_LEN_DAY_MON);
 	while (puid->flag != QUIT && 
 		(puid->data == -1 || dayexists(puid->data, month, year) == false)) 
 	{
-		clear_input_error_message(wptr_input);
+		clear_input_error_message(wptr);
 		if (dayexists(puid->data, month, year) == false) { 
-			mvwxcprintw(wptr_input, getmaxy(wptr_input) - BOX_OFFSET, "Not a valid day");
-			wrefresh(wptr_input);
+			mvwxcprintw(wptr, getmaxy(wptr) - BOX_OFFSET, "Not a valid day");
+			wrefresh(wptr);
 		}
-		nc_input_n_digits(puid, wptr_input, MAX_LEN_DAY_MON, MIN_LEN_DAY_MON);
+		nc_input_n_digits(puid, wptr, MAX_LEN_DAY_MON, MIN_LEN_DAY_MON);
 	}
 
-	nc_exit_window(wptr_input);
+	nc_exit_window(wptr);
 
 	if (puid->flag == QUIT) {
 		return -1;

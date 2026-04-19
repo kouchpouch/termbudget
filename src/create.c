@@ -81,11 +81,11 @@ char *create_budget_record(int yr, int mo)
 	double amt;
 
 	if (mo == 0 || yr == 0) {
-		yr = nc_input_year();
+		yr = nc_input_year(0);
 		if (yr == -1) {
 			return NULL;
 		}
-		mo = nc_input_month();
+		mo = nc_input_month(0, yr);
 		if (mo == -1) {
 			return NULL;
 		}
@@ -144,17 +144,17 @@ void create_transaction(int year, int month)
 
 	nc_print_input_footer(stdscr);
 
-	year > 0 ? (uld->year = year) : (uld->year = nc_input_year());
+	year > 0 ? (uld->year = year) : (uld->year = nc_input_year(0));
 	if (uld->year < 0) {
 		return;
 	}
 
-	month > 0 ? (uld->month = month) : (uld->month = nc_input_month());
+	month > 0 ? (uld->month = month) : (uld->month = nc_input_month(0, uld->year));
 	if (uld->month < 0) {
 		return;
 	}
 
-	uld->day = nc_input_day(uld->month, uld->year);
+	uld->day = nc_input_day(uld->month, uld->year, 0);
 	if (uld->day < 0) {
 		return;
 	}
@@ -257,13 +257,13 @@ struct Datevals *nc_create_new_budget(void)
 	}
 	char *catg;
 
-	dv->year = nc_input_year();
+	dv->year = nc_input_year(0);
 	if (dv->year < 0) {
 		free(dv);
 		return NULL;
 	}
 
-	dv->month = nc_input_month();
+	dv->month = nc_input_month(0, dv->year);
 	if (dv->month < 0) {
 		free(dv);
 		return NULL;

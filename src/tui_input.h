@@ -42,15 +42,15 @@ bool nc_confirm_input(char *msg);
 bool nc_confirm_record(_transact_tokens_t *ld);
 /* Creates and destroys an ncurses input window and validates the input with
  * retries. Returns -1 on quit */
-int nc_input_month(void);
+int nc_input_month(int old_month, int old_year);
 
 /* Creates and destroys an ncurses input window and validates the input with
  * retries. Returns -1 on quit */
-int nc_input_year(void);
+int nc_input_year(int old_year);
 
 /* Creates and destroys an ncurses input window and validates the input with
  * retries. Returns -1 on quit */
-int nc_input_day(int month, int year);
+int nc_input_day(int month, int year, int old_day);
 
 char *nc_input_string(char *msg);
 
