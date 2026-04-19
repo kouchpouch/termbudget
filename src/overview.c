@@ -16,6 +16,10 @@
 #include <stdio.h>
 #include <ncurses.h>
 
+#include "main.h"
+#include "tui.h"
+#include "helper.h"
+#include "parser.h"
 #include "overview.h"
 #include "vector.h"
 #include "flags.h"
@@ -62,6 +66,40 @@ static double get_max_value(int elements, double *arr)
 	return max;
 }
 
+int calculate_overview_columns(WINDOW *wptr)
+{
+	/* 
+	 * There will be an expense and an income bar, each 1 column wide. =2
+	 * There will also be text with the abbreviated month. =3
+	 * Then there's the dollar amounts, which can vary but these can be offset
+	 * vertically to not interfere with eachother. There also needs to be
+	 * spacing between every month's bar graph. This should be dynamic but at
+	 * least 2 columns.
+	 *
+	 * Therefore the minimum width to display the overview is:
+	 * Minimum 7 per month to center the abbreviated month.
+	 * 7 * 12 = 84 + 2 spaces on either side for the wptr_parent box.
+	 * Total Minimum Columns = 86 on stdscr, 84 on wptr_data.
+	 */
+
+	int space = 0;
+	if (getmaxx(wptr) >= 84) {
+		space = getmaxx(wptr) / 12;
+		if (space % 2 == 0) {
+			if (((space + 1) * 12) < getmaxx(wptr)) {
+				space += 1;
+			} else {
+				space -= 1;
+			}
+		}
+	} else {
+		return -1;
+	}
+	return space > 20 ? 20 : space;
+}
+
+/* Returns the number of spaces between each bar graph for the overview
+ * option */
 static void nc_print_overview_graphs(WINDOW *wptr, _vector_t *months, int year)
 {
 	double ratios[12] = {0.0}; // Holds each month's income/expense ratio

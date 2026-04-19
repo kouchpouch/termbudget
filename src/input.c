@@ -16,7 +16,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <string.h>
 
+#include "parser.h"
 #include "categories.h"
 #include "main.h"
 #include "helper.h"

@@ -17,7 +17,7 @@
 #define CATEGORIES_H
 
 #include <stdio.h>
-#include "tui.h"
+
 #include "vector.h"
 
 /*

@@ -19,8 +19,6 @@
 #include <ncurses.h>
 
 #include "vector.h"
-#include "categories.h"
-#include "parser.h"
 
 #define REALLOC_INCR 64
 #define INDEX_ALLOC 1024
@@ -65,14 +63,6 @@ void mem_alloc_fail(void);
  * at file positions of 'pbo' */
 void calculate_balance(struct Balances *pb, _vector_t *pbo);
 
-void nc_print_record_vert(WINDOW *wptr, _transact_tokens_t *ld, int x_off);
-
-bool nc_confirm_record(_transact_tokens_t *ld);
-
 int show_help_subwindow(void);
-
-void nc_overview_setup(int year);
-
-void draw_scroll_indicator(WINDOW *wptr);
 
 #endif

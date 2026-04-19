@@ -16,9 +16,6 @@
 #ifndef OVERVIEW_H
 #define OVERVIEW_H
 
-#include "main.h"
-#include "vector.h"
-
 void nc_overview_setup(int year);
 
 #endif

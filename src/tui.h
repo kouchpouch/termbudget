@@ -17,8 +17,11 @@
 
 #ifndef TUI_H
 #define TUI_H
+
 #include <ncurses.h>
+
 #include "helper.h"
+#include "parser.h"
 
 /* Minimum length to display the full names of each field
  * on the X axis */
@@ -98,10 +101,6 @@ void nc_exit_window(WINDOW *wptr);
  * the maximum y coordinate */
 void clear_input_error_message(WINDOW *wptr);
 
-/* Returns the number of spaces between each bar graph for the overview
- * option */
-int calculate_overview_columns(WINDOW *wptr);
-
 /* 
  * Calculate column offsets for ncurses formatting, sets date width into date,
  * category width into catg, description width into desc, transaction type
@@ -115,6 +114,8 @@ void calculate_columns(struct ColWidth *cw, int max_x);
  * of x_off
  */
 void print_column_headers(WINDOW *wptr, int x_off);
+
+void nc_print_record_vert(WINDOW *wptr, _transact_tokens_t *ld, int x_off);
 
 /* Moves cursor in wptr to y-coord y for a string len
  * of len */

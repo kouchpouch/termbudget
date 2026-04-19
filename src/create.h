@@ -13,14 +13,15 @@
  * with this program. If not, see <https://www.gnu.org/licenses/>. 
  */
 
+#ifndef CREATE_H
+#define CREATE_H
+
 #include <stdio.h>
 #include <stdlib.h>
 
 #include "main.h"
 #include "vector.h"
-
-#ifndef CREATE_H
-#define CREATE_H
+#include "parser.h"
 
 enum AddMainMenu {
 	ADD_TRANSACTION = 0,

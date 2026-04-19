@@ -458,6 +458,15 @@ double nc_input_budget_amount(void)
 	}
 }
 
+static void draw_scroll_indicator(WINDOW *wptr)
+{
+	char *etc = "...";
+	int y = getmaxy(wptr) - 1;
+	int x = getmaxx(wptr) - (strlen(etc) + BOX_OFFSET);
+	mvwprintw(wptr, y, x, "%s", etc);
+	wrefresh(wptr);
+}
+
 char *nc_select_category(int month, int year)
 {
 	_category_vec_t *pc = get_budget_catg_by_date(month, year);

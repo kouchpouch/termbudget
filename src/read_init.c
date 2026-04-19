@@ -19,6 +19,7 @@
 #include <stdbool.h>
 #include <ncurses.h>
 
+#include "overview.h"
 #include "read_init.h"
 #include "read_loops.h"
 #include "create.h"

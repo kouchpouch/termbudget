@@ -18,6 +18,8 @@
 
 #include <ncurses.h>
 
+#include "parser.h"
+
 struct UserInput {
 	char *str;
 	int flag;
@@ -37,6 +39,7 @@ bool nc_confirm_input_loop(WINDOW *wptr);
 
 bool nc_confirm_input(char *msg);
 
+bool nc_confirm_record(_transact_tokens_t *ld);
 /* Creates and destroys an ncurses input window and validates the input with
  * retries. Returns -1 on quit */
 int nc_input_month(void);

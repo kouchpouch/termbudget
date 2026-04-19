@@ -16,7 +16,8 @@
 #include <string.h>
 #include <string.h>
 #include <stdlib.h>
-#include "tui.h"
+
+#include "parser.h"
 #include "tui_sidebar.h"
 
 enum FooterAttr {
@@ -71,38 +72,6 @@ void clear_input_error_message(WINDOW *wptr)
 	wclrtobot(wptr);
 	box(wptr, 0, 0);
 	wrefresh(wptr);
-}
-
-int calculate_overview_columns(WINDOW *wptr)
-{
-	/* 
-	 * There will be an expense and an income bar, each 1 column wide. =2
-	 * There will also be text with the abbreviated month. =3
-	 * Then there's the dollar amounts, which can vary but these can be offset
-	 * vertically to not interfere with eachother. There also needs to be
-	 * spacing between every month's bar graph. This should be dynamic but at
-	 * least 2 columns.
-	 *
-	 * Therefore the minimum width to display the overview is:
-	 * Minimum 7 per month to center the abbreviated month.
-	 * 7 * 12 = 84 + 2 spaces on either side for the wptr_parent box.
-	 * Total Minimum Columns = 86 on stdscr, 84 on wptr_data.
-	 */
-
-	int space = 0;
-	if (getmaxx(wptr) >= 84) {
-		space = getmaxx(wptr) / 12;
-		if (space % 2 == 0) {
-			if (((space + 1) * 12) < getmaxx(wptr)) {
-				space += 1;
-			} else {
-				space -= 1;
-			}
-		}
-	} else {
-		return -1;
-	}
-	return space > 20 ? 20 : space;
 }
 
 void calculate_columns(struct ColWidth *cw, int max_x)
@@ -170,6 +139,17 @@ void print_column_headers(WINDOW *wptr, int x_off)
 	mvwchgat(wptr, y, x_off, getmaxx(wptr) - x_off * 2, A_REVERSE, 0, NULL);
 
 	wrefresh(wptr);
+}
+
+/* Prints record from ld, in vertical format, 5 rows. */
+void nc_print_record_vert(WINDOW *wptr, _transact_tokens_t *ld, int x_off)
+{
+	int y = 1; /* Y-coord to print on, to start. */
+	mvwprintw(wptr, y++, x_off, "Date--> %d/%d/%d", ld->month, ld->day, ld->year);
+	mvwprintw(wptr, y++, x_off, "Cat.--> %s", ld->category);
+	mvwprintw(wptr, y++, x_off, "Desc--> %s", ld->desc);
+	mvwprintw(wptr, y++, x_off, "Type--> %s", ld->transtype == 0 ? "Expense" : "Income");
+	mvwprintw(wptr, y++, x_off, "Amt.--> %.2f", ld->amount);
 }
 
 int mvwxctr(WINDOW *wptr, int y, int len)

@@ -49,25 +49,10 @@ int debug_flag;
 int cli_flag;
 int verify_flag;
 
-bool nc_confirm_record(_transact_tokens_t *ld);
-void nc_print_record_hr(WINDOW *wptr, struct ColWidth *cw, _transact_tokens_t *ld, int y);
-void nc_print_record_vert(WINDOW *wptr, _transact_tokens_t *ld, int x_off);
-
 void mem_alloc_fail(void) 
 {
 	perror("Failed to allocate memory\n");
 	exit(1);
-}
-
-/* Prints record from ld, in vertical format, 5 rows. */
-void nc_print_record_vert(WINDOW *wptr, _transact_tokens_t *ld, int x_off)
-{
-	int y = 1; /* Y-coord to print on, to start. */
-	mvwprintw(wptr, y++, x_off, "Date--> %d/%d/%d", ld->month, ld->day, ld->year);
-	mvwprintw(wptr, y++, x_off, "Cat.--> %s", ld->category);
-	mvwprintw(wptr, y++, x_off, "Desc--> %s", ld->desc);
-	mvwprintw(wptr, y++, x_off, "Type--> %s", ld->transtype == 0 ? "Expense" : "Income");
-	mvwprintw(wptr, y++, x_off, "Amt.--> %.2f", ld->amount);
 }
 
 /* Prints the value of each struct ColWidth memeber to the window wptr */
