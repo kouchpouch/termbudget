@@ -18,6 +18,7 @@
 #include <ncurses.h>
 #include <ctype.h>
 #include <limits.h>
+#include <assert.h>
 
 #include "parser.h"
 #include "tui.h"
@@ -27,6 +28,8 @@
 #include "helper.h"
 #include "create.h"
 #include "flags.h"
+
+#define DATE_SUBWINDOW_ROWS 9
 
 struct __full_date {
 	int day;
@@ -43,7 +46,7 @@ struct __prev_date_exist {
 struct __fd_input_scroll {
 	int tmp_x;
 	int print_x;
-	int date_idx;
+	int field_idx;
 	int incr_x;
 	int day_field_len;
 	int month_field_len;
@@ -52,13 +55,19 @@ struct __fd_input_scroll {
 	int day_x;
 	int month_x;
 	int year_x;
+	int cancel_x;
+	int accept_x;
+	int opt_y;
+	int opt_len;
 };
 
 enum _input_full_date_fields {
 	F_MONTH = 0,
 	F_DAY,
 	F_YEAR,
-	F_END = 3
+	F_CANCEL,
+	F_ACCEPT,
+	F_END
 } fd_fields;
 
 static void init_input_window(int n, WINDOW *wptr, int input_y)
@@ -320,21 +329,33 @@ static void unhighlight(WINDOW *wptr, int y)
 static void scroll_prev_field
 (WINDOW *wptr, struct __fd_input_scroll *scrl)
 {
-	switch (scrl->date_idx) {
+	unhighlight(wptr, scrl->y);
+	unhighlight(wptr, scrl->opt_y);
+	switch (scrl->field_idx) {
 
-	case (F_MONTH): /* Scroll back to the year field */
-		mvwchgat(wptr, scrl->y, scrl->year_x, scrl->year_field_len, A_REVERSE, 0, NULL);
-		scrl->date_idx = F_YEAR;
+	case (F_MONTH):
+		highlight(wptr, scrl->opt_y, scrl->accept_x, scrl->opt_len);
+		scrl->field_idx = F_ACCEPT;
 		break;
 
 	case (F_DAY): 
-		mvwchgat(wptr, scrl->y, scrl->month_x, scrl->month_field_len, A_REVERSE, 0, NULL);
-		scrl->date_idx--;
+		highlight(wptr, scrl->y, scrl->month_x, scrl->month_field_len); 
+		scrl->field_idx--;
 		break;
 
 	case (F_YEAR):
-		mvwchgat(wptr, scrl->y, scrl->day_x, scrl->day_field_len, A_REVERSE, 0, NULL);
-		scrl->date_idx--;
+		highlight(wptr, scrl->y, scrl->day_x, scrl->day_field_len); 
+		scrl->field_idx--;
+		break;
+
+	case (F_CANCEL):
+		highlight(wptr, scrl->y, scrl->year_x, scrl->year_field_len);
+		scrl->field_idx--;
+		break;
+
+	case (F_ACCEPT):
+		highlight(wptr, scrl->opt_y, scrl->cancel_x, scrl->opt_len);
+		scrl->field_idx--;
 		break;
 
 	default:
@@ -346,21 +367,33 @@ static void scroll_prev_field
 static void scroll_next_field
 (WINDOW *wptr, struct __fd_input_scroll *scrl)
 {
-	switch (scrl->date_idx) {
+	unhighlight(wptr, scrl->y);
+	unhighlight(wptr, scrl->opt_y);
+	switch (scrl->field_idx) {
 
 	case (F_MONTH):
-		mvwchgat(wptr, scrl->y, scrl->day_x, scrl->day_field_len, A_REVERSE, 0, NULL);
-		scrl->date_idx++;
+		highlight(wptr, scrl->y, scrl->day_x, scrl->day_field_len);
+		scrl->field_idx++;
 		break;
 
 	case (F_DAY): 
-		mvwchgat(wptr, scrl->y, scrl->year_x, scrl->year_field_len, A_REVERSE, 0, NULL);
-		scrl->date_idx++;
+		highlight(wptr, scrl->y, scrl->year_x, scrl->year_field_len);
+		scrl->field_idx++;
 		break;
 
-	case (F_YEAR): /* Scroll back to the month field */
-		mvwchgat(wptr, scrl->y, scrl->month_x, scrl->month_field_len, A_REVERSE, 0, NULL);
-		scrl->date_idx = F_MONTH;
+	case (F_YEAR): /* Move to the options */
+		highlight(wptr, scrl->opt_y, scrl->cancel_x, scrl->opt_len);
+		scrl->field_idx++;
+		break;
+
+	case (F_CANCEL):
+		highlight(wptr, scrl->opt_y, scrl->accept_x, scrl->opt_len);
+		scrl->field_idx++;
+		break;
+
+	case (F_ACCEPT):
+		highlight(wptr, scrl->y, scrl->month_x, scrl->month_field_len); 
+		scrl->field_idx = F_MONTH;
 		break;
 
 	default:
@@ -369,7 +402,8 @@ static void scroll_next_field
 	scrl->tmp_x = getcurx(wptr);
 }
 
-static void get_prev_date_existence(struct __prev_date_exist *prev, int d, int m, int y)
+static void get_prev_date_existence
+(struct __prev_date_exist *prev, int d, int m, int y)
 {
 	if (d > 0) {
 		prev->day_exists = true;
@@ -388,6 +422,7 @@ static void init_fd_input_scroll(WINDOW *wptr, struct __fd_input_scroll *s)
 	 * left of center.
 	 * "XX / XX / XXXX" = 14 chars.. start printing on 7.                */
 	s->print_x = 7;
+
 	/* How many spaces to increment X by. Shifting the highlighted portion
 	 * from month to date to year.
 	 *  XX / XX / XXXX
@@ -403,16 +438,24 @@ static void init_fd_input_scroll(WINDOW *wptr, struct __fd_input_scroll *s)
 	s->year_field_len = 6;
 	s->y = INPUT_MSG_Y_OFFSET;
 
-	/* Absolute Positions, minus padding */
+	/* Absolute Positions, with padding */
 	s->month_x = getmaxx(wptr) / 2 - s->print_x - 1;
-	s->day_x = getmaxx(wptr) / 2 - s->print_x + s->incr_x - 1;
-	s->year_x = getmaxx(wptr) / 2 - s->print_x + (s->incr_x * 2) - 1;
+	s->day_x = s->month_x + s->incr_x;
+	s->year_x = s->day_x + s->incr_x;
 }
 
-static void print_previous_dates
+static void print_data_to_window 
 (WINDOW *wptr, struct __fd_input_scroll *s, int m, int d, int y)
 {
 	int center_x = (getmaxx(wptr) / 2) - s->print_x;
+	char *cancel = "<Cancel>";
+	char *space = "      ";
+	char *accept = "<Accept>";
+	assert(strlen(cancel) == strlen(accept));
+	s->opt_len = (int)strlen(cancel);
+
+	size_t opt_len = strlen(cancel) + strlen(space) + strlen(accept);
+	int center_opt = getmaxx(wptr) / 2 - opt_len / 2;
 	mvwxcprintw(wptr, s->y++, "Modifying Date");
 
 	s->y++; /* New Line */
@@ -422,7 +465,14 @@ static void print_previous_dates
 
 	/* Highlight first field (month) */
 	mvwchgat(wptr, s->y, s->month_x, s->month_field_len, A_REVERSE, 0, NULL);
-	s->tmp_x = getcurx(wptr);
+
+	s->opt_y = s->y + 2;
+
+	/* Print options */
+	mvwprintw(wptr, s->opt_y, center_opt, "%s%s%s", cancel, space, accept);
+
+	s->cancel_x = center_opt;
+	s->accept_x = s->cancel_x + strlen(cancel) + strlen(space);
 }
 
 /* An interactive alternative to the current way of taking user input for
@@ -432,7 +482,7 @@ void nc_input_full_date
 (int old_mo, int old_yr, int old_day, struct __full_date *new_date)
 {
 	int c = 0;
-	WINDOW *wptr = create_input_subwindow();
+	WINDOW *wptr = create_input_subwindow_force_rows(DATE_SUBWINDOW_ROWS);
 
 	struct __fd_input_scroll scrl = { 0 };
 	init_fd_input_scroll(wptr, &scrl);
@@ -440,16 +490,12 @@ void nc_input_full_date
 	struct __prev_date_exist prev_date = { false };
 	get_prev_date_existence(&prev_date, old_day, old_mo, old_yr); 
 
-	print_previous_dates(wptr, &scrl, old_mo, old_day, old_yr);
+	print_data_to_window(wptr, &scrl, old_mo, old_day, old_yr);
 
 	while (c != 'q' && c != KEY_F(QUIT)) {
 		wrefresh(wptr);
 		c = wgetch(wptr);
 		switch (c) {
-			case (KEY_STAB):
-			case (KEY_CTAB):
-			case (KEY_BTAB):
-			case (KEY_CATAB):
 			case (KEY_RIGHT):
 			case ('\t'):
 				unhighlight(wptr, scrl.y);
