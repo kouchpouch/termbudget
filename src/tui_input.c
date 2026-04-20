@@ -28,6 +28,12 @@
 #include "create.h"
 #include "flags.h"
 
+struct __full_date {
+	int day;
+	int month;
+	int year;
+};
+
 static void init_input_window(int n, WINDOW *wptr, int input_y)
 {
 	int max_x = getmaxx(wptr);
@@ -278,22 +284,94 @@ bool nc_confirm_record(_transact_tokens_t *ld)
 	return false;
 }
 
+/* An interactive alternative to the current way of taking user input for
+ * the day, month, and year individually. This is an ncurses menu. Tab to move
+ * between the options. Should be a lot easier to use. */
+void nc_input_full_date
+(int old_mo, int old_yr, int old_day, struct __full_date *new)
+{
+	WINDOW *wptr = create_input_subwindow();
+	int y = INPUT_MSG_Y_OFFSET;
+	int print_x = 7; 
+	/* Relative to the center of the window, print this many spaces to the 
+	 * left of center.
+	 * "XX / XX / XXXX" = 14 chars.. start printing on 7. */
+	int date_idx = 0; 
+	/* Keeps track of which part of the date is selected. */
+
+	int c = 0;
+	enum _date_field {
+		F_MONTH = 0,
+		F_DAY,
+		F_YEAR,
+		F_END = 3
+	} date_field;
+	int max_x = getmaxx(wptr);
+
+	bool old_d_exists = false;
+	bool old_m_exists = false;
+	bool old_y_exists = false;
+	if (old_day > 0) {
+		old_d_exists  = true;
+	}
+	if (old_mo > 0) {
+		old_m_exists  = true;
+	}
+	if (old_yr > 0) {
+		old_y_exists  = true;
+	}
+
+	mvwxcprintw(wptr, y++, "Modifying Date");
+	y++; /* New Line */
+	mvwprintw(wptr, y, (max_x / 2) - print_x,
+		   "%0.2d / %0.2d / %0.4d\n", old_mo, old_day, old_yr);	
+	mvwchgat(wptr, y, (max_x / 2) - print_x, 2, A_REVERSE, 0, NULL);
+
+	c = wgetch(wptr);
+	while (c != 'q' && c != KEY_F(QUIT)) {
+		switch (c) {
+			case KEY_STAB:
+			case KEY_CTAB:
+			case KEY_BTAB:
+			case KEY_CATAB:
+				mvwchgat(wptr, y, max_x / 2, -1, A_NORMAL, 0, NULL);
+				break;
+			default:
+				break;
+
+		}
+	}
+
+	wrefresh(wptr);
+	getch();
+	nc_exit_window(wptr);
+}
+
 int nc_input_month(int old_month, int old_year)
 {
-	WINDOW *wptr_input = create_input_subwindow();
+	WINDOW *wptr = create_input_subwindow();
 	struct UserInputDigit puid_, *puid = &puid_;
+	int y = INPUT_MSG_Y_OFFSET;
+	char *txt = "Editing Date:";
+	int x_center = getmaxx(wptr) / 2 - 
+		(intlen(old_month) + intlen(old_year) + strlen(txt) / 2);
 
-	mvwxcprintw(wptr_input, INPUT_MSG_Y_OFFSET, "Enter Month");
-	wrefresh(wptr_input);
+	mvwxcprintw(wptr, y++, "Enter Month");
+	if (old_month > 0 && old_year > 0) {
+		mvwprintw(wptr, y, x_center, "Month: %d, Year: %d", old_month, old_year);
+	} else if (old_month > 0) {
+		mvwprintw(wptr, y, x_center, "Month: %d", old_month); 
+	}
 
-	nc_input_n_digits(puid, wptr_input, MAX_LEN_DAY_MON, 1);
+	wrefresh(wptr);
+	nc_input_n_digits(puid, wptr, MAX_LEN_DAY_MON, 1);
 	while (puid->flag != QUIT && (puid->data <= 0 || puid->data > 12)) {
-		clear_input_error_message(wptr_input);
-		mvwxcprintw(wptr_input, getmaxy(wptr_input) - BOX_OFFSET, "Invalid Month");
-		nc_input_n_digits(puid, wptr_input, MAX_LEN_DAY_MON, 1);
+		clear_input_error_message(wptr);
+		mvwxcprintw(wptr, getmaxy(wptr) - BOX_OFFSET, "Invalid Month");
+		nc_input_n_digits(puid, wptr, MAX_LEN_DAY_MON, 1);
 	} 
 
-	nc_exit_window(wptr_input);
+	nc_exit_window(wptr);
 
 	if (puid->flag == QUIT) {
 		return -1;
@@ -332,6 +410,7 @@ int nc_input_year(int old_year)
 
 int nc_input_day(int month, int year, int old_day)
 {
+	nc_input_full_date(month, year, old_day, NULL);
 	WINDOW *wptr = create_input_subwindow();
 	struct UserInputDigit puid_, *puid = &puid_;
 	int y = INPUT_MSG_Y_OFFSET;
