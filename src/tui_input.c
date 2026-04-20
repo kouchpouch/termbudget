@@ -45,8 +45,13 @@ struct __fd_input_scroll {
 	int print_x;
 	int date_idx;
 	int incr_x;
-	int field_len;
+	int day_field_len;
+	int month_field_len;
+	int year_field_len;
 	int y;
+	int day_x;
+	int month_x;
+	int year_x;
 };
 
 enum _input_full_date_fields {
@@ -312,22 +317,54 @@ static void unhighlight(WINDOW *wptr, int y)
 	mvwchgat(wptr, y, o, getmaxx(wptr) - (o * 2), A_NORMAL, 0, NULL);
 }
 
+static void scroll_prev_field
+(WINDOW *wptr, struct __fd_input_scroll *scrl)
+{
+	switch (scrl->date_idx) {
+
+	case (F_MONTH): /* Scroll back to the year field */
+		mvwchgat(wptr, scrl->y, scrl->year_x, scrl->year_field_len, A_REVERSE, 0, NULL);
+		scrl->date_idx = F_YEAR;
+		break;
+
+	case (F_DAY): 
+		mvwchgat(wptr, scrl->y, scrl->month_x, scrl->month_field_len, A_REVERSE, 0, NULL);
+		scrl->date_idx--;
+		break;
+
+	case (F_YEAR):
+		mvwchgat(wptr, scrl->y, scrl->day_x, scrl->day_field_len, A_REVERSE, 0, NULL);
+		scrl->date_idx--;
+		break;
+
+	default:
+		break;
+	}
+	scrl->tmp_x = getcurx(wptr);
+}
+
 static void scroll_next_field
 (WINDOW *wptr, struct __fd_input_scroll *scrl)
 {
-	if (scrl->date_idx + 1 != F_END) {
-		if (scrl->date_idx + 1 != F_YEAR) {
-			scrl->field_len = 4;
-			mvwchgat(wptr, scrl->y, scrl->tmp_x + scrl->incr_x, scrl->field_len, A_REVERSE, 0, NULL);
-		} else {
-			scrl->field_len = 6;
-			mvwchgat(wptr, scrl->y, scrl->tmp_x + scrl->incr_x, scrl->field_len, A_REVERSE, 0, NULL);
-		}
+	switch (scrl->date_idx) {
+
+	case (F_MONTH):
+		mvwchgat(wptr, scrl->y, scrl->day_x, scrl->day_field_len, A_REVERSE, 0, NULL);
 		scrl->date_idx++;
-	} else {
-		scrl->date_idx = 0;
-		scrl->field_len = 4;
-		mvwchgat(wptr, scrl->y, (getmaxx(wptr) / 2) - scrl->print_x - 1, scrl->field_len, A_REVERSE, 0, NULL);
+		break;
+
+	case (F_DAY): 
+		mvwchgat(wptr, scrl->y, scrl->year_x, scrl->year_field_len, A_REVERSE, 0, NULL);
+		scrl->date_idx++;
+		break;
+
+	case (F_YEAR): /* Scroll back to the month field */
+		mvwchgat(wptr, scrl->y, scrl->month_x, scrl->month_field_len, A_REVERSE, 0, NULL);
+		scrl->date_idx = F_MONTH;
+		break;
+
+	default:
+		break;
 	}
 	scrl->tmp_x = getcurx(wptr);
 }
@@ -349,17 +386,15 @@ void init_prev_dates(struct __prev_date_exist *prev, int d, int m, int y)
  * the day, month, and year individually. This is an ncurses menu. Tab to move
  * between the options. Should be a lot easier to use. */
 void nc_input_full_date
-(int old_mo, int old_yr, int old_day, struct __full_date *new)
+(int old_mo, int old_yr, int old_day, struct __full_date *new_date)
 {
 	WINDOW *wptr = create_input_subwindow();
-
 	/* Implicit initialization of all other members to zero */
 	struct __fd_input_scroll scrl = {
 	/* Relative to the center of the window, print this many spaces to the 
 	 * left of center.
 	 * "XX / XX / XXXX" = 14 chars.. start printing on 7.                */
 		.print_x = 7,
-
 	/* How many spaces to increment X by. Shifting the highlighted portion
 	 * from month to date to year.
 	 *  XX / XX / XXXX
@@ -370,9 +405,16 @@ void nc_input_full_date
 	/* Initially 4, due to the first field being the month field, which is 
 	 * two characters plus 1 space of padding on either side. Year field will
 	 * require a field_len of 6.                                         */
-		.field_len = 4,
+		.day_field_len = 4,
+		.month_field_len = 4,
+		.year_field_len = 6,
 		.y = INPUT_MSG_Y_OFFSET
 	};
+
+	/* Absolute Positions */
+	scrl.month_x = getmaxx(wptr) / 2 - scrl.print_x - 1;
+	scrl.day_x = getmaxx(wptr) / 2 - scrl.print_x + scrl.incr_x - 1;
+	scrl.year_x = getmaxx(wptr) / 2 - scrl.print_x + (scrl.incr_x * 2) - 1;
 
 	int c = 0;
 	int max_x = getmaxx(wptr);
@@ -383,7 +425,7 @@ void nc_input_full_date
 	scrl.y++; /* New Line */
 	mvwprintw(wptr, scrl.y, (max_x / 2) - scrl.print_x,
 		   "%02d / %02d / %04d", old_mo, old_day, old_yr);	
-	mvwchgat(wptr, scrl.y, (max_x / 2) - scrl.print_x - 1, scrl.field_len, A_REVERSE, 0, NULL);
+	mvwchgat(wptr, scrl.y, scrl.month_x, scrl.month_field_len, A_REVERSE, 0, NULL);
 	scrl.tmp_x = getcurx(wptr);
 
 	while (c != 'q' && c != KEY_F(QUIT)) {
@@ -394,18 +436,21 @@ void nc_input_full_date
 			case (KEY_CTAB):
 			case (KEY_BTAB):
 			case (KEY_CATAB):
+			case (KEY_RIGHT):
 			case ('\t'):
 				unhighlight(wptr, scrl.y);
 				scroll_next_field(wptr, &scrl);
 				break;
+			case (KEY_LEFT):
+				unhighlight(wptr, scrl.y);
+				scroll_prev_field(wptr, &scrl);
+				break;
 			case (KEY_ENTER):
 			case ('\n'):
 			case ('\r'):
-				if (
 				break;
 			default:
 				break;
-
 		}
 	}
 
