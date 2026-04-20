@@ -708,6 +708,7 @@ void nc_read_budget_loop
 			refresh_budget_loop(wins->data, nodes, sc, cw, rfptr, bfptr, subwin_y);
 			c = 0;
 			break;
+		case KEY_ENTER:
 		case('\n'):
 		case('\r'):
 			if (sc->catg_data >= 0) {
