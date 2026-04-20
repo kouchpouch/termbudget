@@ -108,6 +108,8 @@ void clear_input_error_message(WINDOW *wptr);
  */
 void calculate_columns(struct ColWidth *cw, int max_x);
 
+void highlight(WINDOW *wptr, int y, int x, int n);
+
 /*
  * Print headers for the reading data to wptr, column width is calculated
  * by calculate_columns() automatically. Offsets calculation by an offset
@@ -148,6 +150,10 @@ WINDOW *create_category_select_subwindow(WINDOW *wptr_parent);
  * n is the number of menu items the window should hold. The window will at
  * least be y INPUT_WIN_ROWS units long. */
 WINDOW *create_input_subwindow_n_rows(int n);
+
+/* Creates a subwindow with n rows, these rows are NOT verified and there is 
+ * no maximum or minumum value */
+WINDOW *create_input_subwindow_force_rows(int n);
 
 /* Creates a subwindow for user input with dimensions based on stdscr */
 WINDOW *create_input_subwindow(void);

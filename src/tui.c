@@ -1,5 +1,5 @@
 /*
- * This program is free software: you can redistribute it and/or modify 
+ * This program is free software: you can redistribute it and/or modify tui.c
  * it under the terms of the GNU General Public License as published by 
  * the Free Software Foundation, either version 3 of the License, 
  * or (at your option) any later version.
@@ -104,6 +104,12 @@ void calculate_columns(struct ColWidth *cw, int max_x)
 		cw->desc = 64;
 		cw->catg = 64;
 	}
+}
+
+/* Changes attribute in 'wptr' on row 'y', column 'x', for 'n' characters to 
+ * reverse video */
+void highlight(WINDOW *wptr, int y, int x, int n) {
+	mvwchgat(wptr, y, x, n, A_REVERSE, 0, NULL); 
 }
 
 void print_column_headers(WINDOW *wptr, int x_off)
@@ -299,6 +305,32 @@ WINDOW *create_input_subwindow_n_rows(int n)
 			win_y = n + BOX_OFFSET + 1;
 		}
 	}
+
+	if (max_x >= MIN_COLUMNS + 20) {
+		win_x = MIN_COLUMNS + 20;
+	} else {
+		win_x = max_x;
+	}
+
+	wptr = newwin(win_y, win_x, (max_y / 2) - win_y / 2, (max_x / 2) - win_x / 2);
+
+	if (wptr == NULL) {
+		window_creation_fail();
+	}
+
+	box(wptr, 0, 0);
+	keypad(wptr, true);
+	return wptr;
+}
+
+WINDOW *create_input_subwindow_force_rows(int n)
+{
+	int max_y, max_x;
+	int win_y, win_x;
+	WINDOW *wptr;
+	
+	getmaxyx(stdscr, max_y, max_x);
+	win_y = n;
 
 	if (max_x >= MIN_COLUMNS + 20) {
 		win_x = MIN_COLUMNS + 20;
