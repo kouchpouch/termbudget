@@ -369,7 +369,7 @@ static void scroll_next_field
 	scrl->tmp_x = getcurx(wptr);
 }
 
-void init_prev_dates(struct __prev_date_exist *prev, int d, int m, int y)
+static void get_prev_date_existence(struct __prev_date_exist *prev, int d, int m, int y)
 {
 	if (d > 0) {
 		prev->day_exists = true;
@@ -382,51 +382,65 @@ void init_prev_dates(struct __prev_date_exist *prev, int d, int m, int y)
 	}
 }
 
+static void init_fd_input_scroll(WINDOW *wptr, struct __fd_input_scroll *s)
+{
+	/* Relative to the center of the window, print this many spaces to the 
+	 * left of center.
+	 * "XX / XX / XXXX" = 14 chars.. start printing on 7.                */
+	s->print_x = 7;
+	/* How many spaces to increment X by. Shifting the highlighted portion
+	 * from month to date to year.
+	 *  XX / XX / XXXX
+	 *  ^....^
+	 *    5	                                                             */
+	s->incr_x = 5;
+
+	/* Initially 4, due to the first field being the month field, which is 
+	 * two characters plus 1 space of padding on either side. Year field will
+	 * require a field_len of 6.                                         */
+	s->day_field_len = 4;
+	s->month_field_len = 4;
+	s->year_field_len = 6;
+	s->y = INPUT_MSG_Y_OFFSET;
+
+	/* Absolute Positions, minus padding */
+	s->month_x = getmaxx(wptr) / 2 - s->print_x - 1;
+	s->day_x = getmaxx(wptr) / 2 - s->print_x + s->incr_x - 1;
+	s->year_x = getmaxx(wptr) / 2 - s->print_x + (s->incr_x * 2) - 1;
+}
+
+static void print_previous_dates
+(WINDOW *wptr, struct __fd_input_scroll *s, int m, int d, int y)
+{
+	int center_x = (getmaxx(wptr) / 2) - s->print_x;
+	mvwxcprintw(wptr, s->y++, "Modifying Date");
+
+	s->y++; /* New Line */
+
+	/* Print zero padded */
+	mvwprintw(wptr, s->y, center_x, "%02d / %02d / %04d", m, d, y);	
+
+	/* Highlight first field (month) */
+	mvwchgat(wptr, s->y, s->month_x, s->month_field_len, A_REVERSE, 0, NULL);
+	s->tmp_x = getcurx(wptr);
+}
+
 /* An interactive alternative to the current way of taking user input for
  * the day, month, and year individually. This is an ncurses menu. Tab to move
  * between the options. Should be a lot easier to use. */
 void nc_input_full_date
 (int old_mo, int old_yr, int old_day, struct __full_date *new_date)
 {
-	WINDOW *wptr = create_input_subwindow();
-	/* Implicit initialization of all other members to zero */
-	struct __fd_input_scroll scrl = {
-	/* Relative to the center of the window, print this many spaces to the 
-	 * left of center.
-	 * "XX / XX / XXXX" = 14 chars.. start printing on 7.                */
-		.print_x = 7,
-	/* How many spaces to increment X by. Shifting the highlighted portion
-	 * from month to date to year.
-	 *  XX / XX / XXXX
-	 *  ^....^
-	 *    5	                                                             */
-		.incr_x = 5,
-
-	/* Initially 4, due to the first field being the month field, which is 
-	 * two characters plus 1 space of padding on either side. Year field will
-	 * require a field_len of 6.                                         */
-		.day_field_len = 4,
-		.month_field_len = 4,
-		.year_field_len = 6,
-		.y = INPUT_MSG_Y_OFFSET
-	};
-
-	/* Absolute Positions */
-	scrl.month_x = getmaxx(wptr) / 2 - scrl.print_x - 1;
-	scrl.day_x = getmaxx(wptr) / 2 - scrl.print_x + scrl.incr_x - 1;
-	scrl.year_x = getmaxx(wptr) / 2 - scrl.print_x + (scrl.incr_x * 2) - 1;
-
 	int c = 0;
-	int max_x = getmaxx(wptr);
-	struct __prev_date_exist prev_date = { false };
-	init_prev_dates(&prev_date, old_day, old_mo, old_yr); 
+	WINDOW *wptr = create_input_subwindow();
 
-	mvwxcprintw(wptr, scrl.y++, "Modifying Date");
-	scrl.y++; /* New Line */
-	mvwprintw(wptr, scrl.y, (max_x / 2) - scrl.print_x,
-		   "%02d / %02d / %04d", old_mo, old_day, old_yr);	
-	mvwchgat(wptr, scrl.y, scrl.month_x, scrl.month_field_len, A_REVERSE, 0, NULL);
-	scrl.tmp_x = getcurx(wptr);
+	struct __fd_input_scroll scrl = { 0 };
+	init_fd_input_scroll(wptr, &scrl);
+
+	struct __prev_date_exist prev_date = { false };
+	get_prev_date_existence(&prev_date, old_day, old_mo, old_yr); 
+
+	print_previous_dates(wptr, &scrl, old_mo, old_day, old_yr);
 
 	while (c != 'q' && c != KEY_F(QUIT)) {
 		wrefresh(wptr);
