@@ -194,3 +194,5 @@
     - 22 [X] Left to budget value in sidebar is incorrect.
     - 23 [X] When no transactions exist it is impossible to quit
     - 24 [X] Out of bounds access not checked in refresh_budget_loop
+    - 25 [ ] Incorrect numbers shown for records displayed when sorted by date
+                and pressing the page up/page dn key.
