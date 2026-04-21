@@ -20,6 +20,12 @@
 
 #include "parser.h"
 
+struct __full_date {
+	int day;
+	int month;
+	int year;
+};
+
 struct UserInput {
 	char *str;
 	int flag;
@@ -32,6 +38,9 @@ bool nc_confirm_input_loop(WINDOW *wptr);
 bool nc_confirm_input(char *msg);
 
 bool nc_confirm_record(_transact_tokens_t *ld);
+
+void nc_input_full_date(int old_mo, int old_day, int old_yr, struct __full_date *new_date);
+
 /* Creates and destroys an ncurses input window and validates the input with
  * retries. Returns -1 on quit */
 int nc_input_month(int old_month, int old_year);
