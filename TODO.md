@@ -12,7 +12,6 @@
             - [X] Debug
             - [X] CLI Mode
     - [X] Get rid of strtok and use strsep
-    - [ ] Create some unit tests for input validation
     - [X] Sorting The CSV By Date
     - [X] In the read function, implement a way to list what dates have data
             in them.
@@ -24,7 +23,6 @@
     - [X] Remove all reallocarray() functions for portability
     - [X] Implement visual truncation when there are not enough columns to
             display all the field data
-    - [ ] Move to integer/fixed point arithmetic for financial calculations
     - [X] *n/a* Use realloc in sorter.c (sort_csv()) instead of having a fixed
             number of lines to index
     - [X] Add ability to escape the menu when accepting a user input
@@ -51,51 +49,53 @@
     - [X] Add initialization function to handle opening files and getting
             vectors, deduplicating, and sorting for nc_select_year/month
     - [X] nc_edit_transaction function is ugly, it must be changed.
-    - [ ] Have option to roll categories from previous month to the next month
-    - [ ] Annotate tui_input.h
-    - [ ] Menu key to (A)dd (F1) on main menu should allow the user to select
-            creating a new transaction, creating a new category, roll over
-            previous month's data to the target month, or exit.
     - [X] Add alerter when adding a category that already exists
     - [X] Add a sidebar or somewhere to put info such as: money remaining,
             money left to still budget (zero dollar based budgeting), total
             income, etc.
-        - [ ] Sidebar scrolling
     - [X] Create a color palette and assign different colors to
             different categories.
-    - [ ] On the user input prompts, show relevant data on the window as the
-            user goes from prompt to prompt. Such as, show the date entered so
-            far and the remaining values left per category.
     - [X] Add field in BUDGET_DIR with transaction types. A category should be
             marked as an income or expense category.
         - [X] Use this new field to properly calculate "left to budget"
     - [X] Remove list_records_by_year_old in main.c
     - [X] Remove list_records_by_month_old in main.c
-    - [ ] Refactor legacy_read_csv for CLI mode
-    - [ ] Refactor any function that uses seek_n_fields with an integer literal
-            to use a header parsing function to determine field location.
     - [X] Add csv header verification on program start.
     - [X] Move tui sidebar function to their own file
-    - [X] Sidebar scrolling
-        - [ ] Automated sidebar scrolling.
     - [X] Add an easy way to balance a category to match the planned value to
             the record's total amount.
-    - [ ] When validating the budget csv against the data csv to create
-            categories that do not exist, the function should check if only
-            income exists in a certain category, and set that transtype to
-            income.
-    - [ ] Add indicators that the window is scrollable (that it contains more
-            data than is displayed)
-        - [X] For the main "read" loop display the number of records shown
-                and the total number of records.
     - [X] Allow user to move categories to the top of the screen
     - [X] Add help menu
     - [X] Create one function for handling window borders in the read loop
     - [ ] Add more to the overview function. Like money spent per category
             breakdown.
+    - [ ] Add keybinds to quickly do certain functions without going through
+            menus.
+    - [ ] Add indicators that the window is scrollable (that it contains more
+            data than is displayed)
+        - [X] For the main "read" loop display the number of records shown
+                and the total number of records.
+    - [ ] When validating the budget csv against the data csv to create
+            categories that do not exist, the function should check if only
+            income exists in a certain category, and set that transtype to
+            income.
+    - [ ] Refactor legacy_read_csv for CLI mode
+    - [ ] Refactor any function that uses seek_n_fields with an integer literal
+            to use a header parsing function to determine field location.
+    - [X] Sidebar scrolling
+        - [ ] Automated sidebar scrolling.
+        - [ ] Optimize
+    - [ ] On the user input prompts, show relevant data on the window as the
+            user goes from prompt to prompt. Such as, show the date entered so
+            far and the remaining values left per category.
+    - [ ] Have option to roll categories from previous month to the next month
+    - [ ] Annotate tui_input.h
+    - [ ] Menu key to (A)dd (F1) on main menu should allow the user to select
+            creating a new transaction, creating a new category, roll over
+            previous month's data to the target month, or exit.
 
 #### Refactors
-    - [ ] After main feature set is done and working, refactor to make main.c
+    - [X] After main feature set is done and working, refactor to make main.c
             have a clearer control flow purpose
         - [X] Move read feature to its own source files
         - [X] Move create feature to its own source files
@@ -105,6 +105,12 @@
         - [X] Move overview feature to its own source files
     - [ ] cli.c/h
     - [X] 1st pass--Rename structs, extract functions, general code cleanup
+    - [X] Replace any function which dynamically allocates memory into a
+            dynamically sized array with type Vec. This will prevent having
+            to create the local realloc_counter that i've been using. It's
+            not great.
+    - [ ] Improve date input to be more interactive and show the previous
+            date.
 
 #### Main Feature Set
     - [X] Create a transaction
@@ -135,12 +141,6 @@
         - [X] Scroll through dates
         - [X] Resizing
     - [X] Basic Bar Graph Trends
-
-#### Refactors
-    - [X] Replace any function which dynamically allocates memory into a
-            dynamically sized array with type Vec. This will prevent having
-            to create the local realloc_counter that i've been using. It's
-            not great.
 
 #### Bugs
     - 1 [X] A line number is able to be selected (line 1) and it will edit the
