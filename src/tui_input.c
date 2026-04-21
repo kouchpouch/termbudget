@@ -717,9 +717,12 @@ void nc_input_full_date
 		}
 	}
 
-	mvprintw(0, 0, "Date: %d/%d/%d", new_date->month, new_date->day, new_date->year);
-	refresh();
-	getch();
+	if (debug_flag) {
+		mvprintw(0, 0, "Date: %d/%d/%d", 
+		   	     new_date->month, new_date->day, new_date->year);
+		refresh();
+		getch();
+	}
 quit:
 	nc_exit_window(wptr);
 }
