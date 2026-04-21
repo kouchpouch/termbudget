@@ -61,11 +61,11 @@ static void edit_field_loop_scroll_prev
 	if (fs->y_cursor - 1 > 0) {
 		mvwchgat(wptr, fs->y_cursor, fs->start_x, fs->nx, A_NORMAL, 0, NULL);
 		fs->y_cursor--;
-		mvwchgat(wptr, fs->y_cursor, fs->start_x, fs->nx, A_REVERSE, REVERSE_COLOR, NULL);
+		highlight(wptr, fs->y_cursor, fs->start_x, fs->nx);
 	} else {
 		mvwchgat(wptr, fs->y_cursor, fs->start_x, fs->nx, A_NORMAL, 0, NULL);
 		fs->y_cursor = INPUT_WIN_ROWS - BOX_OFFSET;
-		mvwchgat(wptr, fs->y_cursor, fs->start_x, fs->nx, A_REVERSE, REVERSE_COLOR, NULL);
+		highlight(wptr, fs->y_cursor, fs->start_x, fs->nx);
 	}
 }
 
@@ -75,11 +75,11 @@ static void edit_field_loop_scroll_next
 	if (fs->y_cursor + 1 <= (INPUT_WIN_ROWS - BOX_OFFSET)) {
 		mvwchgat(wptr, fs->y_cursor, fs->start_x, fs->nx, A_NORMAL, 0, NULL);
 		fs->y_cursor++;
-		mvwchgat(wptr, fs->y_cursor, fs->start_x, fs->nx, A_REVERSE, REVERSE_COLOR, NULL);
+		highlight(wptr, fs->y_cursor, fs->start_x, fs->nx);
 	} else {
 		mvwchgat(wptr, fs->y_cursor, fs->start_x, fs->nx, A_NORMAL, 0, NULL);
 		fs->y_cursor = 1;
-		mvwchgat(wptr, fs->y_cursor, fs->start_x, fs->nx, A_REVERSE, REVERSE_COLOR, NULL);
+		highlight(wptr, fs->y_cursor, fs->start_x, fs->nx);
 	}
 }
 
@@ -141,21 +141,26 @@ static int nc_edit_csv_record
 	char replace_str[LINE_BUFFER];
 	FILE *fptr;
 	FILE *tmpfptr;
+	struct __full_date fd;
 
 	switch(field) {
 	case EDIT_RCRD_DATE:
-		ld->year = nc_input_year(ld->year);
-		if (ld->year < 0) {
-			goto err_fail;
-		}
-		ld->month = nc_input_month(ld->month, ld->year);
-		if (ld->month < 0) {
-			goto err_fail;
-		}
-		ld->day = nc_input_day(ld->month, ld->year, ld->day);
-		if (ld->day < 0) {
-			goto err_fail;
-		}
+		nc_input_full_date(ld->month, ld->day, ld->year, &fd);
+//		ld->year = nc_input_year(ld->year);
+//		if (ld->year < 0) {
+//			goto err_fail;
+//		}
+//		ld->month = nc_input_month(ld->month, ld->year);
+//		if (ld->month < 0) {
+//			goto err_fail;
+//		}
+//		ld->day = nc_input_day(ld->month, ld->year, ld->day);
+//		if (ld->day < 0) {
+//			goto err_fail;
+//		}
+		ld->month = fd.month;
+		ld->day = fd.day;
+		ld->year = fd.year;
 		if (!nc_confirm_record(ld)) {
 			goto err_fail;
 		}
