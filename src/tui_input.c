@@ -70,6 +70,11 @@ enum _input_full_date_fields {
 	F_END
 } fd_fields;
 
+struct UserInputDigit {
+	int data;
+	int flag;
+};
+
 static void init_input_window(int n, WINDOW *wptr, int input_y)
 {
 	int max_x = getmaxx(wptr);
@@ -113,6 +118,92 @@ static bool validate_input_len(size_t buffer, char *input, WINDOW *wptr)
 	}
 
 	return true;
+}
+
+void date_field_input_loop
+(WINDOW *wptr, struct __fd_input_scroll *s, int n)
+{
+	int max_y, max_x;
+	size_t buffersize = n + 1; // Plus 1 to hold null terminator
+	int center;
+	char temp[buffersize];
+	int c = 0;
+	int idx = 0;
+	int xcursor;
+	int input_y;
+
+	getmaxyx(wptr, max_y, max_x);
+	center = max_x / 2 - n / 2;
+	xcursor = center;
+	input_y = max_y - 3;
+
+	init_input_window(n, wptr, input_y);
+	pui->flag = 0;
+	getmaxyx(wptr, max_y, max_x);
+	wmove(wptr, input_y, center);
+	while (c != '\n' && c != '\r') {
+		wrefresh(wptr);
+		noecho();
+		c = wgetch(wptr);
+		switch (c) {
+
+		case('\n'):
+		case('\r'):
+			temp[idx] = '\0';
+			break;
+
+		case(27):
+		case(KEY_F(QUIT)):
+			noecho();
+			pui->flag = QUIT;
+			pui->str = NULL;
+			return;
+
+		case(KEY_BACKSPACE):
+		case(127):
+		case('\b'):
+			if (xcursor > center) {
+				idx--;
+				xcursor--;
+				temp[idx] = '\0';
+				wmove(wptr, input_y, xcursor);
+				wprintw(wptr, "%c", '_');
+				wmove(wptr, input_y, xcursor);
+			} else {
+				wmove(wptr, input_y, xcursor);
+			}
+			break;
+
+		default:
+			if (idx < n) { 
+				wprintw(wptr, "%c", c);
+				temp[idx] = c;
+				idx++;
+				xcursor++;
+			} else {
+				erasechar();
+				wmove(wptr, input_y, xcursor);
+			}
+			break;
+		}
+	}
+
+	pui->str = malloc(buffersize);
+	if (pui->str == NULL) {
+		pui->flag = -1;
+		return;
+	}
+
+	strncpy(pui->str, temp, buffersize);
+
+	noecho();
+	curs_set(0);
+	if (!validate_input_len(buffersize, pui->str, wptr)) {
+		pui->flag = -1;
+		free(pui->str);
+		pui->str = NULL;
+		return;
+	}
 }
 
 void nc_user_input(int n, WINDOW *wptr, struct UserInput *pui)
@@ -327,79 +418,79 @@ static void unhighlight(WINDOW *wptr, int y)
 }
 
 static void scroll_prev_field
-(WINDOW *wptr, struct __fd_input_scroll *scrl)
+(WINDOW *wptr, struct __fd_input_scroll *s)
 {
-	unhighlight(wptr, scrl->y);
-	unhighlight(wptr, scrl->opt_y);
-	switch (scrl->field_idx) {
+	unhighlight(wptr, s->y);
+	unhighlight(wptr, s->opt_y);
+	switch (s->field_idx) {
 
 	case (F_MONTH):
-		highlight(wptr, scrl->opt_y, scrl->accept_x, scrl->opt_len);
-		scrl->field_idx = F_ACCEPT;
+		highlight(wptr, s->opt_y, s->accept_x, s->opt_len);
+		s->field_idx = F_ACCEPT;
 		break;
 
 	case (F_DAY): 
-		highlight(wptr, scrl->y, scrl->month_x, scrl->month_field_len); 
-		scrl->field_idx--;
+		highlight(wptr, s->y, s->month_x, s->month_field_len); 
+		s->field_idx--;
 		break;
 
 	case (F_YEAR):
-		highlight(wptr, scrl->y, scrl->day_x, scrl->day_field_len); 
-		scrl->field_idx--;
+		highlight(wptr, s->y, s->day_x, s->day_field_len); 
+		s->field_idx--;
 		break;
 
 	case (F_CANCEL):
-		highlight(wptr, scrl->y, scrl->year_x, scrl->year_field_len);
-		scrl->field_idx--;
+		highlight(wptr, s->y, s->year_x, s->year_field_len);
+		s->field_idx--;
 		break;
 
 	case (F_ACCEPT):
-		highlight(wptr, scrl->opt_y, scrl->cancel_x, scrl->opt_len);
-		scrl->field_idx--;
+		highlight(wptr, s->opt_y, s->cancel_x, s->opt_len);
+		s->field_idx--;
 		break;
 
 	default:
 		break;
 	}
-	scrl->tmp_x = getcurx(wptr);
+	s->tmp_x = getcurx(wptr);
 }
 
 static void scroll_next_field
-(WINDOW *wptr, struct __fd_input_scroll *scrl)
+(WINDOW *wptr, struct __fd_input_scroll *s)
 {
-	unhighlight(wptr, scrl->y);
-	unhighlight(wptr, scrl->opt_y);
-	switch (scrl->field_idx) {
+	unhighlight(wptr, s->y);
+	unhighlight(wptr, s->opt_y);
+	switch (s->field_idx) {
 
 	case (F_MONTH):
-		highlight(wptr, scrl->y, scrl->day_x, scrl->day_field_len);
-		scrl->field_idx++;
+		highlight(wptr, s->y, s->day_x, s->day_field_len);
+		s->field_idx++;
 		break;
 
 	case (F_DAY): 
-		highlight(wptr, scrl->y, scrl->year_x, scrl->year_field_len);
-		scrl->field_idx++;
+		highlight(wptr, s->y, s->year_x, s->year_field_len);
+		s->field_idx++;
 		break;
 
 	case (F_YEAR): /* Move to the options */
-		highlight(wptr, scrl->opt_y, scrl->cancel_x, scrl->opt_len);
-		scrl->field_idx++;
+		highlight(wptr, s->opt_y, s->cancel_x, s->opt_len);
+		s->field_idx++;
 		break;
 
 	case (F_CANCEL):
-		highlight(wptr, scrl->opt_y, scrl->accept_x, scrl->opt_len);
-		scrl->field_idx++;
+		highlight(wptr, s->opt_y, s->accept_x, s->opt_len);
+		s->field_idx++;
 		break;
 
 	case (F_ACCEPT):
-		highlight(wptr, scrl->y, scrl->month_x, scrl->month_field_len); 
-		scrl->field_idx = F_MONTH;
+		highlight(wptr, s->y, s->month_x, s->month_field_len); 
+		s->field_idx = F_MONTH;
 		break;
 
 	default:
 		break;
 	}
-	scrl->tmp_x = getcurx(wptr);
+	s->tmp_x = getcurx(wptr);
 }
 
 static void get_prev_date_existence
@@ -475,6 +566,33 @@ static void print_data_to_window
 	s->accept_x = s->cancel_x + strlen(cancel) + strlen(space);
 }
 
+static void input_date_field
+(WINDOW *wptr,
+ struct __fd_input_scroll *s, 
+ struct __full_date *new_date, 
+ struct __full_date *prev_date)
+{
+	unhighlight(wptr, s->y);
+	switch (s->field_idx) {
+	
+	case (F_MONTH):
+
+		break;
+	
+	case (F_DAY):
+
+		break;
+	
+	case (F_YEAR):
+
+		break;
+	
+	default:
+		break;
+	}
+
+}
+
 /* An interactive alternative to the current way of taking user input for
  * the day, month, and year individually. This is an ncurses menu. Tab to move
  * between the options. Should be a lot easier to use. */
@@ -487,8 +605,14 @@ void nc_input_full_date
 	struct __fd_input_scroll scrl = { 0 };
 	init_fd_input_scroll(wptr, &scrl);
 
-	struct __prev_date_exist prev_date = { false };
-	get_prev_date_existence(&prev_date, old_day, old_mo, old_yr); 
+	struct __full_date prev_date = {
+		.day = old_day,
+		.month = old_mo,
+		.year = old_yr
+	};
+
+	struct __prev_date_exist prev_date_exist = { false };
+	get_prev_date_existence(&prev_date_exist, old_day, old_mo, old_yr); 
 
 	print_data_to_window(wptr, &scrl, old_mo, old_day, old_yr);
 
@@ -496,24 +620,42 @@ void nc_input_full_date
 		wrefresh(wptr);
 		c = wgetch(wptr);
 		switch (c) {
-			case (KEY_RIGHT):
-			case ('\t'):
-				unhighlight(wptr, scrl.y);
-				scroll_next_field(wptr, &scrl);
-				break;
-			case (KEY_LEFT):
-				unhighlight(wptr, scrl.y);
-				scroll_prev_field(wptr, &scrl);
-				break;
-			case (KEY_ENTER):
-			case ('\n'):
-			case ('\r'):
-				break;
-			default:
-				break;
+
+		case (KEY_RIGHT):
+		case ('l'):
+		case ('\t'):
+			scroll_next_field(wptr, &scrl);
+			break;
+
+		case ('h'):
+		case (KEY_LEFT):
+			scroll_prev_field(wptr, &scrl);
+			break;
+
+		case (KEY_ENTER):
+		case ('\n'):
+		case ('\r'):
+			if (scrl.field_idx == F_MONTH || 
+				scrl.field_idx == F_DAY ||
+				scrl.field_idx == F_YEAR) {
+				input_date_field(wptr, &scrl, new_date, &prev_date);
+			} else {
+				if (scrl.field_idx == F_CANCEL) {
+					new_date->day = old_day;
+					new_date->month = old_mo;
+					new_date->year = old_yr;
+					goto quit;
+				} else {
+					goto quit;	
+				}
+			}
+			break;
+
+		default:
+			break;
 		}
 	}
-
+quit:
 	nc_exit_window(wptr);
 }
 
