@@ -1,8 +1,4 @@
 /*
- * Includes functions which find the appropriate line to insert a record
- * into a CSV with the first three fields of every record being
- * "month,day,year".
- *
  * This program is free software: you can redistribute it and/or modify 
  * it under the terms of the GNU General Public License as published by 
  * the Free Software Foundation, either version 3 of the License, 
@@ -15,7 +11,11 @@
  *
  * You should have received a copy of the GNU General Public License along 
  * with this program. If not, see <https://www.gnu.org/licenses/>. 
+ *
+ * termbudget 2026
+ * Author: kouchpouch <https://github.com/kouchpouch/termbudget>
  */
+
 #ifndef SORTER_H
 #define SORTER_H
 

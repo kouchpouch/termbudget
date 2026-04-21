@@ -11,7 +11,11 @@
  *
  * You should have received a copy of the GNU General Public License along 
  * with this program. If not, see <https://www.gnu.org/licenses/>. 
+ *
+ * termbudget 2026
+ * Author: kouchpouch <https://github.com/kouchpouch/termbudget>
  */
+
 #ifndef VECTOR_H
 #define VECTOR_H
 #include <stdio.h>

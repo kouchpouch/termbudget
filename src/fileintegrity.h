@@ -1,8 +1,4 @@
 /*
- * Verify data files that termBudget uses comply with the maximum lengths
- * defined in "main.h". Validate data between files as well, with RECORD_DIR
- * being the master.
- *
  * This program is free software: you can redistribute it and/or modify 
  * it under the terms of the GNU General Public License as published by 
  * the Free Software Foundation, either version 3 of the License, 
@@ -15,6 +11,15 @@
  *
  * You should have received a copy of the GNU General Public License along 
  * with this program. If not, see <https://www.gnu.org/licenses/>. 
+ *
+ * termbudget 2026
+ * Author: kouchpouch <https://github.com/kouchpouch/termbudget>
+ */
+
+/*
+ * Verify data files that termBudget uses comply with the maximum lengths
+ * defined in "main.h". Validate data between files as well, with RECORD_DIR
+ * being the master.
  */
 #ifndef FILEINTEGRITY_H
 #define FILEINTEGRITY_H
