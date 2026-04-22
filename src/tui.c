@@ -112,8 +112,14 @@ void calculate_columns(struct ColWidth *cw, int max_x)
 
 /* Changes attribute in 'wptr' on row 'y', column 'x', for 'n' characters to 
  * reverse video */
-void highlight(WINDOW *wptr, int y, int x, int n) {
+void highlight(WINDOW *wptr, int y, int x, int n)
+{
 	mvwchgat(wptr, y, x, n, A_REVERSE, 0, NULL); 
+}
+
+void unhighlight(WINDOW *wptr, int y, int x, int n)
+{
+	mvwchgat(wptr, y, x, n, A_NORMAL, 0, NULL); 
 }
 
 void print_column_headers(WINDOW *wptr, int x_off)

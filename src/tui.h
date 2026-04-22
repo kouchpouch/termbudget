@@ -111,6 +111,8 @@ void calculate_columns(struct ColWidth *cw, int max_x);
 
 void highlight(WINDOW *wptr, int y, int x, int n);
 
+void unhighlight(WINDOW *wptr, int y, int x, int n);
+
 /*
  * Print headers for the reading data to wptr, column width is calculated
  * by calculate_columns() automatically. Offsets calculation by an offset
