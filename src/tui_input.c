@@ -202,42 +202,6 @@ static void modify_date_vals
 	}
 }
 
-//static int verify_and_modify_date_vals
-//(int val, _full_date_t *d, int field)
-//{
-//	switch (field) {
-//
-//	case F_MONTH:
-//		if (date_is_valid(d->day, val, d->year)) {
-//			d->month = val;
-//		} else {
-//			return -1;
-//		}
-//		break;
-//
-//	case F_DAY:
-//		if (date_is_valid(val, d->month, d->year)) {
-//			d->day = val;
-//		} else {
-//			return -1;
-//		}
-//		break;
-//
-//	case F_YEAR:
-//		if (date_is_valid(d->day, d->month, val)) {
-//			d->year = val;
-//		} else {
-//			return -1;
-//		}
-//		break;
-//	
-//	default:
-//		return -1;
-//	}
-//
-//	return 0;
-//}
-
 static void rehighlight_date_field(WINDOW *wptr, _fd_input_scroll_t *s)
 {
 	int x;
@@ -336,211 +300,6 @@ static int date_field_input_loop
 	modify_date_vals(modified_field_val, date, s->field_idx);
 
 	return 0;
-}
-
-void nc_user_input(int n, WINDOW *wptr, struct UserInput *pui)
-{
-	int max_y, max_x;
-	size_t buffersize = n + 1; // Plus 1 to hold null terminator
-	int center;
-	char temp[buffersize];
-	int c = 0;
-	int idx = 0;
-	int xcursor;
-	int input_y;
-
-	getmaxyx(wptr, max_y, max_x);
-	center = max_x / 2 - n / 2;
-	xcursor = center;
-	input_y = max_y - 3;
-
-	init_input_window(n, wptr, input_y);
-	pui->flag = 0;
-	getmaxyx(wptr, max_y, max_x);
-	wmove(wptr, input_y, center);
-	while (c != '\n' && c != '\r') {
-		wrefresh(wptr);
-		noecho();
-		c = wgetch(wptr);
-		switch (c) {
-
-		case('\n'):
-		case('\r'):
-			temp[idx] = '\0';
-			break;
-
-		case(27):
-		case(KEY_F(QUIT)):
-			noecho();
-			pui->flag = QUIT;
-			pui->str = NULL;
-			return;
-
-		case(KEY_BACKSPACE):
-		case(127):
-		case('\b'):
-			if (xcursor > center) {
-				idx--;
-				xcursor--;
-				temp[idx] = '\0';
-				wmove(wptr, input_y, xcursor);
-				wprintw(wptr, "%c", '_');
-				wmove(wptr, input_y, xcursor);
-			} else {
-				wmove(wptr, input_y, xcursor);
-			}
-			break;
-
-		default:
-			if (idx < n) { 
-				wprintw(wptr, "%c", c);
-				temp[idx] = c;
-				idx++;
-				xcursor++;
-			} else {
-				erasechar();
-				wmove(wptr, input_y, xcursor);
-			}
-			break;
-		}
-	}
-
-	pui->str = malloc(buffersize);
-	if (pui->str == NULL) {
-		pui->flag = -1;
-		return;
-	}
-
-	strncpy(pui->str, temp, buffersize);
-
-	noecho();
-	curs_set(0);
-	if (!validate_input_len(buffersize, pui->str, wptr)) {
-		pui->flag = -1;
-		free(pui->str);
-		pui->str = NULL;
-		return;
-	}
-}
-
-void nc_input_n_digits
-(struct UserInputDigit *puid, WINDOW *wptr, size_t max_len, size_t min_len) 
-{
-	struct UserInput pui_, *pui = &pui_;
-	puid->flag = 0;
-	nc_user_input(max_len, wptr, pui);
-	while (pui->str == NULL && pui->flag != QUIT) {
-		nc_user_input(max_len, wptr, pui);
-	}
-
-	if (pui->flag == QUIT) {
-		puid->flag = QUIT;
-		puid->data = -1;
-		return;
-	}
-
-	if (strlen(pui->str) < min_len) {
-		mvwxcprintw(wptr, getmaxy(wptr) - BOX_OFFSET, "Input is too short");
-		wrefresh(wptr);
-		free(pui->str);
-		puid->data = -1;
-		return;
-	}
-
-	for (size_t i = 0; i < strlen(pui->str); i++) {
-		if (!isdigit(*(pui->str + i))
-			&& (*(pui->str + i) != '\n' 
-			|| *(pui->str + i) != '\0')) 
-		{
-			mvwxcprintw(wptr, getmaxy(wptr) - BOX_OFFSET, 
-			   "Invalid character, must be digits");
-			wrefresh(wptr);
-			puid->data = -1;
-			return;
-		}
-	}
-
-	wrefresh(wptr);
-
-	puid->data = atoi(pui->str);
-	free(pui->str);
-	pui->str = NULL;
-}
-
-bool nc_confirm_input_loop(WINDOW *wptr)
-{
-	int c = 0;
-	while (1) {
-		c = wgetch(wptr);
-		switch(c) {
-
-		case('y'):
-		case('Y'):
-			return true;	
-
-		case('n'):
-		case('N'):
-			return false;
-
-		case('q'):
-		case('Q'):
-		case(KEY_F(QUIT)):
-			return false;
-
-		default:
-			break;
-		}
-	}
-}
-
-bool nc_confirm_input(char *msg)
-{
-	WINDOW *wptr = create_input_subwindow();
-	bool retval;
-
-	mvwxcprintw(wptr, 3, msg);
-	mvwxcprintw(wptr, getmaxy(wptr) - BOX_OFFSET, "(Y)es  /  (N)o");
-	wrefresh(wptr);
-
-	retval = nc_confirm_input_loop(wptr);
-	nc_exit_window(wptr);
-	return retval;
-}
-
-bool nc_confirm_record(_transact_tokens_t *ld)
-{
-	WINDOW *wptr = create_input_subwindow();
-	int c = 0;
-
-	mvwxcprintw(wptr, 0, "Confirm Record");
-	nc_print_record_vert(wptr, ld, BOX_OFFSET);
-	mvwxcprintw(wptr, getmaxy(wptr) - BOX_OFFSET, "(Y)es  /  (N)o");
-	wrefresh(wptr);
-
-	while (c != KEY_F(QUIT) && c != 'q') {
-		c = wgetch(wptr);
-		switch(c) {
-
-		case('y'):
-		case('Y'):
-			nc_exit_window(wptr);
-			return true;
-
-		case('n'):
-		case('N'):
-		case(KEY_F(QUIT)):
-		case('q'):
-		case('Q'):
-			nc_exit_window(wptr);
-			return false;
-
-		default:
-			break;
-		}
-	}
-
-	nc_exit_window_key(wptr);
-	return false;
 }
 
 static void scroll_prev_field
@@ -706,9 +465,9 @@ static void print_invalid_date_msg(WINDOW *wptr)
 	mvwchgat(wptr, y, BOX_OFFSET, getmaxx(wptr) - BOX_OFFSET * 2, A_NORMAL, 1, NULL);
 }
 
-/* An interactive alternative to the current way of taking user input for
- * the day, month, and year individually. This is an ncurses menu. Tab to move
- * between the options. Should be a lot easier to use. 
+/* Displays an interactive menu for full date input (MONTH/DAY/YEAR), includes
+ * date validation. Fills "new_date" struct with the old + any modified date
+ * values.
  * Returns -1 on quit, 0 on success */
 int nc_input_full_date
 (int old_mo, int old_day, int old_yr, _full_date_t *new_date)
@@ -790,6 +549,213 @@ quit:
 	return 0;
 }
 
+static void nc_user_input(int n, WINDOW *wptr, struct UserInput *pui)
+{
+	int max_y, max_x;
+	size_t buffersize = n + 1; // Plus 1 to hold null terminator
+	int center;
+	char temp[buffersize];
+	int c = 0;
+	int idx = 0;
+	int xcursor;
+	int input_y;
+
+	getmaxyx(wptr, max_y, max_x);
+	center = max_x / 2 - n / 2;
+	xcursor = center;
+	input_y = max_y - 3;
+
+	init_input_window(n, wptr, input_y);
+	pui->flag = 0;
+	getmaxyx(wptr, max_y, max_x);
+	wmove(wptr, input_y, center);
+	while (c != '\n' && c != '\r') {
+		wrefresh(wptr);
+		noecho();
+		c = wgetch(wptr);
+		switch (c) {
+
+		case('\n'):
+		case('\r'):
+			temp[idx] = '\0';
+			break;
+
+		case(27):
+		case(KEY_F(QUIT)):
+			noecho();
+			pui->flag = QUIT;
+			pui->str = NULL;
+			return;
+
+		case(KEY_BACKSPACE):
+		case(127):
+		case('\b'):
+			if (xcursor > center) {
+				idx--;
+				xcursor--;
+				temp[idx] = '\0';
+				wmove(wptr, input_y, xcursor);
+				wprintw(wptr, "%c", '_');
+				wmove(wptr, input_y, xcursor);
+			} else {
+				wmove(wptr, input_y, xcursor);
+			}
+			break;
+
+		default:
+			if (idx < n) { 
+				wprintw(wptr, "%c", c);
+				temp[idx] = c;
+				idx++;
+				xcursor++;
+			} else {
+				erasechar();
+				wmove(wptr, input_y, xcursor);
+			}
+			break;
+		}
+	}
+
+	pui->str = malloc(buffersize);
+	if (pui->str == NULL) {
+		pui->flag = -1;
+		return;
+	}
+
+	strncpy(pui->str, temp, buffersize);
+
+	noecho();
+	curs_set(0);
+	if (!validate_input_len(buffersize, pui->str, wptr)) {
+		pui->flag = -1;
+		free(pui->str);
+		pui->str = NULL;
+		return;
+	}
+}
+
+static void nc_input_n_digits
+(struct UserInputDigit *puid, WINDOW *wptr, size_t max_len, size_t min_len) 
+{
+	struct UserInput pui_, *pui = &pui_;
+	puid->flag = 0;
+	nc_user_input(max_len, wptr, pui);
+	while (pui->str == NULL && pui->flag != QUIT) {
+		nc_user_input(max_len, wptr, pui);
+	}
+
+	if (pui->flag == QUIT) {
+		puid->flag = QUIT;
+		puid->data = -1;
+		return;
+	}
+
+	if (strlen(pui->str) < min_len) {
+		mvwxcprintw(wptr, getmaxy(wptr) - BOX_OFFSET, "Input is too short");
+		wrefresh(wptr);
+		free(pui->str);
+		puid->data = -1;
+		return;
+	}
+
+	for (size_t i = 0; i < strlen(pui->str); i++) {
+		if (!isdigit(*(pui->str + i))
+			&& (*(pui->str + i) != '\n' 
+			|| *(pui->str + i) != '\0')) 
+		{
+			mvwxcprintw(wptr, getmaxy(wptr) - BOX_OFFSET, 
+			   "Invalid character, must be digits");
+			wrefresh(wptr);
+			puid->data = -1;
+			return;
+		}
+	}
+
+	wrefresh(wptr);
+
+	puid->data = atoi(pui->str);
+	free(pui->str);
+	pui->str = NULL;
+}
+
+bool nc_confirm_input_loop(WINDOW *wptr)
+{
+	int c = 0;
+	while (1) {
+		c = wgetch(wptr);
+		switch(c) {
+
+		case('y'):
+		case('Y'):
+			return true;	
+
+		case('n'):
+		case('N'):
+			return false;
+
+		case('q'):
+		case('Q'):
+		case(KEY_F(QUIT)):
+			return false;
+
+		default:
+			break;
+		}
+	}
+}
+
+bool nc_confirm_input(char *msg)
+{
+	WINDOW *wptr = create_input_subwindow();
+	bool retval;
+
+	mvwxcprintw(wptr, 3, msg);
+	mvwxcprintw(wptr, getmaxy(wptr) - BOX_OFFSET, "(Y)es  /  (N)o");
+	wrefresh(wptr);
+
+	retval = nc_confirm_input_loop(wptr);
+	nc_exit_window(wptr);
+	return retval;
+}
+
+bool nc_confirm_record(_transact_tokens_t *ld)
+{
+	WINDOW *wptr = create_input_subwindow();
+	int c = 0;
+
+	mvwxcprintw(wptr, 0, "Confirm Record");
+	nc_print_record_vert(wptr, ld, BOX_OFFSET);
+	mvwxcprintw(wptr, getmaxy(wptr) - BOX_OFFSET, "(Y)es  /  (N)o");
+	wrefresh(wptr);
+
+	while (c != KEY_F(QUIT) && c != 'q') {
+		c = wgetch(wptr);
+		switch(c) {
+
+		case('y'):
+		case('Y'):
+			nc_exit_window(wptr);
+			return true;
+
+		case('n'):
+		case('N'):
+		case(KEY_F(QUIT)):
+		case('q'):
+		case('Q'):
+			nc_exit_window(wptr);
+			return false;
+
+		default:
+			break;
+		}
+	}
+
+	nc_exit_window_key(wptr);
+	return false;
+}
+
+/* Creates and destroys an ncurses input window and validates the input with
+ * retries. Returns -1 on quit */
 int nc_input_month(int old_month, int old_year)
 {
 	WINDOW *wptr = create_input_subwindow();
@@ -823,6 +789,8 @@ int nc_input_month(int old_month, int old_year)
 	}
 }
 
+/* Creates and destroys an ncurses input window and validates the input with
+ * retries. Returns -1 on quit */
 int nc_input_year(int old_year)
 {
 	WINDOW *wptr = create_input_subwindow();
@@ -851,6 +819,8 @@ int nc_input_year(int old_year)
 	}
 }
 
+/* Creates and destroys an ncurses input window and validates the input with
+ * retries. Returns -1 on quit */
 int nc_input_day(int month, int year, int old_day)
 {
 	WINDOW *wptr = create_input_subwindow();
@@ -887,7 +857,7 @@ int nc_input_day(int month, int year, int old_day)
 	}
 }
 
-// Returns NULL on quit
+/* Returns NULL on quit */
 char *nc_input_string(char *msg)
 {
 	WINDOW *wptr_input = create_input_subwindow();
