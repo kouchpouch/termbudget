@@ -21,7 +21,6 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <limits.h>
-#include <string.h>
 
 #include "main.h"
 #include "create.h"
@@ -144,26 +143,17 @@ static int nc_edit_csv_record
 	char replace_str[LINE_BUFFER];
 	FILE *fptr;
 	FILE *tmpfptr;
-	struct __full_date fd;
+	_full_date_t fd;
 
 	switch(field) {
 	case EDIT_RCRD_DATE:
-		nc_input_full_date(ld->month, ld->day, ld->year, &fd);
-//		ld->year = nc_input_year(ld->year);
-//		if (ld->year < 0) {
-//			goto err_fail;
-//		}
-//		ld->month = nc_input_month(ld->month, ld->year);
-//		if (ld->month < 0) {
-//			goto err_fail;
-//		}
-//		ld->day = nc_input_day(ld->month, ld->year, ld->day);
-//		if (ld->day < 0) {
-//			goto err_fail;
-//		}
-		ld->month = fd.month;
-		ld->day = fd.day;
-		ld->year = fd.year;
+		if (nc_input_full_date(ld->month, ld->day, ld->year, &fd) == 0) {
+			ld->month = fd.month;
+			ld->day = fd.day;
+			ld->year = fd.year;
+		} else {
+			goto err_fail;
+		}
 		if (!nc_confirm_record(ld)) {
 			goto err_fail;
 		}
