@@ -104,24 +104,24 @@ static int select_edit_field_loop(WINDOW *wptr)
 		wrefresh(wptr);
 		fs.choice = wgetch(wptr);
 
-		switch(fs.choice) {
+		switch (fs.choice) {
 
-		case('j'):
-		case(KEY_DOWN):
+		case ('j'):
+		case KEY_DOWN:
 			edit_field_loop_scroll_next(&fs, wptr);
 			break;
 
-		case('k'):
-		case(KEY_UP):
+		case ('k'):
+		case KEY_UP:
 			edit_field_loop_scroll_prev(&fs, wptr);
 			break;
 
-		case('\n'):
-		case('\r'):
+		case ('\n'):
+		case ('\r'):
 			return fs.y_cursor;
 
-		case('q'):
-		case(KEY_F(QUIT)):
+		case ('q'):
+		case KEY_F(QUIT):
 			return 0;
 		}
 	}
@@ -145,7 +145,7 @@ static int nc_edit_csv_record
 	FILE *tmpfptr;
 	_full_date_t fd;
 
-	switch(field) {
+	switch (field) {
 	case EDIT_RCRD_DATE:
 		if (nc_input_full_date(ld->month, ld->day, ld->year, &fd) == 0) {
 			ld->month = fd.month;
@@ -262,7 +262,7 @@ void nc_edit_transaction(long b)
 	fclose(fptr);
 	nc_exit_window(wptr_edit);
 
-	switch(field) {
+	switch (field) {
 
 	case NO_RCRD_SELECT:
 		break;

@@ -282,12 +282,12 @@ static unsigned int nc_overview_loop(WINDOW *wptr, _vector_t *months, int year)
 
 	while (1) {
 		c = wgetch(wptr);
-		switch(c) {
-		case(KEY_RESIZE):
+		switch (c) {
+		case KEY_RESIZE:
 			return RESIZE;
-		case('Q'):
-		case('q'):
-		case(KEY_F(QUIT)):
+		case ('Q'):
+		case ('q'):
+		case KEY_F(QUIT):
 			return QUIT;
 		default:
 			flag = NO_SELECT;
@@ -319,11 +319,11 @@ void nc_overview_setup(int year)
 	nc_exit_window(wptr_parent);
 	nc_exit_window(wptr_data);
 
-	switch(flag) {
-	case(RESIZE):
+	switch (flag) {
+	case RESIZE:
 		nc_overview_setup(year);
 		break;
-	case(QUIT):
+	case QUIT:
 		break;
 	default:
 		break;

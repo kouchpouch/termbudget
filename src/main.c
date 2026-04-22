@@ -213,14 +213,14 @@ int nc_main_menu(WINDOW *wptr)
 		wrefresh(wptr);
 		c = getch();
 
-		switch(c) {
-		case('A'):
-		case('a'):
-		case (KEY_F(ADD)):
+		switch (c) {
+		case ('A'):
+		case ('a'):
+		case KEY_F(ADD):
 			wclear(wptr);
 			add_sel = get_add_selection();
 
-			switch(add_sel) {
+			switch (add_sel) {
 				case ADD_TRNS:
 					create_transaction_default();
 					break;
@@ -240,23 +240,23 @@ int nc_main_menu(WINDOW *wptr)
 			}
 			break;
 
-		case('E'):
-		case('e'):
-		case(KEY_F(EDIT)):
+		case ('E'):
+		case ('e'):
+		case KEY_F(EDIT):
 			wclear(wptr);
 			break;
 
-		case('R'):
-		case('r'):
-		case(KEY_F(READ)):
+		case ('R'):
+		case ('r'):
+		case KEY_F(READ):
 			wclear(wptr);
 			nc_read_setup_default(rret);
-			while(rret->flag != RRET_QUIT) {
-				switch(rret->flag) {
-				case(RRET_DEFAULT):
+			while (rret->flag != RRET_QUIT) {
+				switch (rret->flag) {
+				case RRET_DEFAULT:
 					nc_read_setup_default(rret);
 					break;
-				case(RRET_BYDATE):
+				case RRET_BYDATE:
 					nc_read_setup(rret->yr, rret->mo, rret->sort, rret);
 					break;
 				default:
@@ -265,18 +265,18 @@ int nc_main_menu(WINDOW *wptr)
 				}
 			}
 			break;
-		case('Q'):
-		case('q'):
-		case(KEY_F(QUIT)):
+		case ('Q'):
+		case ('q'):
+		case KEY_F(QUIT):
 			wclear(wptr);
 			return 1;
 
-		case(KEY_RESIZE):
+		case KEY_RESIZE:
 			wclear(wptr);
 			break;
-		case('H'):
-		case('h'):
-		case('?'):
+		case ('H'):
+		case ('h'):
+		case ('?'):
 			show_help_subwindow();
 			break;
 		}
@@ -313,21 +313,21 @@ int main(int argc, char **argv)
 		strncpy(opt, argv[1], LINE_BUFFER);
 		for (size_t i = 1; i < strlen(opt); i++) { // Args start at 1
 			if (opt[0] == '-') {
-				switch(opt[i]) {
+				switch (opt[i]) {
 
-				case('d'):
+				case ('d'):
 					debug_flag = 1;
 					break;
 
-				case('c'):
+				case ('c'):
 					cli_flag = 1;
 					break;
 
-				case('v'):
+				case ('v'):
 					verify_flag = 0;
 					break;
 
-				case('-'):
+				case ('-'):
 					if (strcmp(argv[1], "--convert") == 0) {
 						count = convert_chase_csv(argv[i + 1]);
 						printf("Converted %ld records", count);

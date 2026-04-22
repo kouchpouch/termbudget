@@ -119,15 +119,15 @@ static bool nc_confirm_amount(double amt)
 
 	while (c != KEY_F(QUIT)) {
 		c = wgetch(wptr);
-		switch(c) {
+		switch (c) {
 
-		case('y'):
-		case('Y'):
+		case ('y'):
+		case ('Y'):
 			nc_exit_window(wptr);
 			return true;
 
-		case('n'):
-		case('N'):
+		case ('n'):
+		case ('N'):
 			nc_exit_window(wptr);
 			return false;
 

@@ -207,14 +207,17 @@ static void rehighlight_date_field(WINDOW *wptr, _fd_input_scroll_t *s)
 	int x;
 	int n;
 	switch (s->field_idx) {
+
 	case F_MONTH:
 		x = s->month_x;
 		n = s->month_field_len;
 		break;
+
 	case F_DAY:
 		x = s->day_x;
 		n = s->day_field_len;
 		break;
+
 	case F_YEAR:
 		x = s->year_x;
 		n = s->year_field_len;
@@ -251,20 +254,20 @@ static int date_field_input_loop
 		c = wgetch(wptr);
 		switch (c) {
 
-		case('\t'):
-		case('\n'):
-		case('\r'):
+		case ('\t'):
+		case ('\n'):
+		case ('\r'):
 			temp[idx] = '\0';
 			break;
 
-		case(27): // ESC
-		case(KEY_F(QUIT)):
+		case (27): /* ESC */
+		case KEY_F(QUIT):
 			noecho();
 			return 0;
 
-		case(KEY_BACKSPACE):
-		case(127): // DELETE
-		case('\b'):
+		case KEY_BACKSPACE:
+		case (127): /* DELETE */
+		case ('\b'):
 			if (x_cursor >= edit_field_x) {
 				idx--;
 				x_cursor--;
@@ -309,27 +312,27 @@ static void scroll_prev_field
 	unhighlight_boxed(wptr, s->opt_y);
 	switch (s->field_idx) {
 
-	case (F_MONTH):
+	case F_MONTH:
 		highlight(wptr, s->opt_y, s->accept_x, s->opt_len);
 		s->field_idx = F_ACCEPT;
 		break;
 
-	case (F_DAY): 
+	case F_DAY: 
 		highlight(wptr, s->date_y, s->month_x, s->month_field_len); 
 		s->field_idx--;
 		break;
 
-	case (F_YEAR):
+	case F_YEAR:
 		highlight(wptr, s->date_y, s->day_x, s->day_field_len); 
 		s->field_idx--;
 		break;
 
-	case (F_CANCEL):
+	case F_CANCEL:
 		highlight(wptr, s->date_y, s->year_x, s->year_field_len);
 		s->field_idx--;
 		break;
 
-	case (F_ACCEPT):
+	case F_ACCEPT:
 		highlight(wptr, s->opt_y, s->cancel_x, s->opt_len);
 		s->field_idx--;
 		break;
@@ -346,27 +349,27 @@ static void scroll_next_field
 	unhighlight_boxed(wptr, s->opt_y);
 	switch (s->field_idx) {
 
-	case (F_MONTH):
+	case F_MONTH:
 		highlight(wptr, s->date_y, s->day_x, s->day_field_len);
 		s->field_idx++;
 		break;
 
-	case (F_DAY): 
+	case F_DAY: 
 		highlight(wptr, s->date_y, s->year_x, s->year_field_len);
 		s->field_idx++;
 		break;
 
-	case (F_YEAR): /* Move to the options */
+	case F_YEAR: /* Move to the options */
 		highlight(wptr, s->opt_y, s->cancel_x, s->opt_len);
 		s->field_idx++;
 		break;
 
-	case (F_CANCEL):
+	case F_CANCEL:
 		highlight(wptr, s->opt_y, s->accept_x, s->opt_len);
 		s->field_idx++;
 		break;
 
-	case (F_ACCEPT):
+	case F_ACCEPT:
 		highlight(wptr, s->date_y, s->month_x, s->month_field_len); 
 		s->field_idx = F_MONTH;
 		break;
@@ -498,19 +501,19 @@ int nc_input_full_date
 		}
 		switch (c) {
 
-		case (KEY_RIGHT):
+		case KEY_RIGHT:
 		case ('l'):
 		case ('\t'):
 			scroll_next_field(wptr, &scrl);
 			break;
 			
-		case (KEY_LEFT):
+		case KEY_LEFT:
 		case ('h'):
-		case (KEY_BTAB): /* SHIFT + TAB */
+		case KEY_BTAB: /* SHIFT + TAB */
 			scroll_prev_field(wptr, &scrl);
 			break;
 
-		case (KEY_ENTER):
+		case KEY_ENTER:
 		case ('\n'):
 		case ('\r'):
 			unhighlight_boxed(wptr, scrl.date_y);
@@ -537,7 +540,7 @@ int nc_input_full_date
 			}
 			break;
 
-		case (KEY_F(QUIT)):
+		case KEY_F(QUIT):
 		case ('q'):
 			nc_exit_window(wptr);
 			return -1;
@@ -575,21 +578,21 @@ static void nc_user_input(int n, WINDOW *wptr, struct UserInput *pui)
 		c = wgetch(wptr);
 		switch (c) {
 
-		case('\n'):
-		case('\r'):
+		case ('\n'):
+		case ('\r'):
 			temp[idx] = '\0';
 			break;
 
-		case(27):
-		case(KEY_F(QUIT)):
+		case (27):
+		case KEY_F(QUIT):
 			noecho();
 			pui->flag = QUIT;
 			pui->str = NULL;
 			return;
 
-		case(KEY_BACKSPACE):
-		case(127):
-		case('\b'):
+		case KEY_BACKSPACE:
+		case (127):
+		case ('\b'):
 			if (xcursor > center) {
 				idx--;
 				xcursor--;
@@ -683,19 +686,19 @@ bool nc_confirm_input_loop(WINDOW *wptr)
 	int c = 0;
 	while (1) {
 		c = wgetch(wptr);
-		switch(c) {
+		switch (c) {
 
-		case('y'):
-		case('Y'):
+		case ('y'):
+		case ('Y'):
 			return true;	
 
-		case('n'):
-		case('N'):
+		case ('n'):
+		case ('N'):
 			return false;
 
-		case('q'):
-		case('Q'):
-		case(KEY_F(QUIT)):
+		case ('q'):
+		case ('Q'):
+		case KEY_F(QUIT):
 			return false;
 
 		default:
@@ -730,18 +733,18 @@ bool nc_confirm_record(_transact_tokens_t *ld)
 
 	while (c != KEY_F(QUIT) && c != 'q') {
 		c = wgetch(wptr);
-		switch(c) {
+		switch (c) {
 
-		case('y'):
-		case('Y'):
+		case ('y'):
+		case ('Y'):
 			nc_exit_window(wptr);
 			return true;
 
-		case('n'):
-		case('N'):
-		case(KEY_F(QUIT)):
-		case('q'):
-		case('Q'):
+		case KEY_F(QUIT):
+		case ('n'):
+		case ('N'):
+		case ('q'):
+		case ('Q'):
 			nc_exit_window(wptr);
 			return false;
 
@@ -1017,9 +1020,9 @@ char *nc_select_category(int month, int year)
 	while (c != '\n' && c != '\r') {
 		wrefresh(wptr);
 		c = wgetch(wptr);
-		switch(c) {
-		case('j'):
-		case(KEY_DOWN):
+		switch (c) {
+		case ('j'):
+		case KEY_DOWN:
 			if (selection_idx + 1 < sz) {
 				mvwchgat(wptr, cur, 0, -1, A_NORMAL, 0, NULL);
 				cur++;
@@ -1035,8 +1038,8 @@ char *nc_select_category(int month, int year)
 				mvwchgat(wptr, cur, 0, -1, A_REVERSE, REVERSE_COLOR, NULL);
 			}
 			break;
-		case('k'):
-		case(KEY_UP):
+		case ('k'):
+		case KEY_UP:
 			if (selection_idx - 1 >= 0) {
 				mvwchgat(wptr, cur, 0, -1, A_NORMAL, 0, NULL);
 				cur--;
@@ -1052,19 +1055,19 @@ char *nc_select_category(int month, int year)
 				mvwchgat(wptr, cur, 0, -1, A_REVERSE, REVERSE_COLOR, NULL);
 			}
 			break;
-		case('c'):
+		case ('c'):
 manual_selection:
 			free_categories(pc);
 			nc_exit_window(wptr_parent);
 			nc_exit_window(wptr);
 			nc_print_input_footer(stdscr);
 			return create_budget_record(year, month);
-		case('\n'):
-		case('\r'):
-		case(KEY_ENTER):
+		case ('\n'):
+		case ('\r'):
+		case KEY_ENTER:
 			break;
-		case('q'):
-		case(KEY_F(QUIT)):
+		case ('q'):
+		case KEY_F(QUIT):
 			goto cleanup;
 		}
 	}

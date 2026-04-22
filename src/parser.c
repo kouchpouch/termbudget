@@ -895,7 +895,7 @@ void tokenize_record(_transact_tokens_t *ld, char **str)
 	for (int i = 0; i < CSV_FIELDS; i++) {
 		token = strsep(str, ",");
 		if (token == NULL) break;
-		switch(i) {
+		switch (i) {
 		case 0:
 			ld->month = atoi(token);
 			break;

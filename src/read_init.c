@@ -296,29 +296,29 @@ static int select_month(WINDOW *wptr, int year)
 	while (c != KEY_F(QUIT) && c != 'q') {
 		c = wgetch(wptr);
 		scroll.tmp = getcury(wptr);
-		switch(c) {
+		switch (c) {
 
-		case('j'):
-		case(KEY_DOWN):
+		case ('j'):
+		case KEY_DOWN:
 			if (scroll.tmp - BOX_OFFSET + 1 < scroll.scroll_idx) {
 				scroll_month(wptr, scroll.tmp, monlen, &scroll.date_idx, true);
 			}
 			break;
 
-		case('k'):
-		case(KEY_UP):
+		case ('k'):
+		case KEY_UP:
 			if (scroll.tmp - 1 >= BOX_OFFSET) {
 				scroll_month(wptr, scroll.tmp, monlen, &scroll.date_idx, false);
 			}
 			break;
 
-		case('a'):
-		case(KEY_F(ADD)):
+		case ('a'):
+		case KEY_F(ADD):
 			free(months_data);
 			months_data = NULL;
 			return -(ADD);
 
-		case(KEY_RESIZE):
+		case KEY_RESIZE:
 			free(months_data);
 			months_data = NULL;
 
@@ -327,16 +327,16 @@ static int select_month(WINDOW *wptr, int year)
 			 * all of the resizes in this program suck. */
 			return -(RESIZE);
 
-		case('\n'):
-		case('\r'):
+		case ('\n'):
+		case ('\r'):
 			scroll.selected_date = months_data->data[scroll.date_idx];
 			free(months_data);
 			months_data = NULL;
 			return scroll.selected_date;
 
-		case('Q'):
-		case('q'):
-		case(KEY_F(QUIT)):
+		case ('Q'):
+		case ('q'):
+		case KEY_F(QUIT):
 			free(months_data);
 			months_data = NULL;
 			return -(QUIT);
@@ -406,43 +406,43 @@ static int select_year(WINDOW *wptr)
 	while (c != KEY_F(QUIT) && c != 'q') {
 		c = wgetch(wptr);
 		scroll.tmp = getcurx(wptr);
-		switch(c) {
+		switch (c) {
 
-		case('l'):
-		case(KEY_RIGHT):
+		case ('l'):
+		case KEY_RIGHT:
 			if (scroll.scroll_idx + 1 < n_years) {
 				scroll_year(wptr, print_y, scroll.tmp, &scroll.scroll_idx, true);
 			}
 			break;
 
-		case('h'):
-		case(KEY_LEFT):
+		case ('h'):
+		case KEY_LEFT:
 			if (scroll.scroll_idx > 0) {
 				scroll_year(wptr, print_y, scroll.tmp, &scroll.scroll_idx, false);
 			}
 			break;
 
-		case('a'):
-		case(KEY_F(ADD)):
+		case ('a'):
+		case KEY_F(ADD):
 			free(years);
 			years = NULL;
 			return -(ADD);
 
-		case(KEY_RESIZE):
+		case KEY_RESIZE:
 			free(years);
 			years = NULL;
 			return -(RESIZE);
 
-		case('\n'):
-		case('\r'):
+		case ('\n'):
+		case ('\r'):
 			scroll.selected_date = years->data[scroll.scroll_idx];
 			free(years);
 			years = NULL;
 			return scroll.selected_date;
 
-		case('Q'):
-		case('q'):
-		case(KEY_F(QUIT)):
+		case ('Q'):
+		case ('q'):
+		case KEY_F(QUIT):
 			free(years);
 			return -(QUIT);
 
@@ -823,12 +823,13 @@ void nc_read_setup
 	rret->sort = sort;
 
 err_select_date_fail:
-	switch(sr->flag) {
-	case(NO_SELECT):
+	switch (sr->flag) {
+
+	case NO_SELECT:
 		rret->flag = RRET_DEFAULT;
 		break;
 
-	case(ADD):
+	case ADD:
 		nc_print_input_footer(stdscr);
 		if (dates->year < 0 || dates->month < 0) {
 			add_main_no_date();
@@ -839,21 +840,21 @@ err_select_date_fail:
 		}
 		break;
 
-	case(EDIT):
+	case EDIT:
 		nc_print_quit_footer(stdscr);
 		nc_edit_transaction(sr->index);
 		rret->flag = RRET_BYDATE;
 		break;
 
-	case(READ):
+	case READ:
 		rret->flag = RRET_DEFAULT;
 		break;
 
-	case(QUIT):
+	case QUIT:
 		rret->flag = RRET_QUIT;
 		break;
 
-	case(SORT):
+	case SORT:
 		if (sort == SORT_CATG && n_records == 0) {
 			nc_message("Cannot sort by date, no records exist");
 			sort = SORT_CATG;
@@ -866,12 +867,12 @@ err_select_date_fail:
 		rret->sort = sort;
 		break;
 
-	case(OVERVIEW):
+	case OVERVIEW:
 		nc_overview_setup(dates->year);
 		rret->flag = RRET_BYDATE;
 		break;
 
-	case(EDIT_CATG):
+	case EDIT_CATG:
 		nc_edit_category(sr->index, sr->opt, nodes); 
 		free_category_nodes(nodes);
 		nodes = NULL;
@@ -882,7 +883,7 @@ err_select_date_fail:
 		}
 		break;
 
-	case(RESIZE):
+	case RESIZE:
 		while (test_terminal_size() == -1) {
 			getch();
 		}
@@ -893,18 +894,18 @@ err_select_date_fail:
 		}
 		break;
 
-	case(NO_RCRD):
+	case NO_RCRD:
 		c = getch();
-		switch(c) {
-		case(KEY_F(1)):
-		case('a'):
-		case('A'):
+		switch (c) {
+		case KEY_F(1):
+		case ('a'):
+		case ('A'):
 			sr->flag = ADD;
 			goto err_select_date_fail;
 			break;
-		case(KEY_F(4)):
-		case('q'):
-		case('Q'):
+		case KEY_F(4):
+		case ('q'):
+		case ('Q'):
 			rret->flag = RRET_QUIT;
 			break;
 		default:

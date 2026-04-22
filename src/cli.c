@@ -144,7 +144,7 @@ static int edit_csv_record
 	FILE *fptr;
 	FILE *tmpfptr;
 
-	switch(field) {
+	switch (field) {
 
 	case 1:
 		ld->year = input_year();
@@ -383,7 +383,7 @@ static void cli_edit_transaction(void)
 		fieldtoedit = input_n_digits(1, 1); // Only input 1 digit
 	} while (fieldtoedit > 5 || fieldtoedit < 0);
 
-	switch(fieldtoedit) {
+	switch (fieldtoedit) {
 
 	case 0:
 		if (delete_csv_record(humantarget) == 0) {
@@ -451,22 +451,22 @@ void cli_main_menu(void)
 
 	switch (choice) {
 
-	case('A'):
+	case ('A'):
 		printf("-*-ADD TRANSACTION-*-\n");
 		add_transaction();
 		break;
 
-	case('E'):
+	case ('E'):
 		printf("-*-EDIT TRANSACTION-*-\n");
 		cli_edit_transaction();
 		break;
 
-	case('R'):
+	case ('R'):
 		printf("-*-READ CSV-*-\n");
 		cli_read_csv();
 		break;
 
-	case('Q'):
+	case ('Q'):
 		printf("Quiting\n");
 		exit(0);
 	default:

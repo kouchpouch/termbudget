@@ -679,10 +679,10 @@ void nc_read_budget_loop
 		}
 		c = wgetch(wins->data);
 
-		switch(c) {
+		switch (c) {
 
-		case('j'):
-		case(KEY_DOWN):
+		case ('j'):
+		case KEY_DOWN:
 			if (sc->select_idx + 1 < sc->total_rows) {
 				scroll_ret = nc_scroll_next_category(wins->data, nodes, sc, cw, rfptr, bfptr);
 				dc->first += scroll_ret;
@@ -690,16 +690,16 @@ void nc_read_budget_loop
 			}
 
 			break;
-		case('k'):
-		case(KEY_UP):
+		case ('k'):
+		case KEY_UP:
 			if (sc->select_idx > 0) {
 				scroll_ret = nc_scroll_prev_category(wins->data, nodes, sc, cw, rfptr, bfptr);
 				dc->first -= scroll_ret;
 				dc->last -= scroll_ret;
 			}
 			break;
-		case('K'):
-		case(KEY_SHOME): // "SHIFT + HOME"
+		case ('K'):
+		case KEY_SHOME: // "SHIFT + HOME"
 			if (sc->catg_data == -1 && sc->catg_node != 0) {
 				mv_category_to_top(nodes, sc->catg_node);
 				sr->flag = RESIZE;
@@ -707,15 +707,15 @@ void nc_read_budget_loop
 				return;
 			}
 			break;
-		case('?'):
+		case ('?'):
 			subwin_y = show_help_subwindow();
 			init_sidebar_body(wins->sidebar_body, nodes, sc->sidebar_idx);
 			refresh_budget_loop(wins->data, nodes, sc, cw, rfptr, bfptr, subwin_y);
 			c = 0;
 			break;
 		case KEY_ENTER:
-		case('\n'):
-		case('\r'):
+		case ('\n'):
+		case ('\r'):
 			if (sc->catg_data >= 0) {
 				fseek(rfptr, nodes[sc->catg_node]->data->data[sc->catg_data], SEEK_SET);
 				line = fgets(linebuff, sizeof(linebuff), rfptr);
@@ -728,7 +728,7 @@ void nc_read_budget_loop
 			}
 			break;
 
-		case(KEY_NPAGE): // PAGE DOWN
+		case KEY_NPAGE: // PAGE DOWN
 			for (int i = 0; i < 10; i++) {
 				if (sc->select_idx + 1 < sc->total_rows) {
 					scroll_ret = nc_scroll_next_category(wins->data, nodes, sc, cw, rfptr, bfptr);
@@ -738,7 +738,7 @@ void nc_read_budget_loop
 			}
 			break;
 
-		case(KEY_PPAGE): // PAGE UP
+		case KEY_PPAGE: // PAGE UP
 			for (int i = 0; i < 10; i++) {
 				if (sc->select_idx > 0) {
 					scroll_ret = nc_scroll_prev_category(wins->data, nodes, sc, cw, rfptr, bfptr);
@@ -748,8 +748,8 @@ void nc_read_budget_loop
 			}
 			break;
 
-		case(KEY_EOL):
-		case(KEY_END):
+		case KEY_EOL:
+		case KEY_END:
 			while (sc->select_idx + 1 < sc->total_rows) {
 				scroll_ret = nc_scroll_next_category(wins->data, nodes, sc, cw, rfptr, bfptr);
 				dc->first += scroll_ret;
@@ -757,8 +757,8 @@ void nc_read_budget_loop
 			}
 			break;
 
-		case(KEY_BEG):
-		case(KEY_HOME):
+		case KEY_BEG:
+		case KEY_HOME:
 			while (sc->select_idx > 0) {
 				scroll_ret = nc_scroll_prev_category(wins->data, nodes, sc, cw, rfptr, bfptr);
 				dc->first -= scroll_ret;
@@ -766,29 +766,29 @@ void nc_read_budget_loop
 			}
 			break;
 
-		case('['):
+		case ('['):
 			if (sc->sidebar_idx > 0) {
 				sc->sidebar_idx--;
 				init_sidebar_body(wins->sidebar_body, nodes, sc->sidebar_idx);
 			}
 			break;
 
-		case(']'):
+		case (']'):
 			if (nodes[sc->sidebar_idx]->next != NULL) {
 				sc->sidebar_idx++;
 				init_sidebar_body(wins->sidebar_body, nodes, sc->sidebar_idx);
 			}
 			break;
 
-		case('A'):
-		case('a'):
-		case(KEY_F(ADD)):
+		case ('A'):
+		case ('a'):
+		case KEY_F(ADD):
 			sr->flag = ADD;
 			return;
 
-		case('E'):
-		case('e'):
-		case(KEY_F(EDIT)):
+		case ('E'):
+		case ('e'):
+		case KEY_F(EDIT):
 			if (sc->catg_data < 0) { 
 				sr->flag = EDIT_CATG;
 				sr->opt = nodes[sc->catg_node]->data->size;
@@ -800,35 +800,35 @@ void nc_read_budget_loop
 			}
 			return;
 
-		case('R'):
-		case('r'):
-		case(KEY_F(READ)):
+		case ('R'):
+		case ('r'):
+		case KEY_F(READ):
 			sr->flag = READ;
 			sr->index = 0;
 			return;
 
-		case('Q'):
-		case('q'):
-		case(KEY_F(QUIT)):
+		case ('Q'):
+		case ('q'):
+		case KEY_F(QUIT):
 			sr->flag = QUIT;
 			sr->index = 0;
 			return;
 
-		case('S'):
-		case('s'):
-		case(KEY_F(SORT)):
+		case ('S'):
+		case ('s'):
+		case KEY_F(SORT):
 			sr->flag = SORT;
 			sr->index = 0;
 			return;
 
-		case('O'):
-		case('o'):
-		case(KEY_F(OVERVIEW)):
+		case ('O'):
+		case ('o'):
+		case KEY_F(OVERVIEW):
 			sr->flag = OVERVIEW;
 			sr->index = 0;
 			return;
 
-		case(KEY_RESIZE):
+		case KEY_RESIZE:
 			sr->flag = RESIZE;
 			sr->index = 0;
 			return;
@@ -918,9 +918,10 @@ void nc_read_loop
 		}
 		c = wgetch(wins->data);
 
-		switch(c) {
-		case('j'):
-		case(KEY_DOWN):
+		switch (c) {
+
+		case ('j'):
+		case KEY_DOWN:
 			if (sc->select_idx + 1 < sc->total_rows) {
 				scroll_ret = nc_scroll_next_read_loop(wins->data, sc, cw, fptr, psc);
 				dc->first += scroll_ret;
@@ -928,8 +929,8 @@ void nc_read_loop
 			}
 			break;
 
-		case('k'):
-		case(KEY_UP):
+		case ('k'):
+		case KEY_UP:
 			if (sc->select_idx > 0) {
 				scroll_ret = nc_scroll_prev_read_loop(wins->data, sc, cw, fptr, psc);
 				dc->first -= scroll_ret;
@@ -937,8 +938,8 @@ void nc_read_loop
 			}
 			break;
 
-		case('\n'):
-		case('\r'):
+		case ('\n'):
+		case ('\r'):
 			fseek(fptr, psc->data[sc->select_idx], SEEK_SET);
 			char *line = fgets(linebuff, sizeof(linebuff), fptr);
 			show_detail_subwindow(line);
@@ -946,7 +947,7 @@ void nc_read_loop
 			c = 0;
 			break;
 
-		case(KEY_NPAGE): // PAGE DOWN
+		case KEY_NPAGE: // PAGE DOWN
 			for(int i = 0; i < 10; i++) {
 				if (sc->select_idx + 1 < sc->total_rows) {
 					scroll_ret = nc_scroll_next_read_loop(wins->data, sc, cw, fptr, psc);
@@ -956,7 +957,7 @@ void nc_read_loop
 			}
 			break;
 
-		case(KEY_PPAGE): // PAGE UP
+		case KEY_PPAGE: // PAGE UP
 			for (int i = 0; i < 10; i++) {
 				if (sc->select_idx > 0) {
 					scroll_ret = nc_scroll_prev_read_loop(wins->data, sc, cw, fptr, psc);
@@ -966,7 +967,7 @@ void nc_read_loop
 			}
 			break;
 
-		case(KEY_END):
+		case KEY_END:
 			while (sc->select_idx + 1 < sc->total_rows) {
 				scroll_ret = nc_scroll_next_read_loop(wins->data, sc, cw, fptr, psc);
 				dc->first += scroll_ret;
@@ -974,7 +975,7 @@ void nc_read_loop
 			}
 			break;
 
-		case(KEY_HOME):
+		case KEY_HOME:
 			while (sc->select_idx > 0) {
 				scroll_ret = nc_scroll_prev_read_loop(wins->data, sc, cw, fptr, psc);
 				dc->first -= scroll_ret;
@@ -982,63 +983,63 @@ void nc_read_loop
 			}
 			break;
 
-		case('['):
+		case ('['):
 			if (sc->sidebar_idx > 0) {
 				sc->sidebar_idx--;
 				init_sidebar_body(wins->sidebar_body, nodes, sc->sidebar_idx);
 			}
 			break;
 
-		case(']'):
+		case (']'):
 			if (nodes[sc->sidebar_idx]->next != NULL) {
 				sc->sidebar_idx++;
 				init_sidebar_body(wins->sidebar_body, nodes, sc->sidebar_idx);
 			}
 			break;
 
-		case('A'):
-		case('a'):
-		case(KEY_F(ADD)):
+		case ('A'):
+		case ('a'):
+		case KEY_F(ADD):
 			sr->flag = ADD;
 			sr->index = psc->data[sc->select_idx];
 			return;
 
-		case('E'):
-		case('e'):
-		case(KEY_F(EDIT)):
+		case ('E'):
+		case ('e'):
+		case KEY_F(EDIT):
 			sr->flag = EDIT;
 			sr->index = psc->data[sc->select_idx];
 			return;
 
-		case('R'):
-		case('r'):
-		case(KEY_F(READ)):
+		case ('R'):
+		case ('r'):
+		case KEY_F(READ):
 			sr->flag = READ;
 			sr->index = 0;
 			return;
 				
-		case('Q'):
-		case('q'):
-		case(KEY_F(QUIT)):
+		case ('Q'):
+		case ('q'):
+		case KEY_F(QUIT):
 			sr->flag = QUIT;
 			sr->index = 0;
 			return;
 
-		case('S'):
-		case('s'):
-		case(KEY_F(SORT)):
+		case ('S'):
+		case ('s'):
+		case KEY_F(SORT):
 			sr->flag = SORT;
 			sr->index = 0;
 			return;
 
-		case('O'):
-		case('o'):
-		case(KEY_F(OVERVIEW)):
+		case ('O'):
+		case ('o'):
+		case KEY_F(OVERVIEW):
 			sr->flag = OVERVIEW;
 			sr->index = 0;
 			return;
 
-		case(KEY_RESIZE):
+		case KEY_RESIZE:
 			sr->flag = RESIZE;
 			sr->index = 0;
 			return;

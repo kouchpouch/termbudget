@@ -56,8 +56,9 @@ int nc_input_menu(struct MenuParams *mp)
 		wrefresh(wptr);
 		c = wgetch(wptr);
 		switch (c) {
-		case('j'):
-		case(KEY_DOWN):
+
+		case ('j'):
+		case KEY_DOWN:
 			if (selection_idx + 1 < displayed) {
 				mvwchgat(wptr, cur_y, BOX_OFFSET, x_traverse, A_NORMAL, 0, NULL); 
 				cur_y++;
@@ -70,8 +71,9 @@ int nc_input_menu(struct MenuParams *mp)
 				mvwchgat(wptr, cur_y, BOX_OFFSET, x_traverse, A_REVERSE, REVERSE_COLOR, NULL);
 			}
 			break;
-		case('k'):
-		case(KEY_UP):
+
+		case ('k'):
+		case KEY_UP:
 			if (selection_idx - 1 >= 0) {
 				mvwchgat(wptr, cur_y, BOX_OFFSET, x_traverse, A_NORMAL, 0, NULL); 
 				cur_y--;
@@ -84,12 +86,14 @@ int nc_input_menu(struct MenuParams *mp)
 				mvwchgat(wptr, cur_y, BOX_OFFSET, x_traverse, A_REVERSE, REVERSE_COLOR, NULL);
 			}
 			break;
-		case('\n'):
-		case('\r'):
+
+		case ('\n'):
+		case ('\r'):
 			nc_exit_window(wptr);
 			return selection_idx;
-		case('q'):
-		case(KEY_F(QUIT)):
+
+		case ('q'):
+		case KEY_F(QUIT):
 			nc_exit_window(wptr);
 			return -1;
 		default:
