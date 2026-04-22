@@ -144,22 +144,16 @@ void create_transaction(int year, int month)
 {
 	_transact_tokens_t userlinedata_, *uld = &userlinedata_;
 	unsigned int result_line;
+	_full_date_t fd;
 
 	nc_print_input_footer(stdscr);
 
-	year > 0 ? (uld->year = year) : (uld->year = nc_input_year(0));
-	if (uld->year < 0) {
+	if (nc_input_full_date(month, 0, year, &fd) == -1) {
 		return;
-	}
-
-	month > 0 ? (uld->month = month) : (uld->month = nc_input_month(0, uld->year));
-	if (uld->month < 0) {
-		return;
-	}
-
-	uld->day = nc_input_day(uld->month, uld->year, 0);
-	if (uld->day < 0) {
-		return;
+	} else {
+		uld->month = fd.month;
+		uld->day = fd.day;
+		uld->year = fd.year;
 	}
 
 	uld->category = nc_select_category(uld->month, uld->year);
