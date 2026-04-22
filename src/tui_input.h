@@ -23,11 +23,11 @@
 
 #include "parser.h"
 
-struct __full_date {
+typedef struct __full_date_t {
 	int day;
 	int month;
 	int year;
-};
+} _full_date_t;
 
 struct UserInput {
 	char *str;
@@ -42,7 +42,7 @@ bool nc_confirm_input(char *msg);
 
 bool nc_confirm_record(_transact_tokens_t *ld);
 
-void nc_input_full_date(int old_mo, int old_day, int old_yr, struct __full_date *new_date);
+int nc_input_full_date(int old_mo, int old_day, int old_yr, _full_date_t *new_date);
 
 /* Creates and destroys an ncurses input window and validates the input with
  * retries. Returns -1 on quit */
