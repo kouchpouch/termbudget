@@ -41,15 +41,14 @@ struct __prev_date_exist {
 	bool year_exists;
 };
 
-struct __fd_input_scroll {
-	int tmp_x;
+typedef struct __fd_input_scroll_t {
 	int print_x;
 	int field_idx;
 	int incr_x;
 	int day_field_len;
 	int month_field_len;
 	int year_field_len;
-	int y;
+	int date_y;
 	int day_x;
 	int month_x;
 	int year_x;
@@ -58,7 +57,7 @@ struct __fd_input_scroll {
 	int opt_y;
 	int opt_len;
 	int x_padding;
-};
+} _fd_input_scroll_t;
 
 enum _input_full_date_fields {
 	F_MONTH = 0,
@@ -74,10 +73,9 @@ struct UserInputDigit {
 	int flag;
 };
 
-static void unhighlight(WINDOW *wptr, int y)
+static void unhighlight_boxed(WINDOW *wptr, int y)
 {
-	int o = BOX_OFFSET;
-	mvwchgat(wptr, y, o, getmaxx(wptr) - (o * 2), A_NORMAL, 0, NULL);
+	unhighlight(wptr, y, BOX_OFFSET, getmaxx(wptr) - (BOX_OFFSET * 2));
 }
 
 static bool date_is_valid(int day, int month, int year)
@@ -142,21 +140,21 @@ static bool validate_input_len(size_t buffer, char *input, WINDOW *wptr)
 }
 
 static int get_edit_field_x_coord
-(WINDOW *wptr, struct __fd_input_scroll *s)
+(WINDOW *wptr, _fd_input_scroll_t *s)
 {
 	fd_fields = s->field_idx;
 	switch (fd_fields) {
 
 	case F_MONTH:
-		wmove(wptr, s->y, s->month_x + 1);
+		wmove(wptr, s->date_y, s->month_x + 1);
 		break;
 
 	case F_DAY:
-		wmove(wptr, s->y, s->day_x + 1);
+		wmove(wptr, s->date_y, s->day_x + 1);
 		break;
 
 	case F_YEAR:
-		wmove(wptr, s->y, s->year_x + 1);
+		wmove(wptr, s->date_y, s->year_x + 1);
 		break;
 
 	case F_CANCEL:
@@ -185,47 +183,87 @@ static bool char_is_valid(char c) {
 	return false;
 }
 
-static int verify_and_modify_date_vals
-(int val, struct __full_date *d, int field)
+static void modify_date_vals 
+(int val, _full_date_t *d, int field)
 {
 	switch (field) {
 
 	case F_MONTH:
-		if (date_is_valid(d->day, val, d->year)) {
-			d->month = val;
-		} else {
-			return -1;
-		}
+		d->month = val;
 		break;
 
 	case F_DAY:
-		if (date_is_valid(val, d->month, d->year)) {
-			d->day = val;
-		} else {
-			return -1;
-		}
+		d->day = val;
 		break;
 
 	case F_YEAR:
-		if (date_is_valid(d->day, d->month, val)) {
-			d->year = val;
-		} else {
-			return -1;
-		}
+		d->year = val;
 		break;
-	
-	default:
-		return -1;
 	}
+}
 
-	return 0;
+//static int verify_and_modify_date_vals
+//(int val, _full_date_t *d, int field)
+//{
+//	switch (field) {
+//
+//	case F_MONTH:
+//		if (date_is_valid(d->day, val, d->year)) {
+//			d->month = val;
+//		} else {
+//			return -1;
+//		}
+//		break;
+//
+//	case F_DAY:
+//		if (date_is_valid(val, d->month, d->year)) {
+//			d->day = val;
+//		} else {
+//			return -1;
+//		}
+//		break;
+//
+//	case F_YEAR:
+//		if (date_is_valid(d->day, d->month, val)) {
+//			d->year = val;
+//		} else {
+//			return -1;
+//		}
+//		break;
+//	
+//	default:
+//		return -1;
+//	}
+//
+//	return 0;
+//}
+
+static void rehighlight_date_field(WINDOW *wptr, _fd_input_scroll_t *s)
+{
+	int x;
+	int n;
+	switch (s->field_idx) {
+	case F_MONTH:
+		x = s->month_x;
+		n = s->month_field_len;
+		break;
+	case F_DAY:
+		x = s->day_x;
+		n = s->day_field_len;
+		break;
+	case F_YEAR:
+		x = s->year_x;
+		n = s->year_field_len;
+		break;
+	}
+	highlight(wptr, s->date_y, x, n);
 }
 
 /* Determines the field from s->field_idx, and prints characters from stdin 
  * to the screen, returns the value entered if it passes verification, 0
  * on quit, -1 on failure. */
 static int date_field_input_loop
-(WINDOW *wptr, struct __fd_input_scroll *s, struct __full_date *date)
+(WINDOW *wptr, _fd_input_scroll_t *s, _full_date_t *date)
 {
 	int n;
 	s->field_idx == F_YEAR ? (n = s->year_field_len) : (n = s->month_field_len);
@@ -236,20 +274,20 @@ static int date_field_input_loop
 	int c = 0;
 	int idx = 0;
 	int modified_field_val;
-	int retval;
 	int x_cursor;
 	int edit_field_x = get_edit_field_x_coord(wptr, s);
 
 	x_cursor = getcurx(wptr);
 
-	clear_field(wptr, edit_field_x - (s->x_padding / 2), n, s->y);
+	clear_field(wptr, edit_field_x - (s->x_padding / 2), n, s->date_y);
 
-	while (c != '\n' && c != '\r') {
+	while (c != '\n' && c != '\r' && c != '\t') {
 		wrefresh(wptr);
 		noecho();
 		c = wgetch(wptr);
 		switch (c) {
 
+		case('\t'):
 		case('\n'):
 		case('\r'):
 			temp[idx] = '\0';
@@ -267,11 +305,11 @@ static int date_field_input_loop
 				idx--;
 				x_cursor--;
 				temp[idx] = '\0';
-				wmove(wptr, s->y, x_cursor);
+				wmove(wptr, s->date_y, x_cursor);
 				wprintw(wptr, "%c", '_');
-				wmove(wptr, s->y, x_cursor);
+				wmove(wptr, s->date_y, x_cursor);
 			} else {
-				wmove(wptr, s->y, x_cursor);
+				wmove(wptr, s->date_y, x_cursor);
 			}
 			break;
 
@@ -285,7 +323,7 @@ static int date_field_input_loop
 				}
 			} else {
 				erasechar();
-				wmove(wptr, s->y, x_cursor);
+				wmove(wptr, s->date_y, x_cursor);
 			}
 			break;
 		}
@@ -295,9 +333,9 @@ static int date_field_input_loop
 	curs_set(0);
 
 	modified_field_val = atoi(temp);
-	retval = verify_and_modify_date_vals(modified_field_val, date, s->field_idx);
+	modify_date_vals(modified_field_val, date, s->field_idx);
 
-	return retval;
+	return 0;
 }
 
 void nc_user_input(int n, WINDOW *wptr, struct UserInput *pui)
@@ -506,10 +544,10 @@ bool nc_confirm_record(_transact_tokens_t *ld)
 }
 
 static void scroll_prev_field
-(WINDOW *wptr, struct __fd_input_scroll *s)
+(WINDOW *wptr, _fd_input_scroll_t *s)
 {
-	unhighlight(wptr, s->y);
-	unhighlight(wptr, s->opt_y);
+	unhighlight_boxed(wptr, s->date_y);
+	unhighlight_boxed(wptr, s->opt_y);
 	switch (s->field_idx) {
 
 	case (F_MONTH):
@@ -518,17 +556,17 @@ static void scroll_prev_field
 		break;
 
 	case (F_DAY): 
-		highlight(wptr, s->y, s->month_x, s->month_field_len); 
+		highlight(wptr, s->date_y, s->month_x, s->month_field_len); 
 		s->field_idx--;
 		break;
 
 	case (F_YEAR):
-		highlight(wptr, s->y, s->day_x, s->day_field_len); 
+		highlight(wptr, s->date_y, s->day_x, s->day_field_len); 
 		s->field_idx--;
 		break;
 
 	case (F_CANCEL):
-		highlight(wptr, s->y, s->year_x, s->year_field_len);
+		highlight(wptr, s->date_y, s->year_x, s->year_field_len);
 		s->field_idx--;
 		break;
 
@@ -540,23 +578,22 @@ static void scroll_prev_field
 	default:
 		break;
 	}
-	s->tmp_x = getcurx(wptr);
 }
 
 static void scroll_next_field
-(WINDOW *wptr, struct __fd_input_scroll *s)
+(WINDOW *wptr, _fd_input_scroll_t *s)
 {
-	unhighlight(wptr, s->y);
-	unhighlight(wptr, s->opt_y);
+	unhighlight_boxed(wptr, s->date_y);
+	unhighlight_boxed(wptr, s->opt_y);
 	switch (s->field_idx) {
 
 	case (F_MONTH):
-		highlight(wptr, s->y, s->day_x, s->day_field_len);
+		highlight(wptr, s->date_y, s->day_x, s->day_field_len);
 		s->field_idx++;
 		break;
 
 	case (F_DAY): 
-		highlight(wptr, s->y, s->year_x, s->year_field_len);
+		highlight(wptr, s->date_y, s->year_x, s->year_field_len);
 		s->field_idx++;
 		break;
 
@@ -571,14 +608,13 @@ static void scroll_next_field
 		break;
 
 	case (F_ACCEPT):
-		highlight(wptr, s->y, s->month_x, s->month_field_len); 
+		highlight(wptr, s->date_y, s->month_x, s->month_field_len); 
 		s->field_idx = F_MONTH;
 		break;
 
 	default:
 		break;
 	}
-	s->tmp_x = getcurx(wptr);
 }
 
 static void get_prev_date_existence
@@ -595,7 +631,7 @@ static void get_prev_date_existence
 	}
 }
 
-static void init_fd_input_scroll(WINDOW *wptr, struct __fd_input_scroll *s)
+static void init_fd_input_scroll(WINDOW *wptr, _fd_input_scroll_t *s)
 {
 	/* Relative to the center of the window, print this many spaces to the 
 	 * left of center.
@@ -616,7 +652,7 @@ static void init_fd_input_scroll(WINDOW *wptr, struct __fd_input_scroll *s)
 	s->day_field_len = 2 + s->x_padding;
 	s->month_field_len = 2 + s->x_padding;
 	s->year_field_len = 4 + s->x_padding;
-	s->y = INPUT_MSG_Y_OFFSET;
+	s->date_y = INPUT_MSG_Y_OFFSET;
 
 	/* Absolute Positions, with padding */
 	s->month_x = getmaxx(wptr) / 2 - s->print_x - (s->x_padding / 2);
@@ -625,7 +661,7 @@ static void init_fd_input_scroll(WINDOW *wptr, struct __fd_input_scroll *s)
 }
 
 static void print_data_to_window 
-(WINDOW *wptr, struct __fd_input_scroll *s, int m, int d, int y)
+(WINDOW *wptr, _fd_input_scroll_t *s, int m, int d, int y)
 {
 	int center_x = (getmaxx(wptr) / 2) - s->print_x;
 	char *cancel = "<Cancel>";
@@ -636,17 +672,17 @@ static void print_data_to_window
 
 	size_t opt_len = strlen(cancel) + strlen(space) + strlen(accept);
 	int center_opt = getmaxx(wptr) / 2 - opt_len / 2;
-	mvwxcprintw(wptr, s->y++, "Modifying Date");
+	mvwxcprintw(wptr, s->date_y++, "Modifying Date");
 
-	s->y++; /* New Line */
+	s->date_y++; /* New Line */
 
 	/* Print zero padded */
-	mvwprintw(wptr, s->y, center_x, "%02d / %02d / %04d", m, d, y);	
+	mvwprintw(wptr, s->date_y, center_x, "%02d / %02d / %04d", m, d, y);	
 
 	/* Highlight first field (month) */
-	mvwchgat(wptr, s->y, s->month_x, s->month_field_len, A_REVERSE, 0, NULL);
+	mvwchgat(wptr, s->date_y, s->month_x, s->month_field_len, A_REVERSE, 0, NULL);
 
-	s->opt_y = s->y + 2;
+	s->opt_y = s->date_y + 2;
 
 	/* Print options */
 	mvwprintw(wptr, s->opt_y, center_opt, "%s%s%s", cancel, space, accept);
@@ -655,24 +691,37 @@ static void print_data_to_window
 	s->accept_x = s->cancel_x + strlen(cancel) + strlen(space);
 }
 
+static void clear_invalid_date_msg(WINDOW *wptr)
+{
+	int y = getmaxy(wptr) - BOX_OFFSET;
+	mvwprintw(wptr, y, BOX_OFFSET, "%*.s", getmaxx(wptr) - BOX_OFFSET * 2, " ");
+}
+
+static void print_invalid_date_msg(WINDOW *wptr)
+{
+	char *msg = "Date is not valid";
+	int y = getmaxy(wptr) - BOX_OFFSET;
+	mvwprintw(wptr, y, getmaxx(wptr) / 2 - strlen(msg) / 2, "%s", msg);
+	/* Color red */
+	mvwchgat(wptr, y, BOX_OFFSET, getmaxx(wptr) - BOX_OFFSET * 2, A_NORMAL, 1, NULL);
+}
+
 /* An interactive alternative to the current way of taking user input for
  * the day, month, and year individually. This is an ncurses menu. Tab to move
- * between the options. Should be a lot easier to use. */
-void nc_input_full_date
-(int old_mo, int old_day, int old_yr, struct __full_date *new_date)
+ * between the options. Should be a lot easier to use. 
+ * Returns -1 on quit, 0 on success */
+int nc_input_full_date
+(int old_mo, int old_day, int old_yr, _full_date_t *new_date)
 {
 	int c = 0;
+	bool is_valid = false;
 	WINDOW *wptr = create_input_subwindow_force_rows(DATE_SUBWINDOW_ROWS);
 
-	struct __fd_input_scroll scrl = { 0 };
+	_fd_input_scroll_t scrl = { 0 };
 	init_fd_input_scroll(wptr, &scrl);
 
-	struct __full_date prev_date = {
-		.day = old_day,
-		.month = old_mo,
-		.year = old_yr
-	};
-
+	/* Set the new date struct to the values of the old dates, each field
+	 * will be edited interactively. */
 	new_date->day = old_day;
 	new_date->month = old_mo;
 	new_date->year = old_yr;
@@ -685,6 +734,9 @@ void nc_input_full_date
 	while (c != 'q' && c != KEY_F(QUIT)) {
 		wrefresh(wptr);
 		c = wgetch(wptr);
+		if (!is_valid) {
+			clear_invalid_date_msg(wptr);
+		}
 		switch (c) {
 
 		case (KEY_RIGHT):
@@ -692,42 +744,50 @@ void nc_input_full_date
 		case ('\t'):
 			scroll_next_field(wptr, &scrl);
 			break;
-
-		case ('h'):
+			
 		case (KEY_LEFT):
+		case ('h'):
+		case (KEY_BTAB): /* SHIFT + TAB */
 			scroll_prev_field(wptr, &scrl);
 			break;
 
 		case (KEY_ENTER):
 		case ('\n'):
 		case ('\r'):
-			unhighlight(wptr, scrl.y);
+			unhighlight_boxed(wptr, scrl.date_y);
 			if (scrl.field_idx == F_MONTH || 
 				scrl.field_idx == F_DAY ||
 				scrl.field_idx == F_YEAR) {
 				date_field_input_loop(wptr, &scrl, new_date);
+				rehighlight_date_field(wptr, &scrl);
 			} else {
 				if (scrl.field_idx == F_CANCEL) {
-					goto quit;
-				} else {
-					goto quit;	
+					nc_exit_window(wptr);
+					return -1;
+				} else if (scrl.field_idx == F_ACCEPT) {
+					if (!date_is_valid(new_date->day, new_date->month, new_date->year)) {
+						print_invalid_date_msg(wptr);
+						is_valid = false;
+					} else {
+						is_valid = true;
+					}
+					if (is_valid) {
+						goto quit;	
+					}
 				}
 			}
 			break;
 
-		default:
-			break;
+		case (KEY_F(QUIT)):
+		case ('q'):
+			nc_exit_window(wptr);
+			return -1;
 		}
 	}
 
-	if (debug_flag) {
-		mvprintw(0, 0, "Date: %d/%d/%d", 
-		   	     new_date->month, new_date->day, new_date->year);
-		refresh();
-		getch();
-	}
 quit:
 	nc_exit_window(wptr);
+	return 0;
 }
 
 int nc_input_month(int old_month, int old_year)
