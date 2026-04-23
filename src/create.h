@@ -41,6 +41,7 @@ void insert_transaction_record(int insert_line, _transact_tokens_t *ld);
  * on the read screen these will be auto-filled. */
 void create_transaction(int year, int month);
 void create_transaction_default(void);
+int nc_create_new_budget_intret(void);
 struct full_date *nc_create_new_budget(void);
 int get_add_selection(void);
 void add_main_with_date(struct Datevals *dv);

@@ -25,6 +25,7 @@
 #include "main.h"
 #include "categories.h"
 #include "edit_categories.h"
+#include "parser.h"
 #include "sorter.h"
 #include "tui.h"
 #include "tui_input.h"
@@ -247,15 +248,11 @@ static struct MenuParams *init_add_menu(void)
 	return mp;
 }
 
+/* For creating a new budget. Returns malloc'd struct full_date which must
+ * be free'd by the caller. Use nc_create_new_budget_intret to automatically
+ * free the return value. */
 struct full_date *nc_create_new_budget(void)
 {
-	/*
-	struct Datevals *dv = malloc(sizeof(struct Datevals));
-	if (dv == NULL) {
-		mem_alloc_fail();
-	}
-	*/
-
 	char *catg;
 	struct full_date *date = malloc(sizeof(*date));
 	if (date == NULL) {
@@ -270,26 +267,16 @@ struct full_date *nc_create_new_budget(void)
 		return NULL;
 	}
 
-	/*
-	dv->year = nc_input_year(0);
-	if (dv->year < 0) {
-		free(dv);
-		return NULL;
-	}
-
-	dv->month = nc_input_month(0, dv->year);
-	if (dv->month < 0) {
-		free(dv);
-		return NULL;
-	}
-	*/
-
 	if (month_or_year_exists(date->month, date->year)) {
 		free(date);
 		nc_message("A budget already exists for that month");
 		return NULL;
 	}
 
+	insert_budget_record("Income", date->month, date->year, TT_INCOME, 0);
+	insert_budget_record("Saving", date->month, date->year, TT_EXPENSE, 0);
+
+	/*
 	catg = create_budget_record(date->year, date->month);
 	if (catg == NULL) {
 		free(date);
@@ -297,8 +284,23 @@ struct full_date *nc_create_new_budget(void)
 	}
 	
 	free(catg);
+	*/
 
 	return date;
+}
+
+/* Wrapper around nc_create_new_budget() but frees the struct full_date and 
+ * only returns an int to indicate success or failure.
+ * Most of the time this function's return value has no use. Use this to avoid 
+ * future bugs */
+int nc_create_new_budget_intret(void) {
+	struct full_date *d = nc_create_new_budget();
+	if (d != NULL) {
+		free(d);
+		return -1;
+	} else {
+		return 0;
+	}
 }
 
 void add_main_with_date(struct Datevals *dv)
@@ -350,7 +352,7 @@ void add_main_no_date(void)
 		break;
 
 	case ADD_BUDG:
-		nc_create_new_budget();
+		nc_create_new_budget_intret();
 		break;
 	
 	default:
