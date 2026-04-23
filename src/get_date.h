@@ -19,6 +19,9 @@
 #ifndef GET_DATE_H
 #define GET_DATE_H
 
+/* Returns current day [1-31] */
+int get_current_day(void);
+
 /* Returns the current month [0-11] */
 int get_current_month(void);
 

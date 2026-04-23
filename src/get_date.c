@@ -18,6 +18,14 @@
 
 #include <time.h>
 
+int get_current_day(void)
+{
+	time_t timer;
+	time(&timer);
+	struct tm *tm = localtime(&timer);
+	return tm->tm_mday;
+}
+
 int get_current_month(void)
 {
 	time_t timer;
