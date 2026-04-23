@@ -193,7 +193,8 @@ int show_help_subwindow(void)
 int nc_main_menu(WINDOW *wptr)
 {
 	struct ReadRet rr_, *rret = &rr_;
-	struct Datevals *dv;
+	struct full_date *date;
+	int mo, yr;
 
 	enum add_sel {
 		ADD_TRNS = 0,
@@ -229,10 +230,13 @@ int nc_main_menu(WINDOW *wptr)
 					free(ret);
 					break;
 				case ADD_BUDG:
-					dv = nc_create_new_budget();
-					if (dv != NULL) {
-						nc_read_setup(dv->year, dv->month, SORT_CATG, rret);
-						free(dv);
+					date = nc_create_new_budget();
+					if (date != NULL) {
+						mo = date->month;
+						yr = date->year;
+						free(date);
+						date = NULL;
+						nc_read_setup(yr, mo, SORT_CATG, rret);
 					}
 					break;
 				default:

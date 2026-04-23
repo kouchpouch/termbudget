@@ -51,6 +51,7 @@ struct date_input_vars {
 	int opt_y;
 	int opt_len;
 	int x_padding;
+	bool require_day;
 };
 
 enum _fd_fields {
@@ -317,8 +318,13 @@ static void scroll_prev_field
 		break;
 
 	case F_YEAR:
-		highlight(wptr, s->date_y, s->day_x, s->day_field_len); 
-		s->field_idx--;
+		if (s->require_day) {
+			highlight(wptr, s->date_y, s->day_x, s->day_field_len); 
+			s->field_idx--;
+		} else {
+			highlight(wptr, s->date_y, s->month_x, s->month_field_len); 
+			s->field_idx -= 2;
+		}
 		break;
 
 	case F_CANCEL:
@@ -344,8 +350,13 @@ static void scroll_next_field
 	switch (s->field_idx) {
 
 	case F_MONTH:
-		highlight(wptr, s->date_y, s->day_x, s->day_field_len);
-		s->field_idx++;
+		if (s->require_day) {
+			highlight(wptr, s->date_y, s->day_x, s->day_field_len);
+			s->field_idx++;
+		} else {
+			highlight(wptr, s->date_y, s->year_x, s->year_field_len);
+			s->field_idx += 2;
+		}
 		break;
 
 	case F_DAY: 
@@ -373,7 +384,7 @@ static void scroll_next_field
 	}
 }
 
-static void init_fd_input_scroll(WINDOW *wptr, struct date_input_vars *s)
+static void init_input_vars(WINDOW *wptr, struct date_input_vars *s)
 {
 	/* Relative to the center of the window, print this many spaces to the 
 	 * left of center.
@@ -419,7 +430,11 @@ static void print_data_to_window
 	s->date_y++; /* New Line */
 
 	/* Print zero padded */
-	mvwprintw(wptr, s->date_y, center_x, "%02d / %02d / %04d", m, d, y);	
+	if (s->require_day) {
+		mvwprintw(wptr, s->date_y, center_x, "%02d / %02d / %04d", m, d, y);	
+	} else {
+		mvwprintw(wptr, s->date_y, center_x, "%02d / XX / %04d", m, y);	
+	}
 
 	/* Highlight first field (month) */
 	mvwchgat(wptr, s->date_y, s->month_x, s->month_field_len, A_REVERSE, 0, NULL);
@@ -450,17 +465,18 @@ static void print_invalid_date_msg(WINDOW *wptr)
 
 /* Displays an interactive menu for full date input (MONTH/DAY/YEAR), includes
  * date validation. Fills "new_date" struct with the old + any modified date
- * values.
+ * values. Will ignore and skip over "day" if "require_day" is false.
  * Returns -1 on quit, 0 on success */
-int nc_input_full_date
-(int old_mo, int old_day, int old_yr, struct full_date *new_date)
+static int input_full_date
+(int old_mo, int old_day, int old_yr, struct full_date *new_date, bool require_day)
 {
 	int c = 0;
 	bool is_valid = false;
 	WINDOW *wptr = create_input_subwindow_force_rows(DATE_SUBWINDOW_ROWS);
 
 	struct date_input_vars scrl = { 0 };
-	init_fd_input_scroll(wptr, &scrl);
+	scrl.require_day = require_day;
+	init_input_vars(wptr, &scrl);
 
 	/* Set the new date struct to the values of the old dates, each field
 	 * will be edited interactively. */
@@ -527,6 +543,20 @@ int nc_input_full_date
 quit:
 	nc_exit_window(wptr);
 	return 0;
+}
+
+/* Wrapper */
+int nc_input_full_date
+(int old_mo, int old_day, int old_yr, struct full_date *new_date)
+{
+	return input_full_date(old_mo, old_day, old_yr, new_date, true);
+}
+
+/* Wrapper */
+int nc_input_month_and_year
+(int old_mo, int old_yr, struct full_date *new_date)
+{
+	return input_full_date(old_mo, 1, old_yr, new_date, false);
 }
 
 static void nc_user_input(int n, WINDOW *wptr, struct UserInput *pui)

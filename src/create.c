@@ -21,6 +21,7 @@
 #include <ncurses.h>
 
 #include "create.h"
+#include "get_date.h"
 #include "main.h"
 #include "categories.h"
 #include "edit_categories.h"
@@ -246,14 +247,30 @@ static struct MenuParams *init_add_menu(void)
 	return mp;
 }
 
-struct Datevals *nc_create_new_budget(void)
+struct full_date *nc_create_new_budget(void)
 {
+	/*
 	struct Datevals *dv = malloc(sizeof(struct Datevals));
 	if (dv == NULL) {
 		mem_alloc_fail();
 	}
-	char *catg;
+	*/
 
+	char *catg;
+	struct full_date *date = malloc(sizeof(*date));
+	if (date == NULL) {
+		mem_alloc_fail();
+	}
+
+	date->month = get_current_month();
+	date->year = get_current_year();
+
+	if (nc_input_month_and_year(date->month, date->year, date) != 0) {
+		free(date);
+		return NULL;
+	}
+
+	/*
 	dv->year = nc_input_year(0);
 	if (dv->year < 0) {
 		free(dv);
@@ -265,20 +282,23 @@ struct Datevals *nc_create_new_budget(void)
 		free(dv);
 		return NULL;
 	}
+	*/
 
-	if (month_or_year_exists(dv->month, dv->year)) {
+	if (month_or_year_exists(date->month, date->year)) {
+		free(date);
 		nc_message("A budget already exists for that month");
-		return dv;
-	}
-
-	catg = create_budget_record(dv->year, dv->month);
-	if (catg == NULL) {
-		free(dv);
 		return NULL;
 	}
 
+	catg = create_budget_record(date->year, date->month);
+	if (catg == NULL) {
+		free(date);
+		return NULL;
+	}
+	
 	free(catg);
-	return dv;
+
+	return date;
 }
 
 void add_main_with_date(struct Datevals *dv)
@@ -315,7 +335,6 @@ void add_main_no_date(void)
 		ADD_BUDG
 	} add_sel;
 	char *ret;
-	struct Datevals *dv;
 	struct MenuParams *mp = init_add_main_menu();
 	add_sel = nc_input_menu(mp);
 	free(mp);
@@ -331,8 +350,7 @@ void add_main_no_date(void)
 		break;
 
 	case ADD_BUDG:
-		dv = nc_create_new_budget();
-		free(dv);
+		nc_create_new_budget();
 		break;
 	
 	default:

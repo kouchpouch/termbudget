@@ -25,6 +25,7 @@
 #include "main.h"
 #include "vector.h"
 #include "parser.h"
+#include "tui_input.h"
 
 enum AddMainMenu {
 	ADD_TRANSACTION = 0,
@@ -40,7 +41,7 @@ void insert_transaction_record(int insert_line, _transact_tokens_t *ld);
  * on the read screen these will be auto-filled. */
 void create_transaction(int year, int month);
 void create_transaction_default(void);
-struct Datevals *nc_create_new_budget(void);
+struct full_date *nc_create_new_budget(void);
 int get_add_selection(void);
 void add_main_with_date(struct Datevals *dv);
 void add_main_no_date(void);
