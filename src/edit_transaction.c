@@ -143,7 +143,7 @@ static int nc_edit_csv_record
 	char replace_str[LINE_BUFFER];
 	FILE *fptr;
 	FILE *tmpfptr;
-	_full_date_t fd;
+	struct full_date fd;
 
 	switch (field) {
 	case EDIT_RCRD_DATE:

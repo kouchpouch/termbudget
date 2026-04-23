@@ -35,13 +35,7 @@
 
 #define DATE_SUBWINDOW_ROWS 9
 
-struct __prev_date_exist {
-	bool day_exists;
-	bool month_exists;
-	bool year_exists;
-};
-
-typedef struct __fd_input_scroll_t {
+struct date_input_vars {
 	int print_x;
 	int field_idx;
 	int incr_x;
@@ -57,9 +51,9 @@ typedef struct __fd_input_scroll_t {
 	int opt_y;
 	int opt_len;
 	int x_padding;
-} _fd_input_scroll_t;
+};
 
-enum _input_full_date_fields {
+enum _fd_fields {
 	F_MONTH = 0,
 	F_DAY,
 	F_YEAR,
@@ -140,7 +134,7 @@ static bool validate_input_len(size_t buffer, char *input, WINDOW *wptr)
 }
 
 static int get_edit_field_x_coord
-(WINDOW *wptr, _fd_input_scroll_t *s)
+(WINDOW *wptr, struct date_input_vars *s)
 {
 	fd_fields = s->field_idx;
 	switch (fd_fields) {
@@ -184,7 +178,7 @@ static bool char_is_valid(char c) {
 }
 
 static void modify_date_vals 
-(int val, _full_date_t *d, int field)
+(int val, struct full_date *d, int field)
 {
 	switch (field) {
 
@@ -202,7 +196,7 @@ static void modify_date_vals
 	}
 }
 
-static void rehighlight_date_field(WINDOW *wptr, _fd_input_scroll_t *s)
+static void rehighlight_date_field(WINDOW *wptr, struct date_input_vars *s)
 {
 	int x;
 	int n;
@@ -230,7 +224,7 @@ static void rehighlight_date_field(WINDOW *wptr, _fd_input_scroll_t *s)
  * to the screen, returns the value entered if it passes verification, 0
  * on quit, -1 on failure. */
 static int date_field_input_loop
-(WINDOW *wptr, _fd_input_scroll_t *s, _full_date_t *date)
+(WINDOW *wptr, struct date_input_vars *s, struct full_date *date)
 {
 	int n;
 	s->field_idx == F_YEAR ? (n = s->year_field_len) : (n = s->month_field_len);
@@ -306,7 +300,7 @@ static int date_field_input_loop
 }
 
 static void scroll_prev_field
-(WINDOW *wptr, _fd_input_scroll_t *s)
+(WINDOW *wptr, struct date_input_vars *s)
 {
 	unhighlight_boxed(wptr, s->date_y);
 	unhighlight_boxed(wptr, s->opt_y);
@@ -343,7 +337,7 @@ static void scroll_prev_field
 }
 
 static void scroll_next_field
-(WINDOW *wptr, _fd_input_scroll_t *s)
+(WINDOW *wptr, struct date_input_vars *s)
 {
 	unhighlight_boxed(wptr, s->date_y);
 	unhighlight_boxed(wptr, s->opt_y);
@@ -379,21 +373,7 @@ static void scroll_next_field
 	}
 }
 
-static void get_prev_date_existence
-(struct __prev_date_exist *prev, int d, int m, int y)
-{
-	if (d > 0) {
-		prev->day_exists = true;
-	}
-	if (m  > 0) {
-		prev->month_exists = true;
-	}
-	if (y > 0) {
-		prev->year_exists = true;
-	}
-}
-
-static void init_fd_input_scroll(WINDOW *wptr, _fd_input_scroll_t *s)
+static void init_fd_input_scroll(WINDOW *wptr, struct date_input_vars *s)
 {
 	/* Relative to the center of the window, print this many spaces to the 
 	 * left of center.
@@ -423,7 +403,7 @@ static void init_fd_input_scroll(WINDOW *wptr, _fd_input_scroll_t *s)
 }
 
 static void print_data_to_window 
-(WINDOW *wptr, _fd_input_scroll_t *s, int m, int d, int y)
+(WINDOW *wptr, struct date_input_vars *s, int m, int d, int y)
 {
 	int center_x = (getmaxx(wptr) / 2) - s->print_x;
 	char *cancel = "<Cancel>";
@@ -473,13 +453,13 @@ static void print_invalid_date_msg(WINDOW *wptr)
  * values.
  * Returns -1 on quit, 0 on success */
 int nc_input_full_date
-(int old_mo, int old_day, int old_yr, _full_date_t *new_date)
+(int old_mo, int old_day, int old_yr, struct full_date *new_date)
 {
 	int c = 0;
 	bool is_valid = false;
 	WINDOW *wptr = create_input_subwindow_force_rows(DATE_SUBWINDOW_ROWS);
 
-	_fd_input_scroll_t scrl = { 0 };
+	struct date_input_vars scrl = { 0 };
 	init_fd_input_scroll(wptr, &scrl);
 
 	/* Set the new date struct to the values of the old dates, each field
@@ -487,9 +467,6 @@ int nc_input_full_date
 	new_date->day = old_day;
 	new_date->month = old_mo;
 	new_date->year = old_yr;
-
-	struct __prev_date_exist prev_date_exist = { false };
-	get_prev_date_existence(&prev_date_exist, old_day, old_mo, old_yr); 
 
 	print_data_to_window(wptr, &scrl, old_mo, old_day, old_yr);
 

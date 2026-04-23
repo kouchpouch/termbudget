@@ -144,7 +144,7 @@ void create_transaction(int year, int month)
 {
 	_transact_tokens_t userlinedata_, *uld = &userlinedata_;
 	unsigned int result_line;
-	_full_date_t fd;
+	struct full_date fd;
 
 	nc_print_input_footer(stdscr);
 

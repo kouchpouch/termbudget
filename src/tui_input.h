@@ -23,18 +23,18 @@
 
 #include "parser.h"
 
-typedef struct __full_date_t {
+struct full_date {
 	int day;
 	int month;
 	int year;
-} _full_date_t;
+};
 
 struct UserInput {
 	char *str;
 	int flag;
 };
 
-int nc_input_full_date(int old_mo, int old_day, int old_yr, _full_date_t *new_date);
+int nc_input_full_date(int old_mo, int old_day, int old_yr, struct full_date *new_date);
 
 bool nc_confirm_input_loop(WINDOW *wptr);
 
