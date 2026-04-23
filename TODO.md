@@ -199,3 +199,4 @@
     - 24 [X] Out of bounds access not checked in refresh_budget_loop
     - 25 [X] Incorrect numbers shown for records displayed when sorted by date
                 and pressing the page up/page dn key.
+    - 26 [ ] Cannot change case of letters when renaming.
