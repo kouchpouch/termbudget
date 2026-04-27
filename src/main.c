@@ -332,7 +332,7 @@ int main(int argc, char **argv)
 					break;
 
 				case ('-'):
-					if (strcmp(argv[1], "--convert") == 0) {
+					if (strncmp(argv[1], "--convert", LINE_BUFFER) == 0) {
 						count = convert_chase_csv(argv[i + 1]);
 						printf("Converted %ld records", count);
 						getc(stdin);
