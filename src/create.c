@@ -253,13 +253,14 @@ static struct MenuParams *init_add_menu(void)
  * free the return value. */
 struct full_date *nc_create_new_budget(void)
 {
-	char *catg;
+
+//	char *catg;
 	struct full_date *date = malloc(sizeof(*date));
 	if (date == NULL) {
 		mem_alloc_fail();
 	}
 
-	date->month = get_current_month();
+	date->month = get_current_month() + 1;
 	date->year = get_current_year();
 
 	if (nc_input_month_and_year(date->month, date->year, date) != 0) {
