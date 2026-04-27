@@ -50,7 +50,7 @@ typedef struct __replace_records_t {
 bool duplicate_category_exists(_category_vec_t *psc, char *catg)
 {
 	for (size_t i = 0; i < psc->size; i++) {
-		if (strcasecmp(psc->categories[i], catg) == 0) {
+		if (strncmp(psc->categories[i], catg, MAX_LEN_CATG) == 0) {
 			return true;
 		}
 	}
