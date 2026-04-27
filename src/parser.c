@@ -618,7 +618,7 @@ _vector_t *get_records_by_any
 		if (category == NULL) {
 			cat = true;
 		} else if (category != NULL) {
-			if (strcmp(category, ld->category) == 0) {
+			if (strncmp(category, ld->category, MAX_LEN_CATG) == 0) {
 				cat = true;
 			}
 		}
@@ -626,7 +626,7 @@ _vector_t *get_records_by_any
 		if (description == NULL) {
 			desc = true;
 		} else if (description != NULL) {
-			if (strcmp(description, ld->desc) == 0) {
+			if (strncmp(description, ld->desc, MAX_LEN_DESC) == 0) {
 				desc = true;
 			}
 		}
