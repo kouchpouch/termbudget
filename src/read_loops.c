@@ -200,7 +200,7 @@ static void print_category_hr
 }
 
 /* Returns the total number of nodes in 'nodes' */
-static int get_total_nodes(_catg_nodes_t **nodes)
+static int get_total_nodes(struct catg_nodes **nodes)
 {
 	int n = 1;
 	for (int i = 0; nodes[i]->next != NULL; i++) {
@@ -210,7 +210,7 @@ static int get_total_nodes(_catg_nodes_t **nodes)
 }
 
 static void print_init_budget_loop
-(WINDOW *wptr, struct ScrollCursor *sc, _catg_nodes_t **nodes, 
+(WINDOW *wptr, struct ScrollCursor *sc, struct catg_nodes **nodes, 
  struct ColWidth *cw, FILE *fptr)
 {
 	int max_y = getmaxy(wptr);
@@ -260,10 +260,10 @@ static void print_init_budget_loop
  * Returns the value of the total number of rows to display in 
  * nc_read_budget_loop() to handle scrolling.
  *
- * The return value is calculated by adding up add _catg_nodes_ts and their
+ * The return value is calculated by adding up add struct catg_nodess and their
  * data member's size.
  */
-static int get_total_displayed_rows(_catg_nodes_t **nodes)
+static int get_total_displayed_rows(struct catg_nodes **nodes)
 {
 	int rows = 0;
 	int i = 0;
@@ -281,7 +281,7 @@ static int get_total_displayed_rows(_catg_nodes_t **nodes)
 	return rows;
 }
 
-static void init_scroll_cursor(struct ScrollCursor *sc, _catg_nodes_t **nodes) 
+static void init_scroll_cursor(struct ScrollCursor *sc, struct catg_nodes **nodes) 
 {
 	sc->total_rows = get_total_displayed_rows(nodes);
 	sc->displayed = 0;
@@ -477,7 +477,7 @@ static int nc_scroll_next_read_loop
 /* Returns 1 if the text was scrolled up, 0 if a normal scroll occured, -1
  * if no scroll occured. */
 static int nc_scroll_prev_category
-(WINDOW *wptr, _catg_nodes_t **nodes, struct ScrollCursor *sc, 
+(WINDOW *wptr, struct catg_nodes **nodes, struct ScrollCursor *sc, 
  struct ColWidth *cw, FILE *rfptr, FILE *bfptr)
 {
 	int retval = -1;
@@ -523,7 +523,7 @@ static int nc_scroll_prev_category
 /* Returns 1 if the text was scrolled down, 0 if a normal scroll occured, -1
  * if no scroll occured. */
 static int nc_scroll_next_category
-(WINDOW *wptr, _catg_nodes_t **nodes, struct ScrollCursor *sc, 
+(WINDOW *wptr, struct catg_nodes **nodes, struct ScrollCursor *sc, 
  struct ColWidth *cw, FILE *rfptr, FILE *bfptr)
 {
 	assert(nodes[sc->catg_node]->data->size <= INT_MAX);
@@ -601,7 +601,7 @@ static void refresh_on_detail_close_uniform
  * as many lines as is required to get the data back on the screen after a
  * subwindow closes. */
 static void refresh_budget_loop
-(WINDOW *data, _catg_nodes_t **nodes, struct ScrollCursor *sc,
+(WINDOW *data, struct catg_nodes **nodes, struct ScrollCursor *sc,
  struct ColWidth *cw, FILE *rfptr, FILE *bfptr, int subwin_y)
 {
 	int tmp_idx = sc->select_idx;
@@ -645,7 +645,7 @@ static void refresh_budget_loop
  */
 void nc_read_budget_loop
 (struct ReadWins *wins, FILE *rfptr, FILE *bfptr, struct SelRecord *sr,
- _vector_t *psc, _catg_nodes_t **nodes)
+ _vector_t *psc, struct catg_nodes **nodes)
 {
 	struct ColWidth cw_, *cw = &cw_;
 	struct ScrollCursor sc_, *sc = &sc_;
@@ -889,7 +889,7 @@ static void nc_print_initial_read_loop
  */
 void nc_read_loop
 (struct ReadWins *wins, FILE *fptr, struct SelRecord *sr, _vector_t *psc,
- _catg_nodes_t **nodes)
+ struct catg_nodes **nodes)
 {
 	struct ColWidth cw_, *cw = &cw_;
 	struct ScrollCursor sc_, *sc = &sc_;

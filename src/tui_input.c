@@ -985,7 +985,7 @@ static void draw_scroll_indicator(WINDOW *wptr)
 
 char *nc_select_category(int month, int year)
 {
-	_category_vec_t *pc = get_budget_catg_by_date(month, year);
+	struct catg_vec *pc = get_budget_catg_by_date(month, year);
 	WINDOW *wptr_parent = create_category_select_parent(pc->size);
 	WINDOW *wptr = create_category_select_subwindow(wptr_parent);
 	char *tmp;

@@ -24,12 +24,12 @@
 #include "main.h"
 #include "categories.h"
 
-bool duplicate_category_exists(_category_vec_t *psc, char *catg);
+bool duplicate_category_exists(struct catg_vec *psc, char *catg);
 /* Moves the category found at FPI nodes[i]->catg_fp to the top of its
  * siblings with the same date range. */
-void mv_category_to_top(_catg_nodes_t **nodes, size_t i);
+void mv_category_to_top(struct catg_nodes **nodes, size_t i);
 
 /* Allows the user to edit the category at file position b. */
-void nc_edit_category(long b, long nmembers, _catg_nodes_t **nodes);
+void nc_edit_category(long b, long nmembers, struct catg_nodes **nodes);
 
 #endif

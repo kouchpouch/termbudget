@@ -94,7 +94,7 @@ void calculate_balance(struct Balances *pb, _vector_t *pbo)
 	fclose(fptr);
 }
 
-void print_debug_node(WINDOW *wptr, _catg_nodes_t *node)
+void print_debug_node(WINDOW *wptr, struct catg_nodes *node)
 {
 	wprintw(wptr, "Data sz: %lu, Next: %p, Prev: %p, FPI: %lu\n", 
 		 node->data->size, 
@@ -103,7 +103,7 @@ void print_debug_node(WINDOW *wptr, _catg_nodes_t *node)
 		 node->catg_fp);
 }
 
-void debug_category_nodes(WINDOW *wptr, _catg_nodes_t **nodes)
+void debug_category_nodes(WINDOW *wptr, struct catg_nodes **nodes)
 {
 	size_t i = 0;
 	wmove(wptr, 0, 0);

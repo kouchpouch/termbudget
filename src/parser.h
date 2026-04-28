@@ -138,7 +138,7 @@ _vector_t *get_matching_line_nums(FILE *fptr, int month, int year);
  * For a given month and year, return an array of strings from the category
  * field of the RECORD_DIR csv file.
  */
-_category_vec_t *get_categories(int month, int year);
+struct catg_vec *get_categories(int month, int year);
 
 /* Uses get_records_by_any with all parameters except year as NULL
  * or -1, omitting the search for other fields */
@@ -169,7 +169,7 @@ _vector_t *get_records_by_any(int month, int day, int year, char *category,
 
 /* Returns number of categories and the string literal categories of given
  * month and year in BUDGET_DIR */
-_category_vec_t *get_budget_catg_by_date(int month, int year);
+struct catg_vec *get_budget_catg_by_date(int month, int year);
 
 /* Returns _vector_t containing byte offsets of each category that matches month,
  * year in BUDGET_DIR. */

@@ -179,7 +179,7 @@ static int print_body_graphs_and_values
 	return 4;
 }
 
-int init_sidebar_body(WINDOW *wptr, _catg_nodes_t **nodes, size_t i)
+int init_sidebar_body(WINDOW *wptr, struct catg_nodes **nodes, size_t i)
 {
 	wclear(wptr);
 	draw_body_border(wptr);

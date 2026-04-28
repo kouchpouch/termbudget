@@ -26,10 +26,10 @@
 
 void nc_read_loop
 (struct ReadWins *wins, FILE *fptr, struct SelRecord *sr,
- _vector_t *psc, _catg_nodes_t **nodes);
+ _vector_t *psc, struct catg_nodes **nodes);
 
 void nc_read_budget_loop
 (struct ReadWins *wins, FILE *rfptr, FILE *bfptr, struct SelRecord *sr,
- _vector_t *psc, _catg_nodes_t **nodes);
+ _vector_t *psc, struct catg_nodes **nodes);
 
 #endif

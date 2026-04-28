@@ -24,14 +24,14 @@
 #include "vector.h"
 
 /*
- * _catg_nodes_t is a doubly linked list which includes members
- * of _catg_nodes_t pointer next and prev, long catg_fp stores the byte offset
+ * struct catg_nodes is a doubly linked list which includes members
+ * of struct catg_nodes pointer next and prev, long catg_fp stores the byte offset
  * of the category in BUDGET_DIR, and a _vector_t containing all
  * records in RECORD_DIR that match the category field at catg_fp
  * in BUDGET_DIR.
 
          |----------|
-         |   Head   | // _catg_nodes_t **
+         |   Head   | // struct catg_nodes **
          |----------|
               |
               V
@@ -52,23 +52,21 @@ NULL <---|    prev    | <--- |    prev    | <--- |    prev    |
                       |----------| // node's category.
 */
 
-typedef struct __catg_nodes_t _catg_nodes_t;
-
-struct __catg_nodes_t { 
-	_catg_nodes_t *next;
-	_catg_nodes_t *prev;
+struct catg_nodes { 
+	struct catg_nodes *next;
+	struct catg_nodes *prev;
 	long catg_fp;
 	_vector_t *data;
 };
 
-typedef struct __category_vec_t {
+struct catg_vec {
 	size_t capacity;
 	size_t size;
 	char *categories[];
-} _category_vec_t;
+};
 
-void free_categories(_category_vec_t *pc);
-void free_category_nodes(_catg_nodes_t **nodes);
-_catg_nodes_t **create_category_nodes(int m, int y);
+void free_categories(struct catg_vec *pc);
+void free_category_nodes(struct catg_nodes **nodes);
+struct catg_nodes **create_category_nodes(int m, int y);
 
 #endif

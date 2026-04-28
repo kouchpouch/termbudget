@@ -47,7 +47,7 @@ typedef struct __replace_records_t {
 } _replace_records_t;
 
 /* Returns true if a duplicate is found, false if not */
-bool duplicate_category_exists(_category_vec_t *psc, char *catg)
+bool duplicate_category_exists(struct catg_vec *psc, char *catg)
 {
 	for (size_t i = 0; i < psc->size; i++) {
 		if (strncmp(psc->categories[i], catg, MAX_LEN_CATG) == 0) {
@@ -140,7 +140,7 @@ static bool nc_confirm_amount(double amt)
 	return false;
 }
 
-void mv_category_to_top(_catg_nodes_t **nodes, size_t i)
+void mv_category_to_top(struct catg_nodes **nodes, size_t i)
 {
 	if (i == 0) {
 		return;
@@ -182,7 +182,7 @@ static int select_catg_field(void)
 
 static int rename_category(_budget_tokens_t *bt)
 {
-	_category_vec_t *psc = get_budget_catg_by_date(bt->m, bt->y);
+	struct catg_vec *psc = get_budget_catg_by_date(bt->m, bt->y);
 	char *catg = nc_input_string("Renaming Category");
 	if (catg == NULL) {
 		return -1;
@@ -224,7 +224,7 @@ static void free_lda(_transact_tokens_t **lda, size_t sz)
 /* Replaces the category field of records contained in nodes[node_idx] with
  * catg. */
 static int replace_many_records_categories
-(_catg_nodes_t **nodes, size_t node_idx, char *catg)
+(struct catg_nodes **nodes, size_t node_idx, char *catg)
 {
 	_replace_records_t rr = {0};
 	FILE *fptr;
@@ -292,7 +292,7 @@ static int replace_many_records_categories
 	return rr.changed;
 }
 
-void nc_edit_category(long node_idx, long nmembers, _catg_nodes_t **nodes)
+void nc_edit_category(long node_idx, long nmembers, struct catg_nodes **nodes)
 {
 	long b = nodes[node_idx]->catg_fp;
 	double tmp = 0.0;
