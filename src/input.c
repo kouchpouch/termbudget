@@ -30,7 +30,7 @@
 char *user_input(int n)
 {
 	size_t buffersize = n + 1;
-	char *buffer = (char *)malloc(buffersize);
+	char *buffer = malloc(buffersize);
 
 	if (buffer == NULL) {
 		mem_alloc_fail();
