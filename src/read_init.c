@@ -874,11 +874,13 @@ err_select_date_fail:
 
 	case EDIT_CATG:
 		nc_edit_category(sr->index, sr->opt, nodes); 
-		free_category_nodes(nodes);
-		nodes = NULL;
-		if (n_records > 0) {
+		if (n_records > 0 || nodes != NULL) {
+			free_category_nodes(nodes);
+			nodes = NULL;
 			rret->flag = RRET_BYDATE;
 		} else {
+			free_category_nodes(nodes);
+			nodes = NULL;
 			rret->flag = RRET_DEFAULT;
 		}
 		break;

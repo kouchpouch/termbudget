@@ -372,9 +372,11 @@ int main(int argc, char **argv)
 		}
 	}
 
+/*
 #ifdef HAS_RESET_COLOR_PAIRS
 	reset_color_pairs();
 #endif
+*/
 
 	endwin();
 	return 0;
