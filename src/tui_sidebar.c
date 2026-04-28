@@ -220,7 +220,7 @@ int init_sidebar_body(WINDOW *wptr, struct catg_nodes **nodes, size_t i)
 	return n_displayed;
 }
 
-static int print_parent_header(WINDOW *wptr, _vector_t *psc, double leftover)
+static int print_parent_header(WINDOW *wptr, struct vec_t *psc, double leftover)
 {
 	int x = 1;
 	int y = 1;
@@ -259,7 +259,7 @@ void draw_sidebar_parent_border(WINDOW *wptr)
 	write_parent_title(wptr);
 }
 
-void init_sidebar_parent(WINDOW *wptr, _vector_t *psc, double leftover)
+void init_sidebar_parent(WINDOW *wptr, struct vec_t *psc, double leftover)
 {
 	draw_sidebar_parent_border(wptr);
 	print_parent_header(wptr, psc, leftover);

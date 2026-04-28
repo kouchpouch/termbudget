@@ -282,7 +282,7 @@ static int get_total_displayed_rows(struct catg_nodes **nodes)
 	return rows;
 }
 
-static void print_balances_text(WINDOW *wptr, _vector_t *psc)
+static void print_balances_text(WINDOW *wptr, struct vec_t *psc)
 {
 	struct Balances pb_, *pb = &pb_;
 	calculate_balance(pb, psc);
@@ -304,7 +304,7 @@ static void print_balances_text(WINDOW *wptr, _vector_t *psc)
 /* Draws all of the window borders, then the border text on top. Call this
  * function any time the borders/text need to be updated. */
 static void draw_read_window_borders_and_text
-(struct ReadWins *wins, _vector_t *psc)
+(struct ReadWins *wins, struct vec_t *psc)
 {
 	// Draw borders in order for correct intersecting lines
 	if (wins->sidebar_parent != NULL || wins->sidebar_body != NULL) {
@@ -415,7 +415,7 @@ static void nc_scroll_next
 /* Returns 1 if the text was scrolled down, 0 if a normal scroll occured */
 static int nc_scroll_prev_read_loop
 (WINDOW *wptr, struct scroll_vars *sc, struct ColWidth *cw, FILE *fptr, 
- _vector_t *psc)
+ struct vec_t *psc)
 {
 	int retval = 0;
 
@@ -443,7 +443,7 @@ static int nc_scroll_prev_read_loop
 /* Returns 1 if the text was scrolled up, 0 if a normal scroll occured */
 static int nc_scroll_next_read_loop
 (WINDOW *wptr, struct scroll_vars *sc, struct ColWidth *cw, FILE *fptr, 
- _vector_t *psc)
+ struct vec_t *psc)
 {
 	int retval = 0;
 
@@ -635,7 +635,7 @@ static void refresh_budget_loop
  */
 void nc_read_budget_loop
 (struct ReadWins *wins, FILE *rfptr, FILE *bfptr, struct SelRecord *sr,
- _vector_t *psc, struct catg_nodes **nodes)
+ struct vec_t *psc, struct catg_nodes **nodes)
 {
 	struct ColWidth cw_, *cw = &cw_;
 
@@ -839,7 +839,7 @@ void nc_read_budget_loop
 /* Print initial lines based on screen size for nc_read_loop */
 static void nc_print_initial_read_loop
 (WINDOW *wptr, struct scroll_vars *sc, struct ColWidth *cw, 
- FILE *fptr, _vector_t *psc)
+ FILE *fptr, struct vec_t *psc)
 {
 	char *line_str;
 	char linebuff[LINE_BUFFER];
@@ -871,7 +871,7 @@ static void nc_print_initial_read_loop
  * of psc->data. Sort occurs before this function in nc_read_setup.
  */
 void nc_read_loop
-(struct ReadWins *wins, FILE *fptr, struct SelRecord *sr, _vector_t *psc,
+(struct ReadWins *wins, FILE *fptr, struct SelRecord *sr, struct vec_t *psc,
  struct catg_nodes **nodes)
 {
 	struct ColWidth cw_, *cw = &cw_;

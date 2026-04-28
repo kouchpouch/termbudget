@@ -103,7 +103,7 @@ int calculate_overview_columns(WINDOW *wptr)
 
 /* Returns the number of spaces between each bar graph for the overview
  * option */
-static void nc_print_overview_graphs(WINDOW *wptr, _vector_t *months, int year)
+static void nc_print_overview_graphs(WINDOW *wptr, struct vec_t *months, int year)
 {
 	double ratios[12] = {0.0}; // Holds each month's income/expense ratio
 	double maxvals[12] = {0.0};
@@ -118,7 +118,7 @@ static void nc_print_overview_graphs(WINDOW *wptr, _vector_t *months, int year)
 
 	for (size_t i = 0; i < months->size && mo <= 12; i++, mo++) {
 		if (months->data[i] == mo) {
-			_vector_t *pbo = get_records_by_mo_yr(months->data[i], year);
+			struct vec_t *pbo = get_records_by_mo_yr(months->data[i], year);
 			calculate_balance(pb, pbo);
 			if (pb->income == 0) { // Prevent a div by zero
 				ratios[mo - 1] = NO_INCOME;
@@ -201,7 +201,7 @@ static void nc_print_overview_graphs(WINDOW *wptr, _vector_t *months, int year)
 	}
 }
 
-static void nc_print_overview_balances(WINDOW *wptr, _vector_t *months, int year)
+static void nc_print_overview_balances(WINDOW *wptr, struct vec_t *months, int year)
 {
 	int tmpx = 0;
 	int space = calculate_overview_columns(wptr);
@@ -213,7 +213,7 @@ static void nc_print_overview_balances(WINDOW *wptr, _vector_t *months, int year
 		tmpx = 0;
 
 		if (months->data[i] == mo) {
-			_vector_t *pbo = get_records_by_mo_yr(months->data[i], year);
+			struct vec_t *pbo = get_records_by_mo_yr(months->data[i], year);
 			calculate_balance(pb, pbo);
 			tmpx = intlen(pb->income) / 2;
 			wmove(wptr, y, cur - tmpx);
@@ -264,7 +264,7 @@ static void nc_print_overview_months(WINDOW *wptr)
 	}
 }
 
-static unsigned int nc_overview_loop(WINDOW *wptr, _vector_t *months, int year)
+static unsigned int nc_overview_loop(WINDOW *wptr, struct vec_t *months, int year)
 {
 	unsigned int flag = 0;
 	int c;
@@ -310,7 +310,7 @@ void nc_overview_setup(int year)
 	wrefresh(wptr_parent);
 	
 	FILE *fptr = open_record_csv("r");
-	_vector_t *months = get_months_with_data(fptr, year, 1);
+	struct vec_t *months = get_months_with_data(fptr, year, 1);
 	fclose(fptr);
 
 	unsigned int flag = nc_overview_loop(wptr_data, months, year);

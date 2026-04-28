@@ -26,7 +26,7 @@
 /*
  * struct catg_nodes is a doubly linked list which includes members
  * of struct catg_nodes pointer next and prev, long catg_fp stores the byte offset
- * of the category in BUDGET_DIR, and a _vector_t containing all
+ * of the category in BUDGET_DIR, and a struct vec_t containing all
  * records in RECORD_DIR that match the category field at catg_fp
  * in BUDGET_DIR.
 
@@ -56,7 +56,7 @@ struct catg_nodes {
 	struct catg_nodes *next;
 	struct catg_nodes *prev;
 	long catg_fp;
-	_vector_t *data;
+	struct vec_t *data;
 };
 
 struct catg_vec {

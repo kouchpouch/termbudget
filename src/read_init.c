@@ -71,7 +71,7 @@ typedef struct __date_scroll_t {
 	int tmp;
 } _date_scroll_t;
 
-static bool duplicate_data_exists(_vector_t *vec, long y)
+static bool duplicate_data_exists(struct vec_t *vec, long y)
 {
 	for (size_t i = 0; i < vec->size; i++) {
 		if (vec->data[i] == y) {
@@ -81,7 +81,7 @@ static bool duplicate_data_exists(_vector_t *vec, long y)
 	return false;
 }
 
-static void combine_dedup_vectors(_vector_t *vec1, _vector_t *vec2, _vector_t *result)
+static void combine_dedup_vectors(struct vec_t *vec1, struct vec_t *vec2, struct vec_t *result)
 {
 	size_t tmp1;
 	size_t tmp2;
@@ -129,11 +129,11 @@ static void combine_dedup_vectors(_vector_t *vec1, _vector_t *vec2, _vector_t *r
 	}
 }
 
-/* Returns a _vector_t of deduplicated and sorted data from record_years and 
+/* Returns a struct vec_t of deduplicated and sorted data from record_years and 
  * budget_years */
-static _vector_t *consolidate_years(_vector_t *vec1, _vector_t *vec2)
+static struct vec_t *consolidate_years(struct vec_t *vec1, struct vec_t *vec2)
 {
-	_vector_t *result = malloc(sizeof(*result) 
+	struct vec_t *result = malloc(sizeof(*result) 
 					     + (sizeof(long) * vec1->size) 
 					     + (sizeof(long) * vec2->size));
 
@@ -154,16 +154,16 @@ static _vector_t *consolidate_years(_vector_t *vec1, _vector_t *vec2)
 }
 
 /* Retrieves years with data from RECORD_DIR and BUDGET_DIR CSVs, combines
- * and deduplicates the data, and returns a malloc'd _vector_t containing an array
+ * and deduplicates the data, and returns a malloc'd struct vec_t containing an array
  * of years that can be selected for viewing. */
-static _vector_t *get_all_years(void)
+static struct vec_t *get_all_years(void)
 {
 	FILE *rfptr = open_record_csv("r");
 	FILE *bfptr = open_budget_csv("r");
 
-	_vector_t *pr = get_years_with_data(rfptr, 2);
-	_vector_t *pb = get_years_with_data(bfptr, 1);
-	_vector_t *retval;
+	struct vec_t *pr = get_years_with_data(rfptr, 2);
+	struct vec_t *pb = get_years_with_data(bfptr, 1);
+	struct vec_t *retval;
 
 	if (pr == NULL && pb != NULL) {
 		fclose(rfptr);
@@ -192,9 +192,9 @@ static _vector_t *get_all_years(void)
 	return retval;
 }
 
-static _vector_t *consolidate_months(_vector_t *vec1, _vector_t *vec2)
+static struct vec_t *consolidate_months(struct vec_t *vec1, struct vec_t *vec2)
 {
-	_vector_t *result = malloc(sizeof(*result) + (sizeof(long) * MONTHS_IN_YEAR));
+	struct vec_t *result = malloc(sizeof(*result) + (sizeof(long) * MONTHS_IN_YEAR));
 	if (result == NULL) {
 		free(vec1);
 		free(vec2);
@@ -212,16 +212,16 @@ static _vector_t *consolidate_months(_vector_t *vec1, _vector_t *vec2)
 }
 
 /* Retrieves months with data from RECORD_DIR and BUDGET_DIR CSVs, combines
- * and deduplicates the data, and returns a malloc'd _vector_t containing an array
+ * and deduplicates the data, and returns a malloc'd struct vec_t containing an array
  * of months that can be selected for viewing. */
-static _vector_t *get_all_months(int year)
+static struct vec_t *get_all_months(int year)
 {
 	FILE *rfptr = open_record_csv("r");
 	FILE *bfptr = open_budget_csv("r");
 
-	_vector_t *pr = get_months_with_data(rfptr, year, 1);
-	_vector_t *pb = get_months_with_data(bfptr, year, 0);
-	_vector_t *retval;
+	struct vec_t *pr = get_months_with_data(rfptr, year, 1);
+	struct vec_t *pb = get_months_with_data(bfptr, year, 0);
+	struct vec_t *retval;
 
 	fclose(rfptr);
 	fclose(bfptr);
@@ -238,7 +238,7 @@ static _vector_t *get_all_months(int year)
 
 /* Iterates through 'months' vector's data member and returns the index of
  * the current month */
-static int get_current_mo_idx(_vector_t *months)
+static int get_current_mo_idx(struct vec_t *months)
 {
 	int mo = get_current_month();
 
@@ -265,7 +265,7 @@ static void scroll_month
 /* On a non-select, the return value is the inverted menukeys value */
 static int select_month(WINDOW *wptr, int year)
 {
-	_vector_t *months_data = get_all_months(year);
+	struct vec_t *months_data = get_all_months(year);
 	_date_scroll_t scroll = { 0 };
 	int monlen = strlen(abbr_months[0]);
 	int c = 0;
@@ -367,7 +367,7 @@ static int select_year(WINDOW *wptr)
 {
 	keypad(wptr, true);	
 
-	_vector_t *years = get_all_years();
+	struct vec_t *years = get_all_years();
 	if (years == NULL) {
 		return -(NO_RCRD);
 	}
@@ -543,9 +543,9 @@ static void debug_fields(void)
  * just moving memory around for the sake of portability and other sorting
  * selections.
  */
-static _vector_t *sort_by_date(FILE *fptr, _vector_t *pidx, _vector_t *plines)
+static struct vec_t *sort_by_date(FILE *fptr, struct vec_t *pidx, struct vec_t *plines)
 {
-	_vector_t *psbd = malloc(sizeof(*psbd) + (sizeof(long) * plines->size));
+	struct vec_t *psbd = malloc(sizeof(*psbd) + (sizeof(long) * plines->size));
 	if (psbd == NULL) {
 		mem_alloc_fail();
 	}
@@ -564,10 +564,10 @@ static _vector_t *sort_by_date(FILE *fptr, _vector_t *pidx, _vector_t *plines)
 
 /* Returns an array of integers representing the byte offsets of records 
  * sorted by category */
-static _vector_t *sort_by_category
-(FILE *fptr, _vector_t *pidx, _vector_t *plines, int yr, int mo)
+static struct vec_t *sort_by_category
+(FILE *fptr, struct vec_t *pidx, struct vec_t *plines, int yr, int mo)
 {
-	_vector_t *prsc = malloc(sizeof(*prsc) + (sizeof(long) * REALLOC_INCR));
+	struct vec_t *prsc = malloc(sizeof(*prsc) + (sizeof(long) * REALLOC_INCR));
 	if (prsc == NULL) {
 		free(pidx);
 		free(plines);
@@ -593,7 +593,7 @@ static _vector_t *sort_by_category
 			 * to mark the spaces between categories */
 			if (prsc->size + 1 >= prsc->capacity) {
 				prsc->capacity += REALLOC_INCR;
-				_vector_t *tmp = realloc(prsc, sizeof(*prsc) 
+				struct vec_t *tmp = realloc(prsc, sizeof(*prsc) 
 					    		   + (prsc->capacity * sizeof(char *)));
 				if (tmp == NULL) {
 					free(prsc);
@@ -738,9 +738,9 @@ void nc_read_setup
 
 	struct catg_nodes **nodes;
 	FILE *fptr = open_record_csv("r");
-	_vector_t *pidx = index_csv(fptr);
-	_vector_t *plines;
-	_vector_t *psc;
+	struct vec_t *pidx = index_csv(fptr);
+	struct vec_t *plines;
+	struct vec_t *psc;
 	size_t n_records;
 	bool sidebar_exists;
 	/* To hold the return value of wgetch()/getch() */

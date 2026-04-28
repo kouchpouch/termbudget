@@ -92,7 +92,7 @@ static void add_transaction(void)
 {
 	_transact_tokens_t userlinedata_, *uld = &userlinedata_;
 	FILE *fptr = open_record_csv("r");
-	_vector_t *pidx = index_csv(fptr);
+	struct vec_t *pidx = index_csv(fptr);
 	fclose(fptr);
 
 	uld->year = input_year();
@@ -248,7 +248,7 @@ static void cli_read_csv(void)
 
 	_transact_tokens_t linedata_, *ld = &linedata_;
 
-	_vector_t *years = get_years_with_data(fptr, 2);
+	struct vec_t *years = get_years_with_data(fptr, 2);
 	rewind(fptr);
 
 	while (year_record_exists == false) {
@@ -269,7 +269,7 @@ static void cli_read_csv(void)
 	years = NULL;
 	rewind(fptr);
 
-	_vector_t *months = get_months_with_data(fptr, useryear, 1);
+	struct vec_t *months = get_months_with_data(fptr, useryear, 1);
 
 	while (month_record_exists == false) {
 		usermonth = input_month();
@@ -334,7 +334,7 @@ static void cli_edit_transaction(void)
 
 	cli_read_csv();
 	
-	_vector_t *pidx = index_csv(fptr);
+	struct vec_t *pidx = index_csv(fptr);
 
 	assert(pidx->size < INT_MAX);
 
