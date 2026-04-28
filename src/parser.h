@@ -34,16 +34,16 @@ enum transtypes {
 	TT_INCOME = 1
 };
 
-typedef struct __budget_header_t {
+struct budget_header {
 	int month;
 	int year;
 	int catg;
 	int transtype;
 	int value;
 	int n_fields;
-} _budget_header_t;
+};
 
-typedef struct __record_header_t {
+struct record_header {
 	int month;
 	int day;
 	int year;
@@ -52,7 +52,7 @@ typedef struct __record_header_t {
 	int transtype;
 	int value;
 	int n_fields;
-} _record_header_t;
+};
 
 typedef struct __budget_tokens_t {
 	int m;
@@ -88,12 +88,12 @@ void seek_n_fields(char **line, int n);
 /* Returns struct initialized with the values of the field number which
  * that member starts at, the first field is 0. If a field was not found,
  * the member is set to -1 */
-_record_header_t *parse_record_header(FILE *fptr);
+struct record_header *parse_record_header(FILE *fptr);
 
 /* Returns struct initialized with the values of the field number which
  * that member starts at, the first field is 0. If a field was not found,
  * the member is set to -1 */
-_budget_header_t *parse_budget_header(FILE *fptr);
+struct budget_header *parse_budget_header(FILE *fptr);
 
 /* Reads the header of the file until a newline is found */
 int seek_beyond_header(FILE *fptr);

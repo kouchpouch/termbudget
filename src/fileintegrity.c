@@ -33,7 +33,7 @@
 bool validate_record_header(void)
 {
 	FILE *fptr = open_record_csv("r");
-	_record_header_t *rh = parse_record_header(fptr);
+	struct record_header *rh = parse_record_header(fptr);
 	fclose(fptr);
 
 	if (rh->n_fields < 0) {
@@ -56,7 +56,7 @@ bool validate_record_header(void)
 bool validate_budget_header(void)
 {
 	FILE *fptr = open_budget_csv("r");
-	_budget_header_t *bh = parse_budget_header(fptr);
+	struct budget_header *bh = parse_budget_header(fptr);
 	fclose(fptr);
 
 	if (bh->n_fields < 0) {

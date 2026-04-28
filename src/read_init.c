@@ -508,9 +508,9 @@ static void get_dates(struct SelRecord *sr, struct Datevals *dates)
 static void debug_fields(void)
 {
 	FILE *bfptr = open_budget_csv("r");
-	_budget_header_t *bh = parse_budget_header(bfptr);
+	struct budget_header *bh = parse_budget_header(bfptr);
 	FILE *fptr = open_record_csv("r");
-	_record_header_t *rh = parse_record_header(fptr);
+	struct record_header *rh = parse_record_header(fptr);
 
 	move(0,0);
 

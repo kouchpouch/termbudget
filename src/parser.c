@@ -79,7 +79,7 @@ void seek_n_fields(char **line, int n)
 	}
 }
 
-static void init_record_header_struct(_record_header_t *rh)
+static void init_record_header_struct(struct record_header *rh)
 {
 	rh->month = -1;
 	rh->day = -1;
@@ -91,9 +91,9 @@ static void init_record_header_struct(_record_header_t *rh)
 	rh->n_fields = -1;
 }
 
-_record_header_t *parse_record_header(FILE *fptr)
+struct record_header *parse_record_header(FILE *fptr)
 {
-	_record_header_t *rh = malloc(sizeof(*rh));
+	struct record_header *rh = malloc(sizeof(*rh));
 	init_record_header_struct(rh);
 	if (rh == NULL) {
 		mem_alloc_fail();
@@ -151,7 +151,7 @@ end_of_str:
 	return rh;
 }
 
-static void init_budget_header_struct(_budget_header_t *bh)
+static void init_budget_header_struct(struct budget_header *bh)
 {
 	bh->month = -1;
 	bh->year = -1;
@@ -161,9 +161,9 @@ static void init_budget_header_struct(_budget_header_t *bh)
 	bh->n_fields = -1;
 }
 
-_budget_header_t *parse_budget_header(FILE *fptr)
+struct budget_header *parse_budget_header(FILE *fptr)
 {
-	_budget_header_t *bh = malloc(sizeof(*bh));
+	struct budget_header *bh = malloc(sizeof(*bh));
 	init_budget_header_struct(bh);
 	if (bh == NULL) {
 		mem_alloc_fail();
