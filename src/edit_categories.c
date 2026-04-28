@@ -39,12 +39,12 @@ enum fields {
 	DEL_CATG
 };
 
-typedef struct __replace_records_t {
+struct replace_records_vars {
 	size_t line;
 	size_t temp_line;
 	size_t temp_idx;
 	int changed;
-} _replace_records_t;
+};
 
 /* Returns true if a duplicate is found, false if not */
 bool duplicate_category_exists(struct catg_vec *psc, char *catg)
@@ -226,7 +226,7 @@ static void free_lda(_transact_tokens_t **lda, size_t sz)
 static int replace_many_records_categories
 (struct catg_nodes **nodes, size_t node_idx, char *catg)
 {
-	_replace_records_t rr = {0};
+	struct replace_records_vars rr = { 0 };
 	FILE *fptr;
 	FILE *tmpfptr;
 	char *str;

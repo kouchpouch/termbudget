@@ -24,12 +24,12 @@
 #include "flags.h"
 #include "parser.h"
 
-typedef struct __file_write_t {
+struct file_write_vars {
 	char *string;
 	int line;
 	bool replace;
 	bool delete;
-} _file_write_t;
+};
 
 static void print_lines_written_debug(int lines_written)
 {
@@ -113,7 +113,7 @@ static void print_invalid_opt_error_and_exit(void)
  * Returns number of lines written.
  */
 static void write_string_to_file
-(FILE *fptr, FILE* tmpfptr, _file_write_t *opts)
+(FILE *fptr, FILE* tmpfptr, struct file_write_vars *opts)
 {
 	char line_buffer[LINE_BUFFER];
 	char *line_str;
@@ -147,7 +147,7 @@ static void write_string_to_file
  */
 FILE *insert_into_file(FILE *fptr, char *insert_str, int insert_line)
 {
-	_file_write_t opts = {
+	struct file_write_vars opts = {
 		.string = insert_str,
 		.line = insert_line,
 		.replace = false,
@@ -166,7 +166,7 @@ FILE *insert_into_file(FILE *fptr, char *insert_str, int insert_line)
  */
 FILE *replace_in_file(FILE *fptr, char *replace_str, int replace_line)
 {
-	_file_write_t opts = {
+	struct file_write_vars opts = {
 		.string = replace_str,
 		.line = replace_line,
 		.replace = true,
@@ -185,7 +185,7 @@ FILE *replace_in_file(FILE *fptr, char *replace_str, int replace_line)
  */
 FILE *delete_in_file(FILE *fptr, int delete_line)
 {
-	_file_write_t opts = {
+	struct file_write_vars opts = {
 		.string = NULL,
 		.line = delete_line,
 		.replace = false,
