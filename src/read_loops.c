@@ -36,10 +36,11 @@
 #include "categories.h"
 #include "flags.h"
 
-struct ScrollCursor {
+/* Holds the variables used for scrolling and/or selecting transactions and/or 
+ * categories */
+struct scroll_vars {
 	/* Total size of the data that can be shown. */
 	int total_rows; 
-
 	/* Total number of records and/or categories displayed on the screen. */
 	int displayed; 
 	int select_idx;
@@ -49,12 +50,12 @@ struct ScrollCursor {
 	size_t sidebar_idx;
 };
 
-struct DispCursor {
+struct visible_range {
 	int first;
 	int last;
 };
 
-static void print_debug_line(WINDOW *wptr, struct ScrollCursor *sc)
+static void print_debug_line(WINDOW *wptr, struct scroll_vars *sc)
 {
 	mvwhline(wptr, getmaxy(wptr) - 1, 1, 0, getmaxx(wptr) - 2);
 	mvwprintw(wptr, getmaxy(wptr) - 1, getmaxx(wptr) - 55, "SELIDX: %d", sc->select_idx);
@@ -210,7 +211,7 @@ static int get_total_nodes(struct catg_nodes **nodes)
 }
 
 static void print_init_budget_loop
-(WINDOW *wptr, struct ScrollCursor *sc, struct catg_nodes **nodes, 
+(WINDOW *wptr, struct scroll_vars *sc, struct catg_nodes **nodes, 
  struct ColWidth *cw, FILE *fptr)
 {
 	int max_y = getmaxy(wptr);
@@ -281,24 +282,13 @@ static int get_total_displayed_rows(struct catg_nodes **nodes)
 	return rows;
 }
 
-static void init_scroll_cursor(struct ScrollCursor *sc, struct catg_nodes **nodes) 
-{
-	sc->total_rows = get_total_displayed_rows(nodes);
-	sc->displayed = 0;
-	sc->select_idx = 0; // Tracks selection for indexing
-	sc->cur_y = 0; // Tracks cursor position in window
-	sc->catg_node = 0; // Tracks which node the cursor is on
-	/* Tracks which member record the cursor is on, begins at -1 to mark that
-	 * the first cursor position is a node. */
-	sc->catg_data = -1;
-	sc->sidebar_idx = 0;
-}
-
 static void print_balances_text(WINDOW *wptr, _vector_t *psc)
 {
 	struct Balances pb_, *pb = &pb_;
 	calculate_balance(pb, psc);
-	int total_len = intlen(pb->income) + intlen(pb->expense) + strlen("Expenses: $.00 Income: $.00");
+	int total_len = intlen(pb->income) + intlen(pb->expense) + 
+						   strlen("Expenses: $.00 Income: $.00");
+
 	mvwprintw(wptr, 0, getmaxx(wptr) / 2 - total_len / 2, 
 		   	  "Income: $%.2f Expenses: $%.2f", pb->income, pb->expense);
 	wrefresh(wptr);
@@ -349,7 +339,7 @@ static int show_detail_subwindow(char *line)
 }
 
 static void refresh_displayed_counter
-(WINDOW *wptr, struct ScrollCursor *sc, struct DispCursor *dc)
+(WINDOW *wptr, struct scroll_vars *sc, struct visible_range *dc)
 {
 	mvwhline(wptr, getmaxy(wptr) - 1, BOX_OFFSET, 0, getmaxx(wptr) - (BOX_OFFSET + 1));
 	wrefresh(wptr);
@@ -424,7 +414,7 @@ static void nc_scroll_next
 
 /* Returns 1 if the text was scrolled down, 0 if a normal scroll occured */
 static int nc_scroll_prev_read_loop
-(WINDOW *wptr, struct ScrollCursor *sc, struct ColWidth *cw, FILE *fptr, 
+(WINDOW *wptr, struct scroll_vars *sc, struct ColWidth *cw, FILE *fptr, 
  _vector_t *psc)
 {
 	int retval = 0;
@@ -452,7 +442,7 @@ static int nc_scroll_prev_read_loop
 
 /* Returns 1 if the text was scrolled up, 0 if a normal scroll occured */
 static int nc_scroll_next_read_loop
-(WINDOW *wptr, struct ScrollCursor *sc, struct ColWidth *cw, FILE *fptr, 
+(WINDOW *wptr, struct scroll_vars *sc, struct ColWidth *cw, FILE *fptr, 
  _vector_t *psc)
 {
 	int retval = 0;
@@ -477,7 +467,7 @@ static int nc_scroll_next_read_loop
 /* Returns 1 if the text was scrolled up, 0 if a normal scroll occured, -1
  * if no scroll occured. */
 static int nc_scroll_prev_category
-(WINDOW *wptr, struct catg_nodes **nodes, struct ScrollCursor *sc, 
+(WINDOW *wptr, struct catg_nodes **nodes, struct scroll_vars *sc, 
  struct ColWidth *cw, FILE *rfptr, FILE *bfptr)
 {
 	int retval = -1;
@@ -523,7 +513,7 @@ static int nc_scroll_prev_category
 /* Returns 1 if the text was scrolled down, 0 if a normal scroll occured, -1
  * if no scroll occured. */
 static int nc_scroll_next_category
-(WINDOW *wptr, struct catg_nodes **nodes, struct ScrollCursor *sc, 
+(WINDOW *wptr, struct catg_nodes **nodes, struct scroll_vars *sc, 
  struct ColWidth *cw, FILE *rfptr, FILE *bfptr)
 {
 	assert(nodes[sc->catg_node]->data->size <= INT_MAX);
@@ -601,7 +591,7 @@ static void refresh_on_detail_close_uniform
  * as many lines as is required to get the data back on the screen after a
  * subwindow closes. */
 static void refresh_budget_loop
-(WINDOW *data, struct catg_nodes **nodes, struct ScrollCursor *sc,
+(WINDOW *data, struct catg_nodes **nodes, struct scroll_vars *sc,
  struct ColWidth *cw, FILE *rfptr, FILE *bfptr, int subwin_y)
 {
 	int tmp_idx = sc->select_idx;
@@ -648,8 +638,15 @@ void nc_read_budget_loop
  _vector_t *psc, struct catg_nodes **nodes)
 {
 	struct ColWidth cw_, *cw = &cw_;
-	struct ScrollCursor sc_, *sc = &sc_;
-	struct DispCursor dc_, *dc = &dc_;
+
+	/* Every other member implicitly set to 0 */
+	struct scroll_vars sc_ = {
+		.total_rows = get_total_displayed_rows(nodes),
+		.catg_data = -1
+	};
+
+	struct scroll_vars *sc = &sc_;
+	struct visible_range dc_, *dc = &dc_;
 	dc->first = 1;
 
 	char *line;
@@ -658,7 +655,6 @@ void nc_read_budget_loop
 	int subwin_y;
 	int scroll_ret;
 
-	init_scroll_cursor(sc, nodes);
 	calculate_columns(cw, getmaxx(wins->data) + BOX_OFFSET);
 
 	if (debug_flag) {
@@ -840,22 +836,9 @@ void nc_read_budget_loop
 	return;
 }
 
-static void init_scroll_cursor_no_category(struct ScrollCursor *sc)
-{
-	sc->total_rows = 0;
-	sc->displayed = 0;
-	sc->select_idx = 0; // Tracks selection for indexing
-	sc->cur_y = 0; // Tracks cursor position in window
-	sc->catg_node = 0; // Tracks which node the cursor is on
-	/* Tracks which member record the cursor is on, begins at -1 to mark that
-	 * the first cursor position is a node. */
-	sc->catg_data = -1;
-	sc->sidebar_idx = 0;
-}
-
 /* Print initial lines based on screen size for nc_read_loop */
 static void nc_print_initial_read_loop
-(WINDOW *wptr, struct ScrollCursor *sc, struct ColWidth *cw, 
+(WINDOW *wptr, struct scroll_vars *sc, struct ColWidth *cw, 
  FILE *fptr, _vector_t *psc)
 {
 	char *line_str;
@@ -892,14 +875,19 @@ void nc_read_loop
  struct catg_nodes **nodes)
 {
 	struct ColWidth cw_, *cw = &cw_;
-	struct ScrollCursor sc_, *sc = &sc_;
-	struct DispCursor dc_, *dc = &dc_;
+
+	/* Every other member implicitly set to 0 */
+	struct scroll_vars sc_ = {
+		.catg_data = -1
+	};
+	struct scroll_vars *sc = &sc_;
+
+	struct visible_range dc_, *dc = &dc_;
 	dc->first = 1;
 	char linebuff[LINE_BUFFER];
 	int c = 0;
 	int scroll_ret;
 
-	init_scroll_cursor_no_category(sc);
 	calculate_columns(cw, getmaxx(wins->data) + BOX_OFFSET);
 	nc_print_read_footer(stdscr);
 	nc_print_initial_read_loop(wins->data, sc, cw, fptr, psc);
