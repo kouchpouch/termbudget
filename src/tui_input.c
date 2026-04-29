@@ -465,7 +465,8 @@ static void print_invalid_date_msg(WINDOW *wptr)
 
 /* Displays an interactive menu for full date input (MONTH/DAY/YEAR), includes
  * date validation. Fills "new_date" struct with the old + any modified date
- * values. Will ignore and skip over "day" if "require_day" is false.
+ * values. Will ignore and skip over "day" if "require_day" is false. the 
+ * selected field will begin on "start_field" using enum _fd_fields.
  * Returns -1 on quit, 0 on success */
 static int input_full_date
 (int old_mo, int old_day, int old_yr, struct full_date *new_date, 
