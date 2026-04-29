@@ -23,7 +23,7 @@
 - [X] Remove all reallocarray() functions for portability
 - [X] Implement visual truncation when there are not enough columns to
         display all the field data
-- [X] *n/a* Use realloc in sorter.c (sort_csv()) instead of having a fixed
+- [X] Use realloc in sorter.c (sort_csv()) instead of having a fixed
         number of lines to index
 - [X] Add ability to escape the menu when accepting a user input
 - [X] Add page up/page down/end/home keys for navigating lists
@@ -146,57 +146,57 @@
 - [X] Basic Bar Graph Trends
 
 #### Bugs
-- 1 [X] A line number is able to be selected (line 1) and it will edit the
+- [X] 1 A line number is able to be selected (line 1) and it will edit the
         header line. Also line 1 is displayed as line 2. Probably something
         to do with the humanreadable target variable being subtracted by 2
-- 2 [X] *n/a* Sorter places a previous year on line 3 when a more recent year is on
+- [X] 2 Sorter places a previous year on line 3 when a more recent year is on
         line 2.
-- 3 [X] Sorter edge case on adding a transaction to a month which does not
-        match and is not greater than the target month. If the months in
-        the CSV are all less than the target, the record will be 
-        erroneously be added out of chronological order.
-- 4 [X] Edge case where trying to access read via the TUI, fgets fails to
-        read the line (because it doesn't exist).
-- 5 [X] If editing a record's date causing no more records to exist for that
-        year and month, the TUI doesn't refresh properly.
-- 6 [X] *n/a* Sorter function can't handle adding a record between two years which
-        doesn't already exist.
-- 7 [ ] Input too short warning when entering a single digit line number in 
-        CLI mode
-- 8 [X] *n/a* Sorter still doesn't completely work. Adding months between months
-        doesn't work as intended. If January has 2 records in it and a
-        new record is added, like a record in May, the may record will be
-        inserted between the two records in January.
-- 9 [X] Budget sorter is jank, doesn't work.
-- 10 [X] refresh_on_detail_close_uniform in main.c when sorted by category doesn't
-        re-color the categories, a new func needs to be made to handle this.
-- 11 [X] When selecting a category in ncurses, empty categories are not shown.
-        The way the function retrieves categories needs to be changed.
-- 12 [X] Seg fault when deleting a category and that category is the only
-        data to exist for a given month and year.
-- 13 [ ] There is nothing to handle the case where there are so many years
-        with records that the terminal is not large enough to display
-        them all. Years should horizontally scroll.
-- 14 [X] Cannot add a transaction if the user is inside of the nc_select_month
-        loop.
-- 15 [X] Seg fault after selecting "READ" function from nc_main_menu in main.c
-- 16 [X] Several different integer type cmp's that need to be resolved.
-- 17 [X] On some systems the function that is clearing the footer on stdscr
-            is being displayed as a question mark
-- 18 [X] After adding a transaction it requires two presses of the quit menu
-            key to exit. Each subsequent transaction added requires +1 key
-            presses.
-- 19 [ ] The overview window position is off, it looks weird. Not centered
-            correctly.
-- 20 [X] When editing a transaction and creating a new category the category
-            is not actually created but the record in data.csv is updated
-            correctly.
-- 21 [X] Sidebar does not refresh when transaction detail window opens.
+- [X] 3 Sorter edge case on adding a transaction to a month which does not
+      match and is not greater than the target month. If the months in
+      the CSV are all less than the target, the record will be 
+      erroneously be added out of chronological order.
+- [X] 4 Edge case where trying to access read via the TUI, fgets fails to
+      read the line (because it doesn't exist).
+- [X] 5 If editing a record's date causing no more records to exist for that
+      year and month, the TUI doesn't refresh properly.
+- [X] 6 Sorter function can't handle adding a record between two years which
+      doesn't already exist.
+- [ ] 7 Input too short warning when entering a single digit line number in 
+      CLI mode
+- [X] 8 Sorter still doesn't completely work. Adding months between months
+      doesn't work as intended. If January has 2 records in it and a
+      new record is added, like a record in May, the may record will be
+      inserted between the two records in January.
+- [X] 9 Budget sorter is jank, doesn't work.
+- [X] 10 refresh_on_detail_close_uniform in main.c when sorted by category doesn't
+     re-color the categories, a new func needs to be made to handle this.
+- [X] 11 When selecting a category in ncurses, empty categories are not shown.
+     The way the function retrieves categories needs to be changed.
+- [X] 12 Seg fault when deleting a category and that category is the only
+     data to exist for a given month and year.
+- [ ] 13 There is nothing to handle the case where there are so many years
+     with records that the terminal is not large enough to display
+     them all. Years should horizontally scroll.
+- [X] 14 Cannot add a transaction if the user is inside of the nc_select_month
+     loop.
+- [X] 15 Seg fault after selecting "READ" function from nc_main_menu in main.c
+- [X] 16 Several different integer type cmp's that need to be resolved.
+- [X] 17 On some systems the function that is clearing the footer on stdscr
+         is being displayed as a question mark
+- [X] 18 After adding a transaction it requires two presses of the quit menu
+         key to exit. Each subsequent transaction added requires +1 key
+         presses.
+- [ ] 19 The overview window position is off, it looks weird. Not centered
+         correctly.
+- [X] 20 When editing a transaction and creating a new category the category
+         is not actually created but the record in data.csv is updated
+         correctly.
+- [X] 21 Sidebar does not refresh when transaction detail window opens.
     - Either detail window remains within the bounds of the data window
         or have a function to refresh the sidebar.
-- 22 [X] Left to budget value in sidebar is incorrect.
-- 23 [X] When no transactions exist it is impossible to quit
-- 24 [X] Out of bounds access not checked in refresh_budget_loop
-- 25 [X] Incorrect numbers shown for records displayed when sorted by date
-            and pressing the page up/page dn key.
-- 26 [X] Cannot change case of letters when renaming.
+- [X] 22 Left to budget value in sidebar is incorrect.
+- [X] 23 When no transactions exist it is impossible to quit
+- [X] 24 Out of bounds access not checked in refresh_budget_loop
+- [X] 25 Incorrect numbers shown for records displayed when sorted by date
+         and pressing the page up/page dn key.
+- [X] 26 Cannot change case of letters when renaming.
