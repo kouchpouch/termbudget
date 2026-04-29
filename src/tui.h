@@ -120,7 +120,7 @@ void unhighlight(WINDOW *wptr, int y, int x, int n);
  */
 void print_column_headers(WINDOW *wptr, int x_off);
 
-void nc_print_record_vert(WINDOW *wptr, _transact_tokens_t *ld, int x_off);
+void nc_print_record_vert(WINDOW *wptr, struct transaction_tokens *ld, int x_off);
 
 /* Moves cursor in wptr to y-coord y for a string len
  * of len */

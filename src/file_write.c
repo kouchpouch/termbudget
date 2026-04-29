@@ -40,7 +40,7 @@ static void print_lines_written_debug(int lines_written)
 }
 
 int budget_tokens_to_string
-(char *buffer, size_t size, _budget_tokens_t *bt)
+(char *buffer, size_t size, struct budget_tokens *bt)
 {
 	return snprintf(buffer, size, 
 		"%d,%d,%s,%d,%.2f\n", 
@@ -52,7 +52,7 @@ int budget_tokens_to_string
 }
 
 int line_data_to_string 
-(char *buffer, size_t size, _transact_tokens_t *ld)
+(char *buffer, size_t size, struct transaction_tokens *ld)
 {
 	return snprintf(buffer, size,
 		  "%d,%d,%d,%s,%s,%d,%.2f\n",

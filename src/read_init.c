@@ -64,12 +64,12 @@ static const char *abbr_months[] = {
 	"DEC"
 };
 
-typedef struct __date_scroll_t {
+struct date_select {
 	int selected_date;
 	int date_idx;
 	int scroll_idx;
 	int tmp;
-} _date_scroll_t;
+};
 
 static bool duplicate_data_exists(struct vec_t *vec, long y)
 {
@@ -266,7 +266,7 @@ static void scroll_month
 static int select_month(WINDOW *wptr, int year)
 {
 	struct vec_t *months_data = get_all_months(year);
-	_date_scroll_t scroll = { 0 };
+	struct date_select scroll = { 0 };
 	int monlen = strlen(abbr_months[0]);
 	int c = 0;
 	int current_mo_idx = get_current_mo_idx(months_data);
@@ -376,7 +376,7 @@ static int select_year(WINDOW *wptr)
 		printf("Too many years");
 		exit(1);
 	}
-	_date_scroll_t scroll = { 0 };
+	struct date_select scroll = { 0 };
 	int print_y = 1;
 	int print_x = 2;
 	int c = 0;
@@ -681,7 +681,7 @@ static struct Plannedvals *get_total_planned(struct catg_nodes **nodes)
 
 	int i = 0;
 	while (1) {
-		_budget_tokens_t *bt = tokenize_budget_fpi(nodes[i]->catg_fp);
+		struct budget_tokens *bt = tokenize_budget_fpi(nodes[i]->catg_fp);
 		if (nodes[i]->next == NULL) {
 			if (bt->transtype == 1) {
 				pv->inc += bt->amount;

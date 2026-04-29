@@ -57,7 +57,7 @@ bool duplicate_category_exists(struct catg_vec *psc, char *catg)
 	return false;
 }
 
-static void replace_category(_budget_tokens_t *bt, long b)
+static void replace_category(struct budget_tokens *bt, long b)
 {
 	FILE *bfptr = open_budget_csv("r");
 	FILE *tmpfptr;
@@ -71,7 +71,7 @@ static void replace_category(_budget_tokens_t *bt, long b)
 	mv_tmp_to_budget_file(tmpfptr, bfptr);
 }
 
-static void insert_category(_budget_tokens_t *bt, int insert_line)
+static void insert_category(struct budget_tokens *bt, int insert_line)
 {
 	FILE *bfptr = open_budget_csv("r");
 	FILE *tmpfptr;
@@ -148,7 +148,7 @@ void mv_category_to_top(struct catg_nodes **nodes, size_t i)
 
 	long first = nodes[0]->catg_fp;
 	unsigned int insert_ln = boff_to_linenum_budget(first);
-	_budget_tokens_t *bt = tokenize_budget_fpi(nodes[i]->catg_fp);
+	struct budget_tokens *bt = tokenize_budget_fpi(nodes[i]->catg_fp);
 
 	delete_category(nodes[i]->catg_fp);
 	insert_category(bt, insert_ln);
@@ -180,7 +180,7 @@ static int select_catg_field(void)
 	return retval;
 }
 
-static int rename_category(_budget_tokens_t *bt)
+static int rename_category(struct budget_tokens *bt)
 {
 	struct catg_vec *psc = get_budget_catg_by_date(bt->m, bt->y);
 	char *catg = nc_input_string("Renaming Category");
@@ -201,7 +201,7 @@ static int rename_category(_budget_tokens_t *bt)
 	}
 }
 
-static void free_lda(_transact_tokens_t **lda, size_t sz)
+static void free_lda(struct transaction_tokens **lda, size_t sz)
 {
 	for (size_t i = 0; i < sz; i++) {
 		free_tokenized_record_strings(lda[i]);
@@ -216,7 +216,7 @@ static void free_lda(_transact_tokens_t **lda, size_t sz)
  * one by one. Instead we want to have an array of line numbers to replace
  * all in one chunk. The records are already sorted, we just need a way to
  * store their current line number and some index to determine which
- * linedata to print at which line. Maybe a _transact_tokens_t **ld_head
+ * linedata to print at which line. Maybe a struct transaction_tokens **ld_head
  * indexed to match a vec of FPIs. */
 
 /*---*/
@@ -234,14 +234,14 @@ static int replace_many_records_categories
 	size_t n_recs = nodes[node_idx]->data->size;
 	size_t del_lines[n_recs];
 
-	_transact_tokens_t **lda = malloc(sizeof(_transact_tokens_t) * n_recs);
+	struct transaction_tokens **lda = malloc(sizeof(struct transaction_tokens) * n_recs);
 
 	if (lda == NULL) {
 		mem_alloc_fail();
 	}
 
 	for (size_t i = 0; i < n_recs; i++) {
-		lda[i] = malloc(sizeof(_transact_tokens_t));
+		lda[i] = malloc(sizeof(struct transaction_tokens));
 		if (lda[i] == NULL) {
 			mem_alloc_fail();
 		}
@@ -297,7 +297,7 @@ void nc_edit_category(long node_idx, long nmembers, struct catg_nodes **nodes)
 	long b = nodes[node_idx]->catg_fp;
 	double tmp = 0.0;
 	enum fields select;
-	_budget_tokens_t *bt;
+	struct budget_tokens *bt;
 
 	select = select_catg_field();
 	if (select < 0) {

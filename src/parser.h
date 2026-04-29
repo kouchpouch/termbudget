@@ -54,15 +54,15 @@ struct record_header {
 	int n_fields;
 };
 
-typedef struct __budget_tokens_t {
+struct budget_tokens {
 	int m;
 	int y;
 	char *catg;
 	int transtype;
 	double amount;
-} _budget_tokens_t;
+};
 
-typedef struct __transact_tokens_t {
+struct transaction_tokens {
 	int month;
 	int day;
 	int year;
@@ -71,7 +71,7 @@ typedef struct __transact_tokens_t {
 	int transtype;
 	double amount;
 	int linenum;
-} _transact_tokens_t;
+};
 
 /* Returns total lines in the CSV */
 int get_total_csv_lines(void);
@@ -102,7 +102,7 @@ int seek_beyond_header(FILE *fptr);
 int get_num_fields(FILE *fptr);
 
 /* Frees the struct and any applicable members */
-void free_budget_tokens(_budget_tokens_t *pbt);
+void free_budget_tokens(struct budget_tokens *pbt);
 
 /* Loop through each category in the budget. Returns true or false if the
  * category exists for the given date range */
@@ -114,7 +114,7 @@ bool category_exists_in_budget(char *catg, int month, int year);
 bool month_or_year_exists(int m, int y);
 
 /* Returns all income records subtracted by expense records */
-double get_expenditures_per_category(_budget_tokens_t *bt);
+double get_expenditures_per_category(struct budget_tokens *bt);
 
 /* Returns a vector of years which contain data */
 struct vec_t *get_years_with_data(FILE *fptr, int field);
@@ -178,23 +178,23 @@ struct vec_t *get_budget_catg_by_date_bo(int month, int year);
 /* Returns malloc'd tokenized variables in BudgetTokens by seeking the file
  * position indicator to bo. BudgetTokens catg is separately malloc'd and must 
  * be free'd. Use free_budget_tokens(). 
- * Returns NULL on failure, pointer to _budget_tokens_t on success. */
-_budget_tokens_t *tokenize_budget_fpi(long bo);
+ * Returns NULL on failure, pointer to struct budget_tokens on success. */
+struct budget_tokens *tokenize_budget_fpi(long bo);
 
 /* Returns malloc'd tokenized variables in BudgetTokens which matches
  * line number line. BudgetTokens catg is separately malloc'd and must 
  * be free'd. Use free_budget_tokens().
- * Returns NULL on failure, pointer to _budget_tokens_t on success. */
-_budget_tokens_t *tokenize_budget_line(int line);
+ * Returns NULL on failure, pointer to struct budget_tokens on success. */
+struct budget_tokens *tokenize_budget_line(int line);
 
 /* Frees the strings inside of 'ld', if they are not NULL */
-void free_tokenized_record_strings(_transact_tokens_t *ld);
+void free_tokenized_record_strings(struct transaction_tokens *ld);
 
 /* Populates ld members with tokens from fpi b */
-int tokenize_record_fpi(long b, _transact_tokens_t *ld);
+int tokenize_record_fpi(long b, struct transaction_tokens *ld);
 
 /* Populates ld members with tokens from str */
-void tokenize_record(_transact_tokens_t *ld, char **str);
+void tokenize_record(struct transaction_tokens *ld, char **str);
 
 /* Returns the amount value in RECORD_DIR from file position b */
 double get_record_amount(long b);

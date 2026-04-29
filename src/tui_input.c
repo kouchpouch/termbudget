@@ -728,7 +728,7 @@ bool nc_confirm_input(char *msg)
 	return retval;
 }
 
-bool nc_confirm_record(_transact_tokens_t *ld)
+bool nc_confirm_record(struct transaction_tokens *ld)
 {
 	WINDOW *wptr = create_input_subwindow();
 	int c = 0;

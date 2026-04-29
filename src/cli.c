@@ -30,7 +30,7 @@
 #include "file_write.h"
 #include "flags.h"
 
-static void print_record_vert(_transact_tokens_t *ld)
+static void print_record_vert(struct transaction_tokens *ld)
 {
 	printf(
 		"1.) Date-->  %d/%d/%d\n"
@@ -48,7 +48,7 @@ static void print_record_vert(_transact_tokens_t *ld)
 	);
 }
 
-static void print_record_hr(_transact_tokens_t *ld)
+static void print_record_hr(struct transaction_tokens *ld)
 {
 	printf(
 		"%d.) %d/%d/%d Category: %s Description: %s, %s, $%.2f\n",
@@ -90,7 +90,7 @@ static int delete_csv_record(int linetodelete)
 /* An old CLI function */
 static void add_transaction(void)
 {
-	_transact_tokens_t userlinedata_, *uld = &userlinedata_;
+	struct transaction_tokens userlinedata_, *uld = &userlinedata_;
 	FILE *fptr = open_record_csv("r");
 	struct vec_t *pidx = index_csv(fptr);
 	fclose(fptr);
@@ -131,7 +131,7 @@ err_category:
 }
 
 static int edit_csv_record
-(int replace_line, _transact_tokens_t *ld, int field)
+(int replace_line, struct transaction_tokens *ld, int field)
 {
 	if (replace_line == 0) {
 		puts("Cannot delete line 0");
@@ -246,7 +246,7 @@ static void cli_read_csv(void)
 	bool month_record_exists = false;
 	bool year_record_exists = false;
 
-	_transact_tokens_t linedata_, *ld = &linedata_;
+	struct transaction_tokens linedata_, *ld = &linedata_;
 
 	struct vec_t *years = get_years_with_data(fptr, 2);
 	rewind(fptr);
@@ -327,7 +327,7 @@ static void cli_edit_transaction(void)
 {
 	int target;
 	int humantarget;
-	_transact_tokens_t linedata, *ld = &linedata;
+	struct transaction_tokens linedata, *ld = &linedata;
 
 	FILE *fptr = open_record_csv("r+");
 	assert(ftell(fptr) == 0);
@@ -365,7 +365,7 @@ static void cli_edit_transaction(void)
 
 	tokenize_record(ld, &str);
 
-	_transact_tokens_t *pLd = malloc(sizeof(*ld));
+	struct transaction_tokens *pLd = malloc(sizeof(*ld));
 	if (pLd == NULL) {
 		free(pidx);
 		fclose(fptr);

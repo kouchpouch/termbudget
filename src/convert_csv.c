@@ -52,7 +52,7 @@ static FILE *open_csv(char *dir)
 	return fptr;
 }
 
-static void insert_record(_transact_tokens_t *ld)
+static void insert_record(struct transaction_tokens *ld)
 {
 	FILE *convfptr = fopen(CONVERTED_FILE_DIR, "r");
 	if (convfptr == NULL) {
@@ -98,7 +98,7 @@ static void insert_record(_transact_tokens_t *ld)
 
 static size_t tokenize_and_convert(FILE *fptr)
 {
-	_transact_tokens_t _ld, *ld = &_ld;
+	struct transaction_tokens _ld, *ld = &_ld;
 	char *str;
 	char buffer[LINE_BUFFER];
 	double amount;

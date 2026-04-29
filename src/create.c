@@ -53,7 +53,7 @@ static bool confirm_budget_category(char *catg, double amt)
 	return retval;
 }
 
-static void insert_budget_record_from_ld(_transact_tokens_t *ld)
+static void insert_budget_record_from_ld(struct transaction_tokens *ld)
 {
 	insert_budget_record
 	(ld->category, ld->month, ld->year, ld->transtype, 0.0);
@@ -123,7 +123,7 @@ char *create_budget_record(int yr, int mo)
 }
 
 /* Adds a record to the CSV on line linetoadd */
-void insert_transaction_record(int insert_line, _transact_tokens_t *ld)
+void insert_transaction_record(int insert_line, struct transaction_tokens *ld)
 {
 	if (!category_exists_in_budget(ld->category, ld->month, ld->year)) {
 		insert_budget_record_from_ld(ld);
@@ -144,7 +144,7 @@ void insert_transaction_record(int insert_line, _transact_tokens_t *ld)
  * on the read screen these will be auto-filled. */
 void create_transaction(int year, int month)
 {
-	_transact_tokens_t userlinedata_, *uld = &userlinedata_;
+	struct transaction_tokens userlinedata_, *uld = &userlinedata_;
 	unsigned int result_line;
 	struct full_date fd;
 

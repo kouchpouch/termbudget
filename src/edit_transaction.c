@@ -42,13 +42,13 @@ enum EditRecordFields {
 	DELETE,
 };
 
-typedef struct __field_select_scroll {
+struct field_select {
 	int y_cursor;
 	int choice;
 	int max_x;
 	int start_x;
 	int nx;
-} _field_select_scroll_t;
+};
 
 static void delete_transaction(int line)
 {
@@ -58,7 +58,7 @@ static void delete_transaction(int line)
 }
 
 static void edit_field_loop_scroll_prev
-(_field_select_scroll_t *fs, WINDOW *wptr)
+(struct field_select *fs, WINDOW *wptr)
 {
 	if (fs->y_cursor - 1 > 0) {
 		mvwchgat(wptr, fs->y_cursor, fs->start_x, fs->nx, A_NORMAL, 0, NULL);
@@ -72,7 +72,7 @@ static void edit_field_loop_scroll_prev
 }
 
 static void edit_field_loop_scroll_next
-(_field_select_scroll_t *fs, WINDOW *wptr)
+(struct field_select *fs, WINDOW *wptr)
 {
 	if (fs->y_cursor + 1 <= (INPUT_WIN_ROWS - BOX_OFFSET)) {
 		mvwchgat(wptr, fs->y_cursor, fs->start_x, fs->nx, A_NORMAL, 0, NULL);
@@ -87,7 +87,7 @@ static void edit_field_loop_scroll_next
 
 static int select_edit_field_loop(WINDOW *wptr)
 {
-	_field_select_scroll_t fs;
+	struct field_select fs;
 	fs.y_cursor = 1;
 	fs.choice = 0;
 	fs.max_x = getmaxx(wptr);
@@ -130,7 +130,7 @@ static int select_edit_field_loop(WINDOW *wptr)
 
 /* Ncurses implementation to do the actual file writing */
 static int nc_edit_csv_record
-(int replace_line, int edit_field, _transact_tokens_t *ld)
+(int replace_line, int edit_field, struct transaction_tokens *ld)
 {
 	if (replace_line == 0) {
 		puts("Cannot delete line 0");
@@ -233,7 +233,7 @@ err_fail:
 
 void nc_edit_transaction(long b)
 {
-	_transact_tokens_t *ld = malloc(sizeof(*ld));
+	struct transaction_tokens *ld = malloc(sizeof(*ld));
 	if (ld == NULL) {
 		mem_alloc_fail();
 	}

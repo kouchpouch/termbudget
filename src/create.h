@@ -35,7 +35,7 @@ enum AddMainMenu {
 
 void insert_budget_record(char *catg, int m, int y, int transtype, double amt);
 char *create_budget_record(int yr, int mo);
-void insert_transaction_record(int insert_line, _transact_tokens_t *ld);
+void insert_transaction_record(int insert_line, struct transaction_tokens *ld);
 
 /* Optional parameters int month, year. If add transaction is selected while
  * on the read screen these will be auto-filled. */

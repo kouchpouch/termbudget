@@ -79,7 +79,7 @@ bool validate_budget_header(void)
 bool record_len_verification(void)
 {
 	FILE *fptr = open_record_csv("r");
-	_transact_tokens_t ld, *pld = &ld;
+	struct transaction_tokens ld, *pld = &ld;
 	char linebuff[1024];
 	char *str;
 

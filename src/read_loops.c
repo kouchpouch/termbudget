@@ -125,7 +125,7 @@ static bool shorten_string(WINDOW *wptr)
  * if the window is too small.
  */
 static void print_record_hr
-(WINDOW *wptr, struct ColWidth *cw, _transact_tokens_t *ld, int y)
+(WINDOW *wptr, struct ColWidth *cw, struct transaction_tokens *ld, int y)
 {
 	char *etc = "..";
 	int lenetc = (int)strlen(etc);
@@ -168,7 +168,7 @@ static void print_record_hr
 }
 
 static void print_category_hr
-(WINDOW *wptr, struct ColWidth *cw, _budget_tokens_t *bt, int y)
+(WINDOW *wptr, struct ColWidth *cw, struct budget_tokens *bt, int y)
 {
 	char *etc = "..";
 	int lenetc = (int)strlen(etc);
@@ -218,7 +218,7 @@ static void print_init_budget_loop
 	int total_nodes = get_total_nodes(nodes);
 	char *line_str;
 	char linebuff[LINE_BUFFER];
-	_transact_tokens_t ld;
+	struct transaction_tokens ld;
 
 	/* 
 	 * For each category print the budget line and the records that match 
@@ -228,7 +228,7 @@ static void print_init_budget_loop
 	for (int i = 0; sc->displayed < max_y && sc->displayed < sc->total_rows 
 		 && i < total_nodes; i++) 
 	{
-		_budget_tokens_t *bt = tokenize_budget_fpi(nodes[i]->catg_fp);
+		struct budget_tokens *bt = tokenize_budget_fpi(nodes[i]->catg_fp);
 		print_category_hr(wptr, cw, bt, sc->displayed);
 		mvwchgat(wptr, sc->displayed, 0, -1, A_NORMAL, category_color(i), NULL); 
 		sc->displayed++;
@@ -328,7 +328,7 @@ static int show_detail_subwindow(char *line)
 	box(wptr_detail, 0, 0);
 	mvwxcprintw(wptr_detail, 0, "Details");
 
-	_transact_tokens_t linedata_, *ld = &linedata_;
+	struct transaction_tokens linedata_, *ld = &linedata_;
 	tokenize_record(ld, &line);
 
 	nc_print_record_vert(wptr_detail, ld, BOX_OFFSET);
@@ -368,13 +368,13 @@ static void nc_scroll_prev
 	}
 
 	if (catg) {
-		_budget_tokens_t *bt = tokenize_budget_fpi(b);
+		struct budget_tokens *bt = tokenize_budget_fpi(b);
 		wmove(wptr, 0, 0);
 		winsertln(wptr);
 		print_category_hr(wptr, cw, bt, 0);
 		free_budget_tokens(bt);
 	} else {
-		_transact_tokens_t linedata_, *ld = &linedata_;
+		struct transaction_tokens linedata_, *ld = &linedata_;
 		tokenize_record(ld, &line_str);
 		wmove(wptr, 0, 0);
 		winsertln(wptr);
@@ -395,14 +395,14 @@ static void nc_scroll_next
 	}
 
 	if (catg) {
-		_budget_tokens_t *bt = tokenize_budget_fpi(b);
+		struct budget_tokens *bt = tokenize_budget_fpi(b);
 		wmove(wptr, 0, 0);
 		wdeleteln(wptr);
 		wmove(wptr, getmaxy(wptr) - 1, 0);
 		print_category_hr(wptr, cw, bt, getmaxy(wptr) - 1);
 		free_budget_tokens(bt);
 	} else {
-		_transact_tokens_t linedata_, *ld = &linedata_;
+		struct transaction_tokens linedata_, *ld = &linedata_;
 		tokenize_record(ld, &line_str);
 		wmove(wptr, 0, 0);
 		wdeleteln(wptr);
@@ -843,7 +843,7 @@ static void nc_print_initial_read_loop
 {
 	char *line_str;
 	char linebuff[LINE_BUFFER];
-	_transact_tokens_t ld;
+	struct transaction_tokens ld;
 
 	/* For safe cast */
 	assert(sc->displayed >= 0);

@@ -246,7 +246,7 @@ int get_num_fields(FILE *fptr)
 	return n;
 }
 
-void free_budget_tokens(_budget_tokens_t *pbt)
+void free_budget_tokens(struct budget_tokens *pbt)
 {
 	free(pbt->catg);
 	free(pbt);
@@ -258,7 +258,7 @@ void free_budget_tokens(_budget_tokens_t *pbt)
  */
 bool category_exists_in_budget(char *catg, int month, int year)
 {
-	_budget_tokens_t bt, *pbt = &bt;
+	struct budget_tokens bt, *pbt = &bt;
 	int i = 1;
 
 	while ((pbt = tokenize_budget_line(i)) != NULL) {
@@ -303,7 +303,7 @@ bool month_or_year_exists(int m, int y)
 }
 
 /* Returns all income records subtracted by expense records */
-double get_expenditures_per_category(_budget_tokens_t *bt)
+double get_expenditures_per_category(struct budget_tokens *bt)
 {
 	double total = 0;
 	struct vec_t *pi = get_records_by_any(bt->m, -1, bt->y, bt->catg, NULL, TT_INCOME, -1, NULL);
@@ -560,7 +560,7 @@ struct vec_t *get_records_by_any
 		mem_alloc_fail();
 	}
 
-	_transact_tokens_t ld_, *ld = &ld_;
+	struct transaction_tokens ld_, *ld = &ld_;
 	char linebuff[LINE_BUFFER];
 	char *str;
 	bool date = false;
@@ -776,12 +776,12 @@ struct vec_t *get_budget_catg_by_date_bo(int month, int year)
 	return pcbo;
 }
 
-_budget_tokens_t *tokenize_budget_fpi(long bo)
+struct budget_tokens *tokenize_budget_fpi(long bo)
 {
 	if (bo == 0) {
 		return NULL;
 	}
-	_budget_tokens_t *pbt = malloc(sizeof(*pbt));
+	struct budget_tokens *pbt = malloc(sizeof(*pbt));
 	if (pbt == NULL) {
 		mem_alloc_fail();
 	}
@@ -811,12 +811,12 @@ _budget_tokens_t *tokenize_budget_fpi(long bo)
 	return pbt;
 }
 
-_budget_tokens_t *tokenize_budget_line(int line)
+struct budget_tokens *tokenize_budget_line(int line)
 {
 	if (line == 0) {
 		return NULL;
 	}
-	_budget_tokens_t *pbt = malloc(sizeof(_budget_tokens_t));
+	struct budget_tokens *pbt = malloc(sizeof(struct budget_tokens));
 	if (pbt == NULL) {
 		mem_alloc_fail();
 	}
@@ -862,7 +862,7 @@ _budget_tokens_t *tokenize_budget_line(int line)
 	return pbt;
 }
 
-void free_tokenized_record_strings(_transact_tokens_t *ld)
+void free_tokenized_record_strings(struct transaction_tokens *ld)
 {
 	if (ld->category != NULL) {
 		free(ld->category);
@@ -874,7 +874,7 @@ void free_tokenized_record_strings(_transact_tokens_t *ld)
 	}
 }
 
-int tokenize_record_fpi(long b, _transact_tokens_t *ld)
+int tokenize_record_fpi(long b, struct transaction_tokens *ld)
 {
 	FILE *fptr = open_record_csv("r");
 	fseek(fptr, b, SEEK_SET);
@@ -889,7 +889,7 @@ int tokenize_record_fpi(long b, _transact_tokens_t *ld)
 	return 0;
 }
 
-void tokenize_record(_transact_tokens_t *ld, char **str)
+void tokenize_record(struct transaction_tokens *ld, char **str)
 {
 	char *token;
 	for (int i = 0; i < CSV_FIELDS; i++) {

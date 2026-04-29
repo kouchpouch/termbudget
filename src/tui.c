@@ -158,7 +158,7 @@ void print_column_headers(WINDOW *wptr, int x_off)
 }
 
 /* Prints record from ld, in vertical format, 5 rows. */
-void nc_print_record_vert(WINDOW *wptr, _transact_tokens_t *ld, int x_off)
+void nc_print_record_vert(WINDOW *wptr, struct transaction_tokens *ld, int x_off)
 {
 	int y = 1; /* Y-coord to print on, to start. */
 	mvwprintw(wptr, y++, x_off, "Date--> %d/%d/%d", ld->month, ld->day, ld->year);

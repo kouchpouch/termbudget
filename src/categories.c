@@ -56,7 +56,7 @@ void free_category_nodes(struct catg_nodes **nodes)
 static void init_category_nodes
 (struct catg_nodes *node, struct vec_t *chunk, int m, int y)
 {
-	_budget_tokens_t *budget_tokens = tokenize_budget_fpi(node->catg_fp);
+	struct budget_tokens *budget_tokens = tokenize_budget_fpi(node->catg_fp);
 	struct vec_t *recs = get_records_by_any(m, -1, y, budget_tokens->catg, NULL, -1, -1, chunk);
 	node->data = recs;
 	free_budget_tokens(budget_tokens);

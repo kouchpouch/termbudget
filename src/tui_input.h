@@ -44,7 +44,7 @@ bool nc_confirm_input_loop(WINDOW *wptr);
 
 bool nc_confirm_input(char *msg);
 
-bool nc_confirm_record(_transact_tokens_t *ld);
+bool nc_confirm_record(struct transaction_tokens *ld);
 
 int nc_input_month(int old_month, int old_year);
 
