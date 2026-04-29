@@ -468,7 +468,8 @@ static void print_invalid_date_msg(WINDOW *wptr)
  * values. Will ignore and skip over "day" if "require_day" is false.
  * Returns -1 on quit, 0 on success */
 static int input_full_date
-(int old_mo, int old_day, int old_yr, struct full_date *new_date, bool require_day)
+(int old_mo, int old_day, int old_yr, struct full_date *new_date, 
+ bool require_day, int start_field)
 {
 	int c = 0;
 	bool is_valid = false;
@@ -485,6 +486,9 @@ static int input_full_date
 	new_date->year = old_yr;
 
 	print_data_to_window(wptr, &scrl, old_mo, old_day, old_yr);
+	while (scrl.field_idx != start_field) {
+		scroll_next_field(wptr, &scrl);
+	}
 
 	while (c != 'q' && c != KEY_F(QUIT)) {
 		wrefresh(wptr);
@@ -546,17 +550,24 @@ quit:
 }
 
 /* Wrapper */
+int nc_input_full_date_on_day
+(int old_mo, int old_day, int old_yr, struct full_date *new_date)
+{
+	return input_full_date(old_mo, old_day, old_yr, new_date, true, F_DAY);
+}
+
+/* Wrapper */
 int nc_input_full_date
 (int old_mo, int old_day, int old_yr, struct full_date *new_date)
 {
-	return input_full_date(old_mo, old_day, old_yr, new_date, true);
+	return input_full_date(old_mo, old_day, old_yr, new_date, true, 0);
 }
 
 /* Wrapper */
 int nc_input_month_and_year
 (int old_mo, int old_yr, struct full_date *new_date)
 {
-	return input_full_date(old_mo, 1, old_yr, new_date, false);
+	return input_full_date(old_mo, 1, old_yr, new_date, false, 0);
 }
 
 static void nc_user_input(int n, WINDOW *wptr, struct UserInput *pui)

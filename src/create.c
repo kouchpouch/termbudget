@@ -150,13 +150,18 @@ void create_transaction(int year, int month)
 
 	nc_print_input_footer(stdscr);
 
-	if (nc_input_full_date(month, 0, year, &fd) == -1) {
-		return;
+	if (year == 0 || month == 0) {
+		if (nc_input_full_date(month, 0, year, &fd) == -1) {
+			return;
+		}
 	} else {
-		uld->month = fd.month;
-		uld->day = fd.day;
-		uld->year = fd.year;
+		if (nc_input_full_date_on_day(month, 0, year, &fd) == -1) {
+			return;
+		}
 	}
+	uld->month = fd.month;
+	uld->day = fd.day;
+	uld->year = fd.year;
 
 	uld->category = nc_select_category(uld->month, uld->year);
 	if (uld->category == NULL) {
