@@ -537,6 +537,18 @@ static int input_full_date
 				}
 			}
 			break;
+		
+		case ('y'):
+			if (!date_is_valid(new_date->day, new_date->month, new_date->year)) {
+				print_invalid_date_msg(wptr);
+				is_valid = false;
+			} else {
+				is_valid = true;
+			}
+			if (is_valid) {
+				goto quit;	
+			}
+			break;
 
 		case KEY_F(QUIT):
 		case ('q'):

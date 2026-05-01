@@ -43,9 +43,11 @@
 #define RRET_BYDATE 1
 #define RRET_QUIT 2
 
+/*
 #if (NCURSES_VERSION_MAJOR >= 6) && (NCURSES_VERSION_MINOR > 0)
 #define HAS_RESET_COLOR_PAIRS
 #endif
+*/
 
 /* GLOBAL FLAGS. Defined in flags.h, initialized here in main.c */
 int debug_flag;
@@ -192,7 +194,7 @@ int show_help_subwindow(void)
 
 int nc_main_menu(WINDOW *wptr)
 {
-	struct ReadRet rr_, *rret = &rr_;
+	struct read_retvals rr_, *rret = &rr_;
 	struct full_date *date;
 	int mo, yr;
 

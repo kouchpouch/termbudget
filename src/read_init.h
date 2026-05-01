@@ -21,11 +21,13 @@
 
 #include <stdio.h>
 
-struct ReadRet {
+struct read_retvals {
+	long fpi;
 	int flag;
 	int yr;
 	int mo;
 	int sort;
+	bool dirty;
 };
 
 struct SelRecord {
@@ -34,10 +36,10 @@ struct SelRecord {
 	long opt; // Optional flag
 };
 
-void nc_read_setup(int sel_year, int sel_month, int sort, struct ReadRet *rret);
+void nc_read_setup(int sel_year, int sel_month, int sort, struct read_retvals *rret);
 
-void nc_read_setup_default(struct ReadRet *rret);
+void nc_read_setup_default(struct read_retvals *rret);
 
-void nc_read_setup_year(int sel_year, struct ReadRet *rret);
+void nc_read_setup_year(int sel_year, struct read_retvals *rret);
 
 #endif

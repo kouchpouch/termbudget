@@ -717,7 +717,7 @@ static double get_left_to_budget(struct catg_nodes **nodes)
 }
 
 void nc_read_setup
-(int sel_year, int sel_month, int sort, struct ReadRet *rret)
+(int sel_year, int sel_month, int sort, struct read_retvals *rret)
 {
 	nc_print_main_menu_footer(stdscr);
 	if (debug_flag) {
@@ -923,12 +923,12 @@ err_select_date_fail:
 	refresh();
 }
 
-void nc_read_setup_default(struct ReadRet *rret)
+void nc_read_setup_default(struct read_retvals *rret)
 {
 	nc_read_setup(0, 0, SORT_CATG, rret);
 }
 
-void nc_read_setup_year(int sel_year, struct ReadRet *rret)
+void nc_read_setup_year(int sel_year, struct read_retvals *rret)
 {
 	nc_read_setup(sel_year, 0, SORT_CATG, rret);
 }
