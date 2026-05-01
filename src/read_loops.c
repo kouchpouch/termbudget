@@ -296,17 +296,19 @@ static void print_balances_text(WINDOW *wptr, struct vec_t *psc)
 
 /* Draws a border around the window 'wptr' with "T" shaped characters to
  * mesh seamlessly with the window border of the sidebar. */
-//static void draw_parent_box_with_sidebar(WINDOW *wptr) {
-//	wborder(wptr, 0, 0, 0, 0, 0, ACS_TTEE, 0, ACS_BTEE);
-//	wrefresh(wptr);
-//}
+/*
+static void draw_parent_box_with_sidebar(WINDOW *wptr) {
+	wborder(wptr, 0, 0, 0, 0, 0, ACS_TTEE, 0, ACS_BTEE);
+	wrefresh(wptr);
+}
+*/
 
 /* Draws all of the window borders, then the border text on top. Call this
  * function any time the borders/text need to be updated. */
 static void draw_read_window_borders_and_text
 (struct ReadWins *wins, struct vec_t *psc)
 {
-	// Draw borders in order for correct intersecting lines
+	/* Draw borders in order for correct intersecting lines */
 	if (wins->sidebar_parent != NULL || wins->sidebar_body != NULL) {
 		draw_sidebar_parent_border(wins->sidebar_parent);
 		draw_body_border(wins->sidebar_body);
@@ -315,11 +317,9 @@ static void draw_read_window_borders_and_text
 	}
 }
 
-/*
- * Creates a sub window inside of wptr to display a line-by-line format of
+/* Creates a sub window inside of wptr to display a line-by-line format of
  * the selected record at index i of pidx->data. Following the format style
- * from edit_transaction()
- */
+ * from edit_transaction() */
 static int show_detail_subwindow(char *line)
 {
 	WINDOW *wptr_detail = create_input_subwindow();

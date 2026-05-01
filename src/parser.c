@@ -100,7 +100,16 @@ struct record_header *parse_record_header(FILE *fptr)
 	}
 	rewind(fptr);
 
-	char *fields[] = {"month", "day", "year", "category", "description", "transtype", "value"};
+	char *fields[] = {
+		"month",
+		"day",
+		"year",
+		"category",
+		"description",
+		"transtype",
+		"value"
+	};
+
 	int n_fields = (int)sizeof(fields) / (int)sizeof(char *);
 	rh->n_fields = n_fields;
 	char linebuffer[LINE_BUFFER];
