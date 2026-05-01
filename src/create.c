@@ -309,7 +309,7 @@ int nc_create_new_budget_intret(void) {
 	}
 }
 
-void add_main_with_date(struct Datevals *dv)
+void add_main_with_date(struct month_year *dv)
 {
 	enum add_sel {
 		ADD_TRNS = 0,

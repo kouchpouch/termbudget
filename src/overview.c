@@ -107,7 +107,7 @@ static void nc_print_overview_graphs(WINDOW *wptr, struct vec_t *months, int yea
 {
 	double ratios[12] = {0.0}; // Holds each month's income/expense ratio
 	double maxvals[12] = {0.0};
-	struct Balances pb_, *pb = &pb_;
+	struct balances pb_, *pb = &pb_;
 	int space = calculate_overview_columns(wptr);
 	int mo = 1;
 
@@ -208,7 +208,7 @@ static void nc_print_overview_balances(WINDOW *wptr, struct vec_t *months, int y
 	int y = last_quarter_row(wptr) + 2;
 	int cur = (getmaxx(wptr) - space * 11) / 2;
 	int mo = 1;
-	struct Balances pb_, *pb = &pb_;
+	struct balances pb_, *pb = &pb_;
 	for (size_t i = 0; i < months->size && mo <= 12; i++, mo++) {
 		tmpx = 0;
 

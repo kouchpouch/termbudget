@@ -473,7 +473,7 @@ static int input_year(WINDOW *wptr)
 	return yr;
 }
 
-static void get_dates(struct SelRecord *sr, struct Datevals *dates)
+static void get_dates(struct SelRecord *sr, struct month_year *dates)
 {
 	WINDOW *wptr = newwin(LINES - 1, 0, 0, 0);
 	box(wptr, 0, 0);
@@ -726,7 +726,7 @@ void nc_read_setup
 	refresh();
 
 	struct SelRecord sr_, *sr = &sr_;
-	struct Datevals dv_, *dates = &dv_;
+	struct month_year dv_, *dates = &dv_;
 	dates->month = sel_month;
 	dates->year = sel_year;
 	sr->flag = -1;

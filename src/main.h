@@ -45,17 +45,17 @@
 #define MIN_INPUT_CHAR 2
 #define INPUT_MSG_Y_OFFSET 2
 
-enum SortBy {
+enum sort_by {
 	SORT_DATE = 0,
 	SORT_CATG = 1
 };
 
-struct Datevals {
+struct month_year {
 	int year;
 	int month;
 };
 
-struct Balances {
+struct balances {
 	double income;
 	double expense;
 };
@@ -65,7 +65,7 @@ void mem_alloc_fail(void);
 
 /* Sets the values of struct members 'pb' using records in RECORD_DIR
  * at file positions of 'pbo' */
-void calculate_balance(struct Balances *pb, struct vec_t *pbo);
+void calculate_balance(struct balances *pb, struct vec_t *pbo);
 
 int show_help_subwindow(void);
 

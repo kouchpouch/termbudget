@@ -225,7 +225,7 @@ static int print_parent_header(WINDOW *wptr, struct vec_t *psc, double leftover)
 	int x = 1;
 	int y = 1;
 	int max_x = getmaxx(wptr);
-	struct Balances pb;
+	struct balances pb;
 	calculate_balance(&pb, psc);
 	double remaining = pb.income - pb.expense;
 

@@ -284,7 +284,7 @@ static int get_total_displayed_rows(struct catg_nodes **nodes)
 
 static void print_balances_text(WINDOW *wptr, struct vec_t *psc)
 {
-	struct Balances pb_, *pb = &pb_;
+	struct balances pb_, *pb = &pb_;
 	calculate_balance(pb, psc);
 	int total_len = intlen(pb->income) + intlen(pb->expense) + 
 						   strlen("Expenses: $.00 Income: $.00");
