@@ -315,8 +315,8 @@ bool month_or_year_exists(int m, int y)
 double get_expenditures_per_category(struct budget_tokens *bt)
 {
 	double total = 0;
-	struct vec_t *pi = get_records_by_any(bt->m, -1, bt->y, bt->catg, NULL, TT_INCOME, -1, NULL);
-	struct vec_t *pe = get_records_by_any(bt->m, -1, bt->y, bt->catg, NULL, TT_EXPENSE, -1, NULL);
+	struct vec_d *pi = get_records_by_any(bt->m, -1, bt->y, bt->catg, NULL, TT_INCOME, -1, NULL);
+	struct vec_d *pe = get_records_by_any(bt->m, -1, bt->y, bt->catg, NULL, TT_EXPENSE, -1, NULL);
 	for (size_t i = 0; i < pi->size; i++) {
 		total += get_record_amount(pi->data[i]);
 	}
@@ -328,9 +328,9 @@ double get_expenditures_per_category(struct budget_tokens *bt)
 	return total;
 }
 
-struct vec_t *get_years_with_data(FILE *fptr, int field)
+struct vec_d *get_years_with_data(FILE *fptr, int field)
 {
-	struct vec_t *pr = malloc(sizeof(*pr) + sizeof(long) * REALLOC_INCR);
+	struct vec_d *pr = malloc(sizeof(*pr) + sizeof(long) * REALLOC_INCR);
 	if (pr == NULL) {
 		mem_alloc_fail();
 	}
@@ -365,7 +365,7 @@ struct vec_t *get_years_with_data(FILE *fptr, int field)
 	while ((str = fgets(linebuff, sizeof(linebuff), fptr)) != NULL) {
 		if (pr->size >= pr->capacity) {
 			pr->capacity += REALLOC_INCR;
-			struct vec_t *tmp = realloc(pr, sizeof(*pr) + (sizeof(long) * pr->capacity));
+			struct vec_d *tmp = realloc(pr, sizeof(*pr) + (sizeof(long) * pr->capacity));
 			if (tmp == NULL) {
 				free(pr);
 				mem_alloc_fail();
@@ -384,7 +384,7 @@ struct vec_t *get_years_with_data(FILE *fptr, int field)
 	return pr;
 }
 
-static void init_data_array(struct vec_t *vec)
+static void init_data_array(struct vec_d *vec)
 {
 	for (size_t i = 0; i < vec->size; i++) {
 		vec->data[i] = 0;
@@ -398,11 +398,11 @@ static void init_data_array(struct vec_t *vec)
  * temporary and a new function will be added to find which fields to read
  * based on the header.
  */
-struct vec_t *get_months_with_data(FILE *fptr, int matchyear, int field)
+struct vec_d *get_months_with_data(FILE *fptr, int matchyear, int field)
 {
 	char linebuff[LINE_BUFFER];
 	char *str;
-	struct vec_t *months = malloc(sizeof(*months) + (sizeof(long) * MONTHS_IN_YEAR));
+	struct vec_d *months = malloc(sizeof(*months) + (sizeof(long) * MONTHS_IN_YEAR));
 
 	if (months == NULL) {
 		mem_alloc_fail();
@@ -438,10 +438,10 @@ struct vec_t *get_months_with_data(FILE *fptr, int matchyear, int field)
 	return months;
 }
 
-struct vec_t *get_matching_line_nums(FILE *fptr, int month, int year)
+struct vec_d *get_matching_line_nums(FILE *fptr, int month, int year)
 {
 	rewind(fptr);
-	struct vec_t *pl = malloc(sizeof(*pl) + (sizeof(long) * REALLOC_INCR));
+	struct vec_d *pl = malloc(sizeof(*pl) + (sizeof(long) * REALLOC_INCR));
 	if (pl == NULL) {
 		mem_alloc_fail();
 	}
@@ -472,7 +472,7 @@ struct vec_t *get_matching_line_nums(FILE *fptr, int month, int year)
 		if (year == line_year && month == line_month) {
 			if (pl->size >= pl->capacity) {
 				pl->capacity += REALLOC_INCR;
-				struct vec_t *tmp = 
+				struct vec_d *tmp = 
 					realloc(pl, sizeof(*pl) + (sizeof(long) * pl->capacity));
 				if (tmp == NULL) {
 					free(pl);
@@ -549,22 +549,22 @@ duplicate_exists:
 	return pc; // Struct and each index of categories must be free'd
 }
 
-struct vec_t *get_records_by_yr(int year)
+struct vec_d *get_records_by_yr(int year)
 {
 	return get_records_by_any(-1, -1, year, NULL, NULL, -1, -1, NULL);
 }
 
-struct vec_t *get_records_by_mo_yr(int month, int year)
+struct vec_d *get_records_by_mo_yr(int month, int year)
 {
 	return get_records_by_any(month, -1, year, NULL, NULL, -1, -1, NULL);
 }
 
-struct vec_t *get_records_by_any
+struct vec_d *get_records_by_any
 (int month, int day, int year, char *category, char *description, 
- int transtype, double amount, struct vec_t *chunk) 
+ int transtype, double amount, struct vec_d *chunk) 
 {
 	FILE *fptr = open_record_csv("r");
-	struct vec_t *prbc = malloc(sizeof(*prbc) + (sizeof(long) * REALLOC_INCR));
+	struct vec_d *prbc = malloc(sizeof(*prbc) + (sizeof(long) * REALLOC_INCR));
 	if (prbc == NULL) {
 		mem_alloc_fail();
 	}
@@ -659,7 +659,7 @@ struct vec_t *get_records_by_any
 		if (date && cat && desc && tt && amt) {
 			if (prbc->size >= prbc->capacity) {
 				prbc->capacity += REALLOC_INCR;
-				struct vec_t *tmp = realloc(prbc, sizeof(*prbc) + (sizeof(long) * prbc->capacity));
+				struct vec_d *tmp = realloc(prbc, sizeof(*prbc) + (sizeof(long) * prbc->capacity));
 				if (tmp == NULL) {
 					free(prbc);
 					mem_alloc_fail();
@@ -738,9 +738,9 @@ struct catg_vec *get_budget_catg_by_date(int month, int year)
 	return pc;
 }
 
-struct vec_t *get_budget_catg_by_date_bo(int month, int year)
+struct vec_d *get_budget_catg_by_date_bo(int month, int year)
 {
-	struct vec_t *pcbo = malloc((sizeof(*pcbo)) + (sizeof(long) * REALLOC_INCR));
+	struct vec_d *pcbo = malloc((sizeof(*pcbo)) + (sizeof(long) * REALLOC_INCR));
 	if (pcbo == NULL) {
 		mem_alloc_fail();
 	}
@@ -768,7 +768,7 @@ struct vec_t *get_budget_catg_by_date_bo(int month, int year)
 		if (y == year && m == month) {
 			if (pcbo->size >= pcbo->capacity) {
 				pcbo->capacity += REALLOC_INCR;
-				struct vec_t *tmp = realloc(pcbo, sizeof(struct vec_t) + (sizeof(long) * pcbo->capacity));
+				struct vec_d *tmp = realloc(pcbo, sizeof(struct vec_d) + (sizeof(long) * pcbo->capacity));
 				if (tmp == NULL) {
 					free(pcbo);
 					mem_alloc_fail();
@@ -985,10 +985,10 @@ int get_int_field(int line, int field)
 	return atoi(strsep(&str, ","));
 }
 
-struct vec_t *index_csv(FILE *fptr)
+struct vec_d *index_csv(FILE *fptr)
 {
-	struct vec_t *pidx =
-		malloc(sizeof(struct vec_t) + (sizeof(long) * INDEX_ALLOC));
+	struct vec_d *pidx =
+		malloc(sizeof(struct vec_d) + (sizeof(long) * INDEX_ALLOC));
 	if (pidx == NULL) {
 		mem_alloc_fail();
 	}
@@ -1007,8 +1007,8 @@ struct vec_t *index_csv(FILE *fptr)
 			} else {
 				pidx->capacity += MAX_ALLOC;
 			}
-			struct vec_t *tmp =
-				realloc(pidx, sizeof(struct vec_t) + (sizeof(long) * pidx->capacity));
+			struct vec_d *tmp =
+				realloc(pidx, sizeof(struct vec_d) + (sizeof(long) * pidx->capacity));
 			if (tmp == NULL) {
 				free(pidx);
 				mem_alloc_fail();

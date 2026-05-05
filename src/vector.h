@@ -20,7 +20,17 @@
 #define VECTOR_H
 #include <stdio.h>
 
-struct vec_t {
+struct vec2f {
+	double a;
+	double b;
+};
+
+struct vec2i {
+	int a;
+	int b;
+};
+
+struct vec_d {
 	size_t capacity;
 	size_t size;
 	long data[];

@@ -71,7 +71,7 @@ struct date_select {
 	int tmp;
 };
 
-static bool duplicate_data_exists(struct vec_t *vec, long y)
+static bool duplicate_data_exists(struct vec_d *vec, long y)
 {
 	for (size_t i = 0; i < vec->size; i++) {
 		if (vec->data[i] == y) {
@@ -81,7 +81,7 @@ static bool duplicate_data_exists(struct vec_t *vec, long y)
 	return false;
 }
 
-static void combine_dedup_vectors(struct vec_t *vec1, struct vec_t *vec2, struct vec_t *result)
+static void combine_dedup_vectors(struct vec_d *vec1, struct vec_d *vec2, struct vec_d *result)
 {
 	size_t tmp1;
 	size_t tmp2;
@@ -129,11 +129,11 @@ static void combine_dedup_vectors(struct vec_t *vec1, struct vec_t *vec2, struct
 	}
 }
 
-/* Returns a struct vec_t of deduplicated and sorted data from record_years and 
+/* Returns a struct vec_d of deduplicated and sorted data from record_years and 
  * budget_years */
-static struct vec_t *consolidate_years(struct vec_t *vec1, struct vec_t *vec2)
+static struct vec_d *consolidate_years(struct vec_d *vec1, struct vec_d *vec2)
 {
-	struct vec_t *result = malloc(sizeof(*result) 
+	struct vec_d *result = malloc(sizeof(*result) 
 					     + (sizeof(long) * vec1->size) 
 					     + (sizeof(long) * vec2->size));
 
@@ -154,16 +154,16 @@ static struct vec_t *consolidate_years(struct vec_t *vec1, struct vec_t *vec2)
 }
 
 /* Retrieves years with data from RECORD_DIR and BUDGET_DIR CSVs, combines
- * and deduplicates the data, and returns a malloc'd struct vec_t containing an array
+ * and deduplicates the data, and returns a malloc'd struct vec_d containing an array
  * of years that can be selected for viewing. */
-static struct vec_t *get_all_years(void)
+static struct vec_d *get_all_years(void)
 {
 	FILE *rfptr = open_record_csv("r");
 	FILE *bfptr = open_budget_csv("r");
 
-	struct vec_t *pr = get_years_with_data(rfptr, 2);
-	struct vec_t *pb = get_years_with_data(bfptr, 1);
-	struct vec_t *retval;
+	struct vec_d *pr = get_years_with_data(rfptr, 2);
+	struct vec_d *pb = get_years_with_data(bfptr, 1);
+	struct vec_d *retval;
 
 	if (pr == NULL && pb != NULL) {
 		fclose(rfptr);
@@ -192,9 +192,9 @@ static struct vec_t *get_all_years(void)
 	return retval;
 }
 
-static struct vec_t *consolidate_months(struct vec_t *vec1, struct vec_t *vec2)
+static struct vec_d *consolidate_months(struct vec_d *vec1, struct vec_d *vec2)
 {
-	struct vec_t *result = malloc(sizeof(*result) + (sizeof(long) * MONTHS_IN_YEAR));
+	struct vec_d *result = malloc(sizeof(*result) + (sizeof(long) * MONTHS_IN_YEAR));
 	if (result == NULL) {
 		free(vec1);
 		free(vec2);
@@ -212,16 +212,16 @@ static struct vec_t *consolidate_months(struct vec_t *vec1, struct vec_t *vec2)
 }
 
 /* Retrieves months with data from RECORD_DIR and BUDGET_DIR CSVs, combines
- * and deduplicates the data, and returns a malloc'd struct vec_t containing an array
+ * and deduplicates the data, and returns a malloc'd struct vec_d containing an array
  * of months that can be selected for viewing. */
-static struct vec_t *get_all_months(int year)
+static struct vec_d *get_all_months(int year)
 {
 	FILE *rfptr = open_record_csv("r");
 	FILE *bfptr = open_budget_csv("r");
 
-	struct vec_t *pr = get_months_with_data(rfptr, year, 1);
-	struct vec_t *pb = get_months_with_data(bfptr, year, 0);
-	struct vec_t *retval;
+	struct vec_d *pr = get_months_with_data(rfptr, year, 1);
+	struct vec_d *pb = get_months_with_data(bfptr, year, 0);
+	struct vec_d *retval;
 
 	fclose(rfptr);
 	fclose(bfptr);
@@ -238,7 +238,7 @@ static struct vec_t *get_all_months(int year)
 
 /* Iterates through 'months' vector's data member and returns the index of
  * the current month */
-static int get_current_mo_idx(struct vec_t *months)
+static int get_current_mo_idx(struct vec_d *months)
 {
 	int mo = get_current_month();
 
@@ -265,7 +265,7 @@ static void scroll_month
 /* On a non-select, the return value is the inverted menukeys value */
 static int select_month(WINDOW *wptr, int year)
 {
-	struct vec_t *months_data = get_all_months(year);
+	struct vec_d *months_data = get_all_months(year);
 	struct date_select scroll = { 0 };
 	int monlen = strlen(abbr_months[0]);
 	int c = 0;
@@ -367,7 +367,7 @@ static int select_year(WINDOW *wptr)
 {
 	keypad(wptr, true);	
 
-	struct vec_t *years = get_all_years();
+	struct vec_d *years = get_all_years();
 	if (years == NULL) {
 		return -(NO_RCRD);
 	}
@@ -543,9 +543,9 @@ static void debug_fields(void)
  * just moving memory around for the sake of portability and other sorting
  * selections.
  */
-static struct vec_t *sort_by_date(FILE *fptr, struct vec_t *pidx, struct vec_t *plines)
+static struct vec_d *sort_by_date(FILE *fptr, struct vec_d *pidx, struct vec_d *plines)
 {
-	struct vec_t *psbd = malloc(sizeof(*psbd) + (sizeof(long) * plines->size));
+	struct vec_d *psbd = malloc(sizeof(*psbd) + (sizeof(long) * plines->size));
 	if (psbd == NULL) {
 		mem_alloc_fail();
 	}
@@ -564,10 +564,10 @@ static struct vec_t *sort_by_date(FILE *fptr, struct vec_t *pidx, struct vec_t *
 
 /* Returns an array of integers representing the byte offsets of records 
  * sorted by category */
-static struct vec_t *sort_by_category
-(FILE *fptr, struct vec_t *pidx, struct vec_t *plines, int yr, int mo)
+static struct vec_d *sort_by_category
+(FILE *fptr, struct vec_d *pidx, struct vec_d *plines, int yr, int mo)
 {
-	struct vec_t *prsc = malloc(sizeof(*prsc) + (sizeof(long) * REALLOC_INCR));
+	struct vec_d *prsc = malloc(sizeof(*prsc) + (sizeof(long) * REALLOC_INCR));
 	if (prsc == NULL) {
 		free(pidx);
 		free(plines);
@@ -593,7 +593,7 @@ static struct vec_t *sort_by_category
 			 * to mark the spaces between categories */
 			if (prsc->size + 1 >= prsc->capacity) {
 				prsc->capacity += REALLOC_INCR;
-				struct vec_t *tmp = realloc(prsc, sizeof(*prsc) 
+				struct vec_d *tmp = realloc(prsc, sizeof(*prsc) 
 					    		   + (prsc->capacity * sizeof(char *)));
 				if (tmp == NULL) {
 					free(prsc);
@@ -738,9 +738,9 @@ void nc_read_setup
 
 	struct catg_nodes **nodes;
 	FILE *fptr = open_record_csv("r");
-	struct vec_t *pidx = index_csv(fptr);
-	struct vec_t *plines;
-	struct vec_t *psc;
+	struct vec_d *pidx = index_csv(fptr);
+	struct vec_d *plines;
+	struct vec_d *psc;
 	size_t n_records;
 	bool sidebar_exists;
 	/* To hold the return value of wgetch()/getch() */
@@ -779,6 +779,7 @@ void nc_read_setup
 	}
 
 	nodes = create_category_nodes(dates->month, dates->year);
+
 	if (debug_flag) {
 //FIX debug_category_nodes(wins->data, nodes);
 	}

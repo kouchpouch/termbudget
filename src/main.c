@@ -70,7 +70,7 @@ void debug_columns(WINDOW *wptr, struct ColWidth *cw)
 	wgetch(wptr);
 }
 
-void calculate_balance(struct balances *pb, struct vec_t *pbo)
+void calculate_balance(struct balances *pb, struct vec_d *pbo)
 {
 	FILE *fptr = open_record_csv("r");
 	pb->income = 0.0;

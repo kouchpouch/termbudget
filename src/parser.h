@@ -117,7 +117,7 @@ bool month_or_year_exists(int m, int y);
 double get_expenditures_per_category(struct budget_tokens *bt);
 
 /* Returns a vector of years which contain data */
-struct vec_t *get_years_with_data(FILE *fptr, int field);
+struct vec_d *get_years_with_data(FILE *fptr, int field);
 
 /*
  * Returns a malloc'd vector containing all months with records in file 'fptr',
@@ -126,13 +126,13 @@ struct vec_t *get_years_with_data(FILE *fptr, int field);
  * temporary and a new function will be added to find which fields to read
  * based on the header.
  */
-struct vec_t *get_months_with_data(FILE *fptr, int matchyear, int field);
+struct vec_d *get_months_with_data(FILE *fptr, int matchyear, int field);
 
 /*
  * Returns a vector containing the line numbers of the records with matching
  * month and year.
  */
-struct vec_t *get_matching_line_nums(FILE *fptr, int month, int year);
+struct vec_d *get_matching_line_nums(FILE *fptr, int month, int year);
 
 /*
  * For a given month and year, return an array of strings from the category
@@ -142,11 +142,11 @@ struct catg_vec *get_categories(int month, int year);
 
 /* Uses get_records_by_any with all parameters except year as NULL
  * or -1, omitting the search for other fields */
-struct vec_t *get_records_by_yr(int year);
+struct vec_d *get_records_by_yr(int year);
 
 /* Uses get_records_by_any with all parameters except month and year as NULL
  * or -1, omitting the search for other fields */
-struct vec_t *get_records_by_mo_yr(int month, int year);
+struct vec_d *get_records_by_mo_yr(int month, int year);
 
 /* Generic function for getting record byte offsets by some parameter.
  * To disregard an argument, pass a negative value for any int or double and
@@ -160,20 +160,20 @@ struct vec_t *get_records_by_mo_yr(int month, int year);
  * Get records by category in a defined chunk: 
  *     get_records_by_any(-1, -1, -1, paychecks, NULL, -1, -1, chunk);
  * 													   
- * Returns a struct vec_t data member containing byte offset values of records that
- * match and struct vec_t data member size with the total number of records that
+ * Returns a struct vec_d data member containing byte offset values of records that
+ * match and struct vec_d data member size with the total number of records that
  * matched. */
-struct vec_t *get_records_by_any(int month, int day, int year, char *category,
+struct vec_d *get_records_by_any(int month, int day, int year, char *category,
 							   char *description, int transtype, double amount,
-							   struct vec_t *chunk);
+							   struct vec_d *chunk);
 
 /* Returns number of categories and the string literal categories of given
  * month and year in BUDGET_DIR */
 struct catg_vec *get_budget_catg_by_date(int month, int year);
 
-/* Returns struct vec_t containing byte offsets of each category that matches month,
+/* Returns struct vec_d containing byte offsets of each category that matches month,
  * year in BUDGET_DIR. */
-struct vec_t *get_budget_catg_by_date_bo(int month, int year);
+struct vec_d *get_budget_catg_by_date_bo(int month, int year);
 
 /* Returns malloc'd tokenized variables in BudgetTokens by seeking the file
  * position indicator to bo. BudgetTokens catg is separately malloc'd and must 
@@ -218,9 +218,9 @@ int get_int_field(int line, int field);
  * REALLOC_INCR which is used in cases where realistically not many values
  * will be stored in the array.
  *
- * Also changed return type to be a struct vec_t. Removes the local variable to keep
+ * Also changed return type to be a struct vec_d. Removes the local variable to keep
  * track of capacity, it is now apart of the struct.
  */
-struct vec_t *index_csv(FILE *fptr);
+struct vec_d *index_csv(FILE *fptr);
 
 #endif

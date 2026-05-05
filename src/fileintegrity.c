@@ -184,8 +184,8 @@ static int cmp_catg_and_fix
 int verify_categories_exist_in_budget(void)
 {
 	FILE *rfptr = open_record_csv("r");
-	struct vec_t *years;
-	struct vec_t *months;
+	struct vec_d *years;
+	struct vec_d *months;
 	int corrected = 0;
 	struct catg_vec prc_, *prc = &prc_;
 	struct catg_vec pbc_, *pbc = &pbc_;

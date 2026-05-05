@@ -47,6 +47,6 @@ int init_sidebar_body(WINDOW *wptr, struct catg_nodes **nodes, size_t i);
  * the sidebar parent. Also draws the appropriate text on the boundary */
 void draw_sidebar_parent_border(WINDOW *wptr);
 
-void init_sidebar_parent(WINDOW *wptr, struct vec_t *psc, double leftover);
+void init_sidebar_parent(WINDOW *wptr, struct vec_d *psc, double leftover);
 
 #endif
