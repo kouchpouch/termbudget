@@ -57,8 +57,7 @@ static void delete_transaction(int line)
 	mv_tmp_to_record_file(tmpfptr, fptr);
 }
 
-static void edit_field_loop_scroll_prev
-(struct field_select *fs, WINDOW *wptr)
+static void edit_field_loop_scroll_prev(struct field_select *fs, WINDOW *wptr)
 {
 	if (fs->y_cursor - 1 > 0) {
 		mvwchgat(wptr, fs->y_cursor, fs->start_x, fs->nx, A_NORMAL, 0, NULL);
@@ -71,8 +70,7 @@ static void edit_field_loop_scroll_prev
 	}
 }
 
-static void edit_field_loop_scroll_next
-(struct field_select *fs, WINDOW *wptr)
+static void edit_field_loop_scroll_next(struct field_select *fs, WINDOW *wptr)
 {
 	if (fs->y_cursor + 1 <= (INPUT_WIN_ROWS - BOX_OFFSET)) {
 		mvwchgat(wptr, fs->y_cursor, fs->start_x, fs->nx, A_NORMAL, 0, NULL);
@@ -129,8 +127,9 @@ static int select_edit_field_loop(WINDOW *wptr)
 }
 
 /* Ncurses implementation to do the actual file writing */
-static int nc_edit_csv_record
-(int replace_line, int edit_field, struct transaction_tokens *ld)
+static int nc_edit_csv_record(int replace_line,
+							  int edit_field,
+							  struct transaction_tokens *ld)
 {
 	if (replace_line == 0) {
 		puts("Cannot delete line 0");

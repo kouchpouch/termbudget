@@ -559,9 +559,14 @@ struct vec_d *get_records_by_mo_yr(int month, int year)
 	return get_records_by_any(month, -1, year, NULL, NULL, -1, -1, NULL);
 }
 
-struct vec_d *get_records_by_any
-(int month, int day, int year, char *category, char *description, 
- int transtype, double amount, struct vec_d *chunk) 
+struct vec_d *get_records_by_any(int month,
+								 int day,
+								 int year,
+								 char *category,
+								 char *description, 
+								 int transtype,
+								 double amount,
+								 struct vec_d *chunk) 
 {
 	FILE *fptr = open_record_csv("r");
 	struct vec_d *prbc = malloc(sizeof(*prbc) + (sizeof(long) * REALLOC_INCR));
@@ -659,7 +664,8 @@ struct vec_d *get_records_by_any
 		if (date && cat && desc && tt && amt) {
 			if (prbc->size >= prbc->capacity) {
 				prbc->capacity += REALLOC_INCR;
-				struct vec_d *tmp = realloc(prbc, sizeof(*prbc) + (sizeof(long) * prbc->capacity));
+				struct vec_d *tmp = realloc(
+					prbc, sizeof(*prbc) + (sizeof(long) * prbc->capacity));
 				if (tmp == NULL) {
 					free(prbc);
 					mem_alloc_fail();
@@ -740,7 +746,7 @@ struct catg_vec *get_budget_catg_by_date(int month, int year)
 
 struct vec_d *get_budget_catg_by_date_bo(int month, int year)
 {
-	struct vec_d *pcbo = malloc((sizeof(*pcbo)) + (sizeof(long) * REALLOC_INCR));
+	struct vec_d *pcbo = malloc(sizeof(*pcbo)) + (sizeof(long) * REALLOC_INCR);
 	if (pcbo == NULL) {
 		mem_alloc_fail();
 	}
@@ -768,7 +774,8 @@ struct vec_d *get_budget_catg_by_date_bo(int month, int year)
 		if (y == year && m == month) {
 			if (pcbo->size >= pcbo->capacity) {
 				pcbo->capacity += REALLOC_INCR;
-				struct vec_d *tmp = realloc(pcbo, sizeof(struct vec_d) + (sizeof(long) * pcbo->capacity));
+				struct vec_d *tmp = realloc(
+					pcbo, sizeof(struct vec_d) + (sizeof(long) * pcbo->capacity));
 				if (tmp == NULL) {
 					free(pcbo);
 					mem_alloc_fail();

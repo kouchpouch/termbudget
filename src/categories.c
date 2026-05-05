@@ -44,7 +44,7 @@ struct catg_node *get_node_by_idx(struct catg_node *head, size_t idx)
 	return curr;
 }
 
-int get_total_nodes(struct catg_node *head)
+size_t get_total_nodes(struct catg_node *head)
 {
 	int n = 0;
 	struct catg_node *tmp = head;
@@ -75,8 +75,9 @@ static struct catg_node *init_head(void)
 	return head;
 }
 
-struct catg_node *append_catg_node
-(struct catg_node *head, long catg_fp, struct vec_d *data)
+struct catg_node *append_catg_node(struct catg_node *head,
+								   long catg_fp,
+								   struct vec_d *data)
 {
 	struct catg_node *ret = create_catg_node();
 	struct catg_node *tmp = head;
@@ -96,8 +97,10 @@ struct catg_node *append_catg_node
 	return ret;
 }
 
-struct catg_node *insert_catg_node
-(struct catg_node **head, size_t idx, long catg_fp, struct vec_d *data)
+struct catg_node *insert_catg_node(struct catg_node **head,
+								   size_t idx,
+								   long catg_fp,
+								   struct vec_d *data)
 {
 	size_t i;
 	struct catg_node *tmp = NULL;
@@ -237,7 +240,8 @@ void debug_print_catg_node_data(struct catg_node *head)
 	}
 }
 
-struct catg_node *create_catg_node_list(int m, int y) {
+struct catg_node *create_catg_node_list(int m, int y)
+{
 	struct vec_d         *catg_fpis = get_budget_catg_by_date_bo(m, y);
 	struct vec_d         *chunk = get_records_by_mo_yr(m, y);
 	struct catg_node     *head = init_head();

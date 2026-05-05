@@ -103,7 +103,9 @@ int calculate_overview_columns(WINDOW *wptr)
 
 /* Returns the number of spaces between each bar graph for the overview
  * option */
-static void nc_print_overview_graphs(WINDOW *wptr, struct vec_d *months, int year)
+static void nc_print_overview_graphs(WINDOW *wptr,
+									 struct vec_d *months,
+									 int year)
 {
 	double ratios[12] = {0.0}; // Holds each month's income/expense ratio
 	double maxvals[12] = {0.0};
@@ -201,7 +203,9 @@ static void nc_print_overview_graphs(WINDOW *wptr, struct vec_d *months, int yea
 	}
 }
 
-static void nc_print_overview_balances(WINDOW *wptr, struct vec_d *months, int year)
+static void nc_print_overview_balances(WINDOW *wptr,
+									   struct vec_d *months,
+									   int year)
 {
 	int tmpx = 0;
 	int space = calculate_overview_columns(wptr);
@@ -264,7 +268,9 @@ static void nc_print_overview_months(WINDOW *wptr)
 	}
 }
 
-static unsigned int nc_overview_loop(WINDOW *wptr, struct vec_d *months, int year)
+static unsigned int nc_overview_loop(WINDOW *wptr,
+									 struct vec_d *months,
+									 int year)
 {
 	unsigned int flag = 0;
 	int c;

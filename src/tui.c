@@ -400,22 +400,22 @@ int category_color(int x)
 
 static void init_color_palette(void)
 {
-	// These colors were picked by a clanker, the only thing in the entire
-	// program that used the devil.
-	init_pair(1, COLOR_RED, -1);
-	init_pair(2, COLOR_GREEN, -1);
-	init_pair(3, COLOR_YELLOW, -1);
-	init_pair(11, 75, -1);  // soft blue
-	init_pair(12, 69, -1);  // muted indigo
-	init_pair(13, 111, -1); // lavender
-	init_pair(14, 147, -1); // soft violet
-	init_pair(15, 121, -1); // mint
-	init_pair(16, 79, -1);  // seafoam
-	init_pair(17, 108, -1); // sage
-	init_pair(18, 216, -1); // peach
-	init_pair(19, 215, -1); // soft orange
-	init_pair(20, 222, -1); // light gold
-	init_pair(REVERSE_COLOR, 251, -1);
+	/* These colors were picked by a clanker, the only thing in the entire
+	 * program that used the devil. */
+	init_pair(1, COLOR_RED, -1);           // #ff0000
+	init_pair(2, COLOR_GREEN, -1);         // #00ff00
+	init_pair(3, COLOR_YELLOW, -1);        // #ffff00
+	init_pair(11, 75, -1);                 // #5fafff
+	init_pair(12, 69, -1);                 // #5f87ff
+	init_pair(13, 111, -1);                // #87afff
+	init_pair(14, 147, -1);                // #afafff
+	init_pair(15, 121, -1);                // #87ff87
+	init_pair(16, 79, -1);                 // #5fd7af
+	init_pair(17, 108, -1);                // #87af87
+	init_pair(18, 216, -1);                // #ffaf87
+	init_pair(19, 215, -1);                // #ffaf5f
+	init_pair(20, 222, -1);                // #ffd878
+	init_pair(REVERSE_COLOR, 251, -1);     // #c6c6c6
 }
 
 WINDOW *nc_init_stdscr(void)

@@ -134,8 +134,7 @@ static bool validate_input_len(size_t buffer, char *input, WINDOW *wptr)
 	return true;
 }
 
-static int get_edit_field_x_coord
-(WINDOW *wptr, struct date_input_vars *s)
+static int get_edit_field_x_coord(WINDOW *wptr, struct date_input_vars *s)
 {
 	fd_fields = s->field_idx;
 	switch (fd_fields) {
@@ -178,8 +177,7 @@ static bool char_is_valid(char c) {
 	return false;
 }
 
-static void modify_date_vals 
-(int val, struct full_date *d, int field)
+static void modify_date_vals(int val, struct full_date *d, int field)
 {
 	switch (field) {
 
@@ -224,8 +222,9 @@ static void rehighlight_date_field(WINDOW *wptr, struct date_input_vars *s)
 /* Determines the field from s->field_idx, and prints characters from stdin 
  * to the screen, returns the value entered if it passes verification, 0
  * on quit, -1 on failure. */
-static int date_field_input_loop
-(WINDOW *wptr, struct date_input_vars *s, struct full_date *date)
+static int date_field_input_loop(WINDOW *wptr,
+								 struct date_input_vars *s,
+								 struct full_date *date)
 {
 	int n;
 	s->field_idx == F_YEAR ? (n = s->year_field_len) : (n = s->month_field_len);
@@ -300,8 +299,7 @@ static int date_field_input_loop
 	return 0;
 }
 
-static void scroll_prev_field
-(WINDOW *wptr, struct date_input_vars *s)
+static void scroll_prev_field(WINDOW *wptr, struct date_input_vars *s)
 {
 	unhighlight_boxed(wptr, s->date_y);
 	unhighlight_boxed(wptr, s->opt_y);
@@ -342,8 +340,7 @@ static void scroll_prev_field
 	}
 }
 
-static void scroll_next_field
-(WINDOW *wptr, struct date_input_vars *s)
+static void scroll_next_field(WINDOW *wptr, struct date_input_vars *s)
 {
 	unhighlight_boxed(wptr, s->date_y);
 	unhighlight_boxed(wptr, s->opt_y);
@@ -413,8 +410,11 @@ static void init_input_vars(WINDOW *wptr, struct date_input_vars *s)
 	s->year_x = s->day_x + s->incr_x;
 }
 
-static void print_data_to_window 
-(WINDOW *wptr, struct date_input_vars *s, int m, int d, int y)
+static void print_data_to_window(WINDOW *wptr,
+								 struct date_input_vars *s,
+								 int m,
+								 int d,
+								 int y)
 {
 	int center_x = (getmaxx(wptr) / 2) - s->print_x;
 	char *cancel = "<Cancel>";
@@ -468,9 +468,12 @@ static void print_invalid_date_msg(WINDOW *wptr)
  * values. Will ignore and skip over "day" if "require_day" is false. the 
  * selected field will begin on "start_field" using enum _fd_fields.
  * Returns -1 on quit, 0 on success */
-static int input_full_date
-(int old_mo, int old_day, int old_yr, struct full_date *new_date, 
- bool require_day, int start_field)
+static int input_full_date(int old_mo,
+						   int old_day,
+						   int old_yr,
+						   struct full_date *new_date,
+						   bool require_day,
+						   int start_field)
 {
 	int c = 0;
 	bool is_valid = false;
@@ -668,8 +671,10 @@ static void nc_user_input(int n, WINDOW *wptr, struct UserInput *pui)
 	}
 }
 
-static void nc_input_n_digits
-(struct UserInputDigit *puid, WINDOW *wptr, size_t max_len, size_t min_len) 
+static void nc_input_n_digits(struct UserInputDigit *puid,
+							  WINDOW *wptr,
+							  size_t max_len,
+							  size_t min_len) 
 {
 	struct UserInput pui_, *pui = &pui_;
 	puid->flag = 0;

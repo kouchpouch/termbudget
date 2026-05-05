@@ -26,9 +26,9 @@
 
 struct file_write_vars {
 	char *string;
-	int line;
-	bool replace;
-	bool delete;
+	int   line;
+	bool  replace;
+	bool  delete;
 };
 
 static void print_lines_written_debug(int lines_written)
@@ -39,8 +39,9 @@ static void print_lines_written_debug(int lines_written)
 	};
 }
 
-int budget_tokens_to_string
-(char *buffer, size_t size, struct budget_tokens *bt)
+int budget_tokens_to_string(char *buffer,
+							size_t size,
+							struct budget_tokens *bt)
 {
 	return snprintf(buffer, size, 
 		"%d,%d,%s,%d,%.2f\n", 
@@ -51,8 +52,9 @@ int budget_tokens_to_string
 		bt->amount);
 }
 
-int line_data_to_string 
-(char *buffer, size_t size, struct transaction_tokens *ld)
+int line_data_to_string (char *buffer,
+						 size_t size,
+						 struct transaction_tokens *ld)
 {
 	return snprintf(buffer, size,
 		  "%d,%d,%d,%s,%s,%d,%.2f\n",
@@ -112,8 +114,9 @@ static void print_invalid_opt_error_and_exit(void)
  *
  * Returns number of lines written.
  */
-static void write_string_to_file
-(FILE *fptr, FILE* tmpfptr, struct file_write_vars *opts)
+static void write_string_to_file(FILE *fptr,
+								 FILE* tmpfptr,
+								 struct file_write_vars *opts)
 {
 	char line_buffer[LINE_BUFFER];
 	char *line_str;

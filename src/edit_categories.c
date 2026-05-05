@@ -225,8 +225,9 @@ static void free_lda(struct transaction_tokens **lda, size_t sz)
 
 /* Replaces the category field of records contained in nodes[node_idx] with
  * catg. */
-static int replace_many_records_categories
-(struct catg_node *head, size_t node_idx, char *catg)
+static int replace_many_records_categories(struct catg_node *head,
+										   size_t node_idx,
+										   char *catg)
 {
 	struct catg_node *tmp = get_node_by_idx(head, node_idx);
 	struct replace_records_vars rr = { 0 };

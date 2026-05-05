@@ -68,7 +68,7 @@ void free_categories(struct catg_vec *pc);
 struct catg_node *get_node_by_idx(struct catg_node *head, size_t idx);
 
 /* Returns number of nodes in the linked list */
-int get_total_nodes(struct catg_node *head);
+size_t get_total_nodes(struct catg_node *head);
 
 /* Appends a struct catg_node to the tail of the doubly linked list. */
 struct catg_node *append_catg_node(struct catg_node *head,

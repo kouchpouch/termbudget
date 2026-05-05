@@ -130,8 +130,9 @@ err_category:
 	free(pidx);
 }
 
-static int edit_csv_record
-(int replace_line, struct transaction_tokens *ld, int field)
+static int edit_csv_record(int replace_line,
+						   struct transaction_tokens *ld,
+						   int field)
 {
 	if (replace_line == 0) {
 		puts("Cannot delete line 0");

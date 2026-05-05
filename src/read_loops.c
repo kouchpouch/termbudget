@@ -67,8 +67,11 @@ static void print_debug_line(WINDOW *wptr, struct scroll_vars *sc)
 	wrefresh(wptr);
 }
 
-static void print_catg_balances
-(WINDOW *wptr, int tt, double planned, double exp, int width)
+static void print_catg_balances(WINDOW *wptr,
+								int tt,
+								double planned,
+								double exp,
+								int width)
 {
 	// Safe cast, we know these strings aren't greater than INT_MAX
 	char *full_inc_string = "Planned: $, Received: $";
@@ -125,8 +128,10 @@ static bool shorten_string(WINDOW *wptr)
  * to by wptr, at a Y-coordinate of y. Truncates desc and category strings
  * if the window is too small.
  */
-static void print_record_hr
-(WINDOW *wptr, struct ColWidth *cw, struct transaction_tokens *ld, int y)
+static void print_record_hr(WINDOW *wptr,
+							struct ColWidth *cw,
+							struct transaction_tokens *ld,
+							int y)
 {
 	char *etc = "..";
 	int lenetc = (int)strlen(etc);
@@ -168,8 +173,10 @@ static void print_record_hr
 	wprintw(wptr, "$%.2f", ld->amount);
 }
 
-static void print_category_hr
-(WINDOW *wptr, struct ColWidth *cw, struct budget_tokens *bt, int y)
+static void print_category_hr(WINDOW *wptr,
+							  struct ColWidth *cw,
+							  struct budget_tokens *bt,
+							  int y)
 {
 	char *etc = "..";
 	int lenetc = (int)strlen(etc);
@@ -239,8 +246,11 @@ static void print_init_budget_loop(WINDOW *wptr,
 		mvwchgat(wptr, sc->displayed, 0, -1, A_NORMAL, category_color(i), NULL); 
 		sc->displayed++;
 
-		for (size_t j = 0; sc->displayed < max_y && sc->displayed < sc->total_rows 
-		     && j < curr->data->size; j++)
+		for (size_t j = 0; 
+			 sc->displayed < max_y && 
+		     sc->displayed < sc->total_rows && 
+		     j < curr->data->size; 
+		     j++)
 		{
 			fseek(fptr, curr->data->data[j], SEEK_SET);
 			line_str = fgets(linebuff, sizeof(linebuff), fptr);
@@ -312,8 +322,8 @@ static void draw_parent_box_with_sidebar(WINDOW *wptr) {
 
 /* Draws all of the window borders, then the border text on top. Call this
  * function any time the borders/text need to be updated. */
-static void draw_read_window_borders_and_text
-(struct ReadWins *wins, struct vec_d *psc)
+static void draw_read_window_borders_and_text(struct ReadWins *wins,
+											  struct vec_d *psc)
 {
 	/* Draw borders in order for correct intersecting lines */
 	if (wins->sidebar_parent != NULL || wins->sidebar_body != NULL) {
@@ -345,8 +355,9 @@ static int show_detail_subwindow(char *line)
 	return y;
 }
 
-static void refresh_displayed_counter
-(WINDOW *wptr, struct scroll_vars *sc, struct visible_range *dc)
+static void refresh_displayed_counter(WINDOW *wptr,
+									  struct scroll_vars *sc,
+									  struct visible_range *dc)
 {
 	mvwhline(wptr, getmaxy(wptr) - 1, BOX_OFFSET, 0, getmaxx(wptr) - (BOX_OFFSET + 1));
 	wrefresh(wptr);
@@ -363,8 +374,11 @@ static void refresh_displayed_counter
 	}
 }
 
-static void nc_scroll_prev
-(long b, FILE *fptr, WINDOW *wptr, struct ColWidth *cw, bool catg) 
+static void nc_scroll_prev(long b,
+						   FILE *fptr,
+						   WINDOW *wptr,
+						   struct ColWidth *cw,
+						   bool catg) 
 {
 	fseek(fptr, b, SEEK_SET);
 	char linebuff[LINE_BUFFER];
@@ -390,8 +404,11 @@ static void nc_scroll_prev
 	}
 }
 
-static void nc_scroll_next
-(long b, FILE *fptr, WINDOW *wptr, struct ColWidth *cw, bool catg) 
+static void nc_scroll_next(long b,
+						   FILE *fptr,
+						   WINDOW *wptr,
+						   struct ColWidth *cw,
+						   bool catg) 
 {
 	fseek(fptr, b, SEEK_SET);
 	char linebuff[LINE_BUFFER];
@@ -420,9 +437,11 @@ static void nc_scroll_next
 }
 
 /* Returns 1 if the text was scrolled down, 0 if a normal scroll occured */
-static int nc_scroll_prev_read_loop
-(WINDOW *wptr, struct scroll_vars *sc, struct ColWidth *cw, FILE *fptr, 
- struct vec_d *psc)
+static int nc_scroll_prev_read_loop(WINDOW *wptr,
+									struct scroll_vars *sc,
+									struct ColWidth *cw,
+									FILE *fptr,
+									struct vec_d *psc)
 {
 	int retval = 0;
 
@@ -448,9 +467,11 @@ static int nc_scroll_prev_read_loop
 }
 
 /* Returns 1 if the text was scrolled up, 0 if a normal scroll occured */
-static int nc_scroll_next_read_loop
-(WINDOW *wptr, struct scroll_vars *sc, struct ColWidth *cw, FILE *fptr, 
- struct vec_d *psc)
+static int nc_scroll_next_read_loop(WINDOW *wptr,
+									struct scroll_vars *sc,
+									struct ColWidth *cw, 
+									FILE *fptr,
+									struct vec_d *psc)
 {
 	int retval = 0;
 

@@ -81,7 +81,9 @@ static bool duplicate_data_exists(struct vec_d *vec, long y)
 	return false;
 }
 
-static void combine_dedup_vectors(struct vec_d *vec1, struct vec_d *vec2, struct vec_d *result)
+static void combine_dedup_vectors(struct vec_d *vec1,
+								  struct vec_d *vec2,
+								  struct vec_d *result)
 {
 	size_t tmp1;
 	size_t tmp2;
@@ -194,7 +196,9 @@ static struct vec_d *get_all_years(void)
 
 static struct vec_d *consolidate_months(struct vec_d *vec1, struct vec_d *vec2)
 {
-	struct vec_d *result = malloc(sizeof(*result) + (sizeof(long) * MONTHS_IN_YEAR));
+	struct vec_d *result = malloc(sizeof(*result) + 
+							      (sizeof(long) * 
+							      MONTHS_IN_YEAR));
 	if (result == NULL) {
 		free(vec1);
 		free(vec2);
@@ -252,8 +256,11 @@ static int get_current_mo_idx(struct vec_d *months)
 	return -1;
 }
 
-static void scroll_month
-(WINDOW *wptr, int tmp, int monlen, int *idx, bool next)
+static void scroll_month(WINDOW *wptr,
+						 int tmp,
+						 int monlen,
+						 int *idx,
+						 bool next)
 {
 	mvwchgat(wptr, tmp, BOX_OFFSET, monlen, A_NORMAL, 0, NULL);
 	next ? tmp++ : tmp--;
@@ -352,8 +359,11 @@ static int select_month(WINDOW *wptr, int year)
 	return scroll.selected_date;
 }
 
-static void scroll_year
-(WINDOW *wptr, int print_y, int tmp, int *idx, bool next)
+static void scroll_year(WINDOW *wptr,
+						int print_y,
+						int tmp,
+						int *idx,
+						bool next)
 {
 	mvwchgat(wptr, print_y, tmp, 4, A_NORMAL, 0, NULL);
 	next ? (tmp += 5) : (tmp -= 5);
@@ -543,7 +553,9 @@ static void debug_fields(void)
  * just moving memory around for the sake of portability and other sorting
  * selections.
  */
-static struct vec_d *sort_by_date(FILE *fptr, struct vec_d *pidx, struct vec_d *plines)
+static struct vec_d *sort_by_date(FILE *fptr,
+								  struct vec_d *pidx,
+								  struct vec_d *plines)
 {
 	struct vec_d *psbd = malloc(sizeof(*psbd) + (sizeof(long) * plines->size));
 	if (psbd == NULL) {
@@ -564,8 +576,11 @@ static struct vec_d *sort_by_date(FILE *fptr, struct vec_d *pidx, struct vec_d *
 
 /* Returns an array of integers representing the byte offsets of records 
  * sorted by category */
-static struct vec_d *sort_by_category
-(FILE *fptr, struct vec_d *pidx, struct vec_d *plines, int yr, int mo)
+static struct vec_d *sort_by_category(FILE *fptr,
+									  struct vec_d *pidx,
+									  struct vec_d *plines,
+									  int yr,
+									  int mo)
 {
 	struct vec_d *prsc = malloc(sizeof(*prsc) + (sizeof(long) * REALLOC_INCR));
 	if (prsc == NULL) {
@@ -715,9 +730,11 @@ static double get_left_to_budget(struct catg_node *head)
 	return ret;
 }
 
-static void cleanup_read_setup
-(struct vec_d *rec_fpis, struct vec_d *rec_line_nums, struct vec_d *pidx, 
- struct ReadWins *wins, FILE *fptr)
+static void cleanup_read_setup(struct vec_d *rec_fpis,
+							   struct vec_d *rec_line_nums,
+							   struct vec_d *pidx,
+							   struct ReadWins *wins,
+							   FILE *fptr)
 {
 	free(rec_fpis);
 	free(rec_line_nums);
