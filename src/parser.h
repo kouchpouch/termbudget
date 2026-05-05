@@ -163,9 +163,12 @@ struct vec_d *get_records_by_mo_yr(int month, int year);
  * Returns a struct vec_d data member containing byte offset values of records that
  * match and struct vec_d data member size with the total number of records that
  * matched. */
-struct vec_d *get_records_by_any(int month, int day, int year, char *category,
-							   char *description, int transtype, double amount,
-							   struct vec_d *chunk);
+struct vec_d *get_records_by_any(int month, int day, int year,
+								 char *category,
+								 char *description,
+								 int transtype,
+								 double amount,
+								 struct vec_d *chunk);
 
 /* Returns number of categories and the string literal categories of given
  * month and year in BUDGET_DIR */
