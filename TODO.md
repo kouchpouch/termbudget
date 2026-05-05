@@ -117,7 +117,7 @@
         date.
 - [ ] Optimize the category nodes linked list to not be rebuilt on every 
         action.
-    - [ ] Create a library with an easy to use API for managing the linked 
+    - [X] Create a library with an easy to use API for managing the linked 
             list.
 
 #### Main Feature Set
