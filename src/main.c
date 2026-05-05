@@ -105,25 +105,6 @@ void print_debug_node(WINDOW *wptr, struct catg_nodes *node)
 		 node->catg_fp);
 }
 
-void debug_category_nodes(WINDOW *wptr, struct catg_nodes **nodes)
-{
-	size_t i = 0;
-	wmove(wptr, 0, 0);
-
-	while (1) {
-		if (nodes[i]->next == NULL) {
-			print_debug_node(wptr, nodes[i]);
-			break;
-		} else {
-			print_debug_node(wptr, nodes[i]);
-		}
-		i++;
-	}
-
-	wgetch(wptr);
-	wclear(wptr);
-}
-
 static int n_spaces(int max_x, char *str1, char *str2)
 {
 	return (int)(max_x - (BOX_OFFSET * 2) - strlen(str1) - strlen(str2));
