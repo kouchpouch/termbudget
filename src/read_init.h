@@ -20,17 +20,20 @@
 #define READ_INIT_H
 
 #include <stdio.h>
+#include "categories.h"
 
 struct read_retvals {
+	struct catg_node *head;
 	long fpi;
 	int flag;
 	int yr;
 	int mo;
 	int sort;
+	bool keep_head;
 	bool dirty;
 };
 
-struct SelRecord {
+struct record_select {
 	unsigned int flag;
 	long index;
 	long opt; // Optional flag

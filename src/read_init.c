@@ -473,7 +473,7 @@ static int input_year(WINDOW *wptr)
 	return yr;
 }
 
-static void get_dates(struct SelRecord *sr, struct month_year *dates)
+static void get_dates(struct record_select *sr, struct month_year *dates)
 {
 	WINDOW *wptr = newwin(LINES - 1, 0, 0, 0);
 	box(wptr, 0, 0);
@@ -669,8 +669,9 @@ static void free_windows(struct ReadWins *wins)
 	free(wins);
 }
 
-static struct Plannedvals *get_total_planned(struct catg_nodes **nodes)
+static struct Plannedvals *get_total_planned(struct catg_node *head)
 {
+	struct catg_node *tmp = head;
 	struct Plannedvals *pv = malloc(sizeof(*pv));
 	if (pv == NULL) {
 		mem_alloc_fail();
@@ -679,11 +680,10 @@ static struct Plannedvals *get_total_planned(struct catg_nodes **nodes)
 	pv->exp = 0.0;
 	pv->inc = 0.0;
 
-	int i = 0;
 	while (1) {
-		struct budget_tokens *bt = tokenize_budget_fpi(nodes[i]->catg_fp);
-		if (nodes[i]->next == NULL) {
-			if (bt->transtype == 1) {
+		struct budget_tokens *bt = tokenize_budget_fpi(tmp->catg_fp);
+		if (tmp->next == NULL) {
+			if (bt->transtype == TT_INCOME) {
 				pv->inc += bt->amount;
 			} else {
 				pv->exp += bt->amount;
@@ -693,7 +693,7 @@ static struct Plannedvals *get_total_planned(struct catg_nodes **nodes)
 			break;
 
 		} else {
-			if (bt->transtype == 1) {
+			if (bt->transtype == TT_INCOME) {
 				pv->inc += bt->amount;
 			} else {
 				pv->exp += bt->amount;
@@ -701,23 +701,39 @@ static struct Plannedvals *get_total_planned(struct catg_nodes **nodes)
 			free_budget_tokens(bt);
 			bt = NULL;
 		}
-
-		i++;
+		tmp = tmp->next;
 	}
 	return pv;
 }
 
-static double get_left_to_budget(struct catg_nodes **nodes)
+static double get_left_to_budget(struct catg_node *head)
 {
-	struct Plannedvals *pv = get_total_planned(nodes);
+	struct Plannedvals *pv = get_total_planned(head);
 	double ret = pv->inc - pv->exp;
 	free(pv);
 	pv = NULL;
 	return ret;
 }
 
-void nc_read_setup
-(int sel_year, int sel_month, int sort, struct read_retvals *rret)
+static void cleanup_read_setup
+(struct vec_d *rec_fpis, struct vec_d *rec_line_nums, struct vec_d *pidx, 
+ struct ReadWins *wins, FILE *fptr)
+{
+	free(rec_fpis);
+	free(rec_line_nums);
+	free(pidx);
+	free_windows(wins);
+	fclose(fptr);
+
+	rec_fpis = NULL;
+	rec_line_nums = NULL;
+	pidx = NULL;
+}
+
+void nc_read_setup(int sel_year,
+				   int sel_month, 
+				   int sort, 
+				   struct read_retvals *rret)
 {
 	nc_print_main_menu_footer(stdscr);
 	if (debug_flag) {
@@ -725,22 +741,24 @@ void nc_read_setup
 	}
 	refresh();
 
-	struct SelRecord sr_, *sr = &sr_;
-	struct month_year dv_, *dates = &dv_;
-	dates->month = sel_month;
-	dates->year = sel_year;
-	sr->flag = -1;
+	struct record_select rs = {
+		.flag = -1
+	};
+	struct month_year date = {
+		.month = sel_month,
+		.year = sel_year
+	};
 
-	get_dates(sr, dates);
-	if (dates->year < 0 || dates->month < 0) {
+	get_dates(&rs, &date);
+	if (date.year < 0 || date.month < 0) {
 		goto err_select_date_fail;
 	}
 
-	struct catg_nodes **nodes;
 	FILE *fptr = open_record_csv("r");
+	struct catg_node *catg_head = NULL;
 	struct vec_d *pidx = index_csv(fptr);
-	struct vec_d *plines;
-	struct vec_d *psc;
+	struct vec_d *rec_line_nums = NULL;
+	struct vec_d *rec_fpis = NULL;
 	size_t n_records;
 	bool sidebar_exists;
 	/* To hold the return value of wgetch()/getch() */
@@ -757,79 +775,68 @@ void nc_read_setup
 		sidebar_exists = true;
 	}
 
-	/* If plines->size is zero, whatever function cannot return to an
+	/* If rec_line_nums->size is zero, whatever function cannot return to an
 	 * nc_read_setup with month and year parameters, as these dates no longer
 	 * hold any records. */
-	plines = get_matching_line_nums(fptr, dates->month, dates->year);
-	if (plines == NULL) {
+	rec_line_nums = get_matching_line_nums(fptr, date.month, date.year);
+	if (rec_line_nums == NULL) {
 		free(pidx);
 		fclose(fptr);
 		return;
 	}
 
-	n_records = plines->size;
-	if (plines->size == 0 && sort == SORT_DATE) {
+	n_records = rec_line_nums->size;
+	if (rec_line_nums->size == 0 && sort == SORT_DATE) {
 		sort = SORT_CATG;
 	}
 
 	if (sort == SORT_DATE) {
-		psc = sort_by_date(fptr, pidx, plines);	
+		rec_fpis = sort_by_date(fptr, pidx, rec_line_nums);	
 	} else {
-		psc = sort_by_category(fptr, pidx, plines, dates->year, dates->month);
+		rec_fpis = sort_by_category(fptr, pidx, rec_line_nums, date.year, date.month);
 	}
 
-	nodes = create_category_nodes(dates->month, dates->year);
+	catg_head = create_catg_node_list(date.month, date.year);
 
 	if (debug_flag) {
-		struct catg_node *new_nodes = create_catg_node_list(dates->month, dates->year);
-		debug_print_catg_node_data(new_nodes);
-		debug_category_nodes(nodes);
-		free_catg_nodes(new_nodes);
+		debug_print_catg_node_data(catg_head);
 		getch();
 	}
 
-
 	if (sidebar_exists) {
-		init_sidebar_parent(wins->sidebar_parent, psc, get_left_to_budget(nodes));
-		init_sidebar_body(wins->sidebar_body, nodes, 0);
+		init_sidebar_parent(wins->sidebar_parent, 
+					        rec_fpis,
+					        get_left_to_budget(catg_head));
+		init_sidebar_body(wins->sidebar_body, catg_head, 0);
 		draw_parent_box_with_sidebar(wins->parent);
 	} else {
 		box(wins->parent, 0, 0);
 	}
 
 	print_column_headers(wins->parent, BOX_OFFSET);
-	print_date(wins->parent, dates->year, dates->month);
+	print_date(wins->parent, date.year, date.month);
 	print_sort_text(wins->parent, sort);
 
 	if (sort == SORT_DATE) {
-		nc_read_loop(wins, fptr, sr, psc, nodes);
+		nc_read_loop(wins, fptr, &rs, rec_fpis, catg_head);
 	} else if (sort == SORT_CATG) {
 		FILE *bfptr = open_budget_csv("r");
-		nc_read_budget_loop(wins, fptr, bfptr, sr, psc, nodes); 
+		nc_read_budget_loop(wins, fptr, bfptr, &rs, rec_fpis, catg_head); 
 		fclose(bfptr);
 	}
 
-	free(psc);
-	psc = NULL;
-	free(plines);
-	plines = NULL;
-	if (sr->flag != EDIT_CATG) {
-		free_category_nodes(nodes);
-		nodes = NULL;
+	cleanup_read_setup(rec_fpis, rec_line_nums, pidx, wins, fptr);
+	if (rs.flag != EDIT_CATG) {
+		free_catg_nodes(catg_head);
+		catg_head = NULL;
 	}
-	free_windows(wins);
-	wins = NULL;
-	free(pidx);
-	pidx = NULL;
-	fclose(fptr);
-	fptr = NULL;
 
-	rret->mo = dates->month;
-	rret->yr = dates->year;
+	rret->mo = date.month;
+	rret->yr = date.year;
 	rret->sort = sort;
 
 err_select_date_fail:
-	switch (sr->flag) {
+	switch (rs.flag) {
 
 	case NO_SELECT:
 		rret->flag = RRET_DEFAULT;
@@ -837,18 +844,18 @@ err_select_date_fail:
 
 	case ADD:
 		nc_print_input_footer(stdscr);
-		if (dates->year < 0 || dates->month < 0) {
+		if (date.year < 0 || date.month < 0) {
 			add_main_no_date();
 			rret->flag = RRET_DEFAULT;
 		} else {
-			add_main_with_date(dates);
+			add_main_with_date(&date);
 			rret->flag = RRET_BYDATE;
 		}
 		break;
 
 	case EDIT:
 		nc_print_quit_footer(stdscr);
-		nc_edit_transaction(sr->index);
+		nc_edit_transaction(rs.index);
 		rret->flag = RRET_BYDATE;
 		break;
 
@@ -874,19 +881,19 @@ err_select_date_fail:
 		break;
 
 	case OVERVIEW:
-		nc_overview_setup(dates->year);
+		nc_overview_setup(date.year);
 		rret->flag = RRET_BYDATE;
 		break;
 
 	case EDIT_CATG:
-		nc_edit_category(sr->index, sr->opt, nodes); 
-		if (n_records > 0 || nodes != NULL) {
-			free_category_nodes(nodes);
-			nodes = NULL;
+		nc_edit_category(rs.index, rs.opt, catg_head); 
+		if (n_records > 0 || catg_head != NULL) {
+			free_catg_nodes(catg_head);
+			catg_head = NULL;
 			rret->flag = RRET_BYDATE;
 		} else {
-			free_category_nodes(nodes);
-			nodes = NULL;
+			free_catg_nodes(catg_head);
+			catg_head = NULL;
 			rret->flag = RRET_DEFAULT;
 		}
 		break;
@@ -895,7 +902,7 @@ err_select_date_fail:
 		while (test_terminal_size() == -1) {
 			getch();
 		}
-		if (dates->month > 0 && dates->year > 0) {
+		if (date.month > 0 && date.year > 0) {
 			rret->flag = RRET_BYDATE;
 		} else {
 			rret->flag = RRET_DEFAULT;
@@ -908,7 +915,7 @@ err_select_date_fail:
 		case KEY_F(1):
 		case ('a'):
 		case ('A'):
-			sr->flag = ADD;
+			rs.flag = ADD;
 			goto err_select_date_fail;
 			break;
 		case KEY_F(4):

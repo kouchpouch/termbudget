@@ -45,6 +45,8 @@
 #define MIN_INPUT_CHAR 2
 #define INPUT_MSG_Y_OFFSET 2
 
+#define PAGE_KEY_ROWS 10
+
 enum sort_by {
 	SORT_DATE = 0,
 	SORT_CATG = 1

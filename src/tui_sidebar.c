@@ -179,20 +179,22 @@ static int print_body_graphs_and_values
 	return 4;
 }
 
-int init_sidebar_body(WINDOW *wptr, struct catg_nodes **nodes, size_t i)
+int init_sidebar_body(WINDOW *wptr, struct catg_node *head, size_t i)
 {
-	wclear(wptr);
-	draw_body_border(wptr);
-//	int i = 0;
+	struct catg_node *tmp = get_node_by_idx(head, i);
+	struct budget_tokens *bt = NULL;
 	int n_displayed = 0;
 	int y = 1;
 	int x = 1;
 	double exp;
 
+	wclear(wptr);
+	draw_body_border(wptr);
+
 	while (y < getmaxy(wptr) - 4) {
-		struct budget_tokens *bt = tokenize_budget_fpi(nodes[i]->catg_fp);
+		bt = tokenize_budget_fpi(tmp->catg_fp);
 		exp = get_expenditures_per_category(bt);
-		if (nodes[i]->next == NULL) {
+		if (tmp->next == NULL) {
 			y += print_body_categories(bt->catg, wptr, y, x, i);
 			if (!check_y_fit(wptr, y)) {
 				free_budget_tokens(bt);
@@ -214,6 +216,7 @@ int init_sidebar_body(WINDOW *wptr, struct catg_nodes **nodes, size_t i)
 		}
 		i++;
 		n_displayed++;
+		tmp = tmp->next;
 	}
 
 	wrefresh(wptr);

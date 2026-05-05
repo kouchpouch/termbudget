@@ -24,12 +24,17 @@
 #include "vector.h"
 #include "categories.h"
 
-void nc_read_loop
-(struct ReadWins *wins, FILE *fptr, struct SelRecord *sr,
- struct vec_d *psc, struct catg_nodes **nodes);
+void nc_read_loop(struct ReadWins *wins, 
+				  FILE *fptr, 
+				  struct record_select *sr, 
+				  struct vec_d *psc,
+				  struct catg_node *head);
 
-void nc_read_budget_loop
-(struct ReadWins *wins, FILE *rfptr, FILE *bfptr, struct SelRecord *sr,
- struct vec_d *psc, struct catg_nodes **nodes);
+void nc_read_budget_loop(struct ReadWins *wins,
+						 FILE *rfptr,
+						 FILE *bfptr,
+						 struct record_select *sr,
+						 struct vec_d *psc,
+						 struct catg_node *head);
 
 #endif

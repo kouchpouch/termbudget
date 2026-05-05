@@ -41,7 +41,7 @@ WINDOW *create_sidebar_body(WINDOW *wptr_parent, WINDOW *wptr_sidebar_parent);
 
 /* Draws in all of the data for the sidebar body inside of window 'wptr' using
  * data from 'nodes', beginning at node 'i'. */
-int init_sidebar_body(WINDOW *wptr, struct catg_nodes **nodes, size_t i);
+int init_sidebar_body(WINDOW *wptr, struct catg_node *head, size_t i);
 
 /* Draws a box around the sidebar parent. Pass in the WINDOW * which points to 
  * the sidebar parent. Also draws the appropriate text on the boundary */

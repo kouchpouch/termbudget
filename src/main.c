@@ -96,15 +96,6 @@ void calculate_balance(struct balances *pb, struct vec_d *pbo)
 	fclose(fptr);
 }
 
-void print_debug_node(WINDOW *wptr, struct catg_nodes *node)
-{
-	wprintw(wptr, "Data sz: %lu, Next: %p, Prev: %p, FPI: %lu\n", 
-		 node->data->size, 
-		 (void *)node->next, 
-		 (void *)node->prev, 
-		 node->catg_fp);
-}
-
 static int n_spaces(int max_x, char *str1, char *str2)
 {
 	return (int)(max_x - (BOX_OFFSET * 2) - strlen(str1) - strlen(str2));

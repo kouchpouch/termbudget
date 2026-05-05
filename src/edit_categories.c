@@ -18,6 +18,7 @@
 
 #include <ncurses.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "edit_categories.h"
 #include "file_write.h"
@@ -140,18 +141,19 @@ static bool nc_confirm_amount(double amt)
 	return false;
 }
 
-void mv_category_to_top(struct catg_nodes **nodes, size_t i)
+void mv_category_to_top(struct catg_node **head, size_t idx)
 {
-	if (i == 0) {
+	if (idx == 0) {
 		return;
 	}
-
-	long first = nodes[0]->catg_fp;
+	struct catg_node *curr = get_node_by_idx(*head, idx);
+	long first = (*head)->catg_fp;
 	unsigned int insert_ln = boff_to_linenum_budget(first);
-	struct budget_tokens *bt = tokenize_budget_fpi(nodes[i]->catg_fp);
+	struct budget_tokens *bt = tokenize_budget_fpi(curr->catg_fp);
 
-	delete_category(nodes[i]->catg_fp);
+	delete_category(curr->catg_fp);
 	insert_category(bt, insert_ln);
+	mv_catg_node_to_head(head, idx);
 
 	free_budget_tokens(bt);
 }
@@ -224,18 +226,19 @@ static void free_lda(struct transaction_tokens **lda, size_t sz)
 /* Replaces the category field of records contained in nodes[node_idx] with
  * catg. */
 static int replace_many_records_categories
-(struct catg_nodes **nodes, size_t node_idx, char *catg)
+(struct catg_node *head, size_t node_idx, char *catg)
 {
+	struct catg_node *tmp = get_node_by_idx(head, node_idx);
 	struct replace_records_vars rr = { 0 };
 	FILE *fptr;
 	FILE *tmpfptr;
 	char *str;
 	char linebuff[LINE_BUFFER];
-	size_t n_recs = nodes[node_idx]->data->size;
+	size_t n_recs = tmp->data->size;
 	size_t del_lines[n_recs];
 
-	struct transaction_tokens **lda = malloc(sizeof(struct transaction_tokens) * n_recs);
-
+	struct transaction_tokens **lda = malloc(
+		sizeof(struct transaction_tokens) * n_recs);
 	if (lda == NULL) {
 		mem_alloc_fail();
 	}
@@ -245,10 +248,10 @@ static int replace_many_records_categories
 		if (lda[i] == NULL) {
 			mem_alloc_fail();
 		}
-		tokenize_record_fpi(nodes[node_idx]->data->data[i], lda[i]);
+		tokenize_record_fpi(tmp->data->data[i], lda[i]);
 		free(lda[i]->category);
 		lda[i]->category = strndup(catg, strlen(catg));;
-		del_lines[i] = boff_to_linenum(nodes[node_idx]->data->data[i]) + 1;
+		del_lines[i] = boff_to_linenum(tmp->data->data[i]) + 1;
 	}
 
 	fptr = open_record_csv("r");
@@ -292,12 +295,13 @@ static int replace_many_records_categories
 	return rr.changed;
 }
 
-void nc_edit_category(long node_idx, long nmembers, struct catg_nodes **nodes)
+void nc_edit_category(long node_idx, long nmembers, struct catg_node *head)
 {
-	long b = nodes[node_idx]->catg_fp;
-	double tmp = 0.0;
-	enum fields select;
+	struct catg_node *curr = get_node_by_idx(head, node_idx);
 	struct budget_tokens *bt;
+	enum fields select;
+	long b = curr->catg_fp;
+	double tmp = 0.0;
 
 	select = select_catg_field();
 	if (select < 0) {
@@ -348,11 +352,11 @@ void nc_edit_category(long node_idx, long nmembers, struct catg_nodes **nodes)
 		if (rename_category(bt) < 0) {
 			goto err_fail;
 		}
-		replace_many_records_categories(nodes, node_idx, bt->catg);
+		replace_many_records_categories(head, node_idx, bt->catg);
 		break;
 
 	case MOVE_TO_TOP:
-		mv_category_to_top(nodes, node_idx);
+		mv_category_to_top(&head, node_idx);
 		break;
 
 	case DEL_CATG:
