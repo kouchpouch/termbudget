@@ -781,8 +781,13 @@ void nc_read_setup
 	nodes = create_category_nodes(dates->month, dates->year);
 
 	if (debug_flag) {
-//FIX debug_category_nodes(wins->data, nodes);
+		struct catg_node *new_nodes = create_catg_node_list(dates->month, dates->year);
+		debug_print_catg_node_data(new_nodes);
+		debug_category_nodes(nodes);
+		free_catg_nodes(new_nodes);
+		getch();
 	}
+
 
 	if (sidebar_exists) {
 		init_sidebar_parent(wins->sidebar_parent, psc, get_left_to_budget(nodes));
