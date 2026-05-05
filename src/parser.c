@@ -746,7 +746,7 @@ struct catg_vec *get_budget_catg_by_date(int month, int year)
 
 struct vec_d *get_budget_catg_by_date_bo(int month, int year)
 {
-	struct vec_d *pcbo = malloc(sizeof(*pcbo)) + (sizeof(long) * REALLOC_INCR);
+	struct vec_d *pcbo = malloc((sizeof(*pcbo)) + (sizeof(long) * REALLOC_INCR));
 	if (pcbo == NULL) {
 		mem_alloc_fail();
 	}
