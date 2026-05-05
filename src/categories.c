@@ -31,111 +31,31 @@ void free_categories(struct catg_vec *pc)
 	free(pc);
 }
 
-void free_category_nodes(struct catg_nodes **nodes)
+struct catg_node *get_node_by_idx(struct catg_node *head, size_t idx)
 {
-	int i = 0;
-	while (1) {
-		if (nodes[i]->next == NULL) {
-			free(nodes[i]->data);
-			free(nodes[i]);
-			break;
+	struct catg_node *curr = head;
+	for (size_t i = 0; i < idx; i++) {
+		if (curr == NULL) {
+			puts("Attempted to access linked list out of bounds");
+			exit(1);
 		}
-		free(nodes[i]->data);
-		free(nodes[i]);
-		i++;
+		curr = curr->next;
+	}
+	return curr;
+}
+
+int get_total_nodes(struct catg_node *head)
+{
+	int n = 0;
+	struct catg_node *tmp = head;
+	
+	while (tmp != NULL) {
+		tmp = tmp->next;
+		n++;
 	}
 
-	free(nodes);
+	return n;
 }
-
-static void print_debug_node(struct catg_nodes *node)
-{
-	printw("Data sz: %lu, Next: %p, Prev: %p, FPI: %lu\n", 
-		 node->data->size, 
-		 (void *)node->next, 
-		 (void *)node->prev, 
-		 node->catg_fp);
-}
-
-void debug_category_nodes(struct catg_nodes **nodes)
-{
-	size_t i = 0;
-
-	while (1) {
-		if (nodes[i]->next == NULL) {
-			print_debug_node(nodes[i]);
-			break;
-		} else {
-			print_debug_node(nodes[i]);
-		}
-		i++;
-	}
-}
-
-/*
- * Initializes struct catg_nodes.data. The data is a struct vec_d which contains all of
- * the file position byte offsets for the records that match the struct catg_nodes's
- * category.
- */
-void init_category_nodes
-(struct catg_nodes *node, struct vec_d *chunk, int m, int y)
-{
-	struct budget_tokens *budget_tokens = tokenize_budget_fpi(node->catg_fp);
-	struct vec_d *recs = get_records_by_any(m, -1, y, 
-										    budget_tokens->catg, 
-										    NULL, -1, -1, chunk);
-	node->data = recs;
-	free_budget_tokens(budget_tokens);
-}
-
-/*
- * Returns a pointer to a pointer to the first struct catg_nodes in a doubly 
- * linked list of struct catg_nodess.
- */
-struct catg_nodes **create_category_nodes(int m, int y) {
-	struct vec_d *catgs_file_pos = get_budget_catg_by_date_bo(m, y);
-	struct vec_d *chunk = get_records_by_mo_yr(m, y);
-	unsigned long n = catgs_file_pos->size;
-	struct catg_nodes **pnode = malloc(sizeof(struct catg_nodes *) * n);
-	if (pnode == NULL) {
-		mem_alloc_fail();
-	}
-
-	for (size_t i = 0; i < n; i++) {
-		pnode[i] = malloc(sizeof(struct catg_nodes));
-		if (pnode[i] == NULL) {
-			mem_alloc_fail();
-		}
-
-		pnode[i]->catg_fp = catgs_file_pos->data[i];
-
-		/* The first node has no previous node, set to NULL */
-		if (i == 0) {
-			pnode[0]->prev = NULL;
-		} else if (i > 0) {
-			pnode[i]->prev = pnode[i - 1];
-			pnode[i - 1]->next = pnode[i];		
-		}
-
-		/* The last node has no next node, set to NULL */
-		if (i == n - 1) {
-			pnode[i]->next = NULL;
-		}
-
-		init_category_nodes(pnode[i], chunk, m, y);
-	}
-
-	free(chunk);
-	free(catgs_file_pos);
-	return pnode;
-}
-
-/* New Stuff Below
-/////////////////////
-/////////////////////
-/////////////////////
-/////////////////////
-  New Stuff Below */
 
 static struct catg_node *create_catg_node(void)
 {
@@ -247,8 +167,20 @@ void delete_catg_node(struct catg_node *head, size_t idx)
 	free(tmp);
 }
 
+/* Verifies that the pointer "alleged_head" is the actual head of the linked
+ * list. And if it isn't, set the alleged head to the real head. */
+static void verify_head(struct catg_node **alleged_head)
+{
+	struct catg_node *curr = *alleged_head;
+	while (curr->prev != NULL) {
+		curr = (*alleged_head)->prev;
+	}
+	*alleged_head = curr;
+}
+
 void free_catg_nodes(struct catg_node *head)
 {
+	verify_head(&head);
 	struct catg_node *curr = head;
 	struct catg_node *to_free = NULL;
 	struct vec_d *to_free_vec = NULL;
@@ -263,6 +195,25 @@ void free_catg_nodes(struct catg_node *head)
 		free(to_free);
 		free(to_free_vec);
 	}
+}
+
+void mv_catg_node_to_head(struct catg_node **head, size_t idx)
+{
+	if (idx == 0) {
+		return;
+	}
+	struct catg_node *old = get_node_by_idx(*head, idx);
+	struct catg_node *new_head = create_catg_node();
+	new_head->data = old->data;
+	new_head->next = *head;
+	new_head->prev = NULL;
+
+	(*head)->prev = new_head;
+
+	old->prev->next = old->next;
+	old->next->prev = old->prev;
+	free(old);
+	*head = new_head;
 }
 
 void debug_print_catg_node_data(struct catg_node *head)
