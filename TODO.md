@@ -115,6 +115,10 @@
         not great.
 - [X] Improve date input to be more interactive and show the previous
         date.
+- [ ] Optimize the category nodes linked list to not be rebuilt on every 
+        action.
+    - [ ] Create a library with an easy to use API for managing the linked 
+            list.
 
 #### Main Feature Set
 - [X] Create a transaction
