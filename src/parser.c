@@ -19,11 +19,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
 #include "parser.h"
 #include "categories.h"
 #include "main.h"
 #include "tui.h"
 #include "filemanagement.h"
+#include "vector.h"
 
 int get_total_csv_lines(void)
 {
@@ -330,13 +332,7 @@ double get_expenditures_per_category(struct budget_tokens *bt)
 
 struct vec_d *get_years_with_data(FILE *fptr, int field)
 {
-	struct vec_d *pr = malloc(sizeof(*pr) + sizeof(long) * REALLOC_INCR);
-	if (pr == NULL) {
-		mem_alloc_fail();
-	}
-
-	pr->size = 0;
-	pr->capacity = REALLOC_INCR;
+	struct vec_d *pr = vec_d_create();
 
 	char linebuff[LINE_BUFFER];
 	char *str;
@@ -359,25 +355,14 @@ struct vec_d *get_years_with_data(FILE *fptr, int field)
 	seek_n_fields(&str, field);
 	tempyear = atoi(strsep(&str, ","));
 	prevyear = tempyear;
-	pr->data[pr->size] = tempyear;
-	pr->size++;
+	vec_d_append(pr, tempyear);
 
 	while ((str = fgets(linebuff, sizeof(linebuff), fptr)) != NULL) {
-		if (pr->size >= pr->capacity) {
-			pr->capacity += REALLOC_INCR;
-			struct vec_d *tmp = realloc(pr, sizeof(*pr) + (sizeof(long) * pr->capacity));
-			if (tmp == NULL) {
-				free(pr);
-				mem_alloc_fail();
-			}
-			pr = tmp;
-		}
 		seek_n_fields(&str, field);
 		tempyear = atoi(strsep(&str, ","));
 		if (tempyear != prevyear) {
 			prevyear = tempyear;
-			pr->data[pr->size] = tempyear;
-			pr->size++;
+			vec_d_append(pr, tempyear);
 		}
 	}
 
@@ -441,13 +426,7 @@ struct vec_d *get_months_with_data(FILE *fptr, int matchyear, int field)
 struct vec_d *get_matching_line_nums(FILE *fptr, int month, int year)
 {
 	rewind(fptr);
-	struct vec_d *pl = malloc(sizeof(*pl) + (sizeof(long) * REALLOC_INCR));
-	if (pl == NULL) {
-		mem_alloc_fail();
-	}
-
-	pl->size = 0;
-	pl->capacity = REALLOC_INCR;
+	struct vec_d *pl = vec_d_create();
 
 	long linenumber = 0;
 	int line_month, line_year;
@@ -470,18 +449,7 @@ struct vec_d *get_matching_line_nums(FILE *fptr, int month, int year)
 		seek_n_fields(&str, 1);
 		line_year = atoi(strsep(&str, ","));
 		if (year == line_year && month == line_month) {
-			if (pl->size >= pl->capacity) {
-				pl->capacity += REALLOC_INCR;
-				struct vec_d *tmp = 
-					realloc(pl, sizeof(*pl) + (sizeof(long) * pl->capacity));
-				if (tmp == NULL) {
-					free(pl);
-					mem_alloc_fail();
-				}
-				pl = tmp;
-			}
-			pl->data[pl->size] = linenumber;
-			pl->size++;	
+			vec_d_append(pl, linenumber);
 		}
 		linenumber++;
 	}
@@ -569,10 +537,7 @@ struct vec_d *get_records_by_any(int month,
 								 struct vec_d *chunk) 
 {
 	FILE *fptr = open_record_csv("r");
-	struct vec_d *prbc = malloc(sizeof(*prbc) + (sizeof(long) * REALLOC_INCR));
-	if (prbc == NULL) {
-		mem_alloc_fail();
-	}
+	struct vec_d *prbc = vec_d_create();
 
 	struct transaction_tokens ld_, *ld = &ld_;
 	char linebuff[LINE_BUFFER];
@@ -583,9 +548,6 @@ struct vec_d *get_records_by_any(int month,
 	bool tt = false;
 	bool amt = false;
 	long tmpbo;
-
-	prbc->size = 0;
-	prbc->capacity = REALLOC_INCR;
 
 	seek_beyond_header(fptr);
 	
@@ -662,18 +624,7 @@ struct vec_d *get_records_by_any(int month,
 		}
 
 		if (date && cat && desc && tt && amt) {
-			if (prbc->size >= prbc->capacity) {
-				prbc->capacity += REALLOC_INCR;
-				struct vec_d *tmp = realloc(
-					prbc, sizeof(*prbc) + (sizeof(long) * prbc->capacity));
-				if (tmp == NULL) {
-					free(prbc);
-					mem_alloc_fail();
-				}
-				prbc = tmp;
-			}
-			prbc->data[prbc->size] = tmpbo;
-			prbc->size++;
+			vec_d_append(prbc, tmpbo);
 		}
 
 		free_tokenized_record_strings(ld);
@@ -746,13 +697,7 @@ struct catg_vec *get_budget_catg_by_date(int month, int year)
 
 struct vec_d *get_budget_catg_by_date_bo(int month, int year)
 {
-	struct vec_d *pcbo = malloc((sizeof(*pcbo)) + (sizeof(long) * REALLOC_INCR));
-	if (pcbo == NULL) {
-		mem_alloc_fail();
-	}
-
-	pcbo->capacity = REALLOC_INCR;
-	pcbo->size = 0;
+	struct vec_d *pcbo = vec_d_create();
 
 	FILE *fptr = open_budget_csv("r");
 
@@ -772,18 +717,7 @@ struct vec_d *get_budget_catg_by_date_bo(int month, int year)
 		y = atoi(strsep(&str, ","));
 
 		if (y == year && m == month) {
-			if (pcbo->size >= pcbo->capacity) {
-				pcbo->capacity += REALLOC_INCR;
-				struct vec_d *tmp = realloc(
-					pcbo, sizeof(struct vec_d) + (sizeof(long) * pcbo->capacity));
-				if (tmp == NULL) {
-					free(pcbo);
-					mem_alloc_fail();
-				}
-				pcbo = tmp;
-			}
-			pcbo->data[pcbo->size] = bo;
-			pcbo->size++;
+			vec_d_append(pcbo, bo);
 		}
 	}
 
@@ -994,35 +928,10 @@ int get_int_field(int line, int field)
 
 struct vec_d *index_csv(FILE *fptr)
 {
-	struct vec_d *pidx =
-		malloc(sizeof(struct vec_d) + (sizeof(long) * INDEX_ALLOC));
-	if (pidx == NULL) {
-		mem_alloc_fail();
-	}
-	pidx->capacity = INDEX_ALLOC;
-	pidx->size = 0;
-
+	struct vec_d *pidx = vec_d_create();
 	char linebuff[LINE_BUFFER];
-
 	while (fgets(linebuff, sizeof(linebuff), fptr) != NULL) {
-		pidx->data[pidx->size] = ftell(fptr);
-		pidx->size++;
-
-		if (pidx->size >= pidx->capacity) {
-			if (pidx->capacity * 2 <= MAX_ALLOC) {
-				pidx->capacity *= 2;
-			} else {
-				pidx->capacity += MAX_ALLOC;
-			}
-			struct vec_d *tmp =
-				realloc(pidx, sizeof(struct vec_d) + (sizeof(long) * pidx->capacity));
-			if (tmp == NULL) {
-				free(pidx);
-				mem_alloc_fail();
-			}
-			pidx = tmp;
-		}
+		vec_d_append(pidx, ftell(fptr));
 	}
-
 	return pidx;
 }

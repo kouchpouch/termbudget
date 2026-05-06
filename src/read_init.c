@@ -583,16 +583,7 @@ static struct vec_d *sort_by_category(FILE *fptr,
 									  int yr,
 									  int mo)
 {
-	struct vec_d *prsc = malloc(sizeof(*prsc) + (sizeof(long) * REALLOC_INCR));
-	if (prsc == NULL) {
-		free(pidx);
-		free(plines);
-		mem_alloc_fail();
-	}
-
-	prsc->capacity = REALLOC_INCR;
-	prsc->size = 0;
-
+	struct vec_d *prsc = vec_d_create();
 	struct catg_vec *pc = get_categories(mo, yr);
 
 	char linebuff[LINE_BUFFER];
@@ -602,23 +593,8 @@ static struct vec_d *sort_by_category(FILE *fptr,
 	rewind(fptr);
 
 	for (size_t i = 0; i < pc->size; i++) { // Iterate categories
-		prsc->data[prsc->size] = 0;
-		prsc->size++;
+		vec_d_append(prsc, 0);
 		for (size_t j = 0; j < plines->size; j++) { // Iterate records
-			/* Check prsc->size + 1 because a zero will be added to the array
-			 * to mark the spaces between categories */
-			if (prsc->size + 1 >= prsc->capacity) {
-				prsc->capacity += REALLOC_INCR;
-				struct vec_d *tmp = realloc(prsc, sizeof(*prsc) 
-					    		   + (prsc->capacity * sizeof(char *)));
-				if (tmp == NULL) {
-					free(prsc);
-					prsc = NULL;
-					goto err_null;
-				}
-				prsc = tmp;
-			}
-
 			fseek(fptr, pidx->data[plines->data[j]], SEEK_SET);
 			line = fgets(linebuff, sizeof(linebuff), fptr);
 			if (line == NULL) {
@@ -629,15 +605,14 @@ static struct vec_d *sort_by_category(FILE *fptr,
 
 			seek_n_fields(&line, 3);
 			token = strsep(&line, ",");
-			
 			if (token == NULL) {
 				free(prsc);
 				prsc = NULL;
 				goto err_null;
 			}
+
 			if (strcasecmp(token, pc->categories[i]) == 0) {
-				prsc->data[prsc->size] = pidx->data[plines->data[j]];
-				prsc->size++;
+				vec_d_append(prsc, pidx->data[plines->data[j]]);
 			}
 		}
 	}
