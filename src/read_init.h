@@ -25,16 +25,16 @@
 struct read_retvals {
 	struct catg_node *head;
 	long fpi;
-	int flag;
 	int yr;
 	int mo;
-	int sort;
+	unsigned char sort;
+	unsigned char flag;
 	bool keep_head;
 	bool dirty;
 };
 
 struct record_select {
-	unsigned int flag;
+	int flag;
 	long index;
 	long opt; // Optional flag
 };

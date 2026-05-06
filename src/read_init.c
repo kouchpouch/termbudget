@@ -747,6 +747,18 @@ static void cleanup_read_setup(struct vec_d *rec_fpis,
 	pidx = NULL;
 }
 
+void init_read_retvals(struct read_retvals *r)
+{
+	r->head = NULL;
+	r->fpi = 0;
+	r->flag = 0;
+	r->yr = 0;
+	r->mo = 0;
+	r->sort = 0;
+	r->keep_head = false;
+	r->dirty = false;
+}
+
 void nc_read_setup(int sel_year,
 				   int sel_month, 
 				   int sort, 
