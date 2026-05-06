@@ -47,6 +47,11 @@
 
 #define PAGE_KEY_ROWS 10
 
+/* Bitwise Stuff */
+#define SET_DIRTY_BIT(x) (x) |= 0x80
+#define UNSET_DIRTY_BIT(x) (x) &= 0x7F
+#define IS_DIRTY(x) ((x) & 0x80) == 0x80 ? 1 : 0
+
 enum sort_by {
 	SORT_DATE = 0,
 	SORT_CATG = 1
