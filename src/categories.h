@@ -31,12 +31,6 @@ struct catg_node {
 	long catg_fp;
 };
 
-struct catg_vec {
-	size_t capacity;
-	size_t size;
-	char *categories[];
-};
-
 void free_categories(struct catg_vec *pc);
 
 /*
