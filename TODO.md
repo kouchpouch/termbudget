@@ -115,10 +115,13 @@
         not great.
 - [X] Improve date input to be more interactive and show the previous
         date.
-- [ ] Optimize the category nodes linked list to not be rebuilt on every 
+- [X] Optimize the category nodes linked list to not be rebuilt on every 
         action.
     - [X] Create a library with an easy to use API for managing the linked 
             list.
+    - [ ] Create an interface for editing data within the liked list to avoid
+            rebuilding the list and using more I/O time when modifiying a 
+            record.
 
 #### Main Feature Set
 - [X] Create a transaction
