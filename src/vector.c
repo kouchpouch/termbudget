@@ -38,25 +38,31 @@ struct vec_d *vec_d_create(void)
 	return v;
 }
 
-void vec_d_append(struct vec_d *v, long data)
+void vec_d_append(struct vec_d **v, long data)
 {
 	if (v == NULL) {
 		return;
 	}
 
 	struct vec_d *tmp = NULL;
+	size_t multiplier;
+	size_t realloc_sz;
 	
-	if (v->capacity <= v->size + 1) {
-		tmp = realloc(v, sizeof(struct vec_d) + 
-					  ((v->capacity + REALLOC_INCR) * sizeof(long)));
+	if ((*v)->capacity < (*v)->size + 1) {
+		multiplier = (*v)->capacity / REALLOC_INCR;
+		realloc_sz = sizeof(struct vec_d) + (((*v)->capacity + 
+			         (REALLOC_INCR * multiplier)) *
+					 sizeof(long));
+		tmp = realloc(*v, realloc_sz);
 		if (tmp == NULL) {
 			free(v);
 			mem_alloc_fail();
+		} else {
+			(*v) = tmp;
 		}
-		v = tmp;
-		v->capacity += REALLOC_INCR;
+		(*v)->capacity += REALLOC_INCR * multiplier;
 	}
 
-	v->data[v->size] = data;
-	v->size++;
+	(*v)->data[(*v)->size] = data;
+	(*v)->size++;
 }

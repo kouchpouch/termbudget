@@ -39,6 +39,6 @@ struct vec_d {
 struct vec_d *vec_d_create(void);
 
 /* Appends "data" to the end of the v->data array and reallocs if required */
-void vec_d_append(struct vec_d *v, long data);
+void vec_d_append(struct vec_d **v, long data);
 
 #endif
