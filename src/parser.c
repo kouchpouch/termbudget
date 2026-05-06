@@ -355,14 +355,14 @@ struct vec_d *get_years_with_data(FILE *fptr, int field)
 	seek_n_fields(&str, field);
 	tempyear = atoi(strsep(&str, ","));
 	prevyear = tempyear;
-	vec_d_append(pr, tempyear);
+	vec_d_append(&pr, tempyear);
 
 	while ((str = fgets(linebuff, sizeof(linebuff), fptr)) != NULL) {
 		seek_n_fields(&str, field);
 		tempyear = atoi(strsep(&str, ","));
 		if (tempyear != prevyear) {
 			prevyear = tempyear;
-			vec_d_append(pr, tempyear);
+			vec_d_append(&pr, tempyear);
 		}
 	}
 
@@ -376,13 +376,11 @@ static void init_data_array(struct vec_d *vec)
 	}
 }
 
-/*
- * Returns a malloc'd vector containing all months with records in file 'fptr',
+/* Returns a malloc'd vector containing all months with records in file 'fptr',
  * which match the year 'matchyear'. Pass the parameter 'fields' to tell
  * the function how many CSV fields to skip ahead. This 'fields' passing is
  * temporary and a new function will be added to find which fields to read
- * based on the header.
- */
+ * based on the header. */
 struct vec_d *get_months_with_data(FILE *fptr, int matchyear, int field)
 {
 	char linebuff[LINE_BUFFER];
@@ -449,7 +447,7 @@ struct vec_d *get_matching_line_nums(FILE *fptr, int month, int year)
 		seek_n_fields(&str, 1);
 		line_year = atoi(strsep(&str, ","));
 		if (year == line_year && month == line_month) {
-			vec_d_append(pl, linenumber);
+			vec_d_append(&pl, linenumber);
 		}
 		linenumber++;
 	}
@@ -457,10 +455,8 @@ struct vec_d *get_matching_line_nums(FILE *fptr, int month, int year)
 	return pl;
 }
 
-/*
- * For a given month and year, return an array of strings from the category
- * field of the RECORD_DIR csv file.
- */
+/* For a given month and year, return an array of strings from the category
+ * field of the RECORD_DIR csv file. */
 struct catg_vec *get_categories(int month, int year)
 {
 	FILE *fptr = open_record_csv("r");
@@ -624,7 +620,7 @@ struct vec_d *get_records_by_any(int month,
 		}
 
 		if (date && cat && desc && tt && amt) {
-			vec_d_append(prbc, tmpbo);
+			vec_d_append(&prbc, tmpbo);
 		}
 
 		free_tokenized_record_strings(ld);
@@ -717,7 +713,7 @@ struct vec_d *get_budget_catg_by_date_bo(int month, int year)
 		y = atoi(strsep(&str, ","));
 
 		if (y == year && m == month) {
-			vec_d_append(pcbo, bo);
+			vec_d_append(&pcbo, bo);
 		}
 	}
 
@@ -931,7 +927,7 @@ struct vec_d *index_csv(FILE *fptr)
 	struct vec_d *pidx = vec_d_create();
 	char linebuff[LINE_BUFFER];
 	while (fgets(linebuff, sizeof(linebuff), fptr) != NULL) {
-		vec_d_append(pidx, ftell(fptr));
+		vec_d_append(&pidx, ftell(fptr));
 	}
 	return pidx;
 }

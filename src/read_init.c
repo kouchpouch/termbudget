@@ -593,7 +593,7 @@ static struct vec_d *sort_by_category(FILE *fptr,
 	rewind(fptr);
 
 	for (size_t i = 0; i < pc->size; i++) { // Iterate categories
-		vec_d_append(prsc, 0);
+		vec_d_append(&prsc, 0);
 		for (size_t j = 0; j < plines->size; j++) { // Iterate records
 			fseek(fptr, pidx->data[plines->data[j]], SEEK_SET);
 			line = fgets(linebuff, sizeof(linebuff), fptr);
@@ -612,7 +612,7 @@ static struct vec_d *sort_by_category(FILE *fptr,
 			}
 
 			if (strcasecmp(token, pc->categories[i]) == 0) {
-				vec_d_append(prsc, pidx->data[plines->data[j]]);
+				vec_d_append(&prsc, pidx->data[plines->data[j]]);
 			}
 		}
 	}
