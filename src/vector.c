@@ -22,6 +22,10 @@
 #include "main.h"
 #include "vector.h"
 
+#define SET_SIZE_MEMBERS(x) \
+	x->capacity = REALLOC_INCR; \
+	x->size = 0; \
+
 struct vec_d *vec_d_create(void)
 {
 	size_t i;
@@ -30,12 +34,51 @@ struct vec_d *vec_d_create(void)
 	if (v == NULL) {
 		mem_alloc_fail();
 	}
-	v->capacity = REALLOC_INCR;
-	v->size = 0;
+	SET_SIZE_MEMBERS(v);
 	for (i = 0; i < v->capacity; i++) {
 		v->data[i] = 0;
 	}
 	return v;
+}
+
+struct catg_vec *catg_vec_create(void)
+{
+	size_t sz = sizeof(struct vec_d) + (sizeof(long) * REALLOC_INCR);
+	struct catg_vec *v = malloc(sz);
+	if (v == NULL) {
+		mem_alloc_fail();
+	}
+	SET_SIZE_MEMBERS(v);
+	return v;
+}
+
+void catg_vec_append(struct catg_vec **v, char *data)
+{
+	if (v == NULL) {
+		return;
+	}
+
+	struct catg_vec *tmp = NULL;
+	size_t multiplier;
+	size_t realloc_sz;
+	
+	if ((*v)->capacity < (*v)->size + 1) {
+		multiplier = (*v)->capacity / REALLOC_INCR;
+		realloc_sz = sizeof(struct vec_d) + (((*v)->capacity + 
+			         (REALLOC_INCR * multiplier)) *
+					 sizeof(long));
+		tmp = realloc(*v, realloc_sz);
+		if (tmp == NULL) {
+			free(v);
+			mem_alloc_fail();
+		} else {
+			(*v) = tmp;
+		}
+		(*v)->capacity += REALLOC_INCR * multiplier;
+	}
+
+	(*v)->categories[(*v)->size] = data;
+	(*v)->size++;
 }
 
 void vec_d_append(struct vec_d **v, long data)

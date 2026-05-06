@@ -36,7 +36,18 @@ struct vec_d {
 	long data[];
 };
 
+struct catg_vec {
+	size_t capacity;
+	size_t size;
+	char *categories[];
+};
+
 struct vec_d *vec_d_create(void);
+
+struct catg_vec *catg_vec_create(void);
+
+/* Appends "data" to the end of the v->data array and reallocs if required */
+void catg_vec_append(struct catg_vec **v, char *data);
 
 /* Appends "data" to the end of the v->data array and reallocs if required */
 void vec_d_append(struct vec_d **v, long data);
