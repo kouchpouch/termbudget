@@ -21,7 +21,6 @@
 #include <string.h>
 
 #include "parser.h"
-#include "categories.h"
 #include "main.h"
 #include "tui.h"
 #include "filemanagement.h"
@@ -96,10 +95,10 @@ static void init_record_header_struct(struct record_header *rh)
 struct record_header *parse_record_header(FILE *fptr)
 {
 	struct record_header *rh = malloc(sizeof(*rh));
-	init_record_header_struct(rh);
 	if (rh == NULL) {
 		mem_alloc_fail();
 	}
+	init_record_header_struct(rh);
 	rewind(fptr);
 
 	char *fields[] = {
@@ -175,10 +174,10 @@ static void init_budget_header_struct(struct budget_header *bh)
 struct budget_header *parse_budget_header(FILE *fptr)
 {
 	struct budget_header *bh = malloc(sizeof(*bh));
-	init_budget_header_struct(bh);
 	if (bh == NULL) {
 		mem_alloc_fail();
 	}
+	init_budget_header_struct(bh);
 	rewind(fptr);
 
 	char *fields[] = {"month", "year", "category", "transtype", "value"};
@@ -317,8 +316,10 @@ bool month_or_year_exists(int m, int y)
 double get_expenditures_per_category(struct budget_tokens *bt)
 {
 	double total = 0;
-	struct vec_d *pi = get_records_by_any(bt->m, -1, bt->y, bt->catg, NULL, TT_INCOME, -1, NULL);
-	struct vec_d *pe = get_records_by_any(bt->m, -1, bt->y, bt->catg, NULL, TT_EXPENSE, -1, NULL);
+	struct vec_d *pi = get_records_by_any(bt->m, -1, bt->y, bt->catg, 
+									      NULL, TT_INCOME, -1, NULL);
+	struct vec_d *pe = get_records_by_any(bt->m, -1, bt->y, bt->catg, 
+									      NULL, TT_EXPENSE, -1, NULL);
 	for (size_t i = 0; i < pi->size; i++) {
 		total += get_record_amount(pi->data[i]);
 	}
@@ -463,9 +464,7 @@ struct catg_vec *get_categories(int month, int year)
 	char *line;
 	char *token;
 	char linebuff[LINE_BUFFER];
-	struct catg_vec *pc = malloc(sizeof(*pc) + (sizeof(char *) * REALLOC_INCR));
-	pc->size = 0;
-	pc->capacity = REALLOC_INCR;
+	struct catg_vec *pc = catg_vec_create();
 
 	seek_beyond_header(fptr);
 
@@ -491,18 +490,7 @@ struct catg_vec *get_categories(int month, int year)
 			}
 		}
 
-		if (pc->size >= pc->capacity) {
-			pc->capacity += REALLOC_INCR;
-			struct catg_vec *temp = realloc(pc, sizeof(struct catg_vec) + 
-										((pc->capacity) * sizeof(char *)));
-			if (temp == NULL) {
-				mem_alloc_fail();
-			}
-			pc = temp;
-		}
-
-		pc->categories[pc->size] = strdup(token);
-		pc->size++;
+		catg_vec_append(&pc, strdup(token));
 
 duplicate_exists:
 		memset(linebuff, 0, sizeof(linebuff)); // Reset the Buffer
@@ -639,15 +627,7 @@ struct vec_d *get_records_by_any(int month,
 
 struct catg_vec *get_budget_catg_by_date(int month, int year)
 {
-	struct catg_vec *pc = 
-		malloc((sizeof(*pc)) + (sizeof(char *) * REALLOC_INCR));
-
-	if (pc == NULL) {
-		mem_alloc_fail();
-	}
-
-	pc->size = 0;
-	pc->capacity = REALLOC_INCR;
+	struct catg_vec *pc = catg_vec_create();
 
 	FILE *fptr = open_budget_csv("r");
 
@@ -669,21 +649,7 @@ struct catg_vec *get_budget_catg_by_date(int month, int year)
 		catg = strsep(&str, ",");
 
 		if (y == year && m == month) {
-			if (pc->size >= pc->capacity) {
-				pc->capacity += REALLOC_INCR;
-				struct catg_vec *tmp = 
-					realloc(pc, sizeof(struct catg_vec) + 
-			 				(sizeof(char *) * pc->capacity));
-
-				if (tmp == NULL) {
-					free(pc);
-					fclose(fptr);
-					mem_alloc_fail();
-				}
-				pc = tmp;
-			}
-			pc->categories[pc->size] = strdup(catg);
-			pc->size++;
+			catg_vec_append(&pc, strdup(catg));
 		}
 	}
 
