@@ -25,12 +25,10 @@
 struct read_retvals {
 	struct catg_node *head;
 	long fpi;
-	int yr;
-	int mo;
+	int year;
+	int month;
 	unsigned char sort;
-	unsigned char flag;
-	bool keep_head;
-	bool dirty;
+	unsigned char flag; /* First bit tracks to keep head or not */
 };
 
 struct record_select {
@@ -39,7 +37,7 @@ struct record_select {
 	long opt; // Optional flag
 };
 
-void nc_read_setup(int sel_year, int sel_month, int sort, struct read_retvals *rret);
+void nc_read_setup(struct read_retvals *rret);
 
 void nc_read_setup_default(struct read_retvals *rret);
 
