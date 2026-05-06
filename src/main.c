@@ -164,11 +164,29 @@ int show_help_subwindow(void)
 	return my;
 }
 
+static void conditionally_free_linked_list(struct read_retvals *r)
+{
+	if (IS_DIRTY(r->flag)) {
+		UNSET_DIRTY_BIT(r->flag);
+	} else {
+		if (r->head != NULL) {
+			if (debug_flag) {
+				move(0, 0);
+				printw("FREEING NODES");
+				getch();
+			}
+			free_catg_nodes(r->head);
+			r->head = NULL;
+		}
+	}
+}
+
 int nc_main_menu(WINDOW *wptr)
 {
-	struct read_retvals rr_, *rret = &rr_;
+	struct read_retvals rret = {
+		.head = NULL
+	};
 	struct full_date *date;
-	int mo, yr;
 
 	enum add_sel {
 		ADD_TRNS = 0,
@@ -188,6 +206,8 @@ int nc_main_menu(WINDOW *wptr)
 		wrefresh(wptr);
 		c = getch();
 
+		conditionally_free_linked_list(&rret);
+
 		switch (c) {
 		case ('A'):
 		case ('a'):
@@ -206,11 +226,11 @@ int nc_main_menu(WINDOW *wptr)
 				case ADD_BUDG:
 					date = nc_create_new_budget();
 					if (date != NULL) {
-						mo = date->month;
-						yr = date->year;
+						rret.month = date->month;
+						rret.year = date->year;
 						free(date);
 						date = NULL;
-						nc_read_setup(yr, mo, SORT_CATG, rret);
+						nc_read_setup(&rret);
 					}
 					break;
 				default:
@@ -228,17 +248,18 @@ int nc_main_menu(WINDOW *wptr)
 		case ('r'):
 		case KEY_F(READ):
 			wclear(wptr);
-			nc_read_setup_default(rret);
-			while (rret->flag != RRET_QUIT) {
-				switch (rret->flag) {
+			nc_read_setup_default(&rret);
+			while (rret.flag != RRET_QUIT) {
+				conditionally_free_linked_list(&rret);
+				switch (rret.flag) {
 				case RRET_DEFAULT:
-					nc_read_setup_default(rret);
+					nc_read_setup_default(&rret);
 					break;
 				case RRET_BYDATE:
-					nc_read_setup(rret->yr, rret->mo, rret->sort, rret);
+					nc_read_setup(&rret);
 					break;
 				default:
-					nc_read_setup_default(rret);
+					nc_read_setup_default(&rret);
 					break;
 				}
 			}
