@@ -148,8 +148,10 @@ bool record_len_verification(void)
 	return true;
 }
 
-static int cmp_catg_and_fix
-(struct catg_vec *prc, struct catg_vec *pbc, int m, int y) 
+static int cmp_catg_and_fix(struct catg_vec *prc,
+							struct catg_vec *pbc,
+							int m,
+							int y) 
 {
 	int corrected = 0;
 	bool cat_exists = false;
