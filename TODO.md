@@ -97,6 +97,7 @@
         and be brought to the new budget with some default categories or 
         option to roll over the previous budget.
 - [ ] Read view needs to scroll back to the record or category after editing.
+- [ ] Create build system
 
 #### Refactors
 - [X] After main feature set is done and working, refactor to make main.c
