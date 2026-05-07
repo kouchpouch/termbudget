@@ -195,7 +195,7 @@
 - [X] 18 After adding a transaction it requires two presses of the quit menu
          key to exit. Each subsequent transaction added requires +1 key
          presses.
-- [ ] 19 The overview window position is off, it looks weird. Not centered
+- [X] 19 The overview window position is off, it looks weird. Not centered
          correctly.
 - [X] 20 When editing a transaction and creating a new category the category
          is not actually created but the record in data.csv is updated
