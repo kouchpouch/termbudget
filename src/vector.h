@@ -20,22 +20,32 @@
 #define VECTOR_H
 #include <stdio.h>
 
+/* 2-float vector, financial */
+struct vec2f_fin {
+	double expense;
+	double income;
+};
+
+/* 2-float vector */
 struct vec2f {
 	double a;
 	double b;
 };
 
+/* 2-int vector */
 struct vec2i {
 	int a;
 	int b;
 };
 
+/* Dyanmic "std vector"/array of long */
 struct vec_d {
 	size_t capacity;
 	size_t size;
 	long data[];
 };
 
+/* Dyanmic "std vector"/array of char * */
 struct catg_vec {
 	size_t capacity;
 	size_t size;
@@ -45,6 +55,8 @@ struct catg_vec {
 struct vec_d *vec_d_create(void);
 
 struct catg_vec *catg_vec_create(void);
+
+void vec_d_append_many(struct vec_d **v, long *data, size_t data_len);
 
 /* Appends "data" to the end of the v->data array and reallocs if required */
 void catg_vec_append(struct catg_vec **v, char *data);

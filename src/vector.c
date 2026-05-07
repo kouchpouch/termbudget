@@ -81,6 +81,40 @@ void catg_vec_append(struct catg_vec **v, char *data)
 	(*v)->size++;
 }
 
+void vec_d_append_many(struct vec_d **v, long *data, size_t data_len)
+{
+	if (v == NULL) {
+		return;
+	}
+
+	struct vec_d *tmp = NULL;
+	size_t multiplier = 1;
+	size_t realloc_sz;
+	size_t i;
+	
+	if ((*v)->capacity < (*v)->size + 1 + data_len) {
+		while ((REALLOC_INCR * multiplier) + (*v)->capacity < (*v)->size + 1 + data_len) {
+			multiplier++;
+		}
+		realloc_sz = sizeof(struct vec_d) + (((*v)->capacity + 
+			         (REALLOC_INCR * multiplier)) *
+					 sizeof(long));
+		tmp = realloc(*v, realloc_sz);
+		if (tmp == NULL) {
+			free(v);
+			mem_alloc_fail();
+		} else {
+			(*v) = tmp;
+		}
+		(*v)->capacity += REALLOC_INCR * multiplier;
+	}
+
+	for (i = 0; i < data_len; i++) {
+		(*v)->data[(*v)->size] = data[i];
+		(*v)->size++;
+	}
+}
+
 void vec_d_append(struct vec_d **v, long data)
 {
 	if (v == NULL) {
