@@ -45,11 +45,6 @@
 #define RRET_BYDATE 1
 #define RRET_QUIT 2
 
-struct Plannedvals {
-	double inc;
-	double exp;
-};
-
 static const char *abbr_months[] = {
 	"JAN", 
 	"FEB", 
@@ -554,23 +549,14 @@ static void debug_fields(void)
  * just moving memory around for the sake of portability and other sorting
  * selections.
  */
-static struct vec_d *sort_by_date(FILE *fptr,
-								  struct vec_d *pidx,
-								  struct vec_d *plines)
+static struct vec_d *sort_by_date(struct vec_d *pidx, struct vec_d *plines)
 {
-	struct vec_d *psbd = malloc(sizeof(*psbd) + (sizeof(long) * plines->size));
-	if (psbd == NULL) {
-		mem_alloc_fail();
-	}
-
-	psbd->capacity = plines->size;
-	psbd->size = 0;
-	rewind(fptr);
-
+	struct vec_d *psbd = vec_d_create();
+	int long arr[plines->size];
 	for (size_t i = 0; i < plines->size; i++) {
-		psbd->data[i] = pidx->data[plines->data[i]];
-		psbd->size++;
+		arr[i] = pidx->data[plines->data[i]];
 	}
+	vec_d_append_many(&psbd, arr, plines->size);
 
 	return psbd;
 }
@@ -660,24 +646,24 @@ static void free_windows(struct ReadWins *wins)
 	free(wins);
 }
 
-static struct Plannedvals *get_total_planned(struct catg_node *head)
+static struct vec2f_fin *get_total_planned(struct catg_node *head)
 {
 	struct catg_node *tmp = head;
-	struct Plannedvals *pv = malloc(sizeof(*pv));
-	if (pv == NULL) {
+	struct vec2f_fin *fin_vals = malloc(sizeof(*fin_vals));
+	if (fin_vals == NULL) {
 		mem_alloc_fail();
 	}
 
-	pv->exp = 0.0;
-	pv->inc = 0.0;
+	fin_vals->expense = 0.0;
+	fin_vals->income = 0.0;
 
 	while (1) {
 		struct budget_tokens *bt = tokenize_budget_fpi(tmp->catg_fp);
 		if (tmp->next == NULL) {
 			if (bt->transtype == TT_INCOME) {
-				pv->inc += bt->amount;
+				fin_vals->income += bt->amount;
 			} else {
-				pv->exp += bt->amount;
+				fin_vals->expense += bt->amount;
 			}
 			free_budget_tokens(bt);
 			bt = NULL;
@@ -685,24 +671,24 @@ static struct Plannedvals *get_total_planned(struct catg_node *head)
 
 		} else {
 			if (bt->transtype == TT_INCOME) {
-				pv->inc += bt->amount;
+				fin_vals->income += bt->amount;
 			} else {
-				pv->exp += bt->amount;
+				fin_vals->expense += bt->amount;
 			}
 			free_budget_tokens(bt);
 			bt = NULL;
 		}
 		tmp = tmp->next;
 	}
-	return pv;
+	return fin_vals;
 }
 
 static double get_left_to_budget(struct catg_node *head)
 {
-	struct Plannedvals *pv = get_total_planned(head);
-	double ret = pv->inc - pv->exp;
-	free(pv);
-	pv = NULL;
+	struct vec2f_fin *fin_vals = get_total_planned(head);
+	double ret = fin_vals->income - fin_vals->expense;
+	free(fin_vals);
+	fin_vals = NULL;
 	return ret;
 }
 
@@ -791,7 +777,7 @@ void nc_read_setup(struct read_retvals *rret)
 	}
 
 	if (rret->sort == SORT_DATE) {
-		rec_fpis = sort_by_date(fptr, pidx, rec_line_nums);	
+		rec_fpis = sort_by_date(pidx, rec_line_nums);	
 	} else {
 		rec_fpis = sort_by_category(fptr, pidx, rec_line_nums, date.year, date.month);
 	}
@@ -804,6 +790,7 @@ void nc_read_setup(struct read_retvals *rret)
 
 	if (debug_flag) {
 		move(0, 0);
+		clear();
 		printw("CLOCK: %ld", end - start);
 		getch();
 		debug_print_catg_node_data(rret->head);
