@@ -28,6 +28,14 @@
 #include "flags.h"
 #include "filemanagement.h"
 
+#define MIN_OVERIVEW_WIDTH 84
+#define OVERVIEW_BAR_WIDTH 3
+
+enum GraphRatios {
+	NO_INCOME = -1,
+	NO_EXPENSE = -2,
+};
+
 static const char *abbr_months[] = {
 	"JAN", 
 	"FEB", 
@@ -43,6 +51,14 @@ static const char *abbr_months[] = {
 	"DEC"
 };
 
+struct overview_bar_graph {
+	double height_exp;
+	double height_inc;
+	double max_val;
+	int max_height;
+	int width;
+};
+
 /* Returns the row on the bottom 4th of wptr */
 static int last_quarter_row(WINDOW *wptr)
 {
@@ -52,6 +68,20 @@ static int last_quarter_row(WINDOW *wptr)
 static int first_quarter_row(WINDOW *wptr)
 {
 	return getmaxy(wptr) / 4;
+}
+
+static void printw_bal_green(WINDOW *wptr, double f)
+{
+	wattron(wptr, COLOR_PAIR(2));
+ 	wprintw(wptr, "+$%.0f", f);
+	wattroff(wptr, COLOR_PAIR(2));
+}
+
+static void printw_bal_red(WINDOW *wptr, double f)
+{
+	wattron(wptr, COLOR_PAIR(1));
+ 	wprintw(wptr, "-$%.0f", f);
+	wattroff(wptr, COLOR_PAIR(1));
 }
 
 static double get_max_value(int elements, double *arr)
@@ -85,10 +115,11 @@ int calculate_overview_columns(WINDOW *wptr)
 	 * Total Minimum Columns = 86 on stdscr, 84 on wptr_data.
 	 */
 
-	int space = 0;
-	if (getmaxx(wptr) >= 84) {
+	int space = 0; /* Space between graphs */
+
+	if (getmaxx(wptr) >= MIN_OVERIVEW_WIDTH) {
 		space = getmaxx(wptr) / 12;
-		if (space % 2 == 0) {
+		if (space % 2 == 0) { /* Normalize */
 			if (((space + 1) * 12) < getmaxx(wptr)) {
 				space += 1;
 			} else {
@@ -101,145 +132,148 @@ int calculate_overview_columns(WINDOW *wptr)
 	return space > 20 ? 20 : space;
 }
 
-/* Returns the number of spaces between each bar graph for the overview
- * option */
-static void nc_print_overview_graphs(WINDOW *wptr,
-									 struct vec_d *months,
-									 int year)
+static void calculate_bar_height(struct overview_bar_graph *bar,
+								 double rat,
+								 double maxval)
 {
-	double ratios[12] = {0.0}; // Holds each month's income/expense ratio
-	double maxvals[12] = {0.0};
-	struct balances pb_, *pb = &pb_;
-	int space = calculate_overview_columns(wptr);
-	int mo = 1;
+	if (rat > 1) {
+		/* Expenses are greater than income */
+		bar->height_exp = maxval / bar->max_val;
+		bar->height_exp = bar->max_height * bar->height_exp;
+		bar->height_inc = bar->height_exp / rat;
 
-	enum GraphRatios {
-		NO_INCOME = -1,
-		NO_EXPENSE = -2,
+	} else if (rat == NO_INCOME) {
+		/* There are only expenses */
+		bar->height_exp = bar->max_height * (maxval / bar->max_val);
+		bar->height_inc = 0;
+
+	} else if (rat == NO_EXPENSE) {
+		bar->height_inc = bar->max_height * (maxval / bar->max_val);
+		bar->height_exp = 0;
+
+	} else {
+		/* Income is greater than expenses */
+		bar->height_inc = maxval / bar->max_val;
+		bar->height_inc = bar->max_height * bar->height_inc;
+		bar->height_exp = bar->height_inc * rat;
+	}
+
+	if (bar->height_inc > 0 && bar->height_inc < 1) {
+		bar->height_inc = 1;
+	}
+
+	if (bar->height_exp > 0 && bar->height_exp < 1) {
+		bar->height_exp = 1;
+	}
+}
+
+static void print_overview_graphs(WINDOW *wptr,
+									 struct vec_d *months,
+									 int year,
+									 int space)
+{
+	double ratios[MONTHS_IN_YEAR] = {0.0};
+	double maxvals[MONTHS_IN_YEAR] = {0.0};
+	struct overview_bar_graph bar = {
+		.width = OVERVIEW_BAR_WIDTH
 	};
+	struct vec2f_fin bal;
+	struct vec_d *records;
+	int mo = 1;
+	int curr_x;
 
-	for (size_t i = 0; i < months->size && mo <= 12; i++, mo++) {
+	for (size_t i = 0; i < months->size && mo <= MONTHS_IN_YEAR; i++, mo++) {
 		if (months->data[i] == mo) {
-			struct vec_d *pbo = get_records_by_mo_yr(months->data[i], year);
-			calculate_balance(pb, pbo);
-			if (pb->income == 0) { // Prevent a div by zero
+			records = get_records_by_mo_yr(months->data[i], year);
+			calculate_balance(&bal, records);
+			if (bal.income == 0) { /* Prevent div by zero */
 				ratios[mo - 1] = NO_INCOME;
-			} else if (pb->expense == 0) {
+			} else if (bal.expense == 0) {
 				ratios[mo - 1] = NO_EXPENSE;
 			} else {
-				ratios[mo - 1] = pb->expense / pb->income;
+				ratios[mo - 1] = bal.expense / bal.income;
 			}
-			maxvals[mo - 1] = pb->expense >= pb->income ? pb->expense : pb->income;
-			free(pbo);
+
+			if (bal.expense >= bal.income) {
+				maxvals[mo - 1] = bal.expense;
+			} else {
+				maxvals[mo - 1] = bal.income;
+			}
+
+			free(records);
 		} else {
 			i--;
 		}
 	}
 
-	int bar_width = 3;
-	int cur = (getmaxx(wptr) - space * 11) / 2 - 1;
-	double exp_bar_len = 0;
-	double inc_bar_len = 0;
-	int max_bar_len = (last_quarter_row(wptr) - 2) - first_quarter_row(wptr) + 4;
-
-	double maxval = get_max_value(12, maxvals);
+	curr_x = (getmaxx(wptr) - space * 11) / 2 - (BOX_OFFSET);
+	bar.max_height = (last_quarter_row(wptr) - 2) - first_quarter_row(wptr) + 4;
+	bar.max_val = get_max_value(MONTHS_IN_YEAR, maxvals);
 
 	if (debug_flag) {
 		wmove(wptr, 1, 1);
-		for (int i = 0; i < 12; i++) {
+		for (int i = 0; i < MONTHS_IN_YEAR; i++) {
 			wprintw(wptr, "RAT: %.2f VAL: %.2f\n", ratios[i], maxvals[i]);
 		}
 	}
 
-	for (int i = 0; i < 12; i++) {
+	for (int i = 0; i < MONTHS_IN_YEAR; i++) {
 		if (maxvals[i] == 0) {
-			cur += space;
+			curr_x += space;
 			continue;
 		}
 
-		if (ratios[i] > 1) {
-			// Expenses are greater than income
-			exp_bar_len = maxvals[i] / maxval;
-			exp_bar_len = max_bar_len * exp_bar_len;
-			inc_bar_len = exp_bar_len / ratios[i];
+		calculate_bar_height(&bar, ratios[i], maxvals[i]);
 
-		} else if (ratios[i] == NO_INCOME) {
-			// There are only expenses
-			exp_bar_len = max_bar_len * (maxvals[i] / maxval);
-			inc_bar_len = 0;
-
-		} else if (ratios[i] == NO_EXPENSE) {
-			inc_bar_len = max_bar_len * (maxvals[i] / maxval);
-			exp_bar_len = 0;
-
-		} else {
-			// Income is greater than expenses
-			inc_bar_len = maxvals[i] / maxval;
-			inc_bar_len = max_bar_len * inc_bar_len;
-			exp_bar_len = inc_bar_len * ratios[i];
-		}
-
-		if (inc_bar_len > 0 && inc_bar_len < 1) {
-			inc_bar_len = 1;
-		}
-
-		if (exp_bar_len > 0 && exp_bar_len < 1) {
-			exp_bar_len = 1;
-		}
-
-		for (int j = 0; j < (int)inc_bar_len; j++) {
-			mvwchgat(wptr, last_quarter_row(wptr) - 2 - j, cur, bar_width, 
+		/* Print income bar */
+		for (int j = 0; j < (int)bar.height_inc; j++) {
+			mvwchgat(wptr, last_quarter_row(wptr) - 2 - j, curr_x, bar.width, 
 					 A_REVERSE, COLOR_GREEN, NULL);
 		}
 
-		cur += bar_width;
+		curr_x += bar.width;
 
-		for (int j = 0; j < (int)exp_bar_len; j++) {
-			mvwchgat(wptr, last_quarter_row(wptr) - 2 - j, cur, bar_width, 
+		/* Print expense bar */
+		for (int j = 0; j < (int)bar.height_exp; j++) {
+			mvwchgat(wptr, last_quarter_row(wptr) - 2 - j, curr_x, bar.width, 
 					 A_REVERSE, COLOR_RED, NULL);
 		}
 
-		cur += space - bar_width;
+		curr_x += space - bar.width;
 	}
 }
 
-static void nc_print_overview_balances(WINDOW *wptr,
-									   struct vec_d *months,
-									   int year)
+static void print_overview_balances(WINDOW *wptr,
+						   struct vec_d *months,
+						   int year,
+						   int space)
 {
-	int tmpx = 0;
-	int space = calculate_overview_columns(wptr);
+	struct vec2f_fin balances;
+	struct vec_d *records = NULL;
+	size_t i;
 	int y = last_quarter_row(wptr) + 2;
-	int cur = (getmaxx(wptr) - space * 11) / 2;
+	int cur = ((getmaxx(wptr) - space * 11) / 2) - 1;
 	int mo = 1;
-	struct balances pb_, *pb = &pb_;
-	for (size_t i = 0; i < months->size && mo <= 12; i++, mo++) {
-		tmpx = 0;
 
+	for (i = 0; i < months->size && mo <= 12; i++, mo++) {
 		if (months->data[i] == mo) {
-			struct vec_d *pbo = get_records_by_mo_yr(months->data[i], year);
-			calculate_balance(pb, pbo);
-			tmpx = intlen(pb->income) / 2;
-			wmove(wptr, y, cur - tmpx);
-			wattron(wptr, COLOR_PAIR(2));
-			wprintw(wptr, "+$%.0f", pb->income);
-			wattroff(wptr, COLOR_PAIR(2));
-			tmpx = intlen(pb->expense) / 2;
-			wmove(wptr, y + 1, cur - tmpx);
-			wattron(wptr, COLOR_PAIR(1));
-			wprintw(wptr, "-$%.0f", pb->expense);
-			wattron(wptr, COLOR_PAIR(1));
-			free(pbo);
+			records = get_records_by_mo_yr(months->data[i], year);
+			calculate_balance(&balances, records);
+
+			wmove(wptr, y, cur - (intlen(balances.income) / 2));
+			printw_bal_green(wptr, balances.income);
+
+			wmove(wptr, y + 1, cur - (intlen(balances.expense) / 2));
+			printw_bal_red(wptr, balances.expense);
+			free(records);
+			records = NULL;
 			cur += space;
 		} else {
 			wmove(wptr, y, cur);
-			wattron(wptr, COLOR_PAIR(2));
-			wprintw(wptr, "+$0");
-			wattroff(wptr, COLOR_PAIR(2));
+			printw_bal_green(wptr, 0);
+
 			wmove(wptr, y + 1, cur);
-			wattron(wptr, COLOR_PAIR(1));
-			wprintw(wptr, "-$0");
-			wattron(wptr, COLOR_PAIR(1));
+			printw_bal_red(wptr, 0);
 			cur += space;
 			i--;
 		}
@@ -248,11 +282,10 @@ static void nc_print_overview_balances(WINDOW *wptr,
 	wrefresh(wptr);
 }
 
-static void nc_print_overview_months(WINDOW *wptr)
+static void print_overview_months(WINDOW *wptr, int space)
 {
-	int space = calculate_overview_columns(wptr);
 	int y = last_quarter_row(wptr);
-	int cur = (getmaxx(wptr) - space * 11) / 2;
+	int cur = ((getmaxx(wptr) - space * 11) / 2) - 1;
 
 	if (debug_flag) {
 		wprintw(wptr, "INIT CUR: %d ", cur);
@@ -268,17 +301,17 @@ static void nc_print_overview_months(WINDOW *wptr)
 	}
 }
 
-static unsigned int nc_overview_loop(WINDOW *wptr,
+static unsigned char overview_loop(WINDOW *wptr,
 									 struct vec_d *months,
 									 int year)
 {
-	unsigned int flag = 0;
+	unsigned char flag = 0;
 	int c;
 	int space = calculate_overview_columns(wptr);
 	if (space > 0) {
-		nc_print_overview_months(wptr);
-		nc_print_overview_balances(wptr, months, year);
-		nc_print_overview_graphs(wptr, months, year);
+		print_overview_months(wptr, space);
+		print_overview_balances(wptr, months, year, space);
+		print_overview_graphs(wptr, months, year, space);
 		nc_print_quit_footer(stdscr);
 		wrefresh(wptr);
 	} else {
@@ -304,22 +337,23 @@ static unsigned int nc_overview_loop(WINDOW *wptr,
 	return flag;
 }
 
-void nc_overview_setup(int year)
+void overview_setup(int year)
 {
 	WINDOW *wptr_parent = newwin(LINES - 1, 0, 0, 0);
 	WINDOW *wptr_data = create_lines_subwindow(getmaxy(wptr_parent) - 1,
 									getmaxx(wptr_parent), 1, BOX_OFFSET);
+	FILE *fptr = open_record_csv("r");
+	struct vec_d *months = get_months_with_data(fptr, year, 1);
+	unsigned char flag;
+
+	fclose(fptr);
 	init_pair(1, COLOR_RED, -1);
 	init_pair(2, COLOR_GREEN, -1);
 	box(wptr_parent, 0, 0);
 	mvwxcprintw_digit(wptr_parent, 0, year);
 	wrefresh(wptr_parent);
 	
-	FILE *fptr = open_record_csv("r");
-	struct vec_d *months = get_months_with_data(fptr, year, 1);
-	fclose(fptr);
-
-	unsigned int flag = nc_overview_loop(wptr_data, months, year);
+	flag = overview_loop(wptr_data, months, year);
 
 	free(months);
 	nc_exit_window(wptr_parent);
@@ -327,7 +361,7 @@ void nc_overview_setup(int year)
 
 	switch (flag) {
 	case RESIZE:
-		nc_overview_setup(year);
+		overview_setup(year);
 		break;
 	case QUIT:
 		break;
