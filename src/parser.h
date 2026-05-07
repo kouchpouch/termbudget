@@ -188,7 +188,7 @@ struct budget_tokens *tokenize_budget_fpi(long bo);
  * line number line. BudgetTokens catg is separately malloc'd and must 
  * be free'd. Use free_budget_tokens().
  * Returns NULL on failure, pointer to struct budget_tokens on success. */
-struct budget_tokens *tokenize_budget_line(int line);
+struct budget_tokens *tokenize_budget_line(long line);
 
 /* Frees the strings inside of 'ld', if they are not NULL */
 void free_tokenized_record_strings(struct transaction_tokens *ld);

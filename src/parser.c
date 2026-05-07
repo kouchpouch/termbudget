@@ -277,7 +277,7 @@ void free_budget_tokens(struct budget_tokens *pbt)
 bool category_exists_in_budget(char *catg, int month, int year)
 {
 	struct budget_tokens bt, *pbt = &bt;
-	int i = 1;
+	long i = 1;
 
 	while ((pbt = tokenize_budget_line(i)) != NULL) {
 		if (pbt->y == year && pbt->m == month && strcasecmp(pbt->catg, catg) == 0) {
@@ -729,7 +729,7 @@ struct budget_tokens *tokenize_budget_fpi(long bo)
 	return pbt;
 }
 
-struct budget_tokens *tokenize_budget_line(int line)
+struct budget_tokens *tokenize_budget_line(long line)
 {
 	if (line == 0) {
 		return NULL;
@@ -743,7 +743,7 @@ struct budget_tokens *tokenize_budget_line(int line)
 	char linebuff[LINE_BUFFER];
 	char *tmp;
 	char *str;
-	size_t i = 1;
+	long i = 1;
 
 	rewind(fptr);
 	seek_beyond_header(fptr);

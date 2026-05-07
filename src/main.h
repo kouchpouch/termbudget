@@ -62,17 +62,12 @@ struct month_year {
 	int month;
 };
 
-struct balances {
-	double income;
-	double expense;
-};
-
 /* Exits the program with "exit(1)" and prints the error message. */
 void mem_alloc_fail(void);
 
 /* Sets the values of struct members 'pb' using records in RECORD_DIR
  * at file positions of 'pbo' */
-void calculate_balance(struct balances *pb, struct vec_d *pbo);
+void calculate_balance(struct vec2f_fin *pb, struct vec_d *pbo);
 
 int show_help_subwindow(void);
 
