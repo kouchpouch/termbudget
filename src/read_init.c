@@ -40,7 +40,7 @@
 #include "categories.h"
 #include "flags.h"
 
-// 'R'ead 'RET'urn values
+/* 'R'ead 'RET'urn values */
 #define RRET_DEFAULT 0
 #define RRET_BYDATE 1
 #define RRET_QUIT 2

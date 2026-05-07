@@ -208,18 +208,6 @@ static void print_category_hr(WINDOW *wptr,
 	wattroff(wptr, A_REVERSE);
 }
 
-/* Returns the total number of nodes in 'nodes' */
-/*
-static int get_total_nodes(struct catg_nodes **nodes)
-{
-	int n = 1;
-	for (int i = 0; nodes[i]->next != NULL; i++) {
-		n++;
-	}
-	return n;
-}
-*/
-
 static void print_init_budget_loop(WINDOW *wptr,
 								   struct scroll_vars *sc,
 								   struct catg_node *head,
@@ -531,7 +519,6 @@ static int nc_scroll_prev_category(WINDOW *wptr,
 		if (sc->catg_data == -1) {
 			nc_scroll_prev(tmp->catg_fp, 
 						   bfptr, wptr, cw, true);
-//		} else if (sc->catg_data >= 0) {
 		} else {
 			nc_scroll_prev(tmp->data->data[sc->catg_data], 
 						   rfptr, wptr, cw, false);
