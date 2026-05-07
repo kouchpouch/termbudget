@@ -26,6 +26,14 @@
 #include "filemanagement.h"
 #include "vector.h"
 
+struct search_for {
+	bool date;
+	bool cat;
+	bool desc;
+	bool tt;
+	bool amt;
+};
+
 int get_total_csv_lines(void)
 {
 	FILE *fptr = fopen(RECORD_DIR, "r");
@@ -384,6 +392,9 @@ static void init_data_array(struct vec_d *vec)
  * based on the header. */
 struct vec_d *get_months_with_data(FILE *fptr, int matchyear, int field)
 {
+	int year;
+	int month;
+	int i = 0;
 	char linebuff[LINE_BUFFER];
 	char *str;
 	struct vec_d *months = malloc(sizeof(*months) + (sizeof(long) * MONTHS_IN_YEAR));
@@ -395,9 +406,6 @@ struct vec_d *get_months_with_data(FILE *fptr, int matchyear, int field)
 	months->size = MONTHS_IN_YEAR;
 	init_data_array(months);
 
-	int year;
-	int month;
-	int i = 0;
 
 	if (seek_beyond_header(fptr) == -1) {
 		puts("Failed to read header");
@@ -424,14 +432,13 @@ struct vec_d *get_months_with_data(FILE *fptr, int matchyear, int field)
 
 struct vec_d *get_matching_line_nums(FILE *fptr, int month, int year)
 {
-	rewind(fptr);
 	struct vec_d *pl = vec_d_create();
-
 	long linenumber = 0;
 	int line_month, line_year;
 	char linebuff[LINE_BUFFER];
 	char *str;
 
+	rewind(fptr);
 	if (seek_beyond_header(fptr) == -1) {
 		perror("Unable to read header");
 		free(pl);
@@ -501,6 +508,15 @@ duplicate_exists:
 	return pc; // Struct and each index of categories must be free'd
 }
 
+static void set_to_false(struct search_for *s)
+{
+	s->amt = false;
+	s->cat = false;
+	s->date = false;
+	s->desc = false;
+	s->tt = false;
+}
+
 struct vec_d *get_records_by_yr(int year)
 {
 	return get_records_by_any(-1, -1, year, NULL, NULL, -1, -1, NULL);
@@ -522,20 +538,14 @@ struct vec_d *get_records_by_any(int month,
 {
 	FILE *fptr = open_record_csv("r");
 	struct vec_d *prbc = vec_d_create();
-
 	struct transaction_tokens ld_, *ld = &ld_;
+	struct search_for found;
 	char linebuff[LINE_BUFFER];
 	char *str;
-	bool date = false;
-	bool cat = false;
-	bool desc = false;
-	bool tt = false;
-	bool amt = false;
 	long tmpbo;
+	size_t i = 0;
 
 	seek_beyond_header(fptr);
-	
-	unsigned int i = 0;
 
 	if (chunk == NULL) {
 		;
@@ -554,60 +564,56 @@ struct vec_d *get_records_by_any(int month,
 			break;
 		}
 		tokenize_record(ld, &str);
-		date = false;
-		cat = false;
-		desc = false;
-		tt = false;
-		amt = false;
+		set_to_false(&found);
 		if (year < 0 && month < 0 && day < 0) {
-			date = true;
+			found.date = true;
 		} else if (year > 0 && month > 0 && day > 0) {
 			if (year == ld->year && month == ld->month && day == ld->day) {
-				date = true;
+				found.date = true;
 			}
 		} else if (year > 0 && month > 0 && day < 0) {
 			if (year == ld->year && month == ld->month) {
-				date = true;
+				found.date = true;
 			}
 		} else if (year > 0 && month < 0 && day < 0) {
 			if (year == ld->year) {
-				date = true;
+				found.date = true;
 			}
 		}
 
 		if (category == NULL) {
-			cat = true;
+			found.cat = true;
 		} else if (category != NULL) {
 			if (strncmp(category, ld->category, MAX_LEN_CATG) == 0) {
-				cat = true;
+				found.cat = true;
 			}
 		}
 
 		if (description == NULL) {
-			desc = true;
+			found.desc = true;
 		} else if (description != NULL) {
 			if (strncmp(description, ld->desc, MAX_LEN_DESC) == 0) {
-				desc = true;
+				found.desc = true;
 			}
 		}
 
 		if (transtype < 0) {
-			tt = true;
+			found.tt = true;
 		} else if (transtype >= 0) {
 			if (transtype == ld->transtype) {
-				tt = true;
+				found.tt = true;
 			}
 		}
 
 		if (amount < 0) {
-			amt = true;
+			found.amt = true;
 		} else if (amount >= 0) {
 			if (amount == ld->amount) {
-				amt = true;
+				found.amt = true;
 			}
 		}
 
-		if (date && cat && desc && tt && amt) {
+		if (found.date && found.cat && found.desc && found.tt && found.amt) {
 			vec_d_append(&prbc, tmpbo);
 		}
 
