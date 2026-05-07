@@ -166,8 +166,8 @@ int show_help_subwindow(void)
 
 static void conditionally_free_linked_list(struct read_retvals *r)
 {
-	if (IS_DIRTY(r->flag)) {
-		UNSET_DIRTY_BIT(r->flag);
+	if (KEEP_BIT_IS_SET(r->flag)) {
+		UNSET_KEEP_BIT(r->flag);
 	} else {
 		if (r->head != NULL) {
 			if (debug_flag) {

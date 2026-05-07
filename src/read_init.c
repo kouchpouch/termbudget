@@ -721,7 +721,7 @@ void init_read_retvals(struct read_retvals *r)
 
 void nc_read_setup(struct read_retvals *rret)
 {
-	UNSET_DIRTY_BIT(rret->flag);
+	UNSET_KEEP_BIT(rret->flag);
 	nc_print_main_menu_footer(stdscr);
 	if (debug_flag) {
 		nc_print_debug_flag(stdscr);
@@ -850,7 +850,7 @@ err_select_date_fail:
 
 	case READ:
 		rret->flag = RRET_DEFAULT;
-		SET_DIRTY_BIT(rret->flag);
+		SET_KEEP_BIT(rret->flag);
 		break;
 
 	case QUIT:
@@ -867,13 +867,13 @@ err_select_date_fail:
 			rret->sort = SORT_CATG;
 		}
 		rret->flag = RRET_BYDATE;
-		SET_DIRTY_BIT(rret->flag);
+		SET_KEEP_BIT(rret->flag);
 		break;
 
 	case OVERVIEW:
-		nc_overview_setup(date.year);
+		overview_setup(date.year);
 		rret->flag = RRET_BYDATE;
-		SET_DIRTY_BIT(rret->flag);
+		SET_KEEP_BIT(rret->flag);
 		break;
 
 	case EDIT_CATG:
