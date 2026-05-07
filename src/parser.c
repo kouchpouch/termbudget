@@ -26,7 +26,7 @@
 #include "filemanagement.h"
 #include "vector.h"
 
-struct search_for {
+struct record_search_for {
 	bool date;
 	bool cat;
 	bool desc;
@@ -508,7 +508,8 @@ duplicate_exists:
 	return pc; // Struct and each index of categories must be free'd
 }
 
-static void set_to_false(struct search_for *s)
+/* Sets all members of struct search_for to false */
+static void set_to_false(struct record_search_for *s)
 {
 	s->amt = false;
 	s->cat = false;
@@ -539,7 +540,7 @@ struct vec_d *get_records_by_any(int month,
 	FILE *fptr = open_record_csv("r");
 	struct vec_d *prbc = vec_d_create();
 	struct transaction_tokens ld_, *ld = &ld_;
-	struct search_for found;
+	struct record_search_for found;
 	char linebuff[LINE_BUFFER];
 	char *str;
 	long tmpbo;
@@ -634,15 +635,14 @@ struct vec_d *get_records_by_any(int month,
 struct catg_vec *get_budget_catg_by_date(int month, int year)
 {
 	struct catg_vec *pc = catg_vec_create();
-
-	FILE *fptr = open_budget_csv("r");
-
-	seek_beyond_header(fptr);
 	char linebuff[LINE_BUFFER];
+	FILE *fptr = open_budget_csv("r");
 	char *str;
 	char *catg;
 	int m;
 	int y;
+
+	seek_beyond_header(fptr);
 
 	while (1) {
 		str = fgets(linebuff, sizeof(linebuff), fptr);
@@ -666,14 +666,12 @@ struct catg_vec *get_budget_catg_by_date(int month, int year)
 struct vec_d *get_budget_catg_by_date_bo(int month, int year)
 {
 	struct vec_d *pcbo = vec_d_create();
-
-	FILE *fptr = open_budget_csv("r");
-
 	char linebuff[LINE_BUFFER];
+	FILE *fptr = open_budget_csv("r");
 	char *str;
+	long bo;
 	int m;
 	int y;
-	long bo;
 
 	while (1) {
 		bo = ftell(fptr);
@@ -705,10 +703,12 @@ struct budget_tokens *tokenize_budget_fpi(long bo)
 	}
 
 	FILE *fptr = open_budget_csv("r");
+	char linebuff[LINE_BUFFER];
+	char *str;
+	char *tmp;
 
 	fseek(fptr, bo, SEEK_SET);
-	char linebuff[LINE_BUFFER];
-	char *str = fgets(linebuff, sizeof(linebuff), fptr);
+	str = fgets(linebuff, sizeof(linebuff), fptr);
 	if (str == NULL) {
 		free(pbt);
 		return NULL;
@@ -716,7 +716,7 @@ struct budget_tokens *tokenize_budget_fpi(long bo)
 
 	pbt->m = atoi(strsep(&str, ","));
 	pbt->y = atoi(strsep(&str, ","));
-	char *tmp = strndup(strsep(&str, ","), MAX_LEN_CATG);
+	tmp = strndup(strsep(&str, ","), MAX_LEN_CATG);
 	if (tmp == NULL) {
 		free(pbt);
 		mem_alloc_fail();
@@ -740,14 +740,14 @@ struct budget_tokens *tokenize_budget_line(int line)
 	}
 
 	FILE *fptr = open_budget_csv("r");
+	char linebuff[LINE_BUFFER];
+	char *tmp;
+	char *str;
+	size_t i = 1;
 
 	rewind(fptr);
 	seek_beyond_header(fptr);
 
-	char linebuff[LINE_BUFFER];
-	char *str;
-
-	int i = 1;
 	while (1) {
 		str = fgets(linebuff, sizeof(linebuff), fptr);
 		if (str == NULL) {
@@ -768,7 +768,7 @@ struct budget_tokens *tokenize_budget_line(int line)
 
 	pbt->m = atoi(strsep(&str, ","));
 	pbt->y = atoi(strsep(&str, ","));
-	char *tmp = strndup(strsep(&str, ","), MAX_LEN_CATG);
+	tmp = strndup(strsep(&str, ","), MAX_LEN_CATG);
 	if (tmp == NULL) {
 		free(pbt);
 		mem_alloc_fail();
@@ -795,9 +795,11 @@ void free_tokenized_record_strings(struct transaction_tokens *ld)
 int tokenize_record_fpi(long b, struct transaction_tokens *ld)
 {
 	FILE *fptr = open_record_csv("r");
-	fseek(fptr, b, SEEK_SET);
+	char *str;
 	char linebuff[LINE_BUFFER];
-	char *str = fgets(linebuff, sizeof(linebuff), fptr);
+
+	fseek(fptr, b, SEEK_SET);
+	str = fgets(linebuff, sizeof(linebuff), fptr);
 	fclose(fptr);
 	if (str == NULL) {
 		return -1;
@@ -810,7 +812,7 @@ int tokenize_record_fpi(long b, struct transaction_tokens *ld)
 void tokenize_record(struct transaction_tokens *ld, char **str)
 {
 	char *token;
-	for (int i = 0; i < CSV_FIELDS; i++) {
+	for (size_t i = 0; i < CSV_FIELDS; i++) {
 		token = strsep(str, ",");
 		if (token == NULL) break;
 		switch (i) {
@@ -863,6 +865,9 @@ double get_record_amount(long b)
 int get_int_field(int line, int field)
 {
 	FILE *fptr = open_record_csv("r");
+	char linebuff[LINE_BUFFER];
+	char *str;
+	int i = 0;
 
 	if (field > get_num_fields(fptr) || field < 1) {
 		perror("That field doesn't exist");
@@ -871,10 +876,6 @@ int get_int_field(int line, int field)
 	}
 
 	rewind(fptr);
-
-	char linebuff[LINE_BUFFER];
-	char *str;
-	int i = 0;
 
 	while ((str = fgets(linebuff, sizeof(linebuff), fptr)) != NULL) {
 		if (i == line) {
@@ -898,6 +899,7 @@ struct vec_d *index_csv(FILE *fptr)
 {
 	struct vec_d *pidx = vec_d_create();
 	char linebuff[LINE_BUFFER];
+
 	while (fgets(linebuff, sizeof(linebuff), fptr) != NULL) {
 		vec_d_append(&pidx, ftell(fptr));
 	}
