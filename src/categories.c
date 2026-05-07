@@ -170,8 +170,8 @@ void delete_catg_node(struct catg_node *head, size_t idx)
 	free(tmp);
 }
 
-/* Verifies that the pointer "alleged_head" is the actual head of the linked
- * list. And if it isn't, set the alleged head to the real head. */
+/* Verifies that the pointer "alleged_head" is the actual head of the 
+ * linked list. And if it isn't, set the alleged head to the real head. */
 static void verify_head(struct catg_node **alleged_head)
 {
 	struct catg_node *curr = *alleged_head;
