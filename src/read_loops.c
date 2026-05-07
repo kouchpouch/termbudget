@@ -696,6 +696,9 @@ void nc_read_budget_loop(struct ReadWins *wins,
 	int subwin_y;
 	int scroll_ret;
 
+	int iterations;
+	int num_buffer[3];
+
 	calculate_columns(cw, getmaxx(wins->data) + BOX_OFFSET);
 
 	if (debug_flag) {
@@ -820,6 +823,59 @@ void nc_read_budget_loop(struct ReadWins *wins,
 										             sc, cw, rfptr, bfptr);
 				dc->first -= scroll_ret;
 				dc->last -= scroll_ret;
+			}
+			break;
+		
+		/* Vim-like number buffer */
+		case ('1'):
+		case ('2'):
+		case ('3'):
+		case ('4'):
+		case ('5'):
+		case ('6'):
+		case ('7'):
+		case ('8'):
+		case ('9'):
+			num_buffer[0] = c;
+			halfdelay(5);
+			c = wgetch(wins->data);
+			cbreak();
+			if (c == ERR) {
+				break;
+			} else if (c >= '0' && c <= '9') {
+				num_buffer[1] = c;
+				iterations = ((num_buffer[0] - 48) * 10) + (num_buffer[1] - 48);
+			} else {
+				iterations = num_buffer[0] - 48;
+			}
+
+			if (c != 'k' && c != 'j') {
+				c = wgetch(wins->data);
+			}
+
+			if (c == 'j') {
+				for (int i = 0; i < iterations; i++) {
+					if (sc->select_idx + 1 < sc->total_rows) {
+						scroll_ret = nc_scroll_next_category(wins->data, head,
+															 sc, cw, rfptr, bfptr);
+						dc->first += scroll_ret;
+						dc->last += scroll_ret;
+					}
+				}
+				break;
+
+			} else if (c == 'k') {
+				for (int i = 0; i < iterations; i++) {
+					if (sc->select_idx > 0) {
+						scroll_ret = nc_scroll_prev_category(wins->data, head,
+															 sc, cw, rfptr, bfptr);
+						dc->first -= scroll_ret;
+						dc->last -= scroll_ret;
+					}
+				}
+				break;
+			} else {
+				break;
 			}
 			break;
 
