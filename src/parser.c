@@ -276,15 +276,15 @@ void free_budget_tokens(struct budget_tokens *pbt)
  */
 bool category_exists_in_budget(char *catg, int month, int year)
 {
-	struct budget_tokens bt, *pbt = &bt;
+	struct budget_tokens *bt;
 	long i = 1;
 
-	while ((pbt = tokenize_budget_line(i)) != NULL) {
-		if (pbt->y == year && pbt->m == month && strcasecmp(pbt->catg, catg) == 0) {
-			free_budget_tokens(pbt);
+	while ((bt = tokenize_budget_line(i)) != NULL) {
+		if (bt->y == year && bt->m == month && strcasecmp(bt->catg, catg) == 0) {
+			free_budget_tokens(bt);
 			return true;
 		}
-		free_budget_tokens(pbt);
+		free_budget_tokens(bt);
 		i++;
 	}
 	return false;
@@ -537,11 +537,11 @@ struct vec_d *get_records_by_any(int month,
 								 double amount,
 								 struct vec_d *chunk) 
 {
-	FILE *fptr = open_record_csv("r");
-	struct vec_d *prbc = vec_d_create();
-	struct transaction_tokens ld_, *ld = &ld_;
+	struct vec_d *matching_recs = vec_d_create();
+	struct transaction_tokens ttok;
 	struct record_search_for found;
 	char linebuff[LINE_BUFFER];
+	FILE *fptr = open_record_csv("r");
 	char *str;
 	long tmpbo;
 	size_t i = 0;
@@ -555,7 +555,7 @@ struct vec_d *get_records_by_any(int month,
 		i++;
 	} else if (chunk->size == 0) {
 		fclose(fptr);
-		return prbc;
+		return matching_recs;
 	}
 
 	while (1) {
@@ -564,20 +564,20 @@ struct vec_d *get_records_by_any(int month,
 		if (str == NULL) {
 			break;
 		}
-		tokenize_record(ld, &str);
+		tokenize_record(&ttok, &str);
 		set_to_false(&found);
 		if (year < 0 && month < 0 && day < 0) {
 			found.date = true;
 		} else if (year > 0 && month > 0 && day > 0) {
-			if (year == ld->year && month == ld->month && day == ld->day) {
+			if (year == ttok.year && month == ttok.month && day == ttok.day) {
 				found.date = true;
 			}
 		} else if (year > 0 && month > 0 && day < 0) {
-			if (year == ld->year && month == ld->month) {
+			if (year == ttok.year && month == ttok.month) {
 				found.date = true;
 			}
 		} else if (year > 0 && month < 0 && day < 0) {
-			if (year == ld->year) {
+			if (year == ttok.year) {
 				found.date = true;
 			}
 		}
@@ -585,7 +585,7 @@ struct vec_d *get_records_by_any(int month,
 		if (category == NULL) {
 			found.cat = true;
 		} else if (category != NULL) {
-			if (strncmp(category, ld->category, MAX_LEN_CATG) == 0) {
+			if (strncmp(category, ttok.category, MAX_LEN_CATG) == 0) {
 				found.cat = true;
 			}
 		}
@@ -593,7 +593,7 @@ struct vec_d *get_records_by_any(int month,
 		if (description == NULL) {
 			found.desc = true;
 		} else if (description != NULL) {
-			if (strncmp(description, ld->desc, MAX_LEN_DESC) == 0) {
+			if (strncmp(description, ttok.desc, MAX_LEN_DESC) == 0) {
 				found.desc = true;
 			}
 		}
@@ -601,7 +601,7 @@ struct vec_d *get_records_by_any(int month,
 		if (transtype < 0) {
 			found.tt = true;
 		} else if (transtype >= 0) {
-			if (transtype == ld->transtype) {
+			if (transtype == ttok.transtype) {
 				found.tt = true;
 			}
 		}
@@ -609,16 +609,16 @@ struct vec_d *get_records_by_any(int month,
 		if (amount < 0) {
 			found.amt = true;
 		} else if (amount >= 0) {
-			if (amount == ld->amount) {
+			if (amount == ttok.amount) {
 				found.amt = true;
 			}
 		}
 
 		if (found.date && found.cat && found.desc && found.tt && found.amt) {
-			vec_d_append(&prbc, tmpbo);
+			vec_d_append(&matching_recs, tmpbo);
 		}
 
-		free_tokenized_record_strings(ld);
+		free_tokenized_record_strings(&ttok);
 
 		if (chunk != NULL) {
 			if (i < chunk->size) {
@@ -629,7 +629,7 @@ struct vec_d *get_records_by_any(int month,
 	}
 
 	fclose(fptr);
-	return prbc;
+	return matching_recs;
 }
 
 struct catg_vec *get_budget_catg_by_date(int month, int year)
