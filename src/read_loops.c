@@ -887,8 +887,8 @@ void nc_read_budget_loop(struct ReadWins *wins,
 				subwin_y = show_detail_subwindow(line);
 				init_sidebar_body(wins->sidebar_body, head, scrl.sidebar_idx);
 				refresh_budget_loop(head, &scrl, rfptr, bfptr, subwin_y);
-				c = 0;
 			}
+			c = 0;
 			break;
 
 		case KEY_NPAGE: /* PAGE DN */
@@ -1054,8 +1054,6 @@ void nc_read_loop(struct ReadWins *wins,
 	struct num_buffer numbuf;
 	struct column_width cw_;
 	struct visible_range vr_;
-
-	/* Every other member implicitly set to 0 */
 	struct scroll_vars scrl = {
 		.catg_data = -1,
 		.cw = &cw_,
