@@ -60,8 +60,8 @@ void mem_alloc_fail(void)
 	exit(1);
 }
 
-/* Prints the value of each struct ColWidth memeber to the window wptr */
-void debug_columns(WINDOW *wptr, struct ColWidth *cw)
+/* Prints the value of each struct column_width memeber to the window wptr */
+void debug_columns(WINDOW *wptr, struct column_width *cw)
 {
 	wmove(wptr, 5, 10);
 	wprintw(wptr, "DATE: %d CATG: %d, DESC: %d, TRNS: %d, AMNT: %d\n",

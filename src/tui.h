@@ -58,7 +58,7 @@
 #define INPUT_MSG_Y_OFFSET 2
 #define MAX_Y_CATG_SELECT 22 // Maximum of 20 categories on the screen
 
-struct ColWidth {
+struct column_width {
 	int date;
 	int catg;
 	int desc;
@@ -107,7 +107,7 @@ void clear_input_error_message(WINDOW *wptr);
  * category width into catg, description width into desc, transaction type
  * width into trns, and amount into amnt.
  */
-void calculate_columns(struct ColWidth *cw, int max_x);
+void calculate_columns(struct column_width *cw, int max_x);
 
 void highlight(WINDOW *wptr, int y, int x, int n);
 

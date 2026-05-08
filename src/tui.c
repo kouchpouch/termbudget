@@ -78,7 +78,7 @@ void clear_input_error_message(WINDOW *wptr)
 	wrefresh(wptr);
 }
 
-void calculate_columns(struct ColWidth *cw, int max_x)
+void calculate_columns(struct column_width *cw, int max_x)
 {
 	int static_columns;
 	int small_scr;
@@ -124,7 +124,7 @@ void unhighlight(WINDOW *wptr, int y, int x, int n)
 
 void print_column_headers(WINDOW *wptr, int x_off)
 {
-	struct ColWidth column_width, *cw = &column_width;
+	struct column_width column_width, *cw = &column_width;
 	int cur = x_off;
 	int y = 1;
 
