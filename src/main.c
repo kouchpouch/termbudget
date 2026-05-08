@@ -154,7 +154,8 @@ int show_help_subwindow(void)
 	assert(sizeof(key) == sizeof(help));
 
 	for (size_t i = 0; i < sizeof(key) / sizeof(char *); i++) {
-		mvwprintw(wptr, y++, BOX_OFFSET, "%s%.*s%s\n", help[i], n_spaces(mx, help[i], key[i]), line, key[i]);
+		mvwprintw(wptr, y++, BOX_OFFSET, "%s%.*s%s\n", help[i], 
+			      n_spaces(mx, help[i], key[i]), line, key[i]);
 	}
 
 	box(wptr, 0, 0);
