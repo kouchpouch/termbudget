@@ -37,6 +37,8 @@
 #include "categories.h"
 #include "flags.h"
 
+#define NUM_BUFFER_SZ 3
+
 /* Holds the variables used for scrolling and/or selecting transactions and/or 
  * categories */
 struct scroll_vars {
@@ -49,6 +51,11 @@ struct scroll_vars {
 	int catg_node;
 	int catg_data;
 	size_t sidebar_idx;
+};
+
+struct num_buffer {
+	int result;
+	int buffer[NUM_BUFFER_SZ];
 };
 
 struct visible_range {
@@ -587,6 +594,51 @@ static int nc_scroll_next_category(WINDOW *wptr,
 	return retval;
 }
 
+static void scroll_n_next_categories(int n,
+								     struct visible_range *vr,
+								     WINDOW *wptr,
+								     struct catg_node *head,
+								     struct scroll_vars *sc,
+								     struct ColWidth *cw, 
+								     FILE *rfptr,
+								     FILE *bfptr)
+{
+	int scroll_ret;
+	for (int i = 0; i < n; i++) {
+		if (sc->select_idx + 1 < sc->total_rows) {
+			scroll_ret = 
+				nc_scroll_next_category(wptr, head,
+									    sc, cw, rfptr, bfptr);
+			vr->first += scroll_ret;
+			vr->last += scroll_ret;
+		} else {
+			break;
+		}
+	}
+}
+
+static void scroll_n_prev_categories(int n,
+								     struct visible_range *vr,
+								     WINDOW *wptr,
+								     struct catg_node *head,
+								     struct scroll_vars *sc,
+								     struct ColWidth *cw, 
+								     FILE *rfptr,
+								     FILE *bfptr)
+{
+	int scroll_ret;
+	for (int i = 0; i < n; i++) {
+		if (sc->select_idx > 0) {
+			scroll_ret = nc_scroll_prev_category(wptr, head,
+												 sc, cw, rfptr, bfptr);
+			vr->first -= scroll_ret;
+			vr->last -= scroll_ret;
+		} else {
+			break;
+		}
+	}
+}
+
 /*
  * After the detail sub window is closed, there is a gap of invisible lines
  * where the window was. This loops through each line and changes it attr
@@ -656,6 +708,54 @@ static void refresh_budget_loop(WINDOW *data,
 	}
 }
 
+void clear_number_buffer(struct num_buffer *b)
+{
+	for (int i = 0; i < NUM_BUFFER_SZ; i++) {
+		b->buffer[i] = -1;
+	}
+	b->result = 0;
+}
+
+void number_buffer_to_int(struct num_buffer *b)
+{
+	int multiplier = 1;
+	for (int i = 0; i < NUM_BUFFER_SZ; i++) {
+		if (i > 0) {
+			if (b->buffer[i] >= '0' && b->buffer[i] <= '9') {
+				multiplier *= 10;
+			}
+		}
+	}
+
+	for (int i = 0; i < NUM_BUFFER_SZ; i++) {
+		if (b->buffer[i] != '0' && b->buffer[i] >= 48) {
+			b->result += (b->buffer[i] - 48) * multiplier;
+		}
+		multiplier /= 10;
+	}
+}
+
+int fill_number_buffer(int init, struct num_buffer *buff)
+{
+	int tmp = 0;
+	int i = 0;
+	buff->buffer[i++] = init;
+	while (i < NUM_BUFFER_SZ) {
+		halfdelay(5);
+		tmp = getch();
+		if (tmp == ERR) {
+			break;
+		} else if (tmp >= '0' && tmp <= '9') {
+			buff->buffer[i++] = tmp;
+		} else {
+			return tmp;
+		}
+	}
+
+	cbreak();
+	return i;
+}
+
 /*
  * Main loop for the user to interact with when selecting the read menu option.
  * If sorted by anything other than 'Category', nc_read_loop will be used.
@@ -685,6 +785,7 @@ void nc_read_budget_loop(struct ReadWins *wins,
 		.catg_data = -1
 	};
 
+	struct num_buffer numbuf = { 0 };
 	struct catg_node *tmp = NULL;
 	struct scroll_vars *sc = &sc_;
 	struct visible_range dc_, *dc = &dc_;
@@ -695,9 +796,6 @@ void nc_read_budget_loop(struct ReadWins *wins,
 	int c = 0;
 	int subwin_y;
 	int scroll_ret;
-
-	int iterations;
-	int num_buffer[3];
 
 	calculate_columns(cw, getmaxx(wins->data) + BOX_OFFSET);
 
@@ -719,6 +817,7 @@ void nc_read_budget_loop(struct ReadWins *wins,
 	while (c != KEY_F(QUIT) && c != '\n' && c != '\r') {
 		wrefresh(wins->data);
 		refresh_displayed_counter(wins->parent, sc, dc);
+		clear_number_buffer(&numbuf);
 
 		if (debug_flag) {
 			print_debug_line(wins->parent, sc);
@@ -785,45 +884,25 @@ void nc_read_budget_loop(struct ReadWins *wins,
 			break;
 
 		case KEY_NPAGE: // PAGE DOWN
-			for (int i = 0; i < PAGE_KEY_ROWS; i++) {
-				if (sc->select_idx + 1 < sc->total_rows) {
-					scroll_ret = nc_scroll_next_category(wins->data, head,
-										                 sc, cw, rfptr, bfptr);
-					dc->first += scroll_ret;
-					dc->last += scroll_ret;
-				}
-			}
+			scroll_n_next_categories(PAGE_KEY_ROWS,
+							dc, wins->data, head, sc, cw, rfptr, bfptr);
 			break;
 
 		case KEY_PPAGE: // PAGE UP
-			for (int i = 0; i < PAGE_KEY_ROWS; i++) {
-				if (sc->select_idx > 0) {
-					scroll_ret = nc_scroll_prev_category(wins->data, head,
-										                 sc, cw, rfptr, bfptr);
-					dc->first -= scroll_ret;
-					dc->last -= scroll_ret;
-				}
-			}
+			scroll_n_prev_categories(PAGE_KEY_ROWS,
+							dc, wins->data, head, sc, cw, rfptr, bfptr);
 			break;
 
 		case KEY_EOL:
 		case KEY_END:
-			while (sc->select_idx + 1 < sc->total_rows) {
-				scroll_ret = nc_scroll_next_category(wins->data, head,
-													 sc, cw, rfptr, bfptr);
-				dc->first += scroll_ret;
-				dc->last += scroll_ret;
-			}
+			scroll_n_next_categories(sc->total_rows,
+							dc, wins->data, head, sc, cw, rfptr, bfptr);
 			break;
 
 		case KEY_BEG:
 		case KEY_HOME:
-			while (sc->select_idx > 0) {
-				scroll_ret = nc_scroll_prev_category(wins->data, head,
-										             sc, cw, rfptr, bfptr);
-				dc->first -= scroll_ret;
-				dc->last -= scroll_ret;
-			}
+			scroll_n_prev_categories(sc->total_rows,
+							dc, wins->data, head, sc, cw, rfptr, bfptr);
 			break;
 		
 		/* Vim-like number buffer */
@@ -836,47 +915,23 @@ void nc_read_budget_loop(struct ReadWins *wins,
 		case ('7'):
 		case ('8'):
 		case ('9'):
-			num_buffer[0] = c;
-			halfdelay(5);
-			c = wgetch(wins->data);
-			cbreak();
-			if (c == ERR) {
-				break;
-			} else if (c >= '0' && c <= '9') {
-				num_buffer[1] = c;
-				iterations = ((num_buffer[0] - 48) * 10) + (num_buffer[1] - 48);
-			} else {
-				iterations = num_buffer[0] - 48;
-			}
+			c = fill_number_buffer(c, &numbuf);
+			number_buffer_to_int(&numbuf);
 
 			if (c != 'k' && c != 'j') {
 				c = wgetch(wins->data);
 			}
 
 			if (c == 'j') {
-				for (int i = 0; i < iterations; i++) {
-					if (sc->select_idx + 1 < sc->total_rows) {
-						scroll_ret = nc_scroll_next_category(wins->data, head,
-															 sc, cw, rfptr, bfptr);
-						dc->first += scroll_ret;
-						dc->last += scroll_ret;
-					}
-				}
+				scroll_n_next_categories(numbuf.result,
+								dc, wins->data, head, sc, cw, rfptr, bfptr);
 				break;
 
 			} else if (c == 'k') {
-				for (int i = 0; i < iterations; i++) {
-					if (sc->select_idx > 0) {
-						scroll_ret = nc_scroll_prev_category(wins->data, head,
-															 sc, cw, rfptr, bfptr);
-						dc->first -= scroll_ret;
-						dc->last -= scroll_ret;
-					}
-				}
+				scroll_n_prev_categories(numbuf.result,
+								dc, wins->data, head, sc, cw, rfptr, bfptr);
 				break;
-			} else {
-				break;
-			}
+			} 
 			break;
 
 		case ('['):
