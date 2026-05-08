@@ -1108,11 +1108,11 @@ void nc_read_loop(struct ReadWins *wins,
 			c = 0;
 			break;
 
-		case KEY_NPAGE: // PAGE DOWN
+		case KEY_NPAGE: /* PAGE DN */
 			scroll_n_next_records(PAGE_KEY_ROWS, &scrl, fptr, records);
 			break;
 
-		case KEY_PPAGE: // PAGE UP
+		case KEY_PPAGE: /* PAGE UP */
 			scroll_n_prev_records(PAGE_KEY_ROWS, &scrl, fptr, records);
 			break;
 
