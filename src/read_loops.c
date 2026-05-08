@@ -887,6 +887,7 @@ void nc_read_budget_loop(struct ReadWins *wins,
 				subwin_y = show_detail_subwindow(line);
 				init_sidebar_body(wins->sidebar_body, head, scrl.sidebar_idx);
 				refresh_budget_loop(head, &scrl, rfptr, bfptr, subwin_y);
+				c = 0;
 			}
 			break;
 
@@ -1011,7 +1012,7 @@ void nc_read_budget_loop(struct ReadWins *wins,
 }
 
 /* Print initial lines based on screen size for nc_read_loop */
-static void nc_print_initial_read_loop(struct scroll_vars *sv,
+static void print_initial_read_loop(struct scroll_vars *sv,
 									   FILE *fptr,
 									   struct vec_d *psc)
 {
@@ -1069,7 +1070,7 @@ void nc_read_loop(struct ReadWins *wins,
 
 	calculate_columns(scrl.cw, getmaxx(scrl.wptr_data) + BOX_OFFSET);
 	nc_print_read_footer(stdscr);
-	nc_print_initial_read_loop(&scrl, fptr, records);
+	print_initial_read_loop(&scrl, fptr, records);
 
 	assert(records->size <= INT_MAX);
 
@@ -1104,6 +1105,7 @@ void nc_read_loop(struct ReadWins *wins,
 			char *line = fgets(linebuff, sizeof(linebuff), fptr);
 			show_detail_subwindow(line);
 			refresh_on_detail_close_uniform(wins->data, wins->parent, scrl.displayed);
+			c = 0;
 			break;
 
 		case KEY_NPAGE: // PAGE DOWN
