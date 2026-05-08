@@ -310,15 +310,6 @@ static void print_balances_text(WINDOW *wptr, struct vec_d *psc)
 	wrefresh(wptr);
 }
 
-/* Draws a border around the window 'wptr' with "T" shaped characters to
- * mesh seamlessly with the window border of the sidebar. */
-/*
-static void draw_parent_box_with_sidebar(WINDOW *wptr) {
-	wborder(wptr, 0, 0, 0, 0, 0, ACS_TTEE, 0, ACS_BTEE);
-	wrefresh(wptr);
-}
-*/
-
 /* Draws all of the window borders, then the border text on top. Call this
  * function any time the borders/text need to be updated. */
 static void draw_read_window_borders_and_text(struct ReadWins *wins,
@@ -438,7 +429,7 @@ static void scroll_next(long b,
 /* Returns 1 if the text was scrolled down, 0 if a normal scroll occured */
 static int scroll_prev_records(struct scroll_vars *sv,
 							   FILE *fptr,
-							   struct vec_d *psc)
+							   struct vec_d *recs)
 {
 	int retval = 0;
 
@@ -453,8 +444,8 @@ static int scroll_prev_records(struct scroll_vars *sv,
 	/* For safe cast */
 	assert(sv->displayed >= 0);
 
-	if (sv->select_idx >= 0 && (size_t)sv->displayed < psc->size && sv->cur_y == -1) {
-		scroll_prev(psc->data[sv->select_idx], fptr, sv->wptr_data, sv->cw, false);
+	if (sv->select_idx >= 0 && (size_t)sv->displayed < recs->size && sv->cur_y == -1) {
+		scroll_prev(recs->data[sv->select_idx], fptr, sv->wptr_data, sv->cw, false);
 		sv->cur_y = getcury(sv->wptr_data);
 		retval++;
 	}
@@ -466,7 +457,7 @@ static int scroll_prev_records(struct scroll_vars *sv,
 /* Returns 1 if the text was scrolled up, 0 if a normal scroll occured */
 static int scroll_next_records(struct scroll_vars *sv,
 							  FILE *fptr,
-							  struct vec_d *psc)
+							  struct vec_d *recs)
 {
 	int retval = 0;
 
@@ -477,8 +468,8 @@ static int scroll_next_records(struct scroll_vars *sv,
 	/* For safe cast */
 	assert(sv->displayed >= 0);
 
-	if ((size_t)sv->displayed < psc->size && sv->cur_y == getmaxy(sv->wptr_data)) {
-		scroll_next(psc->data[sv->select_idx], fptr, sv->wptr_data, sv->cw, false);
+	if ((size_t)sv->displayed < recs->size && sv->cur_y == getmaxy(sv->wptr_data)) {
+		scroll_next(recs->data[sv->select_idx], fptr, sv->wptr_data, sv->cw, false);
 		sv->cur_y = getcury(sv->wptr_data);
 		retval++;
 	}
@@ -511,7 +502,7 @@ static void scroll_n_prev_records(int n,
 {
 	int scroll_ret;
 	for (int i = 0; i < n; i++) {
-		if (sv->select_idx + 1 < sv->total_rows) {
+		if (sv->select_idx > 0) {
 			scroll_ret = scroll_prev_records(sv, fptr, records);
 			sv->vr->first += scroll_ret;
 			sv->vr->last += scroll_ret;
@@ -799,7 +790,7 @@ static int fill_number_buffer(int init, struct num_buffer *buff)
 	}
 
 	cbreak();
-	return i;
+	return 0;
 }
 
 /*
@@ -929,17 +920,18 @@ void nc_read_budget_loop(struct ReadWins *wins,
 			c = fill_number_buffer(c, &numbuf);
 			number_buffer_to_int(&numbuf);
 
+			if (c == 0) {
+				c = wgetch(scrl.wptr_data);
+			}
+
 			if (c != 'k' && c != 'j' && c != KEY_DOWN && c != KEY_UP) {
 				break;
 			}
 
 			if (c == 'j' || c == KEY_DOWN) {
 				scroll_n_next_categories(numbuf.result, head, &scrl, rfptr, bfptr);
-				break;
-
 			} else if (c == 'k' || c == KEY_UP) {
 				scroll_n_prev_categories(numbuf.result, head, &scrl, rfptr, bfptr);
-				break;
 			} 
 			break;
 
@@ -1055,9 +1047,10 @@ static void nc_print_initial_read_loop(struct scroll_vars *sv,
 void nc_read_loop(struct ReadWins *wins, 
 				  FILE *fptr, 
 				  struct record_select *sr, 
-				  struct vec_d *psc,
+				  struct vec_d *records,
 				  struct catg_node *head)
 {
+	struct num_buffer numbuf;
 	struct column_width cw_;
 	struct visible_range vr_;
 
@@ -1076,17 +1069,18 @@ void nc_read_loop(struct ReadWins *wins,
 
 	calculate_columns(scrl.cw, getmaxx(scrl.wptr_data) + BOX_OFFSET);
 	nc_print_read_footer(stdscr);
-	nc_print_initial_read_loop(&scrl, fptr, psc);
+	nc_print_initial_read_loop(&scrl, fptr, records);
 
-	assert(psc->size <= INT_MAX);
+	assert(records->size <= INT_MAX);
 
-	scrl.total_rows = psc->size;
+	scrl.total_rows = records->size;
 	scrl.vr->last = scrl.displayed;
-	draw_read_window_borders_and_text(wins, psc);
+	draw_read_window_borders_and_text(wins, records);
 
 	while (c != KEY_F(QUIT) && c != '\n' && c != '\r') {
 		wrefresh(wins->data);
 		refresh_displayed_counter(&scrl);
+		clear_number_buffer(&numbuf);
 
 		if (debug_flag) {
 		}
@@ -1096,37 +1090,65 @@ void nc_read_loop(struct ReadWins *wins,
 
 		case ('j'):
 		case KEY_DOWN:
-			scroll_n_next_records(1, &scrl, fptr, psc);
+			scroll_n_next_records(1, &scrl, fptr, records);
 			break;
 
 		case ('k'):
 		case KEY_UP:
-			scroll_n_prev_records(1, &scrl, fptr, psc);
+			scroll_n_prev_records(1, &scrl, fptr, records);
 			break;
 
 		case ('\n'):
 		case ('\r'):
-			fseek(fptr, psc->data[scrl.select_idx], SEEK_SET);
+			fseek(fptr, records->data[scrl.select_idx], SEEK_SET);
 			char *line = fgets(linebuff, sizeof(linebuff), fptr);
 			show_detail_subwindow(line);
 			refresh_on_detail_close_uniform(wins->data, wins->parent, scrl.displayed);
 			break;
 
 		case KEY_NPAGE: // PAGE DOWN
-			scroll_n_next_records(PAGE_KEY_ROWS, &scrl, fptr, psc);
+			scroll_n_next_records(PAGE_KEY_ROWS, &scrl, fptr, records);
 			break;
 
 		case KEY_PPAGE: // PAGE UP
-			scroll_n_prev_records(PAGE_KEY_ROWS, &scrl, fptr, psc);
+			scroll_n_prev_records(PAGE_KEY_ROWS, &scrl, fptr, records);
 			break;
 
 		case KEY_END:
-			scroll_n_next_records(scrl.total_rows, &scrl, fptr, psc);
+			scroll_n_next_records(scrl.total_rows, &scrl, fptr, records);
 			break;
 
 		case KEY_HOME:
-			scroll_n_prev_records(scrl.total_rows, &scrl, fptr, psc);
+			scroll_n_prev_records(scrl.total_rows, &scrl, fptr, records);
 			break;
+
+		case ('1'):
+		case ('2'):
+		case ('3'):
+		case ('4'):
+		case ('5'):
+		case ('6'):
+		case ('7'):
+		case ('8'):
+		case ('9'): /* Vim-like number buffer */
+			c = fill_number_buffer(c, &numbuf);
+			number_buffer_to_int(&numbuf);
+
+			if (c == 0) {
+				c = wgetch(scrl.wptr_data);
+			}
+
+			if (c != 'k' && c != 'j' && c != KEY_DOWN && c != KEY_UP) {
+				break;
+			}
+
+			if (c == 'j' || c == KEY_DOWN) {
+				scroll_n_next_records(numbuf.result, &scrl, fptr, records);
+			} else if (c == 'k' || c == KEY_UP) {
+				scroll_n_prev_records(numbuf.result, &scrl, fptr, records);
+			} 
+			break;
+
 
 		case ('['):
 			if (scrl.sidebar_idx > 0) {
@@ -1147,14 +1169,14 @@ void nc_read_loop(struct ReadWins *wins,
 		case ('a'):
 		case KEY_F(ADD):
 			sr->flag = ADD;
-			sr->index = psc->data[scrl.select_idx];
+			sr->index = records->data[scrl.select_idx];
 			return;
 
 		case ('E'):
 		case ('e'):
 		case KEY_F(EDIT):
 			sr->flag = EDIT;
-			sr->index = psc->data[scrl.select_idx];
+			sr->index = records->data[scrl.select_idx];
 			return;
 
 		case ('R'):
