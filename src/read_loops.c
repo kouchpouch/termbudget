@@ -39,9 +39,19 @@
 
 #define NUM_BUFFER_SZ 3
 
+struct visible_range {
+	int first;
+	int last;
+};
+
 /* Holds the variables used for scrolling and/or selecting transactions and/or 
  * categories */
 struct scroll_vars {
+	struct column_width *cw;
+	struct visible_range *vr;
+	WINDOW *wptr_data;
+	WINDOW *wptr_parent;
+	size_t sidebar_idx;
 	/* Total size of the data that can be shown. */
 	int total_rows; 
 	/* Total number of records and/or categories displayed on the screen. */
@@ -50,7 +60,6 @@ struct scroll_vars {
 	int cur_y;
 	int catg_node;
 	int catg_data;
-	size_t sidebar_idx;
 };
 
 struct num_buffer {
@@ -58,20 +67,17 @@ struct num_buffer {
 	int buffer[NUM_BUFFER_SZ];
 };
 
-struct visible_range {
-	int first;
-	int last;
-};
-
-static void print_debug_line(WINDOW *wptr, struct scroll_vars *sc)
+static void print_debug_line(struct scroll_vars *sv)
 {
-	mvwhline(wptr, getmaxy(wptr) - 1, 1, 0, getmaxx(wptr) - 2);
-	mvwprintw(wptr, getmaxy(wptr) - 1, getmaxx(wptr) - 55, "SELIDX: %d", sc->select_idx);
-	mvwprintw(wptr, getmaxy(wptr) - 1, getmaxx(wptr) - 40, "DATA: %d", sc->displayed);
-	mvwprintw(wptr, getmaxy(wptr) - 1, getmaxx(wptr) - 30, "DATA: %d", sc->catg_data);
-	mvwprintw(wptr, getmaxy(wptr) - 1, getmaxx(wptr) - 20, "NODE: %d", sc->catg_node);
-	mvwprintw(wptr, getmaxy(wptr) - 1, getmaxx(wptr) - 10, "CURS: %d", sc->cur_y);
-	wrefresh(wptr);
+	int max_y, max_x;
+	getmaxyx(sv->wptr_parent, max_y, max_x);
+	mvwhline(sv->wptr_parent, max_y - 1, 1, 0, max_x - 2);
+	mvwprintw(sv->wptr_parent, max_y - 1, max_x - 55, "SELIDX: %d", sv->select_idx);
+	mvwprintw(sv->wptr_parent, max_y - 1, max_x - 40, "DATA: %d", sv->displayed);
+	mvwprintw(sv->wptr_parent, max_y - 1, max_x - 30, "DATA: %d", sv->catg_data);
+	mvwprintw(sv->wptr_parent, max_y - 1, max_x - 20, "NODE: %d", sv->catg_node);
+	mvwprintw(sv->wptr_parent, max_y - 1, max_x - 10, "CURS: %d", sv->cur_y);
+	wrefresh(sv->wptr_parent);
 }
 
 static void print_catg_balances(WINDOW *wptr,
@@ -136,7 +142,7 @@ static bool shorten_string(WINDOW *wptr)
  * if the window is too small.
  */
 static void print_record_hr(WINDOW *wptr,
-							struct ColWidth *cw,
+							struct column_width *cw,
 							struct transaction_tokens *ld,
 							int y)
 {
@@ -181,7 +187,7 @@ static void print_record_hr(WINDOW *wptr,
 }
 
 static void print_category_hr(WINDOW *wptr,
-							  struct ColWidth *cw,
+							  struct column_width *cw,
 							  struct budget_tokens *bt,
 							  int y)
 {
@@ -215,16 +221,14 @@ static void print_category_hr(WINDOW *wptr,
 	wattroff(wptr, A_REVERSE);
 }
 
-static void print_init_budget_loop(WINDOW *wptr,
-								   struct scroll_vars *sc,
+static void print_init_budget_loop(struct scroll_vars *sv,
 								   struct catg_node *head,
-								   struct ColWidth *cw,
 								   FILE *fptr)
 {
 	struct transaction_tokens ld;
 	struct catg_node *curr = head;
 	char *line_str;
-	int max_y = getmaxy(wptr);
+	int max_y = getmaxy(sv->wptr_data);
 	int total_nodes = get_total_nodes(head);
 	char linebuff[LINE_BUFFER];
 
@@ -233,40 +237,40 @@ static void print_init_budget_loop(WINDOW *wptr,
 	 * the category. Increment displayed to keep track of how many lines are
 	 * displayed (this is to keep track of scrolling).
 	 */
-	for (int i = 0; sc->displayed < max_y && sc->displayed < sc->total_rows 
+	for (int i = 0; sv->displayed < max_y && sv->displayed < sv->total_rows 
 		 && i < total_nodes; i++) 
 	{
 		struct budget_tokens *bt = tokenize_budget_fpi(curr->catg_fp);
-		print_category_hr(wptr, cw, bt, sc->displayed);
-		mvwchgat(wptr, sc->displayed, 0, -1, A_NORMAL, category_color(i), NULL); 
-		sc->displayed++;
+		print_category_hr(sv->wptr_data, sv->cw, bt, sv->displayed);
+		mvwchgat(sv->wptr_data, sv->displayed, 0, -1, A_NORMAL, category_color(i), NULL); 
+		sv->displayed++;
 
 		for (size_t j = 0; 
-			 sc->displayed < max_y && 
-		     sc->displayed < sc->total_rows && 
+			 sv->displayed < max_y && 
+		     sv->displayed < sv->total_rows && 
 		     j < curr->data->size; 
 		     j++)
 		{
 			fseek(fptr, curr->data->data[j], SEEK_SET);
 			line_str = fgets(linebuff, sizeof(linebuff), fptr);
 			tokenize_record(&ld, &line_str);
-			print_record_hr(wptr, cw, &ld, sc->displayed);
+			print_record_hr(sv->wptr_data, sv->cw, &ld, sv->displayed);
 			free_tokenized_record_strings(&ld);
-			sc->displayed++;
+			sv->displayed++;
 		}
 
 		curr = curr->next;
 		free_budget_tokens(bt);
 	}
 
-	wmove(wptr, 0, 0);
-	mvwchgat(wptr, sc->select_idx, 0, -1, A_REVERSE, REVERSE_COLOR, NULL); 
+	wmove(sv->wptr_data, 0, 0);
+	mvwchgat(sv->wptr_data, sv->select_idx, 0, -1, A_REVERSE, REVERSE_COLOR, NULL); 
 
 	if (debug_flag) {
 		curs_set(1);
 	}
 
-	wrefresh(wptr);
+	wrefresh(sv->wptr_data);
 }
 
 /*
@@ -350,30 +354,30 @@ static int show_detail_subwindow(char *line)
 	return y;
 }
 
-static void refresh_displayed_counter(WINDOW *wptr,
-									  struct scroll_vars *sc,
-									  struct visible_range *dc)
+static void refresh_displayed_counter(struct scroll_vars *sv)
 {
-	mvwhline(wptr, getmaxy(wptr) - 1, BOX_OFFSET, 0, getmaxx(wptr) - (BOX_OFFSET + 1));
-	wrefresh(wptr);
+	int max_x, max_y;
+	getmaxyx(sv->wptr_parent, max_y, max_x);
+	mvwhline(sv->wptr_parent, max_y - 1, BOX_OFFSET, 0, max_x - (BOX_OFFSET + 1));
+	wrefresh(sv->wptr_parent);
 
 	// Calc length of, for example, "32-50 of 80 records"
 	char *disp = " -  of  records";
 	int x_offset = 
-		strlen(disp) + intlen(sc->displayed) + intlen(sc->total_rows) + BOX_OFFSET;
+		strlen(disp) + intlen(sv->displayed) + intlen(sv->total_rows) + BOX_OFFSET;
 
-	if (sc->displayed < sc->total_rows) {
-		mvwprintw(wptr, getmaxy(wptr) - 1, getmaxx(wptr) - x_offset,
-			"%d-%d of %d records", dc->first, dc->last, sc->total_rows);
-		wrefresh(wptr);
+	if (sv->displayed < sv->total_rows) {
+		mvwprintw(sv->wptr_parent, max_y - 1, max_x - x_offset,
+			"%d-%d of %d records", sv->vr->first, sv->vr->last, sv->total_rows);
+		wrefresh(sv->wptr_parent);
 	}
 }
 
-static void nc_scroll_prev(long b,
-						   FILE *fptr,
-						   WINDOW *wptr,
-						   struct ColWidth *cw,
-						   bool catg) 
+static void scroll_prev(long b,
+						FILE *fptr,
+						WINDOW *wptr,
+						struct column_width *cw,
+						bool catg) 
 {
 	fseek(fptr, b, SEEK_SET);
 	char linebuff[LINE_BUFFER];
@@ -399,11 +403,11 @@ static void nc_scroll_prev(long b,
 	}
 }
 
-static void nc_scroll_next(long b,
-						   FILE *fptr,
-						   WINDOW *wptr,
-						   struct ColWidth *cw,
-						   bool catg) 
+static void scroll_next(long b,
+						FILE *fptr,
+						WINDOW *wptr,
+						struct column_width *cw,
+						bool catg) 
 {
 	fseek(fptr, b, SEEK_SET);
 	char linebuff[LINE_BUFFER];
@@ -432,185 +436,232 @@ static void nc_scroll_next(long b,
 }
 
 /* Returns 1 if the text was scrolled down, 0 if a normal scroll occured */
-static int nc_scroll_prev_read_loop(WINDOW *wptr,
-									struct scroll_vars *sc,
-									struct ColWidth *cw,
-									FILE *fptr,
-									struct vec_d *psc)
+static int scroll_prev_records(struct scroll_vars *sv,
+							   FILE *fptr,
+							   struct vec_d *psc)
 {
 	int retval = 0;
 
-	mvwchgat(wptr, sc->cur_y, 0, -1, A_NORMAL, 0, NULL); 
-	sc->cur_y--;
-	sc->select_idx--;
+	unhighlight(sv->wptr_data, sv->cur_y, 0, -1);
+	sv->cur_y--;
+	sv->select_idx--;
 
-	if (sc->cur_y < 0) {
-		sc->cur_y = -1;
+	if (sv->cur_y < 0) {
+		sv->cur_y = -1;
 	}
 	
 	/* For safe cast */
-	assert(sc->displayed >= 0);
+	assert(sv->displayed >= 0);
 
-	if (sc->select_idx >= 0 && (size_t)sc->displayed < psc->size && sc->cur_y == -1) {
-		nc_scroll_prev(psc->data[sc->select_idx], fptr, wptr, cw, false);
-		sc->cur_y = getcury(wptr);
+	if (sv->select_idx >= 0 && (size_t)sv->displayed < psc->size && sv->cur_y == -1) {
+		scroll_prev(psc->data[sv->select_idx], fptr, sv->wptr_data, sv->cw, false);
+		sv->cur_y = getcury(sv->wptr_data);
 		retval++;
 	}
-	mvwchgat(wptr, sc->cur_y, 0, -1, A_REVERSE, REVERSE_COLOR, NULL); 
+	mvwchgat(sv->wptr_data, sv->cur_y, 0, -1, A_REVERSE, REVERSE_COLOR, NULL); 
 
 	return retval;
 }
 
 /* Returns 1 if the text was scrolled up, 0 if a normal scroll occured */
-static int nc_scroll_next_read_loop(WINDOW *wptr,
-									struct scroll_vars *sc,
-									struct ColWidth *cw, 
-									FILE *fptr,
-									struct vec_d *psc)
+static int scroll_next_records(struct scroll_vars *sv,
+							  FILE *fptr,
+							  struct vec_d *psc)
 {
 	int retval = 0;
 
-	mvwchgat(wptr, sc->cur_y, 0, -1, A_NORMAL, 0, NULL); 
-	sc->cur_y++;
-	sc->select_idx++;
+	unhighlight(sv->wptr_data, sv->cur_y, 0, -1);
+	sv->cur_y++;
+	sv->select_idx++;
 
 	/* For safe cast */
-	assert(sc->displayed >= 0);
+	assert(sv->displayed >= 0);
 
-	if ((size_t)sc->displayed < psc->size && sc->cur_y == getmaxy(wptr)) {
-		nc_scroll_next(psc->data[sc->select_idx], fptr, wptr, cw, false);
-		sc->cur_y = getcury(wptr);
+	if ((size_t)sv->displayed < psc->size && sv->cur_y == getmaxy(sv->wptr_data)) {
+		scroll_next(psc->data[sv->select_idx], fptr, sv->wptr_data, sv->cw, false);
+		sv->cur_y = getcury(sv->wptr_data);
 		retval++;
 	}
-	mvwchgat(wptr, sc->cur_y, 0, -1, A_REVERSE, REVERSE_COLOR, NULL); 
+	mvwchgat(sv->wptr_data, sv->cur_y, 0, -1, A_REVERSE, REVERSE_COLOR, NULL); 
 
 	return retval;
+}
+
+static void scroll_n_next_records(int n,
+								  struct scroll_vars *sv,
+								  FILE *fptr,
+								  struct vec_d *records)
+{
+	int scroll_ret;
+	for (int i = 0; i < n; i++) {
+		if (sv->select_idx + 1 < sv->total_rows) {
+			scroll_ret = scroll_next_records(sv, fptr, records);
+			sv->vr->first -= scroll_ret;
+			sv->vr->last -= scroll_ret;
+		} else {
+			break;
+		}
+	}
+}
+
+static void scroll_n_prev_records(int n,
+								  struct scroll_vars *sv,
+								  FILE *fptr,
+								  struct vec_d *records)
+{
+	int scroll_ret;
+	for (int i = 0; i < n; i++) {
+		if (sv->select_idx + 1 < sv->total_rows) {
+			scroll_ret = scroll_prev_records(sv, fptr, records);
+			sv->vr->first += scroll_ret;
+			sv->vr->last += scroll_ret;
+		} else {
+			break;
+		}
+	}
+}
+
+static void unhighlight_and_color_catg(WINDOW *wptr, int y, int node_idx)
+{
+	mvwchgat(wptr, y, 0, -1, A_NORMAL, category_color(node_idx), NULL); 
 }
 
 /* Returns 1 if the text was scrolled up, 0 if a normal scroll occured, -1
  * if no scroll occured. */
-static int nc_scroll_prev_category(WINDOW *wptr,
-								   struct catg_node *head,
-								   struct scroll_vars *sc, 
-								   struct ColWidth *cw,
-								   FILE *rfptr,
-								   FILE *bfptr)
+static int scroll_prev_category(struct catg_node *head,
+								struct scroll_vars *sv, 
+								FILE *rfptr,
+								FILE *bfptr)
 {
 	struct catg_node *tmp = NULL;
 	int retval = -1;
 
-	if (sc->catg_data < 0) {
-		mvwchgat(wptr, sc->cur_y, 0, -1, A_NORMAL, category_color(sc->catg_node), NULL); 
-		sc->catg_node--;
-		tmp = get_node_by_idx(head, sc->catg_node);
-		sc->catg_data = tmp->data->size - 1;
+	/* If the cursor is on a category */
+	if (sv->catg_data < 0) {
+		/* Unhighlight, recolor, and ready sv members to access the last
+		 * record of the previous category */
+		unhighlight_and_color_catg(sv->wptr_data, sv->cur_y, sv->catg_node);
+		sv->catg_node--;
+		tmp = get_node_by_idx(head, sv->catg_node);
+		sv->catg_data = tmp->data->size - 1;
 		retval++;
-	} else if (sc->catg_data >= 0) {
-		mvwchgat(wptr, sc->cur_y, 0, -1, A_NORMAL, 0, NULL); 
-		sc->catg_data--;
+
+	/* If the cursor is on a record and there's a record previous to it */
+	} else if (sv->catg_data >= 0) {
+		unhighlight(sv->wptr_data, sv->cur_y, 0, -1);
+		sv->catg_data--;
 		retval++;
-	} else if (sc->catg_data == 0) {
-		mvwchgat(wptr, sc->cur_y, 0, -1, A_NORMAL, 0, NULL); 
-		sc->catg_data = -1;
-		sc->catg_node--;
+	
+	/* The cursor is on the first record of a category */
+	} else if (sv->catg_data == 0) {
+		unhighlight(sv->wptr_data, sv->cur_y, 0, -1);
+		sv->catg_data = -1;
+		sv->catg_node--;
 		retval++;
 	}
 
-	sc->cur_y--;
-	sc->select_idx--;
-	mvwchgat(wptr, sc->cur_y, 0, -1, A_REVERSE, REVERSE_COLOR, NULL); 
+	sv->cur_y--;
+	sv->select_idx--;
+	mvwchgat(sv->wptr_data, sv->cur_y, 0, -1, A_REVERSE, REVERSE_COLOR, NULL); 
 
-	if (sc->select_idx >= 0 && sc->displayed < sc->total_rows && sc->cur_y < 0) {
-		sc->cur_y = -1;
-		tmp = get_node_by_idx(head, sc->catg_node);
-		if (sc->catg_data == -1) {
-			nc_scroll_prev(tmp->catg_fp, 
-						   bfptr, wptr, cw, true);
+	if (sv->select_idx >= 0 && sv->displayed < sv->total_rows && sv->cur_y < 0) {
+		sv->cur_y = -1;
+		tmp = get_node_by_idx(head, sv->catg_node);
+		if (sv->catg_data == -1) {
+			scroll_prev(tmp->catg_fp, 
+						   bfptr, sv->wptr_data, sv->cw, true);
 		} else {
-			nc_scroll_prev(tmp->data->data[sc->catg_data], 
-						   rfptr, wptr, cw, false);
+			scroll_prev(tmp->data->data[sv->catg_data], 
+						   rfptr, sv->wptr_data, sv->cw, false);
 		}
 		retval++;
-		sc->cur_y = getcury(wptr);
-		mvwchgat(wptr, sc->cur_y, 0, -1, A_REVERSE, REVERSE_COLOR, NULL); 
+		sv->cur_y = getcury(sv->wptr_data);
+		mvwchgat(sv->wptr_data, sv->cur_y, 0, -1, A_REVERSE, REVERSE_COLOR, NULL); 
 	}
 
 	return retval;
 }
 
-/* Returns 1 if the text was scrolled down, 0 if a normal scroll occured, -1
+/* Scrolls the window at sv->wptr_data when inside of the nc_read_budget_loop()
+ * The function detects if the line the cursor is on is a category or a record
+ * and scrolls appropriately, updating the members of "sv".
+ * Returns 1 if the text was scrolled down, 0 if a normal scroll occured, -1
  * if no scroll occured. */
-static int nc_scroll_next_category(WINDOW *wptr,
-								   struct catg_node *head,
-								   struct scroll_vars *sc,
-								   struct ColWidth *cw, 
-								   FILE *rfptr,
-								   FILE *bfptr)
+static int scroll_next_category(struct catg_node *head,
+								struct scroll_vars *sv,
+								FILE *rfptr,
+								FILE *bfptr)
 {
-	struct catg_node *tmp = get_node_by_idx(head, sc->catg_node);
+	struct catg_node *tmp = get_node_by_idx(head, sv->catg_node);
 	assert(tmp->data->size <= INT_MAX);
 
 	int retval = -1;
-	if (sc->catg_data < 0 && tmp->data->size > 0) {
-		mvwchgat(wptr, sc->cur_y, 0, -1, A_NORMAL, category_color(sc->catg_node), NULL); 
-		sc->catg_data = 0;
+	/* If the cursor is on a category and it has records associated with it */
+	if (sv->catg_data < 0 && tmp->data->size > 0) {
+		/* Unhighlight, recolor, and ready sv members to access the 0th records
+		 * of that category */
+		unhighlight_and_color_catg(sv->wptr_data, sv->cur_y, sv->catg_node);
+		sv->catg_data = 0;
 		retval++;
 
-	/* Explicit cast of sc->catg_data to size_t is okay, the previous condition checks
-	 * that it is a positive number.  vvvvvv */
-	} else if (sc->catg_data < (int)tmp->data->size - 1) {
-		mvwchgat(wptr, sc->cur_y, 0, -1, A_NORMAL, 0, NULL); 
-		sc->catg_data++;
+	/* If the cursor is on a record and the next line is also a record */
+	} else if (sv->catg_data < (int)tmp->data->size - 1) {
+		/* Unhighlight, ready sv members to access the next record */
+		unhighlight(sv->wptr_data, sv->cur_y, 0, -1);
+		sv->catg_data++;
 		retval++;
-	} else if (sc->catg_data == (int)tmp->data->size - 1) {
+
+	/* If the cursor is on a record and the next line is a category OR 
+	 * if the cursor is on a category which contains no records. */
+	} else if (sv->catg_data == (int)tmp->data->size - 1) {
+		/* If cursor is on a category which contains no records */
 		if (tmp->data->size == 0) {
-			mvwchgat(wptr, sc->cur_y, 0, -1, A_NORMAL, category_color(sc->catg_node), NULL); 
+			unhighlight_and_color_catg(sv->wptr_data, sv->cur_y, sv->catg_node);
+		/* If the cursor is on a record and the next line is a category */
 		} else {
-			mvwchgat(wptr, sc->cur_y, 0, -1, A_NORMAL, 0, NULL); 
+			unhighlight(sv->wptr_data, sv->cur_y, 0, -1);
 		}
-		sc->catg_data = -1;
-		sc->catg_node++;
+		sv->catg_data = -1;
+		sv->catg_node++;
 		retval++;
 	}
 
-	sc->cur_y++;
-	sc->select_idx++;
-	mvwchgat(wptr, sc->cur_y, 0, -1, A_REVERSE, REVERSE_COLOR, NULL); 
+	sv->cur_y++;
+	sv->select_idx++;
+	mvwchgat(sv->wptr_data, sv->cur_y, 0, -1, A_REVERSE, REVERSE_COLOR, NULL); 
 
-	tmp = get_node_by_idx(head, sc->catg_node);
-	if (sc->displayed < sc->total_rows && sc->cur_y == getmaxy(wptr)) {
-		if (sc->catg_data == -1) {
-			nc_scroll_next(tmp->catg_fp, 
-						   bfptr, wptr, cw, true);
+	tmp = get_node_by_idx(head, sv->catg_node);
+	/* If theres more data to display... */
+	if (sv->displayed < sv->total_rows && sv->cur_y == getmaxy(sv->wptr_data)) {
+		/* If what the cursor is scrolling to is a category */
+		if (sv->catg_data == -1) {
+			scroll_next(tmp->catg_fp, 
+						   bfptr, sv->wptr_data, sv->cw, true);
 		} else {
-			nc_scroll_next(tmp->data->data[sc->catg_data],
-						   rfptr, wptr, cw, false);
+			scroll_next(tmp->data->data[sv->catg_data],
+						   rfptr, sv->wptr_data, sv->cw, false);
 		}
 		retval++;
-		sc->cur_y = getcury(wptr);
-		mvwchgat(wptr, sc->cur_y, 0, -1, A_REVERSE, REVERSE_COLOR, NULL); 
+		sv->cur_y = getcury(sv->wptr_data);
+		mvwchgat(sv->wptr_data, sv->cur_y, 0, -1, A_REVERSE, REVERSE_COLOR, NULL); 
 	}
 
 	return retval;
 }
 
 static void scroll_n_next_categories(int n,
-								     struct visible_range *vr,
-								     WINDOW *wptr,
 								     struct catg_node *head,
-								     struct scroll_vars *sc,
-								     struct ColWidth *cw, 
+								     struct scroll_vars *sv,
 								     FILE *rfptr,
 								     FILE *bfptr)
 {
 	int scroll_ret;
 	for (int i = 0; i < n; i++) {
-		if (sc->select_idx + 1 < sc->total_rows) {
+		if (sv->select_idx + 1 < sv->total_rows) {
 			scroll_ret = 
-				nc_scroll_next_category(wptr, head,
-									    sc, cw, rfptr, bfptr);
-			vr->first += scroll_ret;
-			vr->last += scroll_ret;
+				scroll_next_category(head, sv, rfptr, bfptr);
+			sv->vr->first += scroll_ret;
+			sv->vr->last += scroll_ret;
 		} else {
 			break;
 		}
@@ -618,21 +669,17 @@ static void scroll_n_next_categories(int n,
 }
 
 static void scroll_n_prev_categories(int n,
-								     struct visible_range *vr,
-								     WINDOW *wptr,
 								     struct catg_node *head,
-								     struct scroll_vars *sc,
-								     struct ColWidth *cw, 
+								     struct scroll_vars *sv,
 								     FILE *rfptr,
 								     FILE *bfptr)
 {
 	int scroll_ret;
 	for (int i = 0; i < n; i++) {
-		if (sc->select_idx > 0) {
-			scroll_ret = nc_scroll_prev_category(wptr, head,
-												 sc, cw, rfptr, bfptr);
-			vr->first -= scroll_ret;
-			vr->last -= scroll_ret;
+		if (sv->select_idx > 0) {
+			scroll_ret = scroll_prev_category(head, sv, rfptr, bfptr);
+			sv->vr->first -= scroll_ret;
+			sv->vr->last -= scroll_ret;
 		} else {
 			break;
 		}
@@ -669,46 +716,44 @@ static void refresh_on_detail_close_uniform(WINDOW *wptr,
 /* An optimized version of refreshing the screen. This function only refreshes
  * as many lines as is required to get the data back on the screen after a
  * subwindow closes. */
-static void refresh_budget_loop(WINDOW *data,
-								struct catg_node *nodes,
-								struct scroll_vars *sc,
-								struct ColWidth *cw,
+static void refresh_budget_loop(struct catg_node *nodes,
+								struct scroll_vars *sv,
 								FILE *rfptr,
 								FILE *bfptr,
 								int subwin_y)
 {
-	int tmp_idx = sc->select_idx;
+	int tmp_idx = sv->select_idx;
 	int subw_y_upper = (getmaxy(stdscr) / 2) - (subwin_y / 2) - BOX_OFFSET;
 	int subw_y_lower = (getmaxy(stdscr) / 2) + (subwin_y / 2) - BOX_OFFSET;
 
-	if (sc->cur_y <= subw_y_upper) {
-		while (sc->cur_y < subw_y_lower && sc->select_idx + 1 < sc->total_rows) {
-			nc_scroll_next_category(data, nodes, sc, cw, rfptr, bfptr);
+	if (sv->cur_y <= subw_y_upper) {
+		while (sv->cur_y < subw_y_lower && sv->select_idx + 1 < sv->total_rows) {
+			scroll_next_category(nodes, sv, rfptr, bfptr);
 		}
-		while (sc->select_idx != tmp_idx && sc->select_idx > 0) {
-			nc_scroll_prev_category(data, nodes, sc, cw, rfptr, bfptr);
+		while (sv->select_idx != tmp_idx && sv->select_idx > 0) {
+			scroll_prev_category(nodes, sv, rfptr, bfptr);
 		}
-	} else if (sc->cur_y >= subw_y_lower) {
-		while (sc->cur_y > subw_y_upper && sc->select_idx > 0) { 
-			nc_scroll_prev_category(data, nodes, sc, cw, rfptr, bfptr);
+	} else if (sv->cur_y >= subw_y_lower) {
+		while (sv->cur_y > subw_y_upper && sv->select_idx > 0) { 
+			scroll_prev_category(nodes, sv, rfptr, bfptr);
 		}
-		while (sc->select_idx != tmp_idx && sc->select_idx + 1 < sc->total_rows) {
-			nc_scroll_next_category(data, nodes, sc, cw, rfptr, bfptr);
+		while (sv->select_idx != tmp_idx && sv->select_idx + 1 < sv->total_rows) {
+			scroll_next_category(nodes, sv, rfptr, bfptr);
 		}
 	} else {
-		while (sc->cur_y > subw_y_upper && sc->select_idx > 0) { 
-			nc_scroll_prev_category(data, nodes, sc, cw, rfptr, bfptr);
+		while (sv->cur_y > subw_y_upper && sv->select_idx > 0) { 
+			scroll_prev_category(nodes, sv, rfptr, bfptr);
 		}
-		while (sc->cur_y < subw_y_lower && sc->select_idx + 1 < sc->total_rows) {
-			nc_scroll_next_category(data, nodes, sc, cw, rfptr, bfptr);
+		while (sv->cur_y < subw_y_lower && sv->select_idx + 1 < sv->total_rows) {
+			scroll_next_category(nodes, sv, rfptr, bfptr);
 		}
-		while (sc->select_idx != tmp_idx && sc->select_idx + 1 < sc->total_rows) {
-			nc_scroll_prev_category(data, nodes, sc, cw, rfptr, bfptr);
+		while (sv->select_idx != tmp_idx && sv->select_idx + 1 < sv->total_rows) {
+			scroll_prev_category(nodes, sv, rfptr, bfptr);
 		}
 	}
 }
 
-void clear_number_buffer(struct num_buffer *b)
+static void clear_number_buffer(struct num_buffer *b)
 {
 	for (int i = 0; i < NUM_BUFFER_SZ; i++) {
 		b->buffer[i] = -1;
@@ -716,7 +761,7 @@ void clear_number_buffer(struct num_buffer *b)
 	b->result = 0;
 }
 
-void number_buffer_to_int(struct num_buffer *b)
+static void number_buffer_to_int(struct num_buffer *b)
 {
 	int multiplier = 1;
 	for (int i = 0; i < NUM_BUFFER_SZ; i++) {
@@ -735,7 +780,7 @@ void number_buffer_to_int(struct num_buffer *b)
 	}
 }
 
-int fill_number_buffer(int init, struct num_buffer *buff)
+static int fill_number_buffer(int init, struct num_buffer *buff)
 {
 	int tmp = 0;
 	int i = 0;
@@ -748,6 +793,7 @@ int fill_number_buffer(int init, struct num_buffer *buff)
 		} else if (tmp >= '0' && tmp <= '9') {
 			buff->buffer[i++] = tmp;
 		} else {
+			cbreak();
 			return tmp;
 		}
 	}
@@ -771,56 +817,44 @@ void nc_read_budget_loop(struct ReadWins *wins,
 						 struct vec_d *psc,
 						 struct catg_node *head)
 {
-	/* Benchmark result: 17000-18000 on the clock 
-	 * with old category nodes linked list implementation. */
-	clock_t start, end;
-	if (debug_flag) {
-		start = clock();
-	}
-	struct ColWidth cw_, *cw = &cw_;
-
+	struct column_width cw_;
+	struct visible_range vr_;
 	/* Every other member implicitly set to 0 */
-	struct scroll_vars sc_ = {
+	struct scroll_vars scrl = {
 		.total_rows = get_total_displayed_rows(head),
-		.catg_data = -1
-	};
-
+		.catg_data = -1,
+		.cw = &cw_,
+		.vr = &vr_,
+		.wptr_data = wins->data,
+		.wptr_parent = wins->parent,
+	}; 
 	struct num_buffer numbuf = { 0 };
 	struct catg_node *tmp = NULL;
-	struct scroll_vars *sc = &sc_;
-	struct visible_range dc_, *dc = &dc_;
-	dc->first = 1;
-
 	char *line;
 	char linebuff[LINE_BUFFER];
 	int c = 0;
 	int subwin_y;
-	int scroll_ret;
 
-	calculate_columns(cw, getmaxx(wins->data) + BOX_OFFSET);
+	scrl.vr->first = 1;
+
+	calculate_columns(scrl.cw, getmaxx(wins->data) + BOX_OFFSET);
 
 	if (debug_flag) {
 //		debug_columns(wins->parent, cw);
 	}
 
 	nc_print_read_footer(stdscr);
-	print_init_budget_loop(wins->data, sc, head, cw, rfptr);
+	print_init_budget_loop(&scrl, head, rfptr);
 	draw_read_window_borders_and_text(wins, psc);
-	dc->last = sc->displayed;
-
-	if (debug_flag) {
-		end = clock();
-		printf("Clock: %ld\n", end - start);
-		getch();
-	}
+	scrl.vr->last = scrl.displayed;
 
 	while (c != KEY_F(QUIT) && c != '\n' && c != '\r') {
 		wrefresh(wins->data);
-		refresh_displayed_counter(wins->parent, sc, dc);
+		refresh_displayed_counter(&scrl);
 		clear_number_buffer(&numbuf);
 
 		if (debug_flag) {
-			print_debug_line(wins->parent, sc);
+			print_debug_line(&scrl);
 		}
 		c = wgetch(wins->data);
 
@@ -828,31 +862,18 @@ void nc_read_budget_loop(struct ReadWins *wins,
 
 		case ('j'):
 		case KEY_DOWN:
-			if (sc->select_idx + 1 < sc->total_rows) {
-				scroll_ret = nc_scroll_next_category(wins->data,
-										 			 head, sc, cw,
-										 			 rfptr, bfptr);
-				dc->first += scroll_ret;
-				dc->last += scroll_ret;
-			}
-
+			scroll_n_next_categories(1, head, &scrl, rfptr, bfptr);
 			break;
 
 		case ('k'):
 		case KEY_UP:
-			if (sc->select_idx > 0) {
-				scroll_ret = nc_scroll_prev_category(wins->data,
-													 head, sc, cw,
-										 			 rfptr, bfptr);
-				dc->first -= scroll_ret;
-				dc->last -= scroll_ret;
-			}
+			scroll_n_prev_categories(1, head, &scrl, rfptr, bfptr);
 			break;
 
 		case ('K'):
 		case KEY_SHOME: // "SHIFT + HOME"
-			if (sc->catg_data == -1 && sc->catg_node != 0) {
-				mv_category_to_top(&head, sc->catg_node);
+			if (scrl.catg_data == -1 && scrl.catg_node != 0) {
+				mv_category_to_top(&head, scrl.catg_node);
 				sr->flag = RESIZE;
 				sr->index = 0;
 				return;
@@ -861,51 +882,41 @@ void nc_read_budget_loop(struct ReadWins *wins,
 
 		case ('?'):
 			subwin_y = show_help_subwindow();
-			init_sidebar_body(wins->sidebar_body, head, sc->sidebar_idx);
-			refresh_budget_loop(wins->data, head, sc, cw, rfptr, bfptr, subwin_y);
-			c = 0;
+			init_sidebar_body(wins->sidebar_body, head, scrl.sidebar_idx);
+			refresh_budget_loop(head, &scrl, rfptr, bfptr, subwin_y);
 			break;
 
 		case KEY_ENTER:
 		case ('\n'):
 		case ('\r'):
-			if (sc->catg_data >= 0) {
-				tmp = get_node_by_idx(head, sc->catg_node);
-				fseek(rfptr, tmp->data->data[sc->catg_data], SEEK_SET);
+			if (scrl.catg_data >= 0) {
+				tmp = get_node_by_idx(head, scrl.catg_node);
+				fseek(rfptr, tmp->data->data[scrl.catg_data], SEEK_SET);
 				line = fgets(linebuff, sizeof(linebuff), rfptr);
 				subwin_y = show_detail_subwindow(line);
-				init_sidebar_body(wins->sidebar_body, head, sc->sidebar_idx);
-				refresh_budget_loop(wins->data, head, sc, cw, rfptr, 
-						            bfptr, subwin_y);
-				c = 0;
-			} else {
-				c = 0;
+				init_sidebar_body(wins->sidebar_body, head, scrl.sidebar_idx);
+				refresh_budget_loop(head, &scrl, rfptr, bfptr, subwin_y);
 			}
 			break;
 
-		case KEY_NPAGE: // PAGE DOWN
-			scroll_n_next_categories(PAGE_KEY_ROWS,
-							dc, wins->data, head, sc, cw, rfptr, bfptr);
+		case KEY_NPAGE: /* PAGE DN */
+			scroll_n_next_categories(PAGE_KEY_ROWS, head, &scrl, rfptr, bfptr);
 			break;
 
-		case KEY_PPAGE: // PAGE UP
-			scroll_n_prev_categories(PAGE_KEY_ROWS,
-							dc, wins->data, head, sc, cw, rfptr, bfptr);
+		case KEY_PPAGE: /* PAGE UP */
+			scroll_n_prev_categories(PAGE_KEY_ROWS, head, &scrl, rfptr, bfptr);
 			break;
 
 		case KEY_EOL:
 		case KEY_END:
-			scroll_n_next_categories(sc->total_rows,
-							dc, wins->data, head, sc, cw, rfptr, bfptr);
+			scroll_n_next_categories(scrl.total_rows, head, &scrl, rfptr, bfptr);
 			break;
 
 		case KEY_BEG:
 		case KEY_HOME:
-			scroll_n_prev_categories(sc->total_rows,
-							dc, wins->data, head, sc, cw, rfptr, bfptr);
+			scroll_n_prev_categories(scrl.total_rows, head, &scrl, rfptr, bfptr);
 			break;
 		
-		/* Vim-like number buffer */
 		case ('1'):
 		case ('2'):
 		case ('3'):
@@ -914,38 +925,36 @@ void nc_read_budget_loop(struct ReadWins *wins,
 		case ('6'):
 		case ('7'):
 		case ('8'):
-		case ('9'):
+		case ('9'): /* Vim-like number buffer */
 			c = fill_number_buffer(c, &numbuf);
 			number_buffer_to_int(&numbuf);
 
-			if (c != 'k' && c != 'j') {
-				c = wgetch(wins->data);
+			if (c != 'k' && c != 'j' && c != KEY_DOWN && c != KEY_UP) {
+				break;
 			}
 
-			if (c == 'j') {
-				scroll_n_next_categories(numbuf.result,
-								dc, wins->data, head, sc, cw, rfptr, bfptr);
+			if (c == 'j' || c == KEY_DOWN) {
+				scroll_n_next_categories(numbuf.result, head, &scrl, rfptr, bfptr);
 				break;
 
-			} else if (c == 'k') {
-				scroll_n_prev_categories(numbuf.result,
-								dc, wins->data, head, sc, cw, rfptr, bfptr);
+			} else if (c == 'k' || c == KEY_UP) {
+				scroll_n_prev_categories(numbuf.result, head, &scrl, rfptr, bfptr);
 				break;
 			} 
 			break;
 
 		case ('['):
-			if (sc->sidebar_idx > 0) {
-				sc->sidebar_idx--;
-				init_sidebar_body(wins->sidebar_body, head, sc->sidebar_idx);
+			if (scrl.sidebar_idx > 0) {
+				scrl.sidebar_idx--;
+				init_sidebar_body(wins->sidebar_body, head, scrl.sidebar_idx);
 			}
 			break;
 
 		case (']'):
-			tmp = get_node_by_idx(head, sc->sidebar_idx);
+			tmp = get_node_by_idx(head, scrl.sidebar_idx);
 			if (tmp->next != NULL) {
-				sc->sidebar_idx++;
-				init_sidebar_body(wins->sidebar_body, head, sc->sidebar_idx);
+				scrl.sidebar_idx++;
+				init_sidebar_body(wins->sidebar_body, head, scrl.sidebar_idx);
 			}
 			break;
 
@@ -958,15 +967,14 @@ void nc_read_budget_loop(struct ReadWins *wins,
 		case ('E'):
 		case ('e'):
 		case KEY_F(EDIT):
-			tmp = get_node_by_idx(head, sc->catg_node);
-			if (sc->catg_data < 0) { 
+			tmp = get_node_by_idx(head, scrl.catg_node);
+			if (scrl.catg_data < 0) { 
 				sr->flag = EDIT_CATG;
 				sr->opt = tmp->data->size;
-				sr->index = sc->catg_node;
-				//sr->index = nodes[sc->catg_node]->catg_fp;
+				sr->index = scrl.catg_node;
 			} else {
 				sr->flag = EDIT;
-				sr->index = tmp->data->data[sc->catg_data];
+				sr->index = tmp->data->data[scrl.catg_data];
 			}
 			return;
 
@@ -1011,9 +1019,7 @@ void nc_read_budget_loop(struct ReadWins *wins,
 }
 
 /* Print initial lines based on screen size for nc_read_loop */
-static void nc_print_initial_read_loop(WINDOW *wptr,
-									   struct scroll_vars *sc,
-									   struct ColWidth *cw,
+static void nc_print_initial_read_loop(struct scroll_vars *sv,
 									   FILE *fptr,
 									   struct vec_d *psc)
 {
@@ -1022,23 +1028,23 @@ static void nc_print_initial_read_loop(WINDOW *wptr,
 	struct transaction_tokens ld;
 
 	/* For safe cast */
-	assert(sc->displayed >= 0);
+	assert(sv->displayed >= 0);
 
-	for (int i = 0; i < getmaxy(wptr) && (size_t)sc->displayed < psc->size; i++) {
+	for (int i = 0; i < getmaxy(sv->wptr_data) && (size_t)sv->displayed < psc->size; i++) {
 		fseek(fptr, psc->data[i], SEEK_SET);
 		line_str = fgets(linebuff, sizeof(linebuff), fptr);
 		tokenize_record(&ld, &line_str);
-		print_record_hr(wptr, cw, &ld, i);
+		print_record_hr(sv->wptr_data, sv->cw, &ld, i);
 		free_tokenized_record_strings(&ld);
-		sc->displayed++;
+		sv->displayed++;
 	}
 
-	wmove(wptr, 0, 0);
-	mvwchgat(wptr, sc->select_idx, 0, -1, A_REVERSE, REVERSE_COLOR, NULL); 
+	wmove(sv->wptr_data, 0, 0);
+	mvwchgat(sv->wptr_data, sv->select_idx, 0, -1, A_REVERSE, REVERSE_COLOR, NULL); 
 	if (debug_flag) {
 		curs_set(1);
 	}
-	wrefresh(wptr);
+	wrefresh(sv->wptr_data);
 }
 
 /*
@@ -1052,33 +1058,35 @@ void nc_read_loop(struct ReadWins *wins,
 				  struct vec_d *psc,
 				  struct catg_node *head)
 {
-	struct ColWidth cw_, *cw = &cw_;
+	struct column_width cw_;
+	struct visible_range vr_;
 
 	/* Every other member implicitly set to 0 */
-	struct scroll_vars sc_ = {
-		.catg_data = -1
+	struct scroll_vars scrl = {
+		.catg_data = -1,
+		.cw = &cw_,
+		.vr = &vr_,
+		.wptr_data = wins->data,
+		.wptr_parent = wins->parent
 	};
 	struct catg_node *tmp = NULL;
-	struct scroll_vars *sc = &sc_;
-	struct visible_range dc_, *dc = &dc_;
-	dc->first = 1;
+	scrl.vr->first = 1;
 	char linebuff[LINE_BUFFER];
 	int c = 0;
-	int scroll_ret;
 
-	calculate_columns(cw, getmaxx(wins->data) + BOX_OFFSET);
+	calculate_columns(scrl.cw, getmaxx(scrl.wptr_data) + BOX_OFFSET);
 	nc_print_read_footer(stdscr);
-	nc_print_initial_read_loop(wins->data, sc, cw, fptr, psc);
+	nc_print_initial_read_loop(&scrl, fptr, psc);
 
 	assert(psc->size <= INT_MAX);
 
-	sc->total_rows = psc->size;
-	dc->last = sc->displayed;
+	scrl.total_rows = psc->size;
+	scrl.vr->last = scrl.displayed;
 	draw_read_window_borders_and_text(wins, psc);
 
 	while (c != KEY_F(QUIT) && c != '\n' && c != '\r') {
 		wrefresh(wins->data);
-		refresh_displayed_counter(wins->parent, sc, dc);
+		refresh_displayed_counter(&scrl);
 
 		if (debug_flag) {
 		}
@@ -1088,79 +1096,50 @@ void nc_read_loop(struct ReadWins *wins,
 
 		case ('j'):
 		case KEY_DOWN:
-			if (sc->select_idx + 1 < sc->total_rows) {
-				scroll_ret = nc_scroll_next_read_loop(wins->data, sc, cw, fptr, psc);
-				dc->first += scroll_ret;
-				dc->last += scroll_ret;
-			}
+			scroll_n_next_records(1, &scrl, fptr, psc);
 			break;
 
 		case ('k'):
 		case KEY_UP:
-			if (sc->select_idx > 0) {
-				scroll_ret = nc_scroll_prev_read_loop(wins->data, sc, cw, fptr, psc);
-				dc->first -= scroll_ret;
-				dc->last -= scroll_ret;
-			}
+			scroll_n_prev_records(1, &scrl, fptr, psc);
 			break;
 
 		case ('\n'):
 		case ('\r'):
-			fseek(fptr, psc->data[sc->select_idx], SEEK_SET);
+			fseek(fptr, psc->data[scrl.select_idx], SEEK_SET);
 			char *line = fgets(linebuff, sizeof(linebuff), fptr);
 			show_detail_subwindow(line);
-			refresh_on_detail_close_uniform(wins->data, wins->parent, sc->displayed);
-			c = 0;
+			refresh_on_detail_close_uniform(wins->data, wins->parent, scrl.displayed);
 			break;
 
 		case KEY_NPAGE: // PAGE DOWN
-			for(int i = 0; i < 10; i++) {
-				if (sc->select_idx + 1 < sc->total_rows) {
-					scroll_ret = nc_scroll_next_read_loop(wins->data, sc, cw, fptr, psc);
-					dc->first += scroll_ret;
-					dc->last += scroll_ret;
-				}
-			}
+			scroll_n_next_records(PAGE_KEY_ROWS, &scrl, fptr, psc);
 			break;
 
 		case KEY_PPAGE: // PAGE UP
-			for (int i = 0; i < 10; i++) {
-				if (sc->select_idx > 0) {
-					scroll_ret = nc_scroll_prev_read_loop(wins->data, sc, cw, fptr, psc);
-					dc->first -= scroll_ret;
-					dc->last -= scroll_ret;
-				}
-			}
+			scroll_n_prev_records(PAGE_KEY_ROWS, &scrl, fptr, psc);
 			break;
 
 		case KEY_END:
-			while (sc->select_idx + 1 < sc->total_rows) {
-				scroll_ret = nc_scroll_next_read_loop(wins->data, sc, cw, fptr, psc);
-				dc->first += scroll_ret;
-				dc->last += scroll_ret;
-			}
+			scroll_n_next_records(scrl.total_rows, &scrl, fptr, psc);
 			break;
 
 		case KEY_HOME:
-			while (sc->select_idx > 0) {
-				scroll_ret = nc_scroll_prev_read_loop(wins->data, sc, cw, fptr, psc);
-				dc->first -= scroll_ret;
-				dc->last -= scroll_ret;
-			}
+			scroll_n_prev_records(scrl.total_rows, &scrl, fptr, psc);
 			break;
 
 		case ('['):
-			if (sc->sidebar_idx > 0) {
-				sc->sidebar_idx--;
-				init_sidebar_body(wins->sidebar_body, head, sc->sidebar_idx);
+			if (scrl.sidebar_idx > 0) {
+				scrl.sidebar_idx--;
+				init_sidebar_body(wins->sidebar_body, head, scrl.sidebar_idx);
 			}
 			break;
 
 		case (']'):
-			tmp = get_node_by_idx(head, sc->sidebar_idx);
+			tmp = get_node_by_idx(head, scrl.sidebar_idx);
 			if (tmp->next != NULL) {
-				sc->sidebar_idx++;
-				init_sidebar_body(wins->sidebar_body, head, sc->sidebar_idx);
+				scrl.sidebar_idx++;
+				init_sidebar_body(wins->sidebar_body, head, scrl.sidebar_idx);
 			}
 			break;
 
@@ -1168,14 +1147,14 @@ void nc_read_loop(struct ReadWins *wins,
 		case ('a'):
 		case KEY_F(ADD):
 			sr->flag = ADD;
-			sr->index = psc->data[sc->select_idx];
+			sr->index = psc->data[scrl.select_idx];
 			return;
 
 		case ('E'):
 		case ('e'):
 		case KEY_F(EDIT):
 			sr->flag = EDIT;
-			sr->index = psc->data[sc->select_idx];
+			sr->index = psc->data[scrl.select_idx];
 			return;
 
 		case ('R'):
