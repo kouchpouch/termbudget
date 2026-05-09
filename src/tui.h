@@ -67,16 +67,16 @@ struct column_width {
 };
 
 enum menukeys {
-	NO_SELECT = 0,
-	ADD = 1,
-	EDIT = 2,
-	READ = 3,
-	QUIT = 4,
-	SORT = 5,
-	OVERVIEW = 6,
-	EDIT_CATG = 7,
-	RESIZE = 13,
-	NO_RCRD = 14
+	NO_SELECT = 1,
+	ADD,
+	EDIT,
+	READ,
+	QUIT,
+	SORT,
+	OVERVIEW,
+	EDIT_CATG,
+	RESIZE,
+	NO_RCRD
 };
 
 struct ReadWins {
