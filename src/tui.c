@@ -401,11 +401,11 @@ int category_color(int x)
 static void init_color_palette(void)
 {
 	int term_max_colors = tigetnum("colors");
+	init_pair(1, COLOR_RED, -1);               // #ff0000
+	init_pair(2, COLOR_GREEN, -1);             // #00ff00
+	init_pair(3, COLOR_YELLOW, -1);            // #ffff00
 	/* These colors were picked by a clanker, the only thing in the entire
 	 * program that used the devil. */
-	init_pair(1, COLOR_RED, -1);           // #ff0000
-	init_pair(2, COLOR_GREEN, -1);         // #00ff00
-	init_pair(3, COLOR_YELLOW, -1);        // #ffff00
 	if (term_max_colors >= 256) {
 		init_pair(11, 75, -1);                 // #5fafff
 		init_pair(12, 69, -1);                 // #5f87ff
@@ -423,15 +423,15 @@ static void init_color_palette(void)
 		init_pair(12, COLOR_BLUE, -1);
 		init_pair(13, COLOR_MAGENTA, -1);
 		init_pair(14, COLOR_YELLOW, -1);
-		init_pair(15, COLOR_CYAN, -1);
-		init_pair(16, COLOR_BLUE, -1);
-		init_pair(17, COLOR_MAGENTA, -1);
-		init_pair(18, COLOR_YELLOW, -1);
-		init_pair(19, COLOR_CYAN, -1);
-		init_pair(20, COLOR_BLUE, -1);
-		init_pair(REVERSE_COLOR, 0, -1);
+		init_pair(15, COLOR_GREEN, -1);
+		init_pair(16, COLOR_CYAN, -1);
+		init_pair(17, COLOR_BLUE, -1);
+		init_pair(18, COLOR_MAGENTA, -1);
+		init_pair(19, COLOR_YELLOW, -1);
+		init_pair(20, COLOR_GREEN, -1);
+		init_pair(REVERSE_COLOR, COLOR_WHITE, -1);
 	} else {
-		printw("This terminal does not support enough (8) colors, press any key to quit");
+		printw("This terminal does not support enough (8) colors");
 		getch();
 		endwin();
 		exit(1);
@@ -445,7 +445,7 @@ WINDOW *nc_init_stdscr(void)
 		return NULL;
 	}
 	if (!has_colors()) {
-		printw("This terminal does not support colors, press any key to quit");
+		printw("This terminal does not support colors");
 		getch();
 		endwin();
 		exit(1);
