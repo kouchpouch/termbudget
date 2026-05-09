@@ -792,6 +792,17 @@ static int fill_number_buffer(int init, struct num_buffer *buff)
 	return 0;
 }
 
+/* Prints the value of each struct column_width memeber to the window wptr */
+void debug_columns(WINDOW *wptr, struct column_width *cw)
+{
+	int print_y = 10;
+	mvwprintw(wptr, print_y++, 10, "COLUMN WIDTHS:\n");
+	mvwprintw(wptr, print_y, 10, "DATE: %d CATG: %d, DESC: %d, TRNS: %d, AMNT: %d\n",
+	cw->date, cw->catg,	cw->desc, cw->trns, cw->amnt);
+	wrefresh(wptr);
+	wgetch(wptr);
+}
+
 /*
  * Main loop for the user to interact with when selecting the read menu option.
  * If sorted by anything other than 'Category', nc_read_loop will be used.
@@ -803,7 +814,7 @@ static int fill_number_buffer(int init, struct num_buffer *buff)
 void nc_read_budget_loop(struct ReadWins *wins,
 						 FILE *rfptr,
 						 FILE *bfptr,
-						 struct record_select *sr,
+						 struct record_select *rs,
 						 struct vec_d *psc,
 						 struct catg_node *head)
 {
@@ -830,7 +841,7 @@ void nc_read_budget_loop(struct ReadWins *wins,
 	calculate_columns(scrl.cw, getmaxx(wins->data) + BOX_OFFSET);
 
 	if (debug_flag) {
-//		debug_columns(wins->parent, cw);
+		debug_columns(wins->parent, scrl.cw);
 	}
 
 	nc_print_read_footer(stdscr);
@@ -864,8 +875,8 @@ void nc_read_budget_loop(struct ReadWins *wins,
 		case KEY_SHOME: // "SHIFT + HOME"
 			if (scrl.catg_data == -1 && scrl.catg_node != 0) {
 				mv_category_to_top(&head, scrl.catg_node);
-				sr->flag = RESIZE;
-				sr->index = 0;
+				rs->flag = RESIZE;
+				rs->index = 0;
 				return;
 			}
 			break;
@@ -953,7 +964,7 @@ void nc_read_budget_loop(struct ReadWins *wins,
 		case ('A'):
 		case ('a'):
 		case KEY_F(ADD):
-			sr->flag = ADD;
+			rs->flag = ADD;
 			return;
 
 		case ('E'):
@@ -961,52 +972,52 @@ void nc_read_budget_loop(struct ReadWins *wins,
 		case KEY_F(EDIT):
 			tmp = get_node_by_idx(head, scrl.catg_node);
 			if (scrl.catg_data < 0) { 
-				sr->flag = EDIT_CATG;
-				sr->opt = tmp->data->size;
-				sr->index = scrl.catg_node;
+				rs->flag = EDIT_CATG;
+				rs->opt = tmp->data->size;
+				rs->index = scrl.catg_node;
 			} else {
-				sr->flag = EDIT;
-				sr->index = tmp->data->data[scrl.catg_data];
+				rs->flag = EDIT;
+				rs->index = tmp->data->data[scrl.catg_data];
 			}
 			return;
 
 		case ('R'):
 		case ('r'):
 		case KEY_F(READ):
-			sr->flag = READ;
-			sr->index = 0;
+			rs->flag = READ;
+			rs->index = 0;
 			return;
 
 		case ('Q'):
 		case ('q'):
 		case KEY_F(QUIT):
-			sr->flag = QUIT;
-			sr->index = 0;
+			rs->flag = QUIT;
+			rs->index = 0;
 			return;
 
 		case ('S'):
 		case ('s'):
 		case KEY_F(SORT):
-			sr->flag = SORT;
-			sr->index = 0;
+			rs->flag = SORT;
+			rs->index = 0;
 			return;
 
 		case ('O'):
 		case ('o'):
 		case KEY_F(OVERVIEW):
-			sr->flag = OVERVIEW;
-			sr->index = 0;
+			rs->flag = OVERVIEW;
+			rs->index = 0;
 			return;
 
 		case KEY_RESIZE:
-			sr->flag = RESIZE;
-			sr->index = 0;
+			rs->flag = RESIZE;
+			rs->index = 0;
 			return;
 		}
 	}
 
-	sr->flag = NO_SELECT;
-	sr->index = 0;
+	rs->flag = NO_SELECT;
+	rs->index = 0;
 	return;
 }
 
