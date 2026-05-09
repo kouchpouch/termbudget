@@ -38,6 +38,7 @@ struct vec_d *vec_d_create(void)
 	for (i = 0; i < v->capacity; i++) {
 		v->data[i] = 0;
 	}
+
 	return v;
 }
 

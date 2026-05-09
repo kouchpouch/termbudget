@@ -626,11 +626,10 @@ static int scroll_next_category(struct catg_node *head,
 	if (sv->displayed < sv->total_rows && sv->cur_y == getmaxy(sv->wptr_data)) {
 		/* If what the cursor is scrolling to is a category */
 		if (sv->catg_data == -1) {
-			scroll_next(tmp->catg_fp, 
-						   bfptr, sv->wptr_data, sv->cw, true);
+			scroll_next(tmp->catg_fp, bfptr, sv->wptr_data, sv->cw, true);
 		} else {
 			scroll_next(tmp->data->data[sv->catg_data],
-						   rfptr, sv->wptr_data, sv->cw, false);
+			   			rfptr, sv->wptr_data, sv->cw, false);
 		}
 		retval++;
 		sv->cur_y = getcury(sv->wptr_data);

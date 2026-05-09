@@ -38,14 +38,14 @@ struct vec2i {
 	int b;
 };
 
-/* Dyanmic "std vector"/array of long */
+/* Dynamic "std vector"/array of long */
 struct vec_d {
 	size_t capacity;
 	size_t size;
 	long data[];
 };
 
-/* Dyanmic "std vector"/array of char * */
+/* Dynamic "std vector"/array of char * */
 struct catg_vec {
 	size_t capacity;
 	size_t size;
