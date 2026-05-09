@@ -57,9 +57,11 @@ enum sort_by {
 	SORT_CATG = 1
 };
 
-struct month_year {
+struct dates_flags {
 	int year;
 	int month;
+	unsigned char year_flag;
+	unsigned char month_flag;
 };
 
 /* Exits the program with "exit(1)" and prints the error message. */

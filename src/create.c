@@ -309,7 +309,7 @@ int nc_create_new_budget_intret(void) {
 	}
 }
 
-void add_main_with_date(struct month_year *dv)
+void add_main_with_date(struct dates_flags *dates)
 {
 	enum add_sel {
 		ADD_TRNS = 0,
@@ -322,11 +322,11 @@ void add_main_with_date(struct month_year *dv)
 
 	switch (add_sel) {
 	case ADD_TRNS:
-		create_transaction(dv->year, dv->month);
+		create_transaction(dates->year, dates->month);
 		break;
 
 	case ADD_CATG:
-		ret = create_budget_record(dv->year, dv->month);
+		ret = create_budget_record(dates->year, dates->month);
 		free(ret);
 		break;
 

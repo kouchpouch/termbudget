@@ -60,7 +60,7 @@ static const char *abbr_months[] = {
 	"DEC"
 };
 
-struct date_select {
+struct date_select_scroll {
 	int selected_date;
 	int date_idx;
 	int scroll_idx;
@@ -266,10 +266,10 @@ static void scroll_month(WINDOW *wptr,
 }
 
 /* On a non-select, the return value is the inverted menukeys value */
-static int select_month(WINDOW *wptr, int year)
+static void select_month(WINDOW *wptr, struct dates_flags *df)
 {
-	struct vec_d *months_data = get_all_months(year);
-	struct date_select scroll = { 0 };
+	struct vec_d *months_data = get_all_months(df->year);
+	struct date_select_scroll scroll = { 0 };
 	int monlen = strlen(abbr_months[0]);
 	int c = 0;
 	int current_mo_idx = get_current_mo_idx(months_data);
@@ -284,7 +284,7 @@ static int select_month(WINDOW *wptr, int year)
 		}
 	}
 
-	if (year == get_current_year() && current_mo_idx != -1) {
+	if (df->year == get_current_year() && current_mo_idx != -1) {
 		wmove(wptr, BOX_OFFSET + current_mo_idx, BOX_OFFSET);
 		scroll.date_idx = current_mo_idx;
 		wchgat(wptr, monlen, A_REVERSE, REVERSE_COLOR, NULL);
@@ -319,30 +319,30 @@ static int select_month(WINDOW *wptr, int year)
 		case KEY_F(ADD):
 			free(months_data);
 			months_data = NULL;
-			return -(ADD);
+			df->month_flag = ADD;
+			return;
 
 		case KEY_RESIZE:
 			free(months_data);
 			months_data = NULL;
-
-			/* This RESIZE macro has to be greater than 12, which I have no
-			 * intention of changing. I hate this. However--I'm lazy. Plus,
-			 * all of the resizes in this program suck. */
-			return -(RESIZE);
+			df->month_flag = RESIZE;
+			return;
 
 		case ('\n'):
 		case ('\r'):
 			scroll.selected_date = months_data->data[scroll.date_idx];
 			free(months_data);
 			months_data = NULL;
-			return scroll.selected_date;
+			df->month = scroll.selected_date;
+			return;
 
 		case ('Q'):
 		case ('q'):
 		case KEY_F(QUIT):
 			free(months_data);
 			months_data = NULL;
-			return -(QUIT);
+			df->month_flag = QUIT;
+			return;
 
 		default: 
 			break;
@@ -351,8 +351,6 @@ static int select_month(WINDOW *wptr, int year)
 
 	free(months_data);
 	months_data = NULL;
-
-	return scroll.selected_date;
 }
 
 static void scroll_year(WINDOW *wptr,
@@ -369,20 +367,23 @@ static void scroll_year(WINDOW *wptr,
 }
 
 /* On a non-select, the return value is the inverted menukeys value */
-static int select_year(WINDOW *wptr)
+static void select_year(WINDOW *wptr, struct dates_flags *df)
 {
 	keypad(wptr, true);	
 
 	struct vec_d *years = get_all_years();
 	if (years == NULL) {
-		return -(NO_RCRD);
+		df->year_flag = NO_RCRD;
+		return;
 	}
+
 	int n_years = size_to_int(years->size);
 	if (n_years < 0) {
 		printf("Too many years");
 		exit(1);
 	}
-	struct date_select scroll = { 0 };
+
+	struct date_select_scroll scroll = { 0 };
 	int print_y = 1;
 	int print_x = 2;
 	int c = 0;
@@ -432,25 +433,30 @@ static int select_year(WINDOW *wptr)
 		case KEY_F(ADD):
 			free(years);
 			years = NULL;
-			return -(ADD);
+			df->year_flag = ADD;
+			return;
 
 		case KEY_RESIZE:
 			free(years);
 			years = NULL;
-			return -(RESIZE);
+			df->year_flag = RESIZE;
+			return;
 
 		case ('\n'):
 		case ('\r'):
 			scroll.selected_date = years->data[scroll.scroll_idx];
 			free(years);
 			years = NULL;
-			return scroll.selected_date;
+			df->year = scroll.selected_date;
+			df->year_flag = 0;
+			return;
 
 		case ('Q'):
 		case ('q'):
 		case KEY_F(QUIT):
 			free(years);
-			return -(QUIT);
+			df->year_flag = QUIT;
+			return;
 
 		default: 
 			break;
@@ -459,27 +465,20 @@ static int select_year(WINDOW *wptr)
 
 	free(years);
 	years = NULL;
-
-	return scroll.selected_date;
 }
 
-static int input_year(WINDOW *wptr)
+static void input_year(WINDOW *wptr, struct dates_flags *df)
 {
-	int yr = select_year(wptr);
+	select_year(wptr, df);
 
-	if (yr == -(NO_RCRD)) {
+	if (df->year_flag == NO_RCRD) {
 		mvwxcprintw(wptr, getmaxy(wptr) / 2, 
 			  "No records exist, add (F1) to get started");
 		wgetch(wptr);
-		return -(NO_RCRD);
-	} else if (yr < 0) {
-		return yr;
 	}
-
-	return yr;
 }
 
-static void get_dates(struct record_select *sr, struct month_year *dates)
+static void get_dates(struct record_select *sr, struct dates_flags *dates)
 {
 	WINDOW *wptr = newwin(LINES - 1, 0, 0, 0);
 	box(wptr, 0, 0);
@@ -489,20 +488,20 @@ static void get_dates(struct record_select *sr, struct month_year *dates)
 		dates->year = 0;
 	}
 
-	if (!dates->year) {
-		dates->year = input_year(wptr);
-		if (dates->year < 0) {
-			dates->month = -1;
-			sr->flag = -(dates->year);
+	if (dates->year == 0) {
+		input_year(wptr, dates);
+		if (dates->year_flag != 0) {
+			dates->month_flag = NO_SELECT;
+			sr->flag = dates->year_flag;
 			nc_exit_window(wptr);
 			return;
 		}
 	}
 
-	if (!dates->month) {
-		dates->month = select_month(wptr, dates->year);
-		if (dates->month < 0) {
-			sr->flag = -(dates->month);
+	if (dates->month == 0) {
+		select_month(wptr, dates);
+		if (dates->month_flag != 0) {
+			sr->flag = dates->month_flag;
 			nc_exit_window(wptr);
 			return;
 		}
@@ -731,13 +730,15 @@ void nc_read_setup(struct read_retvals *rret)
 	struct record_select rs = {
 		.flag = -1
 	};
-	struct month_year date = {
+	struct dates_flags date = {
 		.month = rret->month,
-		.year = rret->year
+		.year = rret->year,
+		.year_flag = 0,
+		.month_flag = 0
 	};
 
 	get_dates(&rs, &date);
-	if (date.year < 0 || date.month < 0) {
+	if (date.year_flag != 0 || date.month_flag != 0) {
 		goto err_select_date_fail;
 	}
 
@@ -782,19 +783,8 @@ void nc_read_setup(struct read_retvals *rret)
 		rec_fpis = sort_by_category(fptr, pidx, rec_line_nums, date.year, date.month);
 	}
 
-	clock_t start = clock();
 	if (rret->head == NULL) {
 		rret->head = create_catg_node_list(date.month, date.year);
-	}
-	clock_t end = clock();
-
-	if (debug_flag) {
-		move(0, 0);
-		clear();
-		printw("CLOCK: %ld", end - start);
-		getch();
-		debug_print_catg_node_data(rret->head);
-		getch();
 	}
 
 	if (sidebar_exists) {
