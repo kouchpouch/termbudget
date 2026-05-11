@@ -32,16 +32,6 @@
 #include "filemanagement.h"
 #include "file_write.h"
 
-enum EditRecordFields {
-	NO_RCRD_SELECT,
-	EDIT_RCRD_DATE,
-	EDIT_RCRD_CATG,
-	EDIT_RCRD_DESC,
-	EDIT_RCRD_TYPE,
-	EDIT_RCRD_AMNT,
-	DELETE,
-};
-
 struct field_select {
 	int y_cursor;
 	int choice;
@@ -230,7 +220,7 @@ err_fail:
 	return -1;
 }
 
-void nc_edit_transaction(long b)
+static void edit_transaction(long b, int opt_action)
 {
 	struct transaction_tokens *ld = malloc(sizeof(*ld));
 	if (ld == NULL) {
@@ -238,7 +228,7 @@ void nc_edit_transaction(long b)
 	}
 
 	enum EditRecordFields field;
-	WINDOW *wptr_edit = create_input_subwindow();
+	WINDOW *wptr_edit = NULL;
 	FILE *fptr = open_record_csv("r+");
 	fseek(fptr, b, SEEK_SET);
 
@@ -250,16 +240,20 @@ void nc_edit_transaction(long b)
 	}
 
 	tokenize_record(ld, &line);
-	nc_print_record_vert(wptr_edit, ld, BOX_OFFSET);
 
-	mvwprintw(wptr_edit, INPUT_WIN_ROWS - BOX_OFFSET, BOX_OFFSET, "%s", "Delete");
-	box(wptr_edit, 0, 0);
-	wrefresh(wptr_edit);
-
-	field = select_edit_field_loop(wptr_edit);
+	if (opt_action >= 0) {
+		field = opt_action;
+	} else {
+		wptr_edit = create_input_subwindow();
+		nc_print_record_vert(wptr_edit, ld, BOX_OFFSET);
+		mvwprintw(wptr_edit, INPUT_WIN_ROWS - BOX_OFFSET, BOX_OFFSET, "%s", "Delete");
+		box(wptr_edit, 0, 0);
+		wrefresh(wptr_edit);
+		field = select_edit_field_loop(wptr_edit);
+		nc_exit_window(wptr_edit);
+	}
 
 	fclose(fptr);
-	nc_exit_window(wptr_edit);
 
 	switch (field) {
 
@@ -294,7 +288,7 @@ void nc_edit_transaction(long b)
 		nc_edit_csv_record(linenum, EDIT_RCRD_AMNT, ld);
 		break;
 
-	case DELETE:
+	case EDIT_RCRD_DELETE:
 		nc_print_input_footer(stdscr);
 		if (nc_confirm_input("Confirm Delete")) {
 				delete_transaction(linenum + 1);
@@ -308,4 +302,13 @@ void nc_edit_transaction(long b)
 	free_tokenized_record_strings(ld);
 	free(ld);
 	ld = NULL;
+}
+
+void nc_edit_transaction(long b)
+{
+	edit_transaction(b, -1);
+}
+ void nc_edit_transaction_opt(long b, int opt)
+{
+	edit_transaction(b, opt);
 }

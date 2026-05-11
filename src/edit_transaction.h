@@ -19,6 +19,18 @@
 #ifndef EDIT_TRANSACTION_H
 #define EDIT_TRANSACTION_H
 
+enum EditRecordFields {
+	NO_RCRD_SELECT,
+	EDIT_RCRD_DATE,
+	EDIT_RCRD_CATG,
+	EDIT_RCRD_DESC,
+	EDIT_RCRD_TYPE,
+	EDIT_RCRD_AMNT,
+	EDIT_RCRD_DELETE,
+};
+
 void nc_edit_transaction(long b);
+
+void nc_edit_transaction_opt(long b, int opt);
 
 #endif

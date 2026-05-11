@@ -728,7 +728,8 @@ void nc_read_setup(struct read_retvals *rret)
 	refresh();
 
 	struct record_select rs = {
-		.flag = -1
+		.flag = -1,
+		.opt = -1,
 	};
 	struct dates_flags date = {
 		.month = rret->month,
@@ -834,7 +835,7 @@ err_select_date_fail:
 
 	case EDIT:
 		nc_print_quit_footer(stdscr);
-		nc_edit_transaction(rs.index);
+		nc_edit_transaction_opt(rs.index, rs.opt);
 		rret->flag = RRET_BYDATE;
 		break;
 

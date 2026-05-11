@@ -28,16 +28,18 @@
 #include "read_loops.h"
 #include "read_init.h"
 #include "main.h"
+#include "edit_transaction.h"
 #include "edit_categories.h"
 #include "helper.h"
 #include "tui.h"
+#include "tui_input.h"
 #include "tui_sidebar.h"
 #include "vector.h"
 #include "parser.h"
 #include "categories.h"
 #include "flags.h"
 
-#define NUM_BUFFER_SZ 3
+#define NUM_BUFFER_SZ 3 /* for vim-like number buffer */
 
 struct visible_range {
 	int first;
@@ -980,6 +982,23 @@ void nc_read_budget_loop(struct ReadWins *wins,
 				rs->index = tmp->data->data[scrl.catg_data];
 			}
 			return;
+
+		case ('d'):
+			c = 0;
+			halfdelay(5);
+			c = wgetch(wins->data);
+			cbreak();
+			if (c == 'd') {
+				if (scrl.catg_data >= 0) {
+					tmp = get_node_by_idx(head, scrl.catg_node);
+					rs->flag = EDIT;
+					rs->index = tmp->data->data[scrl.catg_data];
+					rs->opt = EDIT_RCRD_DELETE;
+					return;
+				}
+			}
+			c = 0;
+			break;
 
 		case ('R'):
 		case ('r'):

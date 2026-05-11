@@ -28,13 +28,13 @@ struct read_retvals {
 	int year;
 	int month;
 	unsigned char sort;
-	unsigned char flag; /* First bit tracks to keep head or not */
+	unsigned char flag; /* First bit tracks to keep or free *head */
 };
 
 struct record_select {
 	int flag;
 	long index;
-	long opt; // Optional flag
+	long opt; /* Optional flag */
 };
 
 void nc_read_setup(struct read_retvals *rret);
