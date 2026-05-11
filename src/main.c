@@ -301,7 +301,7 @@ int main(int argc, char **argv)
 
 	if (argc > 1) {
 		strncpy(opt, argv[1], LINE_BUFFER);
-		for (size_t i = 1; i < strlen(opt); i++) { // Args start at 1
+		for (size_t i = 1; i < strlen(opt); i++) { /* Args start at 1 */
 			if (opt[0] == '-') {
 				switch (opt[i]) {
 
@@ -357,12 +357,6 @@ int main(int argc, char **argv)
 			cli_main_menu();
 		}
 	}
-
-/*
-#ifdef HAS_RESET_COLOR_PAIRS
-	reset_color_pairs();
-#endif
-*/
 
 	endwin();
 	return 0;
