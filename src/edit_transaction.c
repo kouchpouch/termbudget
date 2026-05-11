@@ -220,6 +220,10 @@ err_fail:
 	return -1;
 }
 
+/* Ncurses implementation for interactive transaction editing. To enter the
+ * interactive mode, pass -1 or any int less than 0 to opt_action, if 
+ * opt action is set to a integer within enum EditRecordFields that option
+ * will be chosen automatically, bypassing the interactive choice portion. */
 static void edit_transaction(long b, int opt_action)
 {
 	struct transaction_tokens *ld = malloc(sizeof(*ld));
@@ -304,11 +308,14 @@ static void edit_transaction(long b, int opt_action)
 	ld = NULL;
 }
 
+/* Wrapper for edit_transaction */
 void nc_edit_transaction(long b)
 {
 	edit_transaction(b, -1);
 }
- void nc_edit_transaction_opt(long b, int opt)
+
+/* Wrapper for edit_transaction */
+void nc_edit_transaction_opt(long b, int opt)
 {
 	edit_transaction(b, opt);
 }
