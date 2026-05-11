@@ -144,3 +144,13 @@ void vec_d_append(struct vec_d **v, long data)
 	(*v)->data[(*v)->size] = data;
 	(*v)->size++;
 }
+
+void ved_d_delete(struct vec_d *v, size_t idx)
+{
+	if (idx < v->size) {
+		for (size_t i = idx; i < v->size - 1; i++) {
+			v->data[i] = v->data[i + 1];
+		}
+	}
+	v->size--;
+}

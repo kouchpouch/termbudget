@@ -64,4 +64,6 @@ void catg_vec_append(struct catg_vec **v, char *data);
 /* Appends "data" to the end of the v->data array and reallocs if required */
 void vec_d_append(struct vec_d **v, long data);
 
+void ved_d_delete(struct vec_d *v, size_t idx);
+
 #endif
