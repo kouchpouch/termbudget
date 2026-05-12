@@ -47,6 +47,8 @@
 
 #define PAGE_KEY_ROWS 10
 
+#define NSEC_TO_MS 1000000.0
+
 /* Bitwise Stuff */
 #define SET_KEEP_BIT(x) (x) |= 0x80
 #define UNSET_KEEP_BIT(x) (x) &= 0x7F

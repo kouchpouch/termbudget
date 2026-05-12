@@ -32,7 +32,6 @@
 #include "edit_categories.h"
 #include "helper.h"
 #include "tui.h"
-#include "tui_input.h"
 #include "tui_sidebar.h"
 #include "vector.h"
 #include "parser.h"
@@ -526,6 +525,10 @@ static int scroll_prev_category(struct catg_node *head,
 								FILE *rfptr,
 								FILE *bfptr)
 {
+	/* Benchmark start */
+	unsigned long long end, start;
+	start = clock_gettime_nsec_np(CLOCK_REALTIME);
+
 	struct catg_node *tmp = NULL;
 	int retval = -1;
 
@@ -571,6 +574,15 @@ static int scroll_prev_category(struct catg_node *head,
 		sv->cur_y = getcury(sv->wptr_data);
 		mvwchgat(sv->wptr_data, sv->cur_y, 0, -1, A_REVERSE, REVERSE_COLOR, NULL); 
 	}
+	end = clock_gettime_nsec_np(CLOCK_REALTIME);
+
+	if (debug_flag) {
+		mvprintw(getmaxy(stdscr) - 1, getmaxx(stdscr) - 25,
+			     "ms to scroll: %Lf\n",
+			     ((long double)end - (long double)start) / NSEC_TO_MS); 
+		refresh();
+	}
+	/* Benchmark end */
 
 	return retval;
 }
@@ -585,6 +597,10 @@ static int scroll_next_category(struct catg_node *head,
 								FILE *rfptr,
 								FILE *bfptr)
 {
+	/* Benchmark start */
+	unsigned long long end, start;
+	start = clock_gettime_nsec_np(CLOCK_REALTIME);
+
 	struct catg_node *tmp = get_node_by_idx(head, sv->catg_node);
 	assert(tmp->data->size <= INT_MAX);
 
@@ -624,7 +640,9 @@ static int scroll_next_category(struct catg_node *head,
 	mvwchgat(sv->wptr_data, sv->cur_y, 0, -1, A_REVERSE, REVERSE_COLOR, NULL); 
 
 	tmp = get_node_by_idx(head, sv->catg_node);
-	/* If theres more data to display... */
+	/* If theres more data to display and the cursor is at the bottom of 
+	 * the window... */
+
 	if (sv->displayed < sv->total_rows && sv->cur_y == getmaxy(sv->wptr_data)) {
 		/* If what the cursor is scrolling to is a category */
 		if (sv->catg_data == -1) {
@@ -637,6 +655,15 @@ static int scroll_next_category(struct catg_node *head,
 		sv->cur_y = getcury(sv->wptr_data);
 		mvwchgat(sv->wptr_data, sv->cur_y, 0, -1, A_REVERSE, REVERSE_COLOR, NULL); 
 	}
+	end = clock_gettime_nsec_np(CLOCK_REALTIME);
+
+	if (debug_flag) {
+		mvprintw(getmaxy(stdscr) - 1, getmaxx(stdscr) - 25,
+			     "ms to scroll: %Lf\n",
+			     ((long double)end - (long double)start) / NSEC_TO_MS);
+		refresh();
+	}
+	/* Benchmark end */
 
 	return retval;
 }

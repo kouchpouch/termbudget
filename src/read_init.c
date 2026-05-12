@@ -784,8 +784,17 @@ void nc_read_setup(struct read_retvals *rret)
 		rec_fpis = sort_by_category(fptr, pidx, rec_line_nums, date.year, date.month);
 	}
 
+	unsigned long long start, end;
+	start = clock_gettime_nsec_np(CLOCK_REALTIME);
 	if (rret->head == NULL) {
 		rret->head = create_catg_node_list(date.month, date.year);
+	}
+	end = clock_gettime_nsec_np(CLOCK_REALTIME);
+	if (debug_flag) {
+		mvprintw(getmaxy(stdscr) - 1, getmaxx(stdscr) - 45,
+			     "ms to create linked list: %Lf\n",
+			     ((long double)end - (long double)start) / NSEC_TO_MS);
+		getch();
 	}
 
 	if (sidebar_exists) {
