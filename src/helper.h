@@ -22,11 +22,12 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
-/* Returns ltr ascii value to uppercase */
-int upper(char *ltr);
+/* Returns x ascii value to uppercase, returns x if x is not an ASCII 
+ * lowercase character */
+char upper(char x);
 
 /* Returns ltr ascii value to lowercase */
-int lower(char *ltr);
+char lower(char x);
 
 /* Checks to see if a day exists in a month, 
  * returns maximum days in that month */

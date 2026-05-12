@@ -31,51 +31,29 @@
 // 97 to 122 == lowercase, 65 to 90 == uppercase ASCII codes. 32 between //
 // --------------------------------------------------------------------- //
 
-int upper(char *ltr)
+char upper(char x)
 {
-	if (*ltr > SCHAR_MAX - 32) { // Check integer overflow
-		;
+	if (x >= MIN_LOWER_ASCII && x <= MAX_LOWER_ASCII) {
+		return x - 32; // To uppercase
 	} else {
-		return 0;
-	}
-
-	if (*ltr >= MIN_LOWER_ASCII && *ltr <= MAX_LOWER_ASCII) {
-		return *ltr - 32; // To uppercase
+		return x;
 	} 
-	else if (*ltr >= MIN_UPPER_ASCII && *ltr <= MAX_UPPER_ASCII && *ltr < SCHAR_MAX) {
-		return *ltr; // Already uppercase
-	} 
-	else {
-		return 0;
-	}
-	return 0;
 }
 
-int lower(char *ltr)
+char lower(char x)
 {
-	if (*ltr < SCHAR_MAX) {
-		;
+	if (x >= MIN_UPPER_ASCII && x <= MAX_UPPER_ASCII) {
+		return x + 32; // To lowercase
 	} else {
-		return 0;
+		return x;
 	}
-
-	if (*ltr >= MIN_LOWER_ASCII && *ltr <= MAX_LOWER_ASCII)
-	{
-		return *ltr; // Already lowercase
-	} 
-	else if (*ltr >= MIN_UPPER_ASCII && *ltr <= MAX_UPPER_ASCII && *ltr > SCHAR_MAX - 32)
-	{
-		return *ltr + 32; // To lowercase
-	} 
-	else {
-		return 0;
-	}
-	return 0;
 }
 
 bool dayexists(int d, int m, int y)
 {
+	/* Months with 31 days, starting at January = 1 */
 	int thirtyones[] = {1, 3, 5, 7, 8, 10, 12};
+	int i;
 
 	if (m == 2 && y % 4 == 0 && (y % 100 != 0 || y % 400 == 0)) {
 		if (d > 0 && d <= 29) {
@@ -91,13 +69,13 @@ bool dayexists(int d, int m, int y)
 		}
 	}
 
-	for (int i = 0; i < 7; i++) {
+	for (i = 0; i < 7; i++) {
 		if (m == thirtyones[i] && (d > 0 && d <= 31)) {
 			return true;
 		}
 	}
 
-	for (int i = 0; i < 7; i++) {
+	for (i = 0; i < 7; i++) {
 		if (m != thirtyones[i] && (d > 0 && d <= 30)) {
 			return true;
 		}
@@ -108,11 +86,14 @@ bool dayexists(int d, int m, int y)
 
 int intlen(int n)
 {
+	int len = 0;
+	int i;
+
 	if (n < 0) {
 		n = -(n);
 	}
-	int len = 0;
-	for (int i = 1; i <= n; i *= 10) {
+
+	for (i = 1; i <= n; i *= 10) {
 		len++;
 	}
 	return len == 0 ? 1 : len;

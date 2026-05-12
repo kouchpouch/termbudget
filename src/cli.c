@@ -440,7 +440,7 @@ void cli_main_menu(void)
 		cli_main_menu();
 	}
 
-	if ((choice = upper(userstr)) == 0) {
+	if ((choice = upper(*userstr)) == 0) {
 		puts("Invalid character");
 		free(userstr);
 		userstr = NULL;
