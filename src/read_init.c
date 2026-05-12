@@ -844,8 +844,7 @@ err_select_date_fail:
 
 	case EDIT:
 		nc_print_quit_footer(stdscr);
-		nc_edit_transaction_opt(rs.index, rs.opt);
-		rret->flag = RRET_BYDATE;
+		nc_edit_transaction_opt(rs.index, rs.opt, rret);
 		break;
 
 	case READ:

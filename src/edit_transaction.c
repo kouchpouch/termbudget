@@ -25,6 +25,7 @@
 #include "main.h"
 #include "create.h"
 #include "parser.h"
+#include "read_init.h"
 #include "sorter.h"
 #include "edit_transaction.h"
 #include "tui.h"
@@ -119,7 +120,8 @@ static int select_edit_field_loop(WINDOW *wptr)
 /* Ncurses implementation to do the actual file writing */
 static int nc_edit_csv_record(int replace_line,
 							  int edit_field,
-							  struct transaction_tokens *ld)
+							  struct transaction_tokens *ld,
+							  struct read_retvals *rret)
 {
 	if (replace_line == 0) {
 		puts("Cannot delete line 0");
@@ -151,7 +153,11 @@ static int nc_edit_csv_record(int replace_line,
 		 * in a new position when the date changes */
 		delete_transaction(replace_line);
 		insert_transaction_record(sort_record_csv(ld->month, ld->day, ld->year), ld);
-		return 0;
+		if (rret != NULL) {
+			rret->month = fd.month;
+			rret->year = fd.year;
+		}
+		return EDIT_RCRD_DATE;
 
 	case EDIT_RCRD_CATG:
 		ld->category = nc_select_category(ld->month, ld->year);
@@ -223,8 +229,10 @@ err_fail:
 /* Ncurses implementation for interactive transaction editing. To enter the
  * interactive mode, pass -1 or any int less than 0 to opt_action, if 
  * opt action is set to a integer within enum EditRecordFields that option
- * will be chosen automatically, bypassing the interactive choice portion. */
-static void edit_transaction(long b, int opt_action)
+ * will be chosen automatically, bypassing the interactive choice portion. 
+ * Returns a integer in enum EditRecordFields for the chosen field that was 
+ * edited, -1 on quit or invalid choice. */
+static int edit_transaction(long b, int opt_action, struct read_retvals *rret)
 {
 	struct transaction_tokens *ld = malloc(sizeof(*ld));
 	if (ld == NULL) {
@@ -234,11 +242,12 @@ static void edit_transaction(long b, int opt_action)
 	enum EditRecordFields field;
 	WINDOW *wptr_edit = NULL;
 	FILE *fptr = open_record_csv("r+");
-	fseek(fptr, b, SEEK_SET);
-
 	unsigned int linenum = boff_to_linenum(b);
 	char linebuff[LINE_BUFFER];
-	char *line = fgets(linebuff, sizeof(linebuff), fptr);
+	char *line = NULL;
+
+	fseek(fptr, b, SEEK_SET);
+	line = fgets(linebuff, sizeof(linebuff), fptr);
 	if (line == NULL) {
 		exit(1);
 	}
@@ -266,30 +275,30 @@ static void edit_transaction(long b, int opt_action)
 
 	case EDIT_RCRD_DATE:
 		nc_print_input_footer(stdscr);
-		nc_edit_csv_record(linenum, EDIT_RCRD_DATE, ld);
+		nc_edit_csv_record(linenum, EDIT_RCRD_DATE, ld, rret);
 		break;
 
 	case EDIT_RCRD_CATG:
 		free(ld->category);
 		ld->category = NULL;
-		nc_edit_csv_record(linenum, EDIT_RCRD_CATG, ld);
+		nc_edit_csv_record(linenum, EDIT_RCRD_CATG, ld, rret);
 		break;
 
 	case EDIT_RCRD_DESC:
 		nc_print_input_footer(stdscr);
 		free(ld->desc);
 		ld->desc = NULL;
-		nc_edit_csv_record(linenum, EDIT_RCRD_DESC, ld);
+		nc_edit_csv_record(linenum, EDIT_RCRD_DESC, ld, rret);
 		break;
 
 	case EDIT_RCRD_TYPE:
 		nc_print_input_footer(stdscr);
-		nc_edit_csv_record(linenum, EDIT_RCRD_TYPE, ld);
+		nc_edit_csv_record(linenum, EDIT_RCRD_TYPE, ld, rret);
 		break;
 
 	case EDIT_RCRD_AMNT:
 		nc_print_input_footer(stdscr);
-		nc_edit_csv_record(linenum, EDIT_RCRD_AMNT, ld);
+		nc_edit_csv_record(linenum, EDIT_RCRD_AMNT, ld, rret);
 		break;
 
 	case EDIT_RCRD_DELETE:
@@ -300,22 +309,23 @@ static void edit_transaction(long b, int opt_action)
 		break;
 
 	default:
-		return;
+		return -1;
 	}
 
 	free_tokenized_record_strings(ld);
 	free(ld);
 	ld = NULL;
+	return field;
 }
 
 /* Wrapper for edit_transaction */
-void nc_edit_transaction(long b)
+int nc_edit_transaction(long b, struct read_retvals *rret)
 {
-	edit_transaction(b, -1);
+	return edit_transaction(b, -1, rret);
 }
 
 /* Wrapper for edit_transaction */
-void nc_edit_transaction_opt(long b, int opt)
+int nc_edit_transaction_opt(long b, int opt, struct read_retvals *rret)
 {
-	edit_transaction(b, opt);
+	return edit_transaction(b, opt, rret);
 }
