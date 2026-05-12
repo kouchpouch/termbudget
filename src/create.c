@@ -259,7 +259,6 @@ static struct MenuParams *init_add_menu(void)
 struct full_date *nc_create_new_budget(void)
 {
 
-//	char *catg;
 	struct full_date *date = malloc(sizeof(*date));
 	if (date == NULL) {
 		mem_alloc_fail();
@@ -281,16 +280,6 @@ struct full_date *nc_create_new_budget(void)
 
 	insert_budget_record("Income", date->month, date->year, TT_INCOME, 0);
 	insert_budget_record("Saving", date->month, date->year, TT_EXPENSE, 0);
-
-	/*
-	catg = create_budget_record(date->year, date->month);
-	if (catg == NULL) {
-		free(date);
-		return NULL;
-	}
-	
-	free(catg);
-	*/
 
 	return date;
 }
