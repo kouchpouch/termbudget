@@ -526,8 +526,13 @@ static int scroll_prev_category(struct catg_node *head,
 								FILE *bfptr)
 {
 	/* Benchmark start */
-	unsigned long long end, start;
+#ifdef __linux__
+	struct timespec t_start, t_end;
+	clock_gettime(CLOCK_REALTIME, &t_start);
+#elif defined __APPLE__
+	unsigned long long start, end;
 	start = clock_gettime_nsec_np(CLOCK_REALTIME);
+#endif
 
 	struct catg_node *tmp = NULL;
 	int retval = -1;
@@ -574,14 +579,23 @@ static int scroll_prev_category(struct catg_node *head,
 		sv->cur_y = getcury(sv->wptr_data);
 		mvwchgat(sv->wptr_data, sv->cur_y, 0, -1, A_REVERSE, REVERSE_COLOR, NULL); 
 	}
+#ifdef __APPLE__
 	end = clock_gettime_nsec_np(CLOCK_REALTIME);
-
 	if (debug_flag) {
-		mvprintw(getmaxy(stdscr) - 1, getmaxx(stdscr) - 25,
+		mvprintw(getmaxy(stdscr) - 1, getmaxx(stdscr) - 45,
 			     "ms to scroll: %Lf\n",
-			     ((long double)end - (long double)start) / NSEC_TO_MS); 
+			     ((long double)end - (long double)start) / NSEC_TO_MS);
 		refresh();
 	}
+#elif defined __linux__
+	clock_gettime(CLOCK_REALTIME, &t_end);
+	if (debug_flag) {
+		mvprintw(getmaxy(stdscr) - 1, getmaxx(stdscr) - 45,
+			     "ms to scroll: %Lf\n",
+			     ((long double)t_end.tv_nsec - (long double)t_start.tv_nsec) / NSEC_TO_MS);
+		refresh();
+	}
+#endif
 	/* Benchmark end */
 
 	return retval;
@@ -598,8 +612,13 @@ static int scroll_next_category(struct catg_node *head,
 								FILE *bfptr)
 {
 	/* Benchmark start */
-	unsigned long long end, start;
+#ifdef __linux__
+	struct timespec t_start, t_end;
+	clock_gettime(CLOCK_REALTIME, &t_start);
+#elif defined __APPLE__
+	unsigned long long start, end;
 	start = clock_gettime_nsec_np(CLOCK_REALTIME);
+#endif
 
 	struct catg_node *tmp = get_node_by_idx(head, sv->catg_node);
 	assert(tmp->data->size <= INT_MAX);
@@ -655,14 +674,25 @@ static int scroll_next_category(struct catg_node *head,
 		sv->cur_y = getcury(sv->wptr_data);
 		mvwchgat(sv->wptr_data, sv->cur_y, 0, -1, A_REVERSE, REVERSE_COLOR, NULL); 
 	}
-	end = clock_gettime_nsec_np(CLOCK_REALTIME);
 
+#ifdef __APPLE__
+	end = clock_gettime_nsec_np(CLOCK_REALTIME);
 	if (debug_flag) {
-		mvprintw(getmaxy(stdscr) - 1, getmaxx(stdscr) - 25,
+		mvprintw(getmaxy(stdscr) - 1, getmaxx(stdscr) - 45,
 			     "ms to scroll: %Lf\n",
 			     ((long double)end - (long double)start) / NSEC_TO_MS);
 		refresh();
 	}
+#elif defined __linux__
+	clock_gettime(CLOCK_REALTIME, &t_end);
+	if (debug_flag) {
+		mvprintw(getmaxy(stdscr) - 1, getmaxx(stdscr) - 45,
+			     "ms to scroll: %Lf\n",
+			     ((long double)t_end.tv_nsec - 
+		   		 (long double)t_start.tv_nsec) / NSEC_TO_MS);
+		refresh();
+	}
+#endif
 	/* Benchmark end */
 
 	return retval;
