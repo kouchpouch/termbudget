@@ -197,7 +197,7 @@ int init_sidebar_body(WINDOW *wptr, struct catg_node *head, size_t i)
 
 	while (y < getmaxy(wptr) - 4) {
 		bt = tokenize_budget_fpi(tmp->catg_fp);
-		exp = get_expenditures_per_category(bt);
+		exp = get_expenditures_per_category_fast(tmp);
 		if (tmp->next == NULL) {
 			y += print_body_categories(bt->catg, wptr, y, x, i);
 			if (!check_y_fit(wptr, y)) {
