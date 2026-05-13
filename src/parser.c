@@ -320,22 +320,57 @@ bool month_or_year_exists(int m, int y)
 	return false;
 }
 
+/* Faster version of get_expenditures_per_category, but requires a built
+ * catg_node linked list */
+double get_expenditures_per_category_fast(struct catg_node *node)
+{
+	char linebuff[LINE_BUFFER];
+	char *str;
+	FILE *fptr = open_record_csv("r");
+	double total = 0.0;
+	size_t i;
+	int transtype;
+
+	if (node == NULL) {
+		fclose(fptr);
+		return 0;
+	}
+
+	for (i = 0; i < node->data->size; i++) {
+		fseek(fptr, node->data->data[i], SEEK_SET);
+		str = fgets(linebuff, sizeof(linebuff), fptr);
+		if (str == NULL) {
+			break;
+		}
+		seek_n_fields(&str, 5);
+		transtype = atoi(strsep(&str, ","));
+		if (transtype == TT_EXPENSE) {
+			total -= atof(strsep(&str, ","));
+		} else {
+			total += atof(strsep(&str, ","));
+		}
+	}
+
+	fclose(fptr);
+	return total;
+}
+
 /* Returns all income records subtracted by expense records */
 double get_expenditures_per_category(struct budget_tokens *bt)
 {
 	double total = 0;
-	struct vec_d *pi = get_records_by_any(bt->m, -1, bt->y, bt->catg, 
+	struct vec_d *income = get_records_by_any(bt->m, -1, bt->y, bt->catg, 
 									      NULL, TT_INCOME, -1, NULL);
-	struct vec_d *pe = get_records_by_any(bt->m, -1, bt->y, bt->catg, 
+	struct vec_d *expense = get_records_by_any(bt->m, -1, bt->y, bt->catg, 
 									      NULL, TT_EXPENSE, -1, NULL);
-	for (size_t i = 0; i < pi->size; i++) {
-		total += get_record_amount(pi->data[i]);
+	for (size_t i = 0; i < income->size; i++) {
+		total += get_record_amount(income->data[i]);
 	}
-	for (size_t i = 0; i < pe->size; i++) {
-		total += get_record_amount(pe->data[i]);
+	for (size_t i = 0; i < expense->size; i++) {
+		total += get_record_amount(expense->data[i]);
 	}
-	free(pe);
-	free(pi);
+	free(expense);
+	free(income);
 	return total;
 }
 

@@ -113,6 +113,8 @@ bool category_exists_in_budget(char *catg, int month, int year);
  * is optional, call function with the month paramater <= 0*/
 bool month_or_year_exists(int m, int y);
 
+double get_expenditures_per_category_fast(struct catg_node *node);
+
 /* Returns all income records subtracted by expense records */
 double get_expenditures_per_category(struct budget_tokens *bt);
 
