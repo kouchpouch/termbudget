@@ -156,6 +156,7 @@ static int nc_edit_csv_record(int replace_line,
 		if (rret != NULL) {
 			rret->month = fd.month;
 			rret->year = fd.year;
+			rret->flag = RRET_BYDATE;
 		}
 		return EDIT_RCRD_DATE;
 

@@ -38,17 +38,6 @@
 #include "convert_csv.h"
 #include "flags.h"
 
-/* 'R'ead 'RET'urn values */
-#define RRET_DEFAULT 0
-#define RRET_BYDATE 1
-#define RRET_QUIT 2
-
-/*
-#if (NCURSES_VERSION_MAJOR >= 6) && (NCURSES_VERSION_MINOR > 0)
-#define HAS_RESET_COLOR_PAIRS
-#endif
-*/
-
 /* GLOBAL FLAGS. Defined in flags.h, initialized here in main.c */
 int debug_flag;
 int cli_flag;
@@ -242,6 +231,11 @@ int nc_main_menu(WINDOW *wptr)
 			nc_read_setup_default(&rret);
 			while (rret.flag != RRET_QUIT) {
 				conditionally_free_linked_list(&rret);
+				if (debug_flag) {
+					printw("MO: %d, YR: %d\n", rret.month, rret.year);
+					refresh();
+					getch();
+				}
 				switch (rret.flag) {
 				case RRET_DEFAULT:
 					nc_read_setup_default(&rret);

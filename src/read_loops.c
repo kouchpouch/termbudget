@@ -579,20 +579,21 @@ static int scroll_prev_category(struct catg_node *head,
 		sv->cur_y = getcury(sv->wptr_data);
 		mvwchgat(sv->wptr_data, sv->cur_y, 0, -1, A_REVERSE, REVERSE_COLOR, NULL); 
 	}
-#ifdef __APPLE__
-	end = clock_gettime_nsec_np(CLOCK_REALTIME);
-	if (debug_flag) {
-		mvprintw(getmaxy(stdscr) - 1, getmaxx(stdscr) - 45,
-			     "ms to scroll: %Lf\n",
-			     ((long double)end - (long double)start) / NSEC_TO_MS);
-		refresh();
-	}
-#elif defined __linux__
+
+#ifdef __linux__
 	clock_gettime(CLOCK_REALTIME, &t_end);
 	if (debug_flag) {
 		mvprintw(getmaxy(stdscr) - 1, getmaxx(stdscr) - 45,
 			     "ms to scroll: %Lf\n",
 			     ((long double)t_end.tv_nsec - (long double)t_start.tv_nsec) / NSEC_TO_MS);
+		refresh();
+	}
+#elif defined __APPLE__
+	end = clock_gettime_nsec_np(CLOCK_REALTIME);
+	if (debug_flag) {
+		mvprintw(getmaxy(stdscr) - 1, getmaxx(stdscr) - 45,
+			     "ms to scroll: %Lf\n",
+			     ((long double)end - (long double)start) / NSEC_TO_MS);
 		refresh();
 	}
 #endif

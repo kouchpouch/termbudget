@@ -571,16 +571,16 @@ static struct vec_d *sort_by_category(FILE *fptr,
 {
 	struct vec_d *prsc = vec_d_create();
 	struct catg_vec *pc = get_categories(mo, yr);
-
 	char linebuff[LINE_BUFFER];
 	char *line;
 	char *token;
 
 	rewind(fptr);
-
-	for (size_t i = 0; i < pc->size; i++) { // Iterate categories
+	/* Loop categories */
+	for (size_t i = 0; i < pc->size; i++) {
 		vec_d_append(&prsc, 0);
-		for (size_t j = 0; j < plines->size; j++) { // Iterate records
+		/* Loop records */
+		for (size_t j = 0; j < plines->size; j++) {
 			fseek(fptr, pidx->data[plines->data[j]], SEEK_SET);
 			line = fgets(linebuff, sizeof(linebuff), fptr);
 			if (line == NULL) {

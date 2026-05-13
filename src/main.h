@@ -54,6 +54,12 @@
 #define UNSET_KEEP_BIT(x) (x) &= 0x7F
 #define KEEP_BIT_IS_SET(x) ((x) & 0x80) == 0x80 ? 1 : 0
 
+enum read_return_flags {
+	RRET_DEFAULT,
+	RRET_BYDATE,
+	RRET_QUIT
+};
+
 enum sort_by {
 	SORT_DATE = 0,
 	SORT_CATG = 1
