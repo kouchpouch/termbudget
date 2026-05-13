@@ -79,7 +79,7 @@ static bool date_is_valid(int day, int month, int year)
 		return false;
 	}
 
-	if (year < 1900 || year > 2100) {
+	if (year < MIN_YEAR || year > MAX_YEAR) {
 		return false;
 	}
 
