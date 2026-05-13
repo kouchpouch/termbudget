@@ -70,14 +70,15 @@ struct num_buffer {
 
 static void print_debug_line(struct scroll_vars *sv)
 {
-	int max_y, max_x;
+	int max_y, max_x, print_y;
 	getmaxyx(sv->wptr_parent, max_y, max_x);
-	mvwhline(sv->wptr_parent, max_y - 1, 1, 0, max_x - 2);
-	mvwprintw(sv->wptr_parent, max_y - 1, max_x - 55, "SELIDX: %d", sv->select_idx);
-	mvwprintw(sv->wptr_parent, max_y - 1, max_x - 40, "DATA: %d", sv->displayed);
-	mvwprintw(sv->wptr_parent, max_y - 1, max_x - 30, "DATA: %d", sv->catg_data);
-	mvwprintw(sv->wptr_parent, max_y - 1, max_x - 20, "NODE: %d", sv->catg_node);
-	mvwprintw(sv->wptr_parent, max_y - 1, max_x - 10, "CURS: %d", sv->cur_y);
+	print_y = max_y - 1;
+	mvwhline(sv->wptr_parent, print_y, 1, 0, max_x - 2);
+	mvwprintw(sv->wptr_parent, print_y, max_x - 55, "SELIDX: %d", sv->select_idx);
+	mvwprintw(sv->wptr_parent, print_y, max_x - 40, "DATA: %d", sv->displayed);
+	mvwprintw(sv->wptr_parent, print_y, max_x - 30, "DATA: %d", sv->catg_data);
+	mvwprintw(sv->wptr_parent, print_y, max_x - 20, "NODE: %d", sv->catg_node);
+	mvwprintw(sv->wptr_parent, print_y, max_x - 10, "CURS: %d", sv->cur_y);
 	wrefresh(sv->wptr_parent);
 }
 
@@ -190,13 +191,14 @@ static void print_record_hr(WINDOW *wptr,
 static void print_category_hr(WINDOW *wptr,
 							  struct column_width *cw,
 							  struct budget_tokens *bt,
+							  struct catg_node *node,
 							  int y)
 {
 	char *etc = "..";
 	int lenetc = (int)strlen(etc);
 	int x = 0;
 	int print_offset = 0;
-	double e = get_expenditures_per_category(bt);
+	double e = get_expenditures_per_category_fast(node);
 	wattron(wptr, A_REVERSE);
 
 	/* Move cursor past the date columns */
@@ -242,7 +244,7 @@ static void print_init_budget_loop(struct scroll_vars *sv,
 		 && i < total_nodes; i++) 
 	{
 		struct budget_tokens *bt = tokenize_budget_fpi(curr->catg_fp);
-		print_category_hr(sv->wptr_data, sv->cw, bt, sv->displayed);
+		print_category_hr(sv->wptr_data, sv->cw, bt, curr, sv->displayed);
 		mvwchgat(sv->wptr_data, sv->displayed, 0, -1, A_NORMAL, category_color(i), NULL); 
 		sv->displayed++;
 
@@ -299,12 +301,13 @@ static int get_total_displayed_rows(struct catg_node *head)
 	return rows;
 }
 
-static void print_balances_text(WINDOW *wptr, struct vec_d *psc)
+static void print_balances_text(WINDOW *wptr, struct vec_d *records)
 {
 	struct vec2f_fin pb_, *pb = &pb_;
-	calculate_balance(pb, psc);
-	int total_len = intlen(pb->income) + intlen(pb->expense) + 
-						   strlen("Expenses: $.00 Income: $.00");
+	int total_len;
+	calculate_balance(pb, records);
+	total_len = intlen(pb->income) + intlen(pb->expense) + 
+					strlen("Expenses: $.00 Income: $.00");
 
 	mvwprintw(wptr, 0, getmaxx(wptr) / 2 - total_len / 2, 
 		   	  "Income: $%.2f Expenses: $%.2f", pb->income, pb->expense);
@@ -314,14 +317,14 @@ static void print_balances_text(WINDOW *wptr, struct vec_d *psc)
 /* Draws all of the window borders, then the border text on top. Call this
  * function any time the borders/text need to be updated. */
 static void draw_read_window_borders_and_text(struct ReadWins *wins,
-											  struct vec_d *psc)
+											  struct vec_d *records)
 {
 	/* Draw borders in order for correct intersecting lines */
 	if (wins->sidebar_parent != NULL || wins->sidebar_body != NULL) {
 		draw_sidebar_parent_border(wins->sidebar_parent);
 		draw_body_border(wins->sidebar_body);
 	} else {
-		print_balances_text(wins->parent, psc);
+		print_balances_text(wins->parent, records);
 	}
 }
 
@@ -369,6 +372,7 @@ static void scroll_prev(long b,
 						FILE *fptr,
 						WINDOW *wptr,
 						struct column_width *cw,
+						struct catg_node *node,
 						bool catg) 
 {
 	fseek(fptr, b, SEEK_SET);
@@ -383,7 +387,7 @@ static void scroll_prev(long b,
 		struct budget_tokens *bt = tokenize_budget_fpi(b);
 		wmove(wptr, 0, 0);
 		winsertln(wptr);
-		print_category_hr(wptr, cw, bt, 0);
+		print_category_hr(wptr, cw, bt, node, 0);
 		free_budget_tokens(bt);
 	} else {
 		struct transaction_tokens linedata_, *ld = &linedata_;
@@ -399,6 +403,7 @@ static void scroll_next(long b,
 						FILE *fptr,
 						WINDOW *wptr,
 						struct column_width *cw,
+						struct catg_node *node,
 						bool catg) 
 {
 	fseek(fptr, b, SEEK_SET);
@@ -414,7 +419,7 @@ static void scroll_next(long b,
 		wmove(wptr, 0, 0);
 		wdeleteln(wptr);
 		wmove(wptr, getmaxy(wptr) - 1, 0);
-		print_category_hr(wptr, cw, bt, getmaxy(wptr) - 1);
+		print_category_hr(wptr, cw, bt, node, getmaxy(wptr) - 1);
 		free_budget_tokens(bt);
 	} else {
 		struct transaction_tokens linedata_, *ld = &linedata_;
@@ -446,7 +451,7 @@ static int scroll_prev_records(struct scroll_vars *sv,
 	assert(sv->displayed >= 0);
 
 	if (sv->select_idx >= 0 && (size_t)sv->displayed < recs->size && sv->cur_y == -1) {
-		scroll_prev(recs->data[sv->select_idx], fptr, sv->wptr_data, sv->cw, false);
+		scroll_prev(recs->data[sv->select_idx], fptr, sv->wptr_data, sv->cw, NULL, false);
 		sv->cur_y = getcury(sv->wptr_data);
 		retval++;
 	}
@@ -470,7 +475,7 @@ static int scroll_next_records(struct scroll_vars *sv,
 	assert(sv->displayed >= 0);
 
 	if ((size_t)sv->displayed < recs->size && sv->cur_y == getmaxy(sv->wptr_data)) {
-		scroll_next(recs->data[sv->select_idx], fptr, sv->wptr_data, sv->cw, false);
+		scroll_next(recs->data[sv->select_idx], fptr, sv->wptr_data, sv->cw, NULL, false);
 		sv->cur_y = getcury(sv->wptr_data);
 		retval++;
 	}
@@ -534,8 +539,8 @@ static int scroll_prev_category(struct catg_node *head,
 	start = clock_gettime_nsec_np(CLOCK_REALTIME);
 #endif
 
-	struct catg_node *tmp = NULL;
 	int retval = -1;
+	struct catg_node *tmp = NULL;
 
 	/* If the cursor is on a category */
 	if (sv->catg_data < 0) {
@@ -570,10 +575,10 @@ static int scroll_prev_category(struct catg_node *head,
 		tmp = get_node_by_idx(head, sv->catg_node);
 		if (sv->catg_data == -1) {
 			scroll_prev(tmp->catg_fp, 
-						   bfptr, sv->wptr_data, sv->cw, true);
+						   bfptr, sv->wptr_data, sv->cw, tmp, true);
 		} else {
 			scroll_prev(tmp->data->data[sv->catg_data], 
-						   rfptr, sv->wptr_data, sv->cw, false);
+						   rfptr, sv->wptr_data, sv->cw, NULL, false);
 		}
 		retval++;
 		sv->cur_y = getcury(sv->wptr_data);
@@ -621,10 +626,10 @@ static int scroll_next_category(struct catg_node *head,
 	start = clock_gettime_nsec_np(CLOCK_REALTIME);
 #endif
 
+	int retval = -1;
 	struct catg_node *tmp = get_node_by_idx(head, sv->catg_node);
 	assert(tmp->data->size <= INT_MAX);
 
-	int retval = -1;
 	/* If the cursor is on a category and it has records associated with it */
 	if (sv->catg_data < 0 && tmp->data->size > 0) {
 		/* Unhighlight, recolor, and ready sv members to access the 0th records
@@ -659,17 +664,18 @@ static int scroll_next_category(struct catg_node *head,
 	sv->select_idx++;
 	mvwchgat(sv->wptr_data, sv->cur_y, 0, -1, A_REVERSE, REVERSE_COLOR, NULL); 
 
-	tmp = get_node_by_idx(head, sv->catg_node);
 	/* If theres more data to display and the cursor is at the bottom of 
 	 * the window... */
 
 	if (sv->displayed < sv->total_rows && sv->cur_y == getmaxy(sv->wptr_data)) {
+		tmp = get_node_by_idx(head, sv->catg_node);
+
 		/* If what the cursor is scrolling to is a category */
 		if (sv->catg_data == -1) {
-			scroll_next(tmp->catg_fp, bfptr, sv->wptr_data, sv->cw, true);
+			scroll_next(tmp->catg_fp, bfptr, sv->wptr_data, sv->cw, tmp, true);
 		} else {
 			scroll_next(tmp->data->data[sv->catg_data],
-			   			rfptr, sv->wptr_data, sv->cw, false);
+			   			rfptr, sv->wptr_data, sv->cw, NULL, false);
 		}
 		retval++;
 		sv->cur_y = getcury(sv->wptr_data);
@@ -708,8 +714,7 @@ static void scroll_n_next_categories(int n,
 	int scroll_ret;
 	for (int i = 0; i < n; i++) {
 		if (sv->select_idx + 1 < sv->total_rows) {
-			scroll_ret = 
-				scroll_next_category(head, sv, rfptr, bfptr);
+			scroll_ret = scroll_next_category(head, sv, rfptr, bfptr);
 			sv->vr->first += scroll_ret;
 			sv->vr->last += scroll_ret;
 		} else {
@@ -863,14 +868,12 @@ void debug_columns(WINDOW *wptr, struct column_width *cw)
 	wgetch(wptr);
 }
 
-/*
- * Main loop for the user to interact with when selecting the read menu option.
+/* Main loop for the user to interact with when selecting the read menu option.
  * If sorted by anything other than 'Category', nc_read_loop will be used.
  *
  * Prints scrollable data to the window pointed to by wptr, sorted by Category.
  * Categories will have their own row in the data with a user-modifiable value
- * retrived from BUDGET_DIR.
- */
+ * retrived from BUDGET_DIR. */
 void nc_read_budget_loop(struct ReadWins *wins,
 						 FILE *rfptr,
 						 FILE *bfptr,
