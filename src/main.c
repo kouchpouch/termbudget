@@ -32,7 +32,6 @@
 #include "fileintegrity.h"
 #include "filemanagement.h"
 #include "tui.h"
-#include "vector.h"
 #include "parser.h"
 #include "categories.h"
 #include "convert_csv.h"

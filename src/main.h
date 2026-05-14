@@ -19,11 +19,6 @@
 #ifndef MAIN_H
 #define MAIN_H
 
-#include <stddef.h>
-#include <ncurses.h>
-
-#include "vector.h"
-
 #define REALLOC_INCR 64
 #define INDEX_ALLOC 1024
 #define MAX_ALLOC 1024 * 1024
@@ -71,6 +66,10 @@ struct dates_flags {
 	unsigned char year_flag;
 	unsigned char month_flag;
 };
+
+/* Forward declaration for data structures in vector.h */
+struct vec_d;
+struct vec2f_fin;
 
 /* Exits the program with "exit(1)" and prints the error message. */
 void mem_alloc_fail(void);
