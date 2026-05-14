@@ -20,7 +20,6 @@
 #include <stdio.h>
 
 #include "categories.h"
-#include "main.h"
 #include "parser.h"
 
 void free_categories(struct catg_vec *pc)
