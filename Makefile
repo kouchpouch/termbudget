@@ -1,7 +1,7 @@
 .PHONY: termbudget
 
 termbudget:
-	gcc -g -Wall -Wextra -Wpedantic \
+	gcc -g -Wall -Wextra -Wpedantic -fsanitize=address \
 		src/main.c \
 		src/cli.c \
 		src/tui.c \
