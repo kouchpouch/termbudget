@@ -224,7 +224,7 @@ static void fix_budget_header(void)
 	FILE *fptr = open_budget_csv("r");
 	FILE *tmpfptr = open_temp_csv();
 
-	char linebuff[LINE_BUFFER * 2];
+	char linebuff[LINE_BUFFER] = { 0 };
 	char *line;
 	int linenum = 0;
 	do {
@@ -246,7 +246,7 @@ static void fix_record_header(void)
 	FILE *fptr = open_record_csv("r");
 	FILE *tmpfptr = open_temp_csv();
 
-	char linebuff[LINE_BUFFER * 2];
+	char linebuff[LINE_BUFFER] = { 0 };
 	char *line;
 	int linenum = 0;
 	do {

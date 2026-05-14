@@ -45,7 +45,7 @@ static void set_to_false(struct sorter_search_for *s)
 static int lines_to_last_occurance(FILE *fptr, int month, int year)
 {
 	char *str;
-	char linebuff[LINE_BUFFER];
+	char linebuff[LINE_BUFFER] = { 0 };
 	int i = 0;
 	int monthtok;
 	int yeartok;
@@ -76,7 +76,7 @@ unsigned int sort_budget_csv(int month, int year)
 	unsigned int result_line = 1;
 	unsigned int line = 1;
 	int monthtok, yeartok;
-	char linebuff[LINE_BUFFER];
+	char linebuff[LINE_BUFFER] = { 0 };
 	char *str;
 
 	if (seek_beyond_header(fptr) == -1) {
@@ -143,7 +143,7 @@ unsigned int sort_record_csv(int month, int day, int year)
 	unsigned int line = 1; // Line starts at 1 to skip the header
 	unsigned int result_line = 1;
 	unsigned int lessdayline = 0;
-	char linebuff[LINE_BUFFER];
+	char linebuff[LINE_BUFFER] = { 0 };
 	char *str;
 	int daytok, monthtok, yeartok;
 	
@@ -220,7 +220,7 @@ unsigned int sort_record_csv(int month, int day, int year)
 unsigned int sort_converted_csv(int month, int day, int year, FILE *fptr)
 {
 	struct sorter_search_for found;
-	char linebuff[LINE_BUFFER];
+	char linebuff[LINE_BUFFER] = { 0 };
 	char *str;
 	unsigned int line = 1; // Line starts at 1 to skip the header
 	unsigned int result_line = 1;

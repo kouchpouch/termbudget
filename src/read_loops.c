@@ -233,7 +233,7 @@ static void print_init_budget_loop(struct scroll_vars *sv,
 	char *line_str;
 	int max_y = getmaxy(sv->wptr_data);
 	int total_nodes = get_total_nodes(head);
-	char linebuff[LINE_BUFFER];
+	char linebuff[LINE_BUFFER] = { 0 };
 
 	/* 
 	 * For each category print the budget line and the records that match 
@@ -276,13 +276,11 @@ static void print_init_budget_loop(struct scroll_vars *sv,
 	wrefresh(sv->wptr_data);
 }
 
-/*
- * Returns the value of the total number of rows to display in 
+/* Returns the value of the total number of rows to display in 
  * nc_read_budget_loop() to handle scrolling.
  *
  * The return value is calculated by adding up add struct catg_node and their
- * data member's size.
- */
+ * data member's size. */
 static int get_total_displayed_rows(struct catg_node *head)
 {
 	struct catg_node *curr = head;
@@ -376,7 +374,7 @@ static void scroll_prev(long b,
 						bool catg) 
 {
 	fseek(fptr, b, SEEK_SET);
-	char linebuff[LINE_BUFFER];
+	char linebuff[LINE_BUFFER] = { 0 };
 	char *line_str = fgets(linebuff, sizeof(linebuff), fptr);
 	if (line_str == NULL) {
 		return;
@@ -407,7 +405,7 @@ static void scroll_next(long b,
 						bool catg) 
 {
 	fseek(fptr, b, SEEK_SET);
-	char linebuff[LINE_BUFFER];
+	char linebuff[LINE_BUFFER] = { 0 };
 	char *line_str;
 	line_str = fgets(linebuff, sizeof(linebuff), fptr);
 	if (line_str == NULL) {
@@ -895,7 +893,7 @@ void nc_read_budget_loop(struct ReadWins *wins,
 	struct num_buffer numbuf = { 0 };
 	struct catg_node *tmp = NULL;
 	char *line;
-	char linebuff[LINE_BUFFER];
+	char linebuff[LINE_BUFFER] = { 0 };
 	int c = 0;
 	int subwin_y;
 
@@ -1107,7 +1105,7 @@ static void print_initial_read_loop(struct scroll_vars *sv,
 									   struct vec_d *psc)
 {
 	char *line_str;
-	char linebuff[LINE_BUFFER];
+	char linebuff[LINE_BUFFER] = { 0 };
 	struct transaction_tokens ld;
 
 	/* For safe cast */
@@ -1153,7 +1151,7 @@ void nc_read_loop(struct ReadWins *wins,
 	};
 	struct catg_node *tmp = NULL;
 	scrl.vr->first = 1;
-	char linebuff[LINE_BUFFER];
+	char linebuff[LINE_BUFFER] = { 0 };
 	int c = 0;
 
 	calculate_columns(scrl.cw, getmaxx(scrl.wptr_data) + BOX_OFFSET);

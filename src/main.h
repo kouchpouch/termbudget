@@ -29,7 +29,7 @@
 #define MAX_ALLOC 1024 * 1024
 
 #define CSV_FIELDS 7
-#define LINE_BUFFER 200
+#define LINE_BUFFER 256
 #define STDIN_LARGE_BUFF 64
 #define STDIN_SMALL_BUFF 8
 

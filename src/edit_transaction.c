@@ -131,7 +131,7 @@ static int nc_edit_csv_record(int replace_line,
 	replace_line++;
 
 	enum EditRecordFields field = edit_field;
-	char replace_str[LINE_BUFFER];
+	char replace_str[LINE_BUFFER] = { 0 };
 	FILE *fptr;
 	FILE *tmpfptr;
 	struct full_date fd;
@@ -244,7 +244,7 @@ static int edit_transaction(long b, int opt_action, struct read_retvals *rret)
 	WINDOW *wptr_edit = NULL;
 	FILE *fptr = open_record_csv("r+");
 	unsigned int linenum = boff_to_linenum(b);
-	char linebuff[LINE_BUFFER];
+	char linebuff[LINE_BUFFER] = { 0 };
 	char *line = NULL;
 
 	fseek(fptr, b, SEEK_SET);

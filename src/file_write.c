@@ -118,7 +118,7 @@ static void write_string_to_file(FILE *fptr,
 								 FILE* tmpfptr,
 								 struct file_write_vars *opts)
 {
-	char line_buffer[LINE_BUFFER];
+	char line_buffer[LINE_BUFFER] = { 0 };
 	char *line_str;
 	int current_line = 0;
 

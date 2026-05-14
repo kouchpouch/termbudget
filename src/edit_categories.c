@@ -63,7 +63,7 @@ static void replace_category(struct budget_tokens *bt, long b)
 	FILE *bfptr = open_budget_csv("r");
 	FILE *tmpfptr;
 	int replace_line = boff_to_linenum_budget(b) + 1;
-	char replace_str[LINE_BUFFER];
+	char replace_str[LINE_BUFFER] = { 0 };
 
 	budget_tokens_to_string(replace_str, sizeof(replace_str), bt);
 
@@ -76,7 +76,7 @@ static void insert_category(struct budget_tokens *bt, int insert_line)
 {
 	FILE *bfptr = open_budget_csv("r");
 	FILE *tmpfptr;
-	char insert_str[LINE_BUFFER];
+	char insert_str[LINE_BUFFER] = { 0 };
 
 	budget_tokens_to_string(insert_str, sizeof(insert_str), bt);
 	
@@ -234,7 +234,7 @@ static int replace_many_records_categories(struct catg_node *head,
 	FILE *fptr;
 	FILE *tmpfptr;
 	char *str;
-	char linebuff[LINE_BUFFER];
+	char linebuff[LINE_BUFFER] = { 0 };
 	size_t n_recs = tmp->data->size;
 	size_t del_lines[n_recs];
 

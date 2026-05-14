@@ -22,9 +22,11 @@
 #include <stdio.h>
 #include <ncurses.h>
 
+#include "main.h"
 #include "vector.h"
 
 struct catg_node { 
+	char string[LINE_BUFFER];
 	struct catg_node *next;
 	struct catg_node *prev;
 	struct vec_d *data;

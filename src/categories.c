@@ -60,6 +60,7 @@ size_t get_total_nodes(struct catg_node *head)
 static struct catg_node *create_catg_node(void)
 {
 	struct catg_node *n = malloc(sizeof(struct catg_node));
+	*n = (struct catg_node){ 0 };
 	if (n == NULL) {
 		mem_alloc_fail();
 	}

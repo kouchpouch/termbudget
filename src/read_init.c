@@ -571,7 +571,7 @@ static struct vec_d *sort_by_category(FILE *fptr,
 {
 	struct vec_d *prsc = vec_d_create();
 	struct catg_vec *pc = get_categories(mo, yr);
-	char linebuff[LINE_BUFFER];
+	char linebuff[LINE_BUFFER] = { 0 };
 	char *line;
 	char *token;
 

@@ -73,7 +73,7 @@ static int delete_csv_record(int linetodelete)
 	FILE *fptr = open_record_csv("r");
 	FILE *tmpfptr = open_temp_csv();
 
-	char linebuff[LINE_BUFFER * 2];
+	char linebuff[LINE_BUFFER] = { 0 };
 	char *line;
 	int linenum = 0;
 	do {
@@ -142,7 +142,7 @@ static int edit_csv_record(int replace_line,
 
 	replace_line += 1;
 
-	char replace_str[LINE_BUFFER];
+	char replace_str[LINE_BUFFER] = { 0 };
 	FILE *fptr;
 	FILE *tmpfptr;
 
@@ -358,7 +358,7 @@ static void cli_edit_transaction(void)
 		printf("COMMANDED SEEK OFFSET: %ld\n", pidx->data[target]);
 	}
 	
-	char linebuff[LINE_BUFFER];
+	char linebuff[LINE_BUFFER] = { 0 };
 	char *str = fgets(linebuff, sizeof(linebuff), fptr);
 	if (str == NULL) {
 		puts("failed to read line");

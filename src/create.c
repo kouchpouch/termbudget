@@ -66,7 +66,7 @@ void insert_budget_record(char *catg, int m, int y, int transtype, double amt)
 	unsigned int insert_line = sort_budget_csv(m, y);
 	FILE *fptr = open_budget_csv("r");
 	FILE *tmpfptr;
-	char insert_str[LINE_BUFFER];
+	char insert_str[LINE_BUFFER] = { 0 };
 
 	snprintf(insert_str, sizeof(insert_str), 
 		  "%d,%d,%s,%d,%.2f\n", m, y, catg, transtype, amt);
@@ -131,7 +131,7 @@ void insert_transaction_record(int insert_line, struct transaction_tokens *ld)
 
 	FILE *fptr = open_record_csv("r");
 	FILE *tmpfptr;
-	char insert_str[LINE_BUFFER];
+	char insert_str[LINE_BUFFER] = { 0 };
 
 	line_data_to_string(insert_str, sizeof(insert_str), ld);
 

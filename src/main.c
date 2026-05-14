@@ -55,7 +55,7 @@ void calculate_balance(struct vec2f_fin *pb, struct vec_d *pbo)
 	pb->income = 0.0;
 	pb->expense = 0.0;
 	int type;
-	char linebuff[LINE_BUFFER];
+	char linebuff[LINE_BUFFER] = { 0 };
 	char *line;
 
 	for (size_t i = 0; i < pbo->size; i++) {
@@ -289,7 +289,7 @@ int main(int argc, char **argv)
 	cli_flag = 0;
 	verify_flag = 1;
 
-	char opt[LINE_BUFFER];
+	char opt[LINE_BUFFER] = { 0 };
 	int corrected = 0;
 	size_t count;
 
