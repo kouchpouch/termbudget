@@ -16,7 +16,6 @@
  * Author: kouchpouch <https://github.com/kouchpouch/termbudget>
  */
 
-#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -441,7 +440,7 @@ void cli_main_menu(void)
 		cli_main_menu();
 	}
 
-	choice = upper(userstr[0]);
+	choice = TO_UPPER(userstr[0]);
 	
 	free(userstr);
 	userstr = NULL;

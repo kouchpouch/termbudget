@@ -107,7 +107,7 @@ int confirm_input(void)
 		return -1;
 	}
 
-	char c_confirm = (char)upper(confirm[0]);
+	char c_confirm = TO_UPPER(confirm[0]);
 	free(confirm);
 	confirm = NULL;
 
