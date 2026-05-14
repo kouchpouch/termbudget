@@ -22,15 +22,14 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
+#define TO_UPPER(x) \
+	((x) >= 'a' && (x) <= 'z') ? ((x) - ('a' - 'A')) : (x) \
+
+#define TO_LOWER(x) \
+	((x) >= 'A' && (x) <= 'Z') ? ((x) + ('a' - 'A')) : (x) \
+
 /* Wrapper around memset(buf, 0, sz) */
 void *clear_buf(void *buf, size_t sz);
-
-/* Returns x ascii value to uppercase, returns x if x is not an ASCII 
- * lowercase character */
-char upper(char x);
-
-/* Returns ltr ascii value to lowercase */
-char lower(char x);
 
 /* Checks to see if a day exists in a month, 
  * returns maximum days in that month */
