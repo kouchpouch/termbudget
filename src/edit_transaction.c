@@ -224,6 +224,11 @@ static int nc_edit_csv_record(int replace_line,
 	return 0;
 
 err_fail:
+	if (rret != NULL) {
+		rret->month = ld->month;
+		rret->year = ld->year;
+		rret->flag = RRET_BYDATE;
+	}
 	return -1;
 }
 
