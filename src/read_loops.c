@@ -573,10 +573,10 @@ static int scroll_prev_category(struct catg_node *head,
 		tmp = get_node_by_idx(head, sv->catg_node);
 		if (sv->catg_data == -1) {
 			scroll_prev(tmp->catg_fp, 
-						   bfptr, sv->wptr_data, sv->cw, tmp, true);
+			   				bfptr, sv->wptr_data, sv->cw, tmp, true);
 		} else {
 			scroll_prev(tmp->data->data[sv->catg_data], 
-						   rfptr, sv->wptr_data, sv->cw, NULL, false);
+			   				rfptr, sv->wptr_data, sv->cw, NULL, false);
 		}
 		retval++;
 		sv->cur_y = getcury(sv->wptr_data);
@@ -1087,6 +1087,21 @@ void nc_read_budget_loop(struct ReadWins *wins,
 			rs->index = 0;
 			return;
 
+		/* Alternate HOME and END sequences, especially for TMUX */
+		case (27):
+			halfdelay(1);
+			if (wgetch(wins->data) == 91) {
+				c = wgetch(wins->data);
+				if (c == 49) {
+					scroll_n_prev_categories(scrl.total_rows, head, &scrl, rfptr, bfptr);
+				} else if (c == 52) {
+					scroll_n_next_categories(scrl.total_rows, head, &scrl, rfptr, bfptr);
+				}
+			}
+			cbreak();
+			c = 0;
+			break;
+
 		case KEY_RESIZE:
 			rs->flag = RESIZE;
 			rs->index = 0;
@@ -1294,6 +1309,21 @@ void nc_read_loop(struct ReadWins *wins,
 			sr->flag = OVERVIEW;
 			sr->index = 0;
 			return;
+
+		/* Alternate HOME and END sequences, especially for TMUX */
+		case (27):
+			halfdelay(1);
+			if (wgetch(wins->data) == 91) {
+				c = wgetch(wins->data);
+				if (c == 49) {
+					scroll_n_prev_records(scrl.total_rows, &scrl, fptr, records);
+				} else if (c == 52) {
+					scroll_n_next_records(scrl.total_rows, &scrl, fptr, records);
+				}
+			}
+			cbreak();
+			c = 0;
+			break;
 
 		case KEY_RESIZE:
 			sr->flag = RESIZE;
