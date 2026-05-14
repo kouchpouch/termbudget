@@ -586,6 +586,16 @@ int nc_input_month_and_year
 	return input_full_date(old_mo, 1, old_yr, new_date, false, 0);
 }
 
+/* A valid character is in ASCII >= '!' and <= 'z', excluding ',' and '\'. */
+static bool valid_input_character(int c)
+{
+	if ((c >= '!' && c <= '+') || (c >= '-' && c <= '[') || (c >= ']' && c <= 'z')) {
+		return true;
+	} else {
+		return false;
+	}
+}
+
 static void nc_user_input(int n, WINDOW *wptr, struct UserInput *pui)
 {
 	int max_y, max_x;
@@ -640,7 +650,7 @@ static void nc_user_input(int n, WINDOW *wptr, struct UserInput *pui)
 			break;
 
 		default:
-			if (idx < n) { 
+			if (idx < n && valid_input_character(c)) { 
 				wprintw(wptr, "%c", c);
 				temp[idx] = c;
 				idx++;
