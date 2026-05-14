@@ -20,6 +20,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <limits.h>
+#include <string.h>
 #include "helper.h"
 
 #define MAX_UPPER_ASCII 90
@@ -36,6 +37,11 @@
 
 #define TO_LOWER(x) \
 	((x) >= 65 && (x) <= 90) ? ((x) + 32) : (x) \
+
+void *clear_buf(void *buf, size_t sz)
+{
+	return memset(buf, 0, sz);
+}
 
 char upper(char x)
 {

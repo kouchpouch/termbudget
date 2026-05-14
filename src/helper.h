@@ -22,6 +22,9 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
+/* Wrapper around memset(buf, 0, sz) */
+void *clear_buf(void *buf, size_t sz);
+
 /* Returns x ascii value to uppercase, returns x if x is not an ASCII 
  * lowercase character */
 char upper(char x);
