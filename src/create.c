@@ -102,6 +102,7 @@ char *create_budget_record(int yr, int mo)
 	}
 	transtype = nc_input_category_type();
 	if (transtype < 0) {
+		free(catg);
 		return NULL;
 	}
 
