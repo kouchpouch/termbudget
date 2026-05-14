@@ -34,11 +34,14 @@ struct UserInput {
 	int flag;
 };
 
-//int nc_input_full_date(int old_mo, int old_day, int old_yr, struct full_date *new_date);
+int nc_input_full_date(int old_mo,
+					   int old_day,
+					   int old_yr,
+					   struct full_date *new_date);
 
-int nc_input_full_date(int old_mo, int old_day, int old_yr, struct full_date *new_date);
-
-int nc_input_full_date_on_day(int old_mo, int old_day, int old_yr, 
+int nc_input_full_date_on_day(int old_mo,
+							  int old_day,
+							  int old_yr, 
                               struct full_date *new_date);
 
 int nc_input_month_and_year(int old_mo, int old_yr, struct full_date *new_date);

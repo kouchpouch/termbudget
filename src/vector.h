@@ -18,6 +18,7 @@
 
 #ifndef VECTOR_H
 #define VECTOR_H
+
 #include <stdio.h>
 
 /* 2-float vector, financial */
