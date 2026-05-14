@@ -23,42 +23,9 @@
 #include <string.h>
 #include "helper.h"
 
-#define MAX_UPPER_ASCII 90
-#define MIN_UPPER_ASCII 65
-#define MAX_LOWER_ASCII 122
-#define MIN_LOWER_ASCII 97
-
-/* --------------------------------------------------------------------- //
-// 97 to 122 == lowercase, 65 to 90 == uppercase ASCII codes. 32 between //
-// --------------------------------------------------------------------- */
-
-#define TO_UPPER(x) \
-	((x) >= 65 && (x) <= 90) ? ((x) - 32) : (x) \
-
-#define TO_LOWER(x) \
-	((x) >= 65 && (x) <= 90) ? ((x) + 32) : (x) \
-
 void *clear_buf(void *buf, size_t sz)
 {
 	return memset(buf, 0, sz);
-}
-
-char upper(char x)
-{
-	if (x >= MIN_LOWER_ASCII && x <= MAX_LOWER_ASCII) {
-		return x - 32; // To uppercase
-	} else {
-		return x;
-	} 
-}
-
-char lower(char x)
-{
-	if (x >= MIN_UPPER_ASCII && x <= MAX_UPPER_ASCII) {
-		return x + 32; // To lowercase
-	} else {
-		return x;
-	}
 }
 
 bool dayexists(int d, int m, int y)
