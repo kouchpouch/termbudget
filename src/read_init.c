@@ -16,7 +16,6 @@
  * Author: kouchpouch <https://github.com/kouchpouch/termbudget>
  */
 
-#include <bits/time.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
