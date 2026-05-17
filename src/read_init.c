@@ -41,6 +41,8 @@
 #include "categories.h"
 #include "flags.h"
 
+#include "benchmark.h"
+
 /* 'R'ead 'RET'urn values */
 #define RRET_DEFAULT 0
 #define RRET_BYDATE 1
@@ -785,36 +787,20 @@ void nc_read_setup(struct read_retvals *rret)
 		rec_fpis = sort_by_category(fptr, pidx, rec_line_nums, date.year, date.month);
 	}
 
-#ifdef __linux__
-	struct timespec t_start, t_end;
-	clock_gettime(CLOCK_REALTIME, &t_start);
-#elif defined __APPLE__
-	unsigned long long start, end;
-	start = clock_gettime_nsec_np(CLOCK_REALTIME);
-#endif
+	if (debug_flag) {
+		BENCHMARK_START();
+	}
 
 	if (rret->head == NULL) {
 		rret->head = create_catg_node_list(date.month, date.year);
 	}
 
-#ifdef __APPLE__
-	end = clock_gettime_nsec_np(CLOCK_REALTIME);
 	if (debug_flag) {
+		BENCHMARK_END();
 		mvprintw(getmaxy(stdscr) - 1, getmaxx(stdscr) - 45,
-			     "ms to create linked list: %Lf\n",
-			     ((long double)end - (long double)start) / NSEC_TO_MS);
+			     "secs create linked list: %Lf\n", BENCHMARK_RESULT);
 		getch();
 	}
-#elif defined __linux__
-	clock_gettime(CLOCK_REALTIME, &t_end);
-	if (debug_flag) {
-		mvprintw(getmaxy(stdscr) - 1, getmaxx(stdscr) - 45,
-			     "ms to create linked list: %Lf\n",
-			     ((long double)t_end.tv_nsec - 
-		   		 (long double)t_start.tv_nsec) / NSEC_TO_MS);
-		getch();
-	}
-#endif
 
 	if (sidebar_exists) {
 		init_sidebar_parent(wins->sidebar_parent, 

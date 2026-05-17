@@ -37,10 +37,15 @@
 #include "convert_csv.h"
 #include "flags.h"
 
+#include "benchmark.h"
+
 /* GLOBAL FLAGS. Defined in flags.h, initialized here in main.c */
 int debug_flag;
 int cli_flag;
 int verify_flag;
+/* GLOBAL BENCHMARK VARS. Defined in benchmark.h, initialized here in main.c */
+long double benchmark_begin, benchmark_end;
+struct timespec benchmark_tp;
 
 void mem_alloc_fail(void) 
 {

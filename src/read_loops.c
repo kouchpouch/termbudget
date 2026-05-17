@@ -38,6 +38,8 @@
 #include "categories.h"
 #include "flags.h"
 
+#include "benchmark.h"
+
 #define NUM_BUFFER_SZ 3 /* for vim-like number buffer */
 
 struct visible_range {
@@ -528,14 +530,9 @@ static int scroll_prev_category(struct catg_node *head,
 								FILE *rfptr,
 								FILE *bfptr)
 {
-	/* Benchmark start */
-#ifdef __linux__
-	struct timespec t_start, t_end;
-	clock_gettime(CLOCK_REALTIME, &t_start);
-#elif defined __APPLE__
-	unsigned long long start, end;
-	start = clock_gettime_nsec_np(CLOCK_REALTIME);
-#endif
+	if (debug_flag) {
+		BENCHMARK_START();
+	}
 
 	int retval = -1;
 	struct catg_node *tmp = NULL;
@@ -583,24 +580,12 @@ static int scroll_prev_category(struct catg_node *head,
 		mvwchgat(sv->wptr_data, sv->cur_y, 0, -1, A_REVERSE, REVERSE_COLOR, NULL); 
 	}
 
-#ifdef __linux__
-	clock_gettime(CLOCK_REALTIME, &t_end);
 	if (debug_flag) {
-		mvprintw(getmaxy(stdscr) - 1, getmaxx(stdscr) - 45,
-			     "ms to scroll: %Lf\n",
-			     ((long double)t_end.tv_nsec - (long double)t_start.tv_nsec) / NSEC_TO_MS);
+		BENCHMARK_END();
+		mvprintw(getmaxy(stdscr) - 1, getmaxx(stdscr) - 45, 
+		   		 "s to scroll: %Lf\n", BENCHMARK_RESULT);
 		refresh();
 	}
-#elif defined __APPLE__
-	end = clock_gettime_nsec_np(CLOCK_REALTIME);
-	if (debug_flag) {
-		mvprintw(getmaxy(stdscr) - 1, getmaxx(stdscr) - 45,
-			     "ms to scroll: %Lf\n",
-			     ((long double)end - (long double)start) / NSEC_TO_MS);
-		refresh();
-	}
-#endif
-	/* Benchmark end */
 
 	return retval;
 }
@@ -615,14 +600,9 @@ static int scroll_next_category(struct catg_node *head,
 								FILE *rfptr,
 								FILE *bfptr)
 {
-	/* Benchmark start */
-#ifdef __linux__
-	struct timespec t_start, t_end;
-	clock_gettime(CLOCK_REALTIME, &t_start);
-#elif defined __APPLE__
-	unsigned long long start, end;
-	start = clock_gettime_nsec_np(CLOCK_REALTIME);
-#endif
+	if (debug_flag) {
+		BENCHMARK_START();
+	}
 
 	int retval = -1;
 	struct catg_node *tmp = get_node_by_idx(head, sv->catg_node);
@@ -680,25 +660,12 @@ static int scroll_next_category(struct catg_node *head,
 		mvwchgat(sv->wptr_data, sv->cur_y, 0, -1, A_REVERSE, REVERSE_COLOR, NULL); 
 	}
 
-#ifdef __APPLE__
-	end = clock_gettime_nsec_np(CLOCK_REALTIME);
 	if (debug_flag) {
-		mvprintw(getmaxy(stdscr) - 1, getmaxx(stdscr) - 45,
-			     "ms to scroll: %Lf\n",
-			     ((long double)end - (long double)start) / NSEC_TO_MS);
+		BENCHMARK_END();
+		mvprintw(getmaxy(stdscr) - 1, getmaxx(stdscr) - 45, 
+		   		 "s to scroll: %Lf\n", BENCHMARK_RESULT);
 		refresh();
 	}
-#elif defined __linux__
-	clock_gettime(CLOCK_REALTIME, &t_end);
-	if (debug_flag) {
-		mvprintw(getmaxy(stdscr) - 1, getmaxx(stdscr) - 45,
-			     "ms to scroll: %Lf\n",
-			     ((long double)t_end.tv_nsec - 
-		   		 (long double)t_start.tv_nsec) / NSEC_TO_MS);
-		refresh();
-	}
-#endif
-	/* Benchmark end */
 
 	return retval;
 }
