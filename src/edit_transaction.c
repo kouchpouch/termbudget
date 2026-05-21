@@ -121,7 +121,7 @@ static int select_edit_field_loop(WINDOW *wptr)
 static int nc_edit_csv_record(int replace_line,
 							  int edit_field,
 							  struct transaction_tokens *ld,
-							  struct read_retvals *rret)
+							  struct read_state *rret)
 {
 	if (replace_line == 0) {
 		puts("Cannot delete line 0");
@@ -238,7 +238,7 @@ err_fail:
  * will be chosen automatically, bypassing the interactive choice portion. 
  * Returns a integer in enum EditRecordFields for the chosen field that was 
  * edited, -1 on quit or invalid choice. */
-static int edit_transaction(long b, int opt_action, struct read_retvals *rret)
+static int edit_transaction(long b, int opt_action, struct read_state *rret)
 {
 	struct transaction_tokens *ld = malloc(sizeof(*ld));
 	if (ld == NULL) {
@@ -325,13 +325,13 @@ static int edit_transaction(long b, int opt_action, struct read_retvals *rret)
 }
 
 /* Wrapper for edit_transaction */
-int nc_edit_transaction(long b, struct read_retvals *rret)
+int nc_edit_transaction(long b, struct read_state *rret)
 {
 	return edit_transaction(b, -1, rret);
 }
 
 /* Wrapper for edit_transaction */
-int nc_edit_transaction_opt(long b, int opt, struct read_retvals *rret)
+int nc_edit_transaction_opt(long b, int opt, struct read_state *rret)
 {
 	return edit_transaction(b, opt, rret);
 }

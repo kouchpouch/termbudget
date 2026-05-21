@@ -148,7 +148,7 @@ int show_help_subwindow(void)
 	return my;
 }
 
-static void conditionally_free_linked_list(struct read_retvals *r)
+static void conditionally_free_linked_list(struct read_state *r)
 {
 	if (KEEP_BIT_IS_SET(r->flag)) {
 		UNSET_KEEP_BIT(r->flag);
@@ -167,7 +167,7 @@ static void conditionally_free_linked_list(struct read_retvals *r)
 
 int nc_main_menu(WINDOW *wptr)
 {
-	struct read_retvals rret = {
+	struct read_state rret = {
 		.head = NULL
 	};
 	struct full_date *date;

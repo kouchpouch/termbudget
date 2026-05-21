@@ -29,10 +29,10 @@ enum EditRecordFields {
 	EDIT_RCRD_DELETE,
 };
 
-int nc_edit_transaction(long b, struct read_retvals *rret);
+int nc_edit_transaction(long b, struct read_state *rret);
 
 int nc_edit_transaction_opt(long b, 
 							int opt,
-							struct read_retvals *rret);
+							struct read_state *rret);
 
 #endif
