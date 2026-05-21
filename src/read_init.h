@@ -22,25 +22,28 @@
 #include <stdio.h>
 #include "categories.h"
 
-struct read_retvals {
+struct read_state {
 	struct catg_node *head;
 	long fpi;
+	long scroll_back_fpi;
 	int year;
 	int month;
+	int scroll_back;
 	unsigned char sort;
 	unsigned char flag; /* First bit tracks to keep or free *head */
 };
 
 struct record_select {
-	int flag;
 	long index;
 	long opt; /* Optional flag */
+	int flag;
+	int scroll_back;
 };
 
-void nc_read_setup(struct read_retvals *rret);
+void nc_read_setup(struct read_state *r_state);
 
-void nc_read_setup_default(struct read_retvals *rret);
+void nc_read_setup_default(struct read_state *r_state);
 
-void nc_read_setup_year(int sel_year, struct read_retvals *rret);
+void nc_read_setup_year(int sel_year, struct read_state *r_state);
 
 #endif

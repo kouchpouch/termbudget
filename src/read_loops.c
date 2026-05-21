@@ -462,8 +462,8 @@ static int scroll_prev_records(struct scroll_vars *sv,
 
 /* Returns 1 if the text was scrolled up, 0 if a normal scroll occured */
 static int scroll_next_records(struct scroll_vars *sv,
-							  FILE *fptr,
-							  struct vec_d *recs)
+                               FILE *fptr,
+                               struct vec_d *recs)
 {
 	int retval = 0;
 
@@ -1083,8 +1083,8 @@ void nc_read_budget_loop(struct ReadWins *wins,
 
 /* Print initial lines based on screen size for nc_read_loop */
 static void print_initial_read_loop(struct scroll_vars *sv,
-									   FILE *fptr,
-									   struct vec_d *psc)
+									FILE *fptr,
+									struct vec_d *psc)
 {
 	char *line_str;
 	char linebuff[LINE_BUFFER] = { 0 };
@@ -1113,11 +1113,11 @@ static void print_initial_read_loop(struct scroll_vars *sv,
 /*
  * Main read loop. Populates member values in the struct pointed to 
  * by sr on a MenuKeys press. Prints lines by seeking FPI to the byte offset
- * of psc->data. Sort occurs before this function in nc_read_setup.
+ * of records->data. Sort occurs before this function in nc_read_setup.
  */
 void nc_read_loop(struct ReadWins *wins, 
 				  FILE *fptr, 
-				  struct record_select *sr, 
+				  struct record_select *rs, 
 				  struct vec_d *records,
 				  struct catg_node *head)
 {
@@ -1145,6 +1145,11 @@ void nc_read_loop(struct ReadWins *wins,
 	scrl.total_rows = records->size;
 	scrl.vr->last = scrl.displayed;
 	draw_read_window_borders_and_text(wins, records);
+
+	if (rs->scroll_back > 0) {
+		scroll_n_next_records(rs->scroll_back, &scrl, fptr, records);
+		rs->scroll_back = 0;
+	}
 
 	while (c != KEY_F(QUIT) && c != '\n' && c != '\r') {
 		wrefresh(wins->data);
@@ -1238,43 +1243,46 @@ void nc_read_loop(struct ReadWins *wins,
 		case ('A'):
 		case ('a'):
 		case KEY_F(ADD):
-			sr->flag = ADD;
-			sr->index = records->data[scrl.select_idx];
+			rs->flag = ADD;
+			rs->index = records->data[scrl.select_idx];
+			rs->scroll_back = scrl.select_idx;
 			return;
 
 		case ('E'):
 		case ('e'):
 		case KEY_F(EDIT):
-			sr->flag = EDIT;
-			sr->index = records->data[scrl.select_idx];
+			rs->flag = EDIT;
+			rs->index = records->data[scrl.select_idx];
+			rs->scroll_back = scrl.select_idx;
 			return;
 
 		case ('R'):
 		case ('r'):
 		case KEY_F(READ):
-			sr->flag = READ;
-			sr->index = 0;
+			rs->flag = READ;
+			rs->index = 0;
 			return;
 				
 		case ('Q'):
 		case ('q'):
 		case KEY_F(QUIT):
-			sr->flag = QUIT;
-			sr->index = 0;
+			rs->flag = QUIT;
+			rs->index = 0;
 			return;
 
 		case ('S'):
 		case ('s'):
 		case KEY_F(SORT):
-			sr->flag = SORT;
-			sr->index = 0;
+			rs->flag = SORT;
+			rs->index = 0;
 			return;
 
 		case ('O'):
 		case ('o'):
 		case KEY_F(OVERVIEW):
-			sr->flag = OVERVIEW;
-			sr->index = 0;
+			rs->flag = OVERVIEW;
+			rs->index = 0;
+			rs->scroll_back = scrl.select_idx;
 			return;
 
 		/* Alternate HOME and END sequences, especially for TMUX */
@@ -1293,14 +1301,15 @@ void nc_read_loop(struct ReadWins *wins,
 			break;
 
 		case KEY_RESIZE:
-			sr->flag = RESIZE;
-			sr->index = 0;
+			rs->flag = RESIZE;
+			rs->index = 0;
+			rs->scroll_back = scrl.select_idx;
 			return;
 
 		}
 	}
 
-	sr->flag = NO_SELECT;
-	sr->index = 0;
+	rs->flag = NO_SELECT;
+	rs->index = 0;
 	return;
 }

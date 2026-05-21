@@ -154,8 +154,8 @@ static struct vec_d *consolidate_years(struct vec_d *vec1, struct vec_d *vec2)
 }
 
 /* Retrieves years with data from RECORD_DIR and BUDGET_DIR CSVs, combines
- * and deduplicates the data, and returns a malloc'd struct vec_d containing an array
- * of years that can be selected for viewing. */
+ * and deduplicates the data, and returns a malloc'd struct vec_d containing 
+ * an array of years that can be selected for viewing. */
 static struct vec_d *get_all_years(void)
 {
 	FILE *rfptr = open_record_csv("r");
@@ -195,8 +195,7 @@ static struct vec_d *get_all_years(void)
 static struct vec_d *consolidate_months(struct vec_d *vec1, struct vec_d *vec2)
 {
 	struct vec_d *result = malloc(sizeof(*result) + 
-							      (sizeof(long) * 
-							      MONTHS_IN_YEAR));
+							      (sizeof(long) * MONTHS_IN_YEAR));
 	if (result == NULL) {
 		free(vec1);
 		free(vec2);
@@ -254,8 +253,7 @@ static int get_current_mo_idx(struct vec_d *months)
 	return -1;
 }
 
-static void scroll_month(WINDOW *wptr,
-						 int tmp,
+static void scroll_month(WINDOW *wptr, int tmp,
 						 int monlen,
 						 int *idx,
 						 bool next)
@@ -710,19 +708,9 @@ static void cleanup_read_setup(struct vec_d *rec_fpis,
 	pidx = NULL;
 }
 
-void init_read_retvals(struct read_retvals *r)
+void nc_read_setup(struct read_state *r_state)
 {
-	r->head = NULL;
-	r->fpi = 0;
-	r->flag = 0;
-	r->year = 0;
-	r->month = 0;
-	r->sort = 0;
-}
-
-void nc_read_setup(struct read_retvals *rret)
-{
-	UNSET_KEEP_BIT(rret->flag);
+	UNSET_KEEP_BIT(r_state->flag);
 	nc_print_main_menu_footer(stdscr);
 	if (debug_flag) {
 		nc_print_debug_flag(stdscr);
@@ -734,8 +722,8 @@ void nc_read_setup(struct read_retvals *rret)
 		.opt = -1,
 	};
 	struct dates_flags date = {
-		.month = rret->month,
-		.year = rret->year,
+		.month = r_state->month,
+		.year = r_state->year,
 		.year_flag = 0,
 		.month_flag = 0
 	};
@@ -754,6 +742,7 @@ void nc_read_setup(struct read_retvals *rret)
 	/* To hold the return value of wgetch()/getch() */
 	int c;
 	struct ReadWins *wins = create_read_windows();
+	rs.scroll_back = r_state->scroll_back;
 
 	if (debug_flag) {
 		debug_fields();
@@ -776,11 +765,11 @@ void nc_read_setup(struct read_retvals *rret)
 	}
 
 	n_records = rec_line_nums->size;
-	if (rec_line_nums->size == 0 && rret->sort == SORT_DATE) {
-		rret->sort = SORT_CATG;
+	if (rec_line_nums->size == 0 && r_state->sort == SORT_DATE) {
+		r_state->sort = SORT_CATG;
 	}
 
-	if (rret->sort == SORT_DATE) {
+	if (r_state->sort == SORT_DATE) {
 		rec_fpis = sort_by_date(pidx, rec_line_nums);	
 	} else {
 		rec_fpis = sort_by_category(fptr, pidx, rec_line_nums, date.year, date.month);
@@ -790,8 +779,8 @@ void nc_read_setup(struct read_retvals *rret)
 		BENCHMARK_START();
 	}
 
-	if (rret->head == NULL) {
-		rret->head = create_catg_node_list(date.month, date.year);
+	if (r_state->head == NULL) {
+		r_state->head = create_catg_node_list(date.month, date.year);
 	}
 
 	if (debug_flag) {
@@ -804,8 +793,8 @@ void nc_read_setup(struct read_retvals *rret)
 	if (sidebar_exists) {
 		init_sidebar_parent(wins->sidebar_parent, 
 					        rec_fpis,
-					        get_left_to_budget(rret->head));
-		init_sidebar_body(wins->sidebar_body, rret->head, 0);
+					        get_left_to_budget(r_state->head));
+		init_sidebar_body(wins->sidebar_body, r_state->head, 0);
 		draw_parent_box_with_sidebar(wins->parent);
 	} else {
 		box(wins->parent, 0, 0);
@@ -813,78 +802,80 @@ void nc_read_setup(struct read_retvals *rret)
 
 	print_column_headers(wins->parent, BOX_OFFSET);
 	print_date(wins->parent, date.year, date.month);
-	print_sort_text(wins->parent, rret->sort);
+	print_sort_text(wins->parent, r_state->sort);
 
-	if (rret->sort == SORT_DATE) {
-		nc_read_loop(wins, fptr, &rs, rec_fpis, rret->head);
-	} else if (rret->sort == SORT_CATG) {
+	if (r_state->sort == SORT_DATE) {
+		nc_read_loop(wins, fptr, &rs, rec_fpis, r_state->head);
+	} else if (r_state->sort == SORT_CATG) {
 		FILE *bfptr = open_budget_csv("r");
-		nc_read_budget_loop(wins, fptr, bfptr, &rs, rec_fpis, rret->head); 
+		nc_read_budget_loop(wins, fptr, bfptr, &rs, rec_fpis, r_state->head); 
 		fclose(bfptr);
 	}
 
 	cleanup_read_setup(rec_fpis, rec_line_nums, pidx, wins, fptr);
 
-	rret->month = date.month;
-	rret->year = date.year;
+	r_state->month = date.month;
+	r_state->year = date.year;
+	r_state->scroll_back = rs.scroll_back;
+	r_state->scroll_back_fpi = rs.index;
 
 err_select_date_fail:
 	switch (rs.flag) {
 
 	case NO_SELECT:
-		rret->flag = RRET_DEFAULT;
+		r_state->flag = RRET_DEFAULT;
 		break;
 
 	case ADD:
 		nc_print_input_footer(stdscr);
 		if (date.year < 0 || date.month < 0) {
 			add_main_no_date();
-			rret->flag = RRET_DEFAULT;
+			r_state->flag = RRET_DEFAULT;
 		} else {
 			add_main_with_date(&date);
-			rret->flag = RRET_BYDATE;
+			r_state->flag = RRET_BYDATE;
 		}
 		break;
 
 	case EDIT:
 		nc_print_quit_footer(stdscr);
-		nc_edit_transaction_opt(rs.index, rs.opt, rret);
+		nc_edit_transaction_opt(rs.index, rs.opt, r_state);
 		break;
 
 	case READ:
-		rret->flag = RRET_DEFAULT;
-		SET_KEEP_BIT(rret->flag);
+		r_state->flag = RRET_DEFAULT;
+		SET_KEEP_BIT(r_state->flag);
 		break;
 
 	case QUIT:
-		rret->flag = RRET_QUIT;
+		r_state->flag = RRET_QUIT;
 		break;
 
 	case SORT:
-		if (rret->sort == SORT_CATG && n_records == 0) {
+		if (r_state->sort == SORT_CATG && n_records == 0) {
 			nc_message("Cannot sort by date, no records exist");
-			rret->sort = SORT_CATG;
-		} else if (rret->sort == SORT_CATG) {
-			rret->sort = SORT_DATE;
+			r_state->sort = SORT_CATG;
+		} else if (r_state->sort == SORT_CATG) {
+			r_state->sort = SORT_DATE;
 		} else {
-			rret->sort = SORT_CATG;
+			r_state->sort = SORT_CATG;
 		}
-		rret->flag = RRET_BYDATE;
-		SET_KEEP_BIT(rret->flag);
+		r_state->flag = RRET_BYDATE;
+		SET_KEEP_BIT(r_state->flag);
 		break;
 
 	case OVERVIEW:
 		overview_setup(date.year);
-		rret->flag = RRET_BYDATE;
-		SET_KEEP_BIT(rret->flag);
+		r_state->flag = RRET_BYDATE;
+		SET_KEEP_BIT(r_state->flag);
 		break;
 
 	case EDIT_CATG:
-		nc_edit_category(rs.index, rs.opt, rret->head); 
-		if (n_records > 0 || rret->head != NULL) {
-			rret->flag = RRET_BYDATE;
+		nc_edit_category(rs.index, rs.opt, r_state->head); 
+		if (n_records > 0 || r_state->head != NULL) {
+			r_state->flag = RRET_BYDATE;
 		} else {
-			rret->flag = RRET_DEFAULT;
+			r_state->flag = RRET_DEFAULT;
 		}
 		break;
 
@@ -893,9 +884,9 @@ err_select_date_fail:
 			getch();
 		}
 		if (date.month > 0 && date.year > 0) {
-			rret->flag = RRET_BYDATE;
+			r_state->flag = RRET_BYDATE;
 		} else {
-			rret->flag = RRET_DEFAULT;
+			r_state->flag = RRET_DEFAULT;
 		}
 		break;
 
@@ -911,33 +902,33 @@ err_select_date_fail:
 		case KEY_F(4):
 		case ('q'):
 		case ('Q'):
-			rret->flag = RRET_QUIT;
+			r_state->flag = RRET_QUIT;
 			break;
 		default:
-			rret->flag = RRET_QUIT;
+			r_state->flag = RRET_QUIT;
 			break;
 		}
 		break;
 
 	default:
-		rret->flag = RRET_QUIT;
+		r_state->flag = RRET_QUIT;
 		break;
 	}
 	refresh();
 }
 
-void nc_read_setup_default(struct read_retvals *rret)
+void nc_read_setup_default(struct read_state *r_state)
 {
-	rret->year = 0;
-	rret->month = 0;
-	rret->sort = SORT_CATG;
-	nc_read_setup(rret);
+	r_state->year = 0;
+	r_state->month = 0;
+	r_state->sort = SORT_CATG;
+	nc_read_setup(r_state);
 }
 
-void nc_read_setup_year(int sel_year, struct read_retvals *rret)
+void nc_read_setup_year(int sel_year, struct read_state *r_state)
 {
-	rret->year = sel_year;
-	rret->month = 0;
-	rret->sort = SORT_CATG;
-	nc_read_setup(rret);
+	r_state->year = sel_year;
+	r_state->month = 0;
+	r_state->sort = SORT_CATG;
+	nc_read_setup(r_state);
 }
