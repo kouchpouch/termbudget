@@ -296,7 +296,7 @@ static void select_month(WINDOW *wptr, struct dates_flags *df)
 	box(wptr, 0, 0);
 	wrefresh(wptr);
 
-	while (c != KEY_F(QUIT) && c != 'q') {
+	while (!INPUT_IS_QUIT(c)) {
 		c = wgetch(wptr);
 		scroll.tmp = getcury(wptr);
 		switch (c) {
@@ -328,17 +328,14 @@ static void select_month(WINDOW *wptr, struct dates_flags *df)
 			df->month_flag = RESIZE;
 			return;
 
-		case ('\n'):
-		case ('\r'):
+		CASE_ENTER
 			scroll.selected_date = months_data->data[scroll.date_idx];
 			free(months_data);
 			months_data = NULL;
 			df->month = scroll.selected_date;
 			return;
 
-		case ('Q'):
-		case ('q'):
-		case KEY_F(QUIT):
+		CASE_QUIT
 			free(months_data);
 			months_data = NULL;
 			df->month_flag = QUIT;
@@ -410,7 +407,7 @@ static void select_year(WINDOW *wptr, struct dates_flags *df)
 	mvwchgat(wptr, print_y, init_rv_x, 4, A_REVERSE, REVERSE_COLOR, NULL);
 	wrefresh(wptr);
 
-	while (c != KEY_F(QUIT) && c != 'q') {
+	while (!INPUT_IS_QUIT(c)) {
 		c = wgetch(wptr);
 		scroll.tmp = getcurx(wptr);
 		switch (c) {
@@ -442,8 +439,7 @@ static void select_year(WINDOW *wptr, struct dates_flags *df)
 			df->year_flag = RESIZE;
 			return;
 
-		case ('\n'):
-		case ('\r'):
+		CASE_ENTER
 			scroll.selected_date = years->data[scroll.scroll_idx];
 			free(years);
 			years = NULL;
@@ -451,9 +447,7 @@ static void select_year(WINDOW *wptr, struct dates_flags *df)
 			df->year_flag = 0;
 			return;
 
-		case ('Q'):
-		case ('q'):
-		case KEY_F(QUIT):
+		CASE_QUIT
 			free(years);
 			df->year_flag = QUIT;
 			return;
