@@ -834,7 +834,10 @@ err_select_date_fail:
 	case EDIT:
 		nc_print_quit_footer(stdscr);
 		nc_edit_transaction_opt(rs.index, rs.opt, r_state);
-		r_state->flag = RRET_BYDATE;
+		if (KEEP_BIT_IS_SET(r_state->flag)) {
+			r_state->flag = RRET_BYDATE;
+			SET_KEEP_BIT(r_state->flag);
+		}
 		break;
 
 	case READ:

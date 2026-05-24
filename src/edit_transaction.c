@@ -228,6 +228,7 @@ err_fail:
 		rret->month = ld->month;
 		rret->year = ld->year;
 		rret->flag = RRET_BYDATE;
+		SET_KEEP_BIT(rret->flag);
 	}
 	return -1;
 }
