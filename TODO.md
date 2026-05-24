@@ -98,6 +98,7 @@
         option to roll over the previous budget.
 - [ ] Read view needs to scroll back to the record or category after editing.
 - [ ] Create build system
+- [X] ESC should also quit
 
 #### Optimization
 - [ ] Create an interface for editing data within the liked list to avoid
