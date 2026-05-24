@@ -460,7 +460,10 @@ WINDOW *nc_init_stdscr(void)
 	start_color();
 	use_default_colors();
 	init_color_palette();
-	noecho(); cbreak(); keypad(stdscr, true);
+	noecho();
+	cbreak();
+	keypad(stdscr, true);
+	set_escdelay(0); /* Sets escape key delay to 0 */
 	return stdscr;
 }
 

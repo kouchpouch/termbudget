@@ -306,7 +306,7 @@ static unsigned char overview_loop(WINDOW *wptr,
 									 int year)
 {
 	unsigned char flag = 0;
-	int c;
+	int c = 0;
 	int space = calculate_overview_columns(wptr);
 	if (space > 0) {
 		print_overview_months(wptr, space);
@@ -324,9 +324,7 @@ static unsigned char overview_loop(WINDOW *wptr,
 		switch (c) {
 		case KEY_RESIZE:
 			return RESIZE;
-		case ('Q'):
-		case ('q'):
-		case KEY_F(QUIT):
+		CASE_QUIT
 			return QUIT;
 		default:
 			flag = NO_SELECT;

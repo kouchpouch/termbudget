@@ -919,9 +919,7 @@ void nc_read_budget_loop(struct ReadWins *wins,
 			refresh_budget_loop(head, &scrl, rfptr, bfptr, subwin_y);
 			break;
 
-		case KEY_ENTER:
-		case ('\n'):
-		case ('\r'):
+		CASE_ENTER
 			if (scrl.catg_data >= 0) {
 				tmp = get_node_by_idx(head, scrl.catg_node);
 				fseek(rfptr, tmp->data->data[scrl.catg_data], SEEK_SET);
@@ -1063,7 +1061,7 @@ void nc_read_budget_loop(struct ReadWins *wins,
 			return;
 
 		/* Alternate HOME and END sequences, especially for TMUX */
-		case (27):
+		case ESCAPE_ASCII:
 			halfdelay(1);
 			if (wgetch(wins->data) == 91) {
 				c = wgetch(wins->data);
@@ -1294,7 +1292,7 @@ void nc_read_loop(struct ReadWins *wins,
 			return;
 
 		/* Alternate HOME and END sequences, especially for TMUX */
-		case (27):
+		case ESCAPE_ASCII:
 			halfdelay(1);
 			if (wgetch(wins->data) == 91) {
 				c = wgetch(wins->data);

@@ -42,6 +42,26 @@
 
 #define PAGE_KEY_ROWS 10
 
+#define ESCAPE_ASCII 27
+
+#define INPUT_IS_QUIT(x) \
+	((x) == 'q' || (x) == 'Q' || (x) == KEY_F(QUIT) || \
+	(x) == ESCAPE_ASCII) ? 1 : 0 \
+
+#define INPUT_IS_ENTER(x) \
+	((x) == '\n' || (x) == '\r') ? 1 : 0 \
+
+#define CASE_QUIT \
+	case ESCAPE_ASCII: \
+	case KEY_F(QUIT): \
+	case 'Q': \
+	case 'q': \
+
+#define CASE_ENTER \
+	case ('\n'): \
+	case ('\r'): \
+	case KEY_ENTER: \
+
 /* Bitwise Stuff */
 #define SET_KEEP_BIT(x) (x) |= 0x80
 #define UNSET_KEEP_BIT(x) (x) &= 0x7F

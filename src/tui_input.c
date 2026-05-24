@@ -254,7 +254,7 @@ static int date_field_input_loop(WINDOW *wptr,
 			temp[idx] = '\0';
 			break;
 
-		case (27): /* ESC */
+		case ESCAPE_ASCII: /* ESC */
 		case KEY_F(QUIT):
 			noecho();
 			return 0;
@@ -492,9 +492,18 @@ static int input_full_date(int old_mo,
 	print_data_to_window(wptr, &scrl, old_mo, old_day, old_yr);
 	while (scrl.field_idx != start_field) {
 		scroll_next_field(wptr, &scrl);
+		if (scrl.require_day) {
+			unhighlight_boxed(wptr, scrl.date_y);
+			if (scrl.field_idx == F_MONTH || 
+				scrl.field_idx == F_DAY ||
+				scrl.field_idx == F_YEAR) {
+				date_field_input_loop(wptr, &scrl, new_date);
+				rehighlight_date_field(wptr, &scrl);
+			}
+		}
 	}
 
-	while (c != 'q' && c != KEY_F(QUIT)) {
+	while (!INPUT_IS_QUIT(c)) {
 		wrefresh(wptr);
 		c = wgetch(wptr);
 		if (!is_valid) {
@@ -535,12 +544,12 @@ static int input_full_date(int old_mo,
 						is_valid = true;
 					}
 					if (is_valid) {
-						goto quit;	
+						goto valid_quit;	
 					}
 				}
 			}
 			break;
-		
+
 		case ('y'):
 			if (!date_is_valid(new_date->day, new_date->month, new_date->year)) {
 				print_invalid_date_msg(wptr);
@@ -549,18 +558,16 @@ static int input_full_date(int old_mo,
 				is_valid = true;
 			}
 			if (is_valid) {
-				goto quit;	
+				goto valid_quit;	
 			}
 			break;
-
-		case KEY_F(QUIT):
-		case ('q'):
-			nc_exit_window(wptr);
-			return -1;
 		}
 	}
 
-quit:
+nc_exit_window(wptr);
+return -1;
+
+valid_quit:
 	nc_exit_window(wptr);
 	return 0;
 }
@@ -589,7 +596,7 @@ int nc_input_month_and_year
 /* A valid character is in ASCII >= '!' and <= 'z', excluding ',' and '\'. */
 static bool valid_input_character(int c)
 {
-	if ((c >= '!' && c <= '+') || (c >= '-' && c <= '[') || (c >= ']' && c <= 'z')) {
+	if ((c >= ' ' && c <= '+') || (c >= '-' && c <= '[') || (c >= ']' && c <= 'z')) {
 		return true;
 	} else {
 		return false;
@@ -616,18 +623,18 @@ static void nc_user_input(int n, WINDOW *wptr, struct UserInput *pui)
 	pui->flag = 0;
 	getmaxyx(wptr, max_y, max_x);
 	wmove(wptr, input_y, center);
-	while (c != '\n' && c != '\r') {
+
+	while (!INPUT_IS_ENTER(c)) {
 		wrefresh(wptr);
 		noecho();
 		c = wgetch(wptr);
 		switch (c) {
 
-		case ('\n'):
-		case ('\r'):
+		CASE_ENTER
 			temp[idx] = '\0';
 			break;
 
-		case (27):
+		case ESCAPE_ASCII:
 		case KEY_F(QUIT):
 			noecho();
 			pui->flag = QUIT;
@@ -742,9 +749,7 @@ bool nc_confirm_input_loop(WINDOW *wptr)
 		case ('N'):
 			return false;
 
-		case ('q'):
-		case ('Q'):
-		case KEY_F(QUIT):
+		CASE_QUIT
 			return false;
 
 		default:
@@ -786,11 +791,9 @@ bool nc_confirm_record(struct transaction_tokens *ld)
 			nc_exit_window(wptr);
 			return true;
 
-		case KEY_F(QUIT):
 		case ('n'):
 		case ('N'):
-		case ('q'):
-		case ('Q'):
+		CASE_QUIT
 			nc_exit_window(wptr);
 			return false;
 
@@ -1063,7 +1066,7 @@ char *nc_select_category(int month, int year)
 	mvwchgat(wptr, 0, 0, -1, A_REVERSE, REVERSE_COLOR, NULL);
 	keypad(wptr, true);
 
-	while (c != '\n' && c != '\r') {
+	while (!INPUT_IS_ENTER(c)) {
 		wrefresh(wptr);
 		c = wgetch(wptr);
 		switch (c) {
@@ -1108,12 +1111,11 @@ manual_selection:
 			nc_exit_window(wptr);
 			nc_print_input_footer(stdscr);
 			return create_budget_record(year, month);
-		case ('\n'):
-		case ('\r'):
-		case KEY_ENTER:
+
+		CASE_ENTER
 			break;
-		case ('q'):
-		case KEY_F(QUIT):
+
+		CASE_QUIT
 			goto cleanup;
 		}
 	}
