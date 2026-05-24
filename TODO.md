@@ -69,9 +69,9 @@
 - [X] Create one function for handling window borders in the read loop
 - [ ] Add more to the overview function. Like money spent per category
         breakdown.
-- [ ] Add keybinds to quickly do certain functions without going through
+- [X] Add keybinds to quickly do certain functions without going through
         menus.
-- [ ] Add indicators that the window is scrollable (that it contains more
+- [X] Add indicators that the window is scrollable (that it contains more
         data than is displayed)
     - [X] For the main "read" loop display the number of records shown
             and the total number of records.
@@ -89,7 +89,7 @@
         user goes from prompt to prompt. Such as, show the date entered so
         far and the remaining values left per category.
 - [ ] Have option to roll categories from previous month to the next month
-- [ ] Annotate tui_input.h
+- [X] Annotate tui_input.h
 - [ ] Menu key to (A)dd (F1) on main menu should allow the user to select
         creating a new transaction, creating a new category, roll over
         previous month's data to the target month, or exit.
