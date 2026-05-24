@@ -165,7 +165,7 @@ static void conditionally_free_linked_list(struct read_state *r)
 	}
 }
 
-int nc_main_menu(WINDOW *wptr)
+static int ncurses_main_menu(WINDOW *wptr)
 {
 	struct read_state rret = {
 		.head = NULL
@@ -348,7 +348,7 @@ int main(int argc, char **argv)
 		stdscr = nc_init_stdscr();
 		int flag = 0;
 		while (flag == 0) {
-			flag = nc_main_menu(stdscr);
+			flag = ncurses_main_menu(stdscr);
 		}
 	} else {
 		while (1) {
