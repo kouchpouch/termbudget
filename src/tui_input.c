@@ -68,11 +68,18 @@ struct UserInputDigit {
 	int flag;
 };
 
+static enum _date_loop_return {
+	DATE_LOOP_DEFAULT,
+	DATE_LOOP_ACCEPT
+} date_loop_return;
+
 static void unhighlight_boxed(WINDOW *wptr, int y)
 {
 	unhighlight(wptr, y, BOX_OFFSET, getmaxx(wptr) - (BOX_OFFSET * 2));
 }
 
+/* Checks if the date passed to the function actually exists in a 
+ * calendar. */
 static bool date_is_valid(int day, int month, int year)
 {
 	if (month < 1 || month > 12) {
@@ -230,6 +237,7 @@ static int date_field_input_loop(WINDOW *wptr,
 	s->field_idx == F_YEAR ? (n = s->year_field_len) : (n = s->month_field_len);
 	n -= s->x_padding;
 
+	date_loop_return = DATE_LOOP_DEFAULT;
 	size_t buffersize = n + 1; // Plus 1 to hold null terminator
 	char temp[buffersize];
 	int c = 0;
@@ -257,7 +265,7 @@ static int date_field_input_loop(WINDOW *wptr,
 		case ESCAPE_ASCII: /* ESC */
 		case KEY_F(QUIT):
 			noecho();
-			return 0;
+			return date_loop_return;
 
 		case KEY_BACKSPACE:
 		case (127): /* DELETE */
@@ -275,13 +283,19 @@ static int date_field_input_loop(WINDOW *wptr,
 			break;
 
 		default:
-			if (idx < n) { 
+			if (idx < n && c != 'y') { 
 				if (char_is_valid(c)) {
 					wprintw(wptr, "%c", c);
 					temp[idx] = c;
 					idx++;
 					x_cursor++;
 				}
+			} else if (c == 'y') {
+				erasechar();
+				wmove(wptr, s->date_y, x_cursor);
+				temp[idx] = '\0';
+				date_loop_return = DATE_LOOP_ACCEPT;
+				goto early_accept;
 			} else {
 				erasechar();
 				wmove(wptr, s->date_y, x_cursor);
@@ -290,13 +304,14 @@ static int date_field_input_loop(WINDOW *wptr,
 		}
 	}
 
+early_accept:
 	noecho();
 	curs_set(0);
 
 	modified_field_val = atoi(temp);
 	modify_date_vals(modified_field_val, date, s->field_idx);
 
-	return 0;
+	return date_loop_return;
 }
 
 static void scroll_prev_field(WINDOW *wptr, struct date_input_vars *s)
@@ -497,7 +512,9 @@ static int input_full_date(int old_mo,
 			if (scrl.field_idx == F_MONTH || 
 				scrl.field_idx == F_DAY ||
 				scrl.field_idx == F_YEAR) {
-				date_field_input_loop(wptr, &scrl, new_date);
+				if (date_field_input_loop(wptr, &scrl, new_date) == DATE_LOOP_ACCEPT) {
+					goto accept_date;
+				}
 				rehighlight_date_field(wptr, &scrl);
 			}
 		}
@@ -530,13 +547,16 @@ static int input_full_date(int old_mo,
 			if (scrl.field_idx == F_MONTH || 
 				scrl.field_idx == F_DAY ||
 				scrl.field_idx == F_YEAR) {
-				date_field_input_loop(wptr, &scrl, new_date);
+				if (date_field_input_loop(wptr, &scrl, new_date) == DATE_LOOP_ACCEPT) {
+					goto accept_date;
+				}
 				rehighlight_date_field(wptr, &scrl);
 			} else {
 				if (scrl.field_idx == F_CANCEL) {
 					nc_exit_window(wptr);
 					return -1;
 				} else if (scrl.field_idx == F_ACCEPT) {
+accept_date:
 					if (!date_is_valid(new_date->day, new_date->month, new_date->year)) {
 						print_invalid_date_msg(wptr);
 						is_valid = false;
@@ -564,8 +584,8 @@ static int input_full_date(int old_mo,
 		}
 	}
 
-nc_exit_window(wptr);
-return -1;
+	nc_exit_window(wptr);
+	return -1;
 
 valid_quit:
 	nc_exit_window(wptr);
