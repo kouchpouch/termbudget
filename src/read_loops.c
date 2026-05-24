@@ -876,6 +876,10 @@ void nc_read_budget_loop(struct ReadWins *wins,
 	print_init_budget_loop(&scrl, head, rfptr);
 	draw_read_window_borders_and_text(wins, psc);
 	scrl.vr->last = scrl.displayed;
+	if (rs->scroll_back > 0) {
+		scroll_n_next_categories(rs->scroll_back, head, &scrl, rfptr, bfptr);
+		rs->scroll_back = 0;
+	}
 
 	while (c != KEY_F(QUIT) && c != '\n' && c != '\r') {
 		wrefresh(wins->data);
@@ -993,6 +997,7 @@ void nc_read_budget_loop(struct ReadWins *wins,
 		case ('a'):
 		case KEY_F(ADD):
 			rs->flag = ADD;
+			rs->scroll_back = scrl.select_idx;
 			return;
 
 		case ('E'):
@@ -1007,6 +1012,7 @@ void nc_read_budget_loop(struct ReadWins *wins,
 				rs->flag = EDIT;
 				rs->index = tmp->data->data[scrl.catg_data];
 			}
+			rs->scroll_back = scrl.select_idx;
 			return;
 
 		case ('d'):
@@ -1020,6 +1026,7 @@ void nc_read_budget_loop(struct ReadWins *wins,
 					rs->flag = EDIT;
 					rs->index = tmp->data->data[scrl.catg_data];
 					rs->opt = EDIT_RCRD_DELETE;
+					rs->scroll_back = scrl.select_idx;
 					return;
 				}
 			}
@@ -1052,6 +1059,7 @@ void nc_read_budget_loop(struct ReadWins *wins,
 		case KEY_F(OVERVIEW):
 			rs->flag = OVERVIEW;
 			rs->index = 0;
+			rs->scroll_back = scrl.select_idx;
 			return;
 
 		/* Alternate HOME and END sequences, especially for TMUX */
