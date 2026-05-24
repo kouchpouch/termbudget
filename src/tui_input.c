@@ -68,10 +68,10 @@ struct UserInputDigit {
 	int flag;
 };
 
-static enum _date_loop_return {
+enum date_loop_return {
 	DATE_LOOP_DEFAULT,
 	DATE_LOOP_ACCEPT
-} date_loop_return;
+};
 
 static void unhighlight_boxed(WINDOW *wptr, int y)
 {
@@ -237,7 +237,7 @@ static int date_field_input_loop(WINDOW *wptr,
 	s->field_idx == F_YEAR ? (n = s->year_field_len) : (n = s->month_field_len);
 	n -= s->x_padding;
 
-	date_loop_return = DATE_LOOP_DEFAULT;
+	enum date_loop_return date_loop_ret = DATE_LOOP_DEFAULT;
 	size_t buffersize = n + 1; // Plus 1 to hold null terminator
 	char temp[buffersize];
 	int c = 0;
@@ -265,7 +265,7 @@ static int date_field_input_loop(WINDOW *wptr,
 		case ESCAPE_ASCII: /* ESC */
 		case KEY_F(QUIT):
 			noecho();
-			return date_loop_return;
+			return date_loop_ret;
 
 		case KEY_BACKSPACE:
 		case (127): /* DELETE */
@@ -294,7 +294,7 @@ static int date_field_input_loop(WINDOW *wptr,
 				erasechar();
 				wmove(wptr, s->date_y, x_cursor);
 				temp[idx] = '\0';
-				date_loop_return = DATE_LOOP_ACCEPT;
+				date_loop_ret = DATE_LOOP_ACCEPT;
 				goto early_accept;
 			} else {
 				erasechar();
@@ -311,7 +311,7 @@ early_accept:
 	modified_field_val = atoi(temp);
 	modify_date_vals(modified_field_val, date, s->field_idx);
 
-	return date_loop_return;
+	return date_loop_ret;
 }
 
 static void scroll_prev_field(WINDOW *wptr, struct date_input_vars *s)
@@ -490,13 +490,14 @@ static int input_full_date(int old_mo,
 						   bool require_day,
 						   int start_field)
 {
-	int c = 0;
 	bool is_valid = false;
+	int c = 0;
+	enum date_loop_return dl_ret = DATE_LOOP_DEFAULT;
 	WINDOW *wptr = create_input_subwindow_force_rows(DATE_SUBWINDOW_ROWS);
 
-	struct date_input_vars scrl = { 0 };
-	scrl.require_day = require_day;
-	init_input_vars(wptr, &scrl);
+	struct date_input_vars date_vars = { 0 };
+	date_vars.require_day = require_day;
+	init_input_vars(wptr, &date_vars);
 
 	/* Set the new date struct to the values of the old dates, each field
 	 * will be edited interactively. */
@@ -504,18 +505,19 @@ static int input_full_date(int old_mo,
 	new_date->month = old_mo;
 	new_date->year = old_yr;
 
-	print_data_to_window(wptr, &scrl, old_mo, old_day, old_yr);
-	while (scrl.field_idx != start_field) {
-		scroll_next_field(wptr, &scrl);
-		if (scrl.require_day) {
-			unhighlight_boxed(wptr, scrl.date_y);
-			if (scrl.field_idx == F_MONTH || 
-				scrl.field_idx == F_DAY ||
-				scrl.field_idx == F_YEAR) {
-				if (date_field_input_loop(wptr, &scrl, new_date) == DATE_LOOP_ACCEPT) {
-					goto accept_date;
-				}
-				rehighlight_date_field(wptr, &scrl);
+	print_data_to_window(wptr, &date_vars, old_mo, old_day, old_yr);
+	while (date_vars.field_idx != start_field) {
+		scroll_next_field(wptr, &date_vars);
+		if (date_vars.require_day) {
+			unhighlight_boxed(wptr, date_vars.date_y);
+			if (date_vars.field_idx == F_MONTH || 
+				date_vars.field_idx == F_DAY ||
+				date_vars.field_idx == F_YEAR) {
+					dl_ret = date_field_input_loop(wptr, &date_vars, new_date);
+					if (dl_ret == DATE_LOOP_ACCEPT) {
+						goto accept_date;
+					}
+				rehighlight_date_field(wptr, &date_vars);
 			}
 		}
 	}
@@ -531,31 +533,32 @@ static int input_full_date(int old_mo,
 		case KEY_RIGHT:
 		case ('l'):
 		case ('\t'):
-			scroll_next_field(wptr, &scrl);
+			scroll_next_field(wptr, &date_vars);
 			break;
 			
 		case KEY_LEFT:
 		case ('h'):
 		case KEY_BTAB: /* SHIFT + TAB */
-			scroll_prev_field(wptr, &scrl);
+			scroll_prev_field(wptr, &date_vars);
 			break;
 
 		case KEY_ENTER:
 		case ('\n'):
 		case ('\r'):
-			unhighlight_boxed(wptr, scrl.date_y);
-			if (scrl.field_idx == F_MONTH || 
-				scrl.field_idx == F_DAY ||
-				scrl.field_idx == F_YEAR) {
-				if (date_field_input_loop(wptr, &scrl, new_date) == DATE_LOOP_ACCEPT) {
+			unhighlight_boxed(wptr, date_vars.date_y);
+			if (date_vars.field_idx == F_MONTH || 
+				date_vars.field_idx == F_DAY ||
+				date_vars.field_idx == F_YEAR) {
+				dl_ret = date_field_input_loop(wptr, &date_vars, new_date);
+				if (dl_ret == DATE_LOOP_ACCEPT) {
 					goto accept_date;
 				}
-				rehighlight_date_field(wptr, &scrl);
+				rehighlight_date_field(wptr, &date_vars);
 			} else {
-				if (scrl.field_idx == F_CANCEL) {
+				if (date_vars.field_idx == F_CANCEL) {
 					nc_exit_window(wptr);
 					return -1;
-				} else if (scrl.field_idx == F_ACCEPT) {
+				} else if (date_vars.field_idx == F_ACCEPT) {
 accept_date:
 					if (!date_is_valid(new_date->day, new_date->month, new_date->year)) {
 						print_invalid_date_msg(wptr);
@@ -565,6 +568,11 @@ accept_date:
 					}
 					if (is_valid) {
 						goto valid_quit;	
+					} else if (!is_valid && dl_ret == DATE_LOOP_ACCEPT) {
+						dl_ret = date_field_input_loop(wptr, &date_vars, new_date);
+						if (dl_ret == DATE_LOOP_ACCEPT) {
+							goto accept_date;
+						}
 					}
 				}
 			}
