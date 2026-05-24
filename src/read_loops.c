@@ -849,7 +849,7 @@ void nc_read_budget_loop(struct ReadWins *wins,
 	struct column_width cw_;
 	struct visible_range vr_;
 	/* Every other member implicitly set to 0 */
-	struct scroll_vars scrl = {
+	struct scroll_vars s_vars = {
 		.total_rows = get_total_displayed_rows(head),
 		.catg_data = -1,
 		.cw = &cw_,
@@ -864,30 +864,30 @@ void nc_read_budget_loop(struct ReadWins *wins,
 	int c = 0;
 	int subwin_y;
 
-	scrl.vr->first = 1;
+	s_vars.vr->first = 1;
 
-	calculate_columns(scrl.cw, getmaxx(wins->data) + BOX_OFFSET);
+	calculate_columns(s_vars.cw, getmaxx(wins->data) + BOX_OFFSET);
 
 	if (debug_flag) {
-		debug_columns(wins->parent, scrl.cw);
+		debug_columns(wins->parent, s_vars.cw);
 	}
 
 	nc_print_read_footer(stdscr);
-	print_init_budget_loop(&scrl, head, rfptr);
+	print_init_budget_loop(&s_vars, head, rfptr);
 	draw_read_window_borders_and_text(wins, psc);
-	scrl.vr->last = scrl.displayed;
+	s_vars.vr->last = s_vars.displayed;
 	if (rs->scroll_back > 0) {
-		scroll_n_next_categories(rs->scroll_back, head, &scrl, rfptr, bfptr);
+		scroll_n_next_categories(rs->scroll_back, head, &s_vars, rfptr, bfptr);
 		rs->scroll_back = 0;
 	}
 
 	while (c != KEY_F(QUIT) && c != '\n' && c != '\r') {
 		wrefresh(wins->data);
-		refresh_displayed_counter(&scrl);
+		refresh_displayed_counter(&s_vars);
 		clear_number_buffer(&numbuf);
 
 		if (debug_flag) {
-			print_debug_line(&scrl);
+			print_debug_line(&s_vars);
 		}
 		c = wgetch(wins->data);
 
@@ -895,18 +895,18 @@ void nc_read_budget_loop(struct ReadWins *wins,
 
 		case ('j'):
 		case KEY_DOWN:
-			scroll_n_next_categories(1, head, &scrl, rfptr, bfptr);
+			scroll_n_next_categories(1, head, &s_vars, rfptr, bfptr);
 			break;
 
 		case ('k'):
 		case KEY_UP:
-			scroll_n_prev_categories(1, head, &scrl, rfptr, bfptr);
+			scroll_n_prev_categories(1, head, &s_vars, rfptr, bfptr);
 			break;
 
 		case ('K'):
 		case KEY_SHOME: // "SHIFT + HOME"
-			if (scrl.catg_data == -1 && scrl.catg_node != 0) {
-				mv_category_to_top(&head, scrl.catg_node);
+			if (s_vars.catg_data == -1 && s_vars.catg_node != 0) {
+				mv_category_to_top(&head, s_vars.catg_node);
 				rs->flag = RESIZE;
 				rs->index = 0;
 				return;
@@ -915,38 +915,38 @@ void nc_read_budget_loop(struct ReadWins *wins,
 
 		case ('?'):
 			subwin_y = show_help_subwindow();
-			init_sidebar_body(wins->sidebar_body, head, scrl.sidebar_idx);
-			refresh_budget_loop(head, &scrl, rfptr, bfptr, subwin_y);
+			init_sidebar_body(wins->sidebar_body, head, s_vars.sidebar_idx);
+			refresh_budget_loop(head, &s_vars, rfptr, bfptr, subwin_y);
 			break;
 
 		CASE_ENTER
-			if (scrl.catg_data >= 0) {
-				tmp = get_node_by_idx(head, scrl.catg_node);
-				fseek(rfptr, tmp->data->data[scrl.catg_data], SEEK_SET);
+			if (s_vars.catg_data >= 0) {
+				tmp = get_node_by_idx(head, s_vars.catg_node);
+				fseek(rfptr, tmp->data->data[s_vars.catg_data], SEEK_SET);
 				line = fgets(linebuff, sizeof(linebuff), rfptr);
 				subwin_y = show_detail_subwindow(line);
-				init_sidebar_body(wins->sidebar_body, head, scrl.sidebar_idx);
-				refresh_budget_loop(head, &scrl, rfptr, bfptr, subwin_y);
+				init_sidebar_body(wins->sidebar_body, head, s_vars.sidebar_idx);
+				refresh_budget_loop(head, &s_vars, rfptr, bfptr, subwin_y);
 			}
 			c = 0;
 			break;
 
 		case KEY_NPAGE: /* PAGE DN */
-			scroll_n_next_categories(PAGE_KEY_ROWS, head, &scrl, rfptr, bfptr);
+			scroll_n_next_categories(PAGE_KEY_ROWS, head, &s_vars, rfptr, bfptr);
 			break;
 
 		case KEY_PPAGE: /* PAGE UP */
-			scroll_n_prev_categories(PAGE_KEY_ROWS, head, &scrl, rfptr, bfptr);
+			scroll_n_prev_categories(PAGE_KEY_ROWS, head, &s_vars, rfptr, bfptr);
 			break;
 
 		case KEY_EOL:
 		case KEY_END:
-			scroll_n_next_categories(scrl.total_rows, head, &scrl, rfptr, bfptr);
+			scroll_n_next_categories(s_vars.total_rows, head, &s_vars, rfptr, bfptr);
 			break;
 
 		case KEY_BEG:
 		case KEY_HOME:
-			scroll_n_prev_categories(scrl.total_rows, head, &scrl, rfptr, bfptr);
+			scroll_n_prev_categories(s_vars.total_rows, head, &s_vars, rfptr, bfptr);
 			break;
 		
 		case ('1'):
@@ -962,7 +962,7 @@ void nc_read_budget_loop(struct ReadWins *wins,
 			number_buffer_to_int(&numbuf);
 
 			if (c == 0) {
-				c = wgetch(scrl.wptr_data);
+				c = wgetch(s_vars.wptr_data);
 			}
 
 			if (c != 'k' && c != 'j' && c != KEY_DOWN && c != KEY_UP) {
@@ -970,24 +970,24 @@ void nc_read_budget_loop(struct ReadWins *wins,
 			}
 
 			if (c == 'j' || c == KEY_DOWN) {
-				scroll_n_next_categories(numbuf.result, head, &scrl, rfptr, bfptr);
+				scroll_n_next_categories(numbuf.result, head, &s_vars, rfptr, bfptr);
 			} else if (c == 'k' || c == KEY_UP) {
-				scroll_n_prev_categories(numbuf.result, head, &scrl, rfptr, bfptr);
+				scroll_n_prev_categories(numbuf.result, head, &s_vars, rfptr, bfptr);
 			} 
 			break;
 
 		case ('['):
-			if (scrl.sidebar_idx > 0) {
-				scrl.sidebar_idx--;
-				init_sidebar_body(wins->sidebar_body, head, scrl.sidebar_idx);
+			if (s_vars.sidebar_idx > 0) {
+				s_vars.sidebar_idx--;
+				init_sidebar_body(wins->sidebar_body, head, s_vars.sidebar_idx);
 			}
 			break;
 
 		case (']'):
-			tmp = get_node_by_idx(head, scrl.sidebar_idx);
+			tmp = get_node_by_idx(head, s_vars.sidebar_idx);
 			if (tmp->next != NULL) {
-				scrl.sidebar_idx++;
-				init_sidebar_body(wins->sidebar_body, head, scrl.sidebar_idx);
+				s_vars.sidebar_idx++;
+				init_sidebar_body(wins->sidebar_body, head, s_vars.sidebar_idx);
 			}
 			break;
 
@@ -995,22 +995,22 @@ void nc_read_budget_loop(struct ReadWins *wins,
 		case ('a'):
 		case KEY_F(ADD):
 			rs->flag = ADD;
-			rs->scroll_back = scrl.select_idx;
+			rs->scroll_back = s_vars.select_idx;
 			return;
 
 		case ('E'):
 		case ('e'):
 		case KEY_F(EDIT):
-			tmp = get_node_by_idx(head, scrl.catg_node);
-			if (scrl.catg_data < 0) { 
+			tmp = get_node_by_idx(head, s_vars.catg_node);
+			if (s_vars.catg_data < 0) { 
 				rs->flag = EDIT_CATG;
 				rs->opt = tmp->data->size;
-				rs->index = scrl.catg_node;
+				rs->index = s_vars.catg_node;
 			} else {
 				rs->flag = EDIT;
-				rs->index = tmp->data->data[scrl.catg_data];
+				rs->index = tmp->data->data[s_vars.catg_data];
 			}
-			rs->scroll_back = scrl.select_idx;
+			rs->scroll_back = s_vars.select_idx;
 			return;
 
 		case ('d'):
@@ -1019,12 +1019,12 @@ void nc_read_budget_loop(struct ReadWins *wins,
 			c = wgetch(wins->data);
 			cbreak();
 			if (c == 'd') {
-				if (scrl.catg_data >= 0) {
-					tmp = get_node_by_idx(head, scrl.catg_node);
+				if (s_vars.catg_data >= 0) {
+					tmp = get_node_by_idx(head, s_vars.catg_node);
 					rs->flag = EDIT;
-					rs->index = tmp->data->data[scrl.catg_data];
+					rs->index = tmp->data->data[s_vars.catg_data];
 					rs->opt = EDIT_RCRD_DELETE;
-					rs->scroll_back = scrl.select_idx;
+					rs->scroll_back = s_vars.select_idx;
 					return;
 				}
 			}
@@ -1057,7 +1057,7 @@ void nc_read_budget_loop(struct ReadWins *wins,
 		case KEY_F(OVERVIEW):
 			rs->flag = OVERVIEW;
 			rs->index = 0;
-			rs->scroll_back = scrl.select_idx;
+			rs->scroll_back = s_vars.select_idx;
 			return;
 
 		/* Alternate HOME and END sequences, especially for TMUX */
@@ -1066,9 +1066,9 @@ void nc_read_budget_loop(struct ReadWins *wins,
 			if (wgetch(wins->data) == 91) {
 				c = wgetch(wins->data);
 				if (c == 49) {
-					scroll_n_prev_categories(scrl.total_rows, head, &scrl, rfptr, bfptr);
+					scroll_n_prev_categories(s_vars.total_rows, head, &s_vars, rfptr, bfptr);
 				} else if (c == 52) {
-					scroll_n_next_categories(scrl.total_rows, head, &scrl, rfptr, bfptr);
+					scroll_n_next_categories(s_vars.total_rows, head, &s_vars, rfptr, bfptr);
 				}
 			}
 			cbreak();
@@ -1130,7 +1130,7 @@ void nc_read_loop(struct ReadWins *wins,
 	struct num_buffer numbuf;
 	struct column_width cw_;
 	struct visible_range vr_;
-	struct scroll_vars scrl = {
+	struct scroll_vars s_vars = {
 		.catg_data = -1,
 		.cw = &cw_,
 		.vr = &vr_,
@@ -1138,28 +1138,28 @@ void nc_read_loop(struct ReadWins *wins,
 		.wptr_parent = wins->parent
 	};
 	struct catg_node *tmp = NULL;
-	scrl.vr->first = 1;
+	s_vars.vr->first = 1;
 	char linebuff[LINE_BUFFER] = { 0 };
 	int c = 0;
 
-	calculate_columns(scrl.cw, getmaxx(scrl.wptr_data) + BOX_OFFSET);
+	calculate_columns(s_vars.cw, getmaxx(s_vars.wptr_data) + BOX_OFFSET);
 	nc_print_read_footer(stdscr);
-	print_initial_read_loop(&scrl, fptr, records);
+	print_initial_read_loop(&s_vars, fptr, records);
 
 	assert(records->size <= INT_MAX);
 
-	scrl.total_rows = records->size;
-	scrl.vr->last = scrl.displayed;
+	s_vars.total_rows = records->size;
+	s_vars.vr->last = s_vars.displayed;
 	draw_read_window_borders_and_text(wins, records);
 
 	if (rs->scroll_back > 0) {
-		scroll_n_next_records(rs->scroll_back, &scrl, fptr, records);
+		scroll_n_next_records(rs->scroll_back, &s_vars, fptr, records);
 		rs->scroll_back = 0;
 	}
 
 	while (c != KEY_F(QUIT) && c != '\n' && c != '\r') {
 		wrefresh(wins->data);
-		refresh_displayed_counter(&scrl);
+		refresh_displayed_counter(&s_vars);
 		clear_number_buffer(&numbuf);
 
 		if (debug_flag) {
@@ -1170,37 +1170,37 @@ void nc_read_loop(struct ReadWins *wins,
 
 		case ('j'):
 		case KEY_DOWN:
-			scroll_n_next_records(1, &scrl, fptr, records);
+			scroll_n_next_records(1, &s_vars, fptr, records);
 			break;
 
 		case ('k'):
 		case KEY_UP:
-			scroll_n_prev_records(1, &scrl, fptr, records);
+			scroll_n_prev_records(1, &s_vars, fptr, records);
 			break;
 
 		case ('\n'):
 		case ('\r'):
-			fseek(fptr, records->data[scrl.select_idx], SEEK_SET);
+			fseek(fptr, records->data[s_vars.select_idx], SEEK_SET);
 			char *line = fgets(linebuff, sizeof(linebuff), fptr);
 			show_detail_subwindow(line);
-			refresh_on_detail_close_uniform(wins->data, wins->parent, scrl.displayed);
+			refresh_on_detail_close_uniform(wins->data, wins->parent, s_vars.displayed);
 			c = 0;
 			break;
 
 		case KEY_NPAGE: /* PAGE DN */
-			scroll_n_next_records(PAGE_KEY_ROWS, &scrl, fptr, records);
+			scroll_n_next_records(PAGE_KEY_ROWS, &s_vars, fptr, records);
 			break;
 
 		case KEY_PPAGE: /* PAGE UP */
-			scroll_n_prev_records(PAGE_KEY_ROWS, &scrl, fptr, records);
+			scroll_n_prev_records(PAGE_KEY_ROWS, &s_vars, fptr, records);
 			break;
 
 		case KEY_END:
-			scroll_n_next_records(scrl.total_rows, &scrl, fptr, records);
+			scroll_n_next_records(s_vars.total_rows, &s_vars, fptr, records);
 			break;
 
 		case KEY_HOME:
-			scroll_n_prev_records(scrl.total_rows, &scrl, fptr, records);
+			scroll_n_prev_records(s_vars.total_rows, &s_vars, fptr, records);
 			break;
 
 		case ('1'):
@@ -1216,7 +1216,7 @@ void nc_read_loop(struct ReadWins *wins,
 			number_buffer_to_int(&numbuf);
 
 			if (c == 0) {
-				c = wgetch(scrl.wptr_data);
+				c = wgetch(s_vars.wptr_data);
 			}
 
 			if (c != 'k' && c != 'j' && c != KEY_DOWN && c != KEY_UP) {
@@ -1224,25 +1224,25 @@ void nc_read_loop(struct ReadWins *wins,
 			}
 
 			if (c == 'j' || c == KEY_DOWN) {
-				scroll_n_next_records(numbuf.result, &scrl, fptr, records);
+				scroll_n_next_records(numbuf.result, &s_vars, fptr, records);
 			} else if (c == 'k' || c == KEY_UP) {
-				scroll_n_prev_records(numbuf.result, &scrl, fptr, records);
+				scroll_n_prev_records(numbuf.result, &s_vars, fptr, records);
 			} 
 			break;
 
 
 		case ('['):
-			if (scrl.sidebar_idx > 0) {
-				scrl.sidebar_idx--;
-				init_sidebar_body(wins->sidebar_body, head, scrl.sidebar_idx);
+			if (s_vars.sidebar_idx > 0) {
+				s_vars.sidebar_idx--;
+				init_sidebar_body(wins->sidebar_body, head, s_vars.sidebar_idx);
 			}
 			break;
 
 		case (']'):
-			tmp = get_node_by_idx(head, scrl.sidebar_idx);
+			tmp = get_node_by_idx(head, s_vars.sidebar_idx);
 			if (tmp->next != NULL) {
-				scrl.sidebar_idx++;
-				init_sidebar_body(wins->sidebar_body, head, scrl.sidebar_idx);
+				s_vars.sidebar_idx++;
+				init_sidebar_body(wins->sidebar_body, head, s_vars.sidebar_idx);
 			}
 			break;
 
@@ -1250,16 +1250,16 @@ void nc_read_loop(struct ReadWins *wins,
 		case ('a'):
 		case KEY_F(ADD):
 			rs->flag = ADD;
-			rs->index = records->data[scrl.select_idx];
-			rs->scroll_back = scrl.select_idx;
+			rs->index = records->data[s_vars.select_idx];
+			rs->scroll_back = s_vars.select_idx;
 			return;
 
 		case ('E'):
 		case ('e'):
 		case KEY_F(EDIT):
 			rs->flag = EDIT;
-			rs->index = records->data[scrl.select_idx];
-			rs->scroll_back = scrl.select_idx;
+			rs->index = records->data[s_vars.select_idx];
+			rs->scroll_back = s_vars.select_idx;
 			return;
 
 		case ('R'):
@@ -1288,7 +1288,7 @@ void nc_read_loop(struct ReadWins *wins,
 		case KEY_F(OVERVIEW):
 			rs->flag = OVERVIEW;
 			rs->index = 0;
-			rs->scroll_back = scrl.select_idx;
+			rs->scroll_back = s_vars.select_idx;
 			return;
 
 		/* Alternate HOME and END sequences, especially for TMUX */
@@ -1297,9 +1297,9 @@ void nc_read_loop(struct ReadWins *wins,
 			if (wgetch(wins->data) == 91) {
 				c = wgetch(wins->data);
 				if (c == 49) {
-					scroll_n_prev_records(scrl.total_rows, &scrl, fptr, records);
+					scroll_n_prev_records(s_vars.total_rows, &s_vars, fptr, records);
 				} else if (c == 52) {
-					scroll_n_next_records(scrl.total_rows, &scrl, fptr, records);
+					scroll_n_next_records(s_vars.total_rows, &s_vars, fptr, records);
 				}
 			}
 			cbreak();
@@ -1309,7 +1309,7 @@ void nc_read_loop(struct ReadWins *wins,
 		case KEY_RESIZE:
 			rs->flag = RESIZE;
 			rs->index = 0;
-			rs->scroll_back = scrl.select_idx;
+			rs->scroll_back = s_vars.select_idx;
 			return;
 
 		}
