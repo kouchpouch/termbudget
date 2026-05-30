@@ -62,6 +62,15 @@ struct budget_tokens {
 	double amount;
 };
 
+/* Will end up replacing budget_tokens with this format */
+struct budget_tokens_buff {
+	int m;
+	int y;
+	int transtype;
+	double amount;
+	char catg[LINE_BUFFER];
+};
+
 struct transaction_tokens {
 	int month;
 	int day;
@@ -179,6 +188,8 @@ struct catg_vec *get_budget_catg_by_date(int month, int year);
 /* Returns struct vec_d containing byte offsets of each category that matches month,
  * year in BUDGET_DIR. */
 struct vec_d *get_budget_catg_by_date_bo(int month, int year);
+
+void tokenize_budget_string(struct budget_tokens_buff *tokens, char *budget);
 
 /* Returns malloc'd tokenized variables in BudgetTokens by seeking the file
  * position indicator to bo. BudgetTokens catg is separately malloc'd and must 
