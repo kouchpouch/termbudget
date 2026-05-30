@@ -19,6 +19,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <ncurses.h>
+#include <string.h>
 
 #include "create.h"
 #include "get_date.h"
@@ -32,6 +33,7 @@
 #include "tui_input_menu.h"
 #include "filemanagement.h"
 #include "file_write.h"
+#include "vector.h"
 
 /* Creates an ncurses subwindow and returns the user's input as a boolean */
 static bool confirm_budget_category(char *catg, double amt)
@@ -252,6 +254,31 @@ static struct MenuParams *init_add_menu(void)
 	assert(idx == n_str);
 
 	return mp;
+}
+
+int copy_categories_to_new_budget(struct full_date *date_src,
+						   		  struct full_date *date_dst)
+{
+	struct catg_vec *old = catg_vec_create();
+	struct vec_d *old_fpis = get_budget_catg_by_date_bo(date_src->month,
+													    date_src->year);
+	struct budget_tokens_buff *tokens;
+
+	FILE *bfptr = open_budget_csv("r");
+	char linebuff[LINE_BUFFER] = { 0 };
+	char *str;
+
+	for (size_t i = 0; i < old_fpis->size; i++) {
+		fseek(bfptr, old_fpis->data[i], SEEK_SET);
+		str = fgets(linebuff, sizeof(linebuff), bfptr);
+		if (str == NULL) {
+			/* return some failure */
+		} else {
+			tokenize_budget_string(tokens, str);
+		}
+	}
+
+	return 0;
 }
 
 /* For creating a new budget. Returns malloc'd struct full_date which must
