@@ -727,6 +727,24 @@ struct vec_d *get_budget_catg_by_date_bo(int month, int year)
 	return pcbo;
 }
 
+/* Populates members of struct budget_token_buff with the data contained in 
+ * the string "budget". */
+void tokenize_budget_string(struct budget_tokens_buff *tokens, char *budget)
+{
+	if (budget == NULL || tokens == NULL) {
+		return;
+	}
+	char *tmp;
+
+	strsep(&budget, ",");
+	tokens->m = atoi(strsep(&budget, ","));
+	tokens->y = atoi(strsep(&budget, ","));
+	tmp = strsep(&budget, ",");
+	memcpy(tokens->catg, tmp, strlen(tmp) + 1); /* Hold null-byte */
+	tokens->transtype = atoi(strsep(&budget, ","));
+	tokens->amount = atof(strsep(&budget, ","));
+}
+
 struct budget_tokens *tokenize_budget_fpi(long bo)
 {
 	if (bo == 0) {
