@@ -104,7 +104,7 @@
 - [ ] Create an interface for editing data within the liked list to avoid
         rebuilding the list and using more I/O time when modifiying a 
         record.
-- [ ] Test the FPI positions in the linked list vs storing the tokens of each 
+- [ ] Test the FPI's in the linked list vs storing the tokens of each 
         item in a linked list. Probably will be faster to scroll, no I/O. Note:
         Benchmark the time it takes to build the list vs the time saved
         on scrolling. If the tradeoff is worth it, change the data structure.
