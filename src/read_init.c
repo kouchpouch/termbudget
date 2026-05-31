@@ -837,6 +837,8 @@ err_select_date_fail:
 		if (KEEP_BIT_IS_SET(r_state->flag)) {
 			r_state->flag = RRET_BYDATE;
 			SET_KEEP_BIT(r_state->flag);
+		} else {
+			r_state->flag = RRET_BYDATE;
 		}
 		break;
 
