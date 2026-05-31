@@ -38,7 +38,6 @@
 #define MAX_LEN_YEAR 4
 #define MIN_LEN_YEAR 4
 #define MIN_INPUT_CHAR 2
-#define INPUT_MSG_Y_OFFSET 2
 
 #define PAGE_KEY_ROWS 10
 
