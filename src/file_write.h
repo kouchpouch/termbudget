@@ -23,6 +23,9 @@
 #include <stdio.h>
 #include <stdbool.h>
 
+int budget_tokens_buffer_to_string(char *buffer,
+								   size_t size,
+								   struct budget_tokens_buff *bt);
 int budget_tokens_to_string(char *buffer, size_t size, struct budget_tokens *bt);
 int line_data_to_string(char *buffer, size_t size, struct transaction_tokens *ld);
 FILE *delete_in_file(FILE *fptr, int delete_line);

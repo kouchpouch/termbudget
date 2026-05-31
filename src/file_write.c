@@ -39,6 +39,19 @@ static void print_lines_written_debug(int lines_written)
 	};
 }
 
+int budget_tokens_buffer_to_string(char *buffer,
+								   size_t size,
+								   struct budget_tokens_buff *bt)
+{
+	return snprintf(buffer, size, 
+		"%d,%d,%s,%d,%.2f\n", 
+		bt->m, 
+		bt->y, 
+		bt->catg, 
+		bt->transtype,
+		bt->amount);
+}
+
 int budget_tokens_to_string(char *buffer,
 							size_t size,
 							struct budget_tokens *bt)
