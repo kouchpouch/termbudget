@@ -256,29 +256,70 @@ static struct MenuParams *init_add_menu(void)
 	return mp;
 }
 
+/* Tokenize the budget string, find the line number to insert the date on, 
+ * change date fields, write to tmp file and move. Use the budget tokens to 
+ * string func in file write.c */
+
+/* File writing optimization should be implemented to complete the write for 
+ * all budget strings at once instead of one by one */
 int copy_categories_to_new_budget(struct full_date *date_src,
 						   		  struct full_date *date_dst)
 {
-	struct catg_vec *old = catg_vec_create();
 	struct vec_d *old_fpis = get_budget_catg_by_date_bo(date_src->month,
 													    date_src->year);
-	struct budget_tokens_buff *tokens;
-
+	struct budget_tokens_buff tokens;
 	FILE *bfptr = open_budget_csv("r");
+	unsigned int insert_line = sort_budget_csv(date_dst->month, date_dst->year);
 	char linebuff[LINE_BUFFER] = { 0 };
-	char *str;
+	char *old_str;
+	char new_str[LINE_BUFFER] = { 0 };
 
-	for (size_t i = 0; i < old_fpis->size; i++) {
+	for (size_t i = old_fpis->size; i >= 0; i--) {
 		fseek(bfptr, old_fpis->data[i], SEEK_SET);
-		str = fgets(linebuff, sizeof(linebuff), bfptr);
-		if (str == NULL) {
+		old_str = fgets(linebuff, sizeof(linebuff), bfptr);
+		if (old_str == NULL) {
 			/* return some failure */
 		} else {
-			tokenize_budget_string(tokens, str);
+			tokenize_budget_string(&tokens, old_str);
+			tokens.m = date_dst->month;
+			tokens.y = date_dst->year;
+			budget_tokens_buffer_to_string(new_str, sizeof(new_str), &tokens);
+			insert_into_file(bfptr, new_str, insert_line);
+			memset(new_str, 0, sizeof(new_str));
 		}
 	}
 
+	fclose(bfptr);
+
 	return 0;
+}
+
+bool confirm_copy_categories(void)
+{
+	int c = 0;
+	WINDOW *wptr = create_input_subwindow();
+	mvwxcprintw(wptr, INPUT_MSG_Y_OFFSET, "Copy Categories from Previous Month?");
+
+	while (c != 'q') {
+		c = wgetch(wptr);
+		switch (c) {
+		case ('Y'):
+		case ('y'):
+			nc_exit_window(wptr);
+			return true;
+
+		case ('N'):
+		case ('n'):
+			nc_exit_window(wptr);
+			return false;
+
+		default:
+			break;
+		}
+	}
+
+	nc_exit_window(wptr);
+	return false;
 }
 
 /* For creating a new budget. Returns malloc'd struct full_date which must
@@ -305,6 +346,15 @@ struct full_date *nc_create_new_budget(void)
 		nc_message("A budget already exists for that month");
 		return NULL;
 	}
+
+	if (confirm_copy_categories()) {
+		/* DEBUG */
+		printw("CONFIRMED");
+		refresh();
+		getch();
+	}
+
+
 
 	insert_budget_record("Income", date->month, date->year, TT_INCOME, 0);
 	insert_budget_record("Saving", date->month, date->year, TT_EXPENSE, 0);
