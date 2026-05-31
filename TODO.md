@@ -108,6 +108,7 @@
         item in a linked list. Probably will be faster to scroll, no I/O. Note:
         Benchmark the time it takes to build the list vs the time saved
         on scrolling. If the tradeoff is worth it, change the data structure.
+- [ ] Category copying to a new budget should be written in one chunk
 
 #### Refactors
 - [X] After main feature set is done and working, refactor to make main.c
