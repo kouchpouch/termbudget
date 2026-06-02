@@ -736,7 +736,6 @@ void tokenize_budget_string(struct budget_tokens_buff *tokens, char *budget)
 	}
 	char *tmp;
 
-	strsep(&budget, ",");
 	tokens->m = atoi(strsep(&budget, ","));
 	tokens->y = atoi(strsep(&budget, ","));
 	tmp = strsep(&budget, ",");
