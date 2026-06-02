@@ -309,7 +309,6 @@ enum copy_category_error copy_categories_to_new_budget
 		}
 	}
 
-	fclose(bfptr);
 	free(old_fpis);
 
 	return COPYCATG_ERR_OK;
@@ -320,6 +319,7 @@ bool confirm_copy_categories(void)
 	int c = 0;
 	WINDOW *wptr = create_input_subwindow();
 	mvwxcprintw(wptr, INPUT_MSG_Y_OFFSET, "Copy Categories from Previous Month?");
+	mvwxcprintw(wptr, getmaxy(wptr) - BOX_OFFSET, "(Y)es  /  (N)o");
 
 	while (c != 'q') {
 		c = wgetch(wptr);
