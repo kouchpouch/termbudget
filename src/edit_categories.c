@@ -150,6 +150,9 @@ void mv_category_to_top(struct catg_node **head, size_t idx)
 	long first = (*head)->catg_fp;
 	unsigned int insert_ln = boff_to_linenum_budget(first);
 	struct budget_tokens *bt = tokenize_budget_fpi(curr->catg_fp);
+	if (bt == NULL) {
+		return;
+	}
 
 	delete_category(curr->catg_fp);
 	insert_category(bt, insert_ln);
