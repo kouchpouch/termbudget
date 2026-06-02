@@ -217,3 +217,4 @@
 - [X] 25 Incorrect numbers shown for records displayed when sorted by date
          and pressing the page up/page dn key.
 - [X] 26 Cannot change case of letters when renaming.
+- [ ] 27 Segfault on moving the last category up to the top
