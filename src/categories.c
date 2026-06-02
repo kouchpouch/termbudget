@@ -214,7 +214,9 @@ void mv_catg_node_to_head(struct catg_node **head, size_t idx)
 	(*head)->prev = new_head;
 
 	old->prev->next = old->next;
-	old->next->prev = old->prev;
+	if (old->next != NULL) {
+		old->next->prev = old->prev;
+	}
 	free(old);
 	*head = new_head;
 }
