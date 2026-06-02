@@ -396,6 +396,8 @@ struct full_date *nc_create_new_budget(void)
 		copy_catg_ret = copy_categories_to_new_budget(&prev_month, date);
 		if (copy_catg_ret != COPYCATG_ERR_OK) {
 			print_copy_category_error(copy_catg_ret);
+			insert_budget_record("Income", date->month, date->year, TT_INCOME, 0);
+			insert_budget_record("Saving", date->month, date->year, TT_EXPENSE, 0);
 		}
 	} else {
 		insert_budget_record("Income", date->month, date->year, TT_INCOME, 0);
