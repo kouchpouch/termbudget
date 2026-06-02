@@ -35,6 +35,12 @@
 #include "file_write.h"
 #include "vector.h"
 
+enum copy_category_error {
+	COPYCATG_ERR_OK,
+	COPYCATG_ERR_NO_PREV,
+	COPYCATG_ERR_FGETS,
+};
+
 /* Creates an ncurses subwindow and returns the user's input as a boolean */
 static bool confirm_budget_category(char *catg, double amt)
 {
@@ -262,36 +268,51 @@ static struct MenuParams *init_add_menu(void)
 
 /* File writing optimization should be implemented to complete the write for 
  * all budget strings at once instead of one by one */
-int copy_categories_to_new_budget(struct full_date *date_src,
-						   		  struct full_date *date_dst)
+enum copy_category_error copy_categories_to_new_budget
+(struct full_date *date_src, struct full_date *date_dst)
 {
 	struct vec_d *old_fpis = get_budget_catg_by_date_bo(date_src->month,
 													    date_src->year);
+	if (old_fpis->size == 0) {
+		free(old_fpis);
+		return COPYCATG_ERR_NO_PREV;
+	}
+
 	struct budget_tokens_buff tokens;
-	FILE *bfptr = open_budget_csv("r");
+	FILE *bfptr = NULL;
+	FILE *tmpfptr = NULL;
 	unsigned int insert_line = sort_budget_csv(date_dst->month, date_dst->year);
 	char linebuff[LINE_BUFFER] = { 0 };
 	char *old_str;
 	char new_str[LINE_BUFFER] = { 0 };
 
-	for (size_t i = old_fpis->size; i >= 0; i--) {
+	/* TODO: Write all categories at once instead of opening and closing the
+	 * file for each category.
+	 * TODO: Fix the ordering to match the previous month. Step one should fix 
+	 * this, right now the categories are copied but they are backwards. */
+	for (size_t i = 0; i < old_fpis->size; i++) {
+		bfptr = open_budget_csv("r");
 		fseek(bfptr, old_fpis->data[i], SEEK_SET);
 		old_str = fgets(linebuff, sizeof(linebuff), bfptr);
 		if (old_str == NULL) {
-			/* return some failure */
+			fclose(bfptr);
+			free(old_fpis);
+			return COPYCATG_ERR_FGETS;
 		} else {
 			tokenize_budget_string(&tokens, old_str);
 			tokens.m = date_dst->month;
 			tokens.y = date_dst->year;
 			budget_tokens_buffer_to_string(new_str, sizeof(new_str), &tokens);
-			insert_into_file(bfptr, new_str, insert_line);
+			tmpfptr = insert_into_file(bfptr, new_str, insert_line);
+			mv_tmp_to_budget_file(tmpfptr, bfptr);
 			memset(new_str, 0, sizeof(new_str));
 		}
 	}
 
 	fclose(bfptr);
+	free(old_fpis);
 
-	return 0;
+	return COPYCATG_ERR_OK;
 }
 
 bool confirm_copy_categories(void)
@@ -322,6 +343,23 @@ bool confirm_copy_categories(void)
 	return false;
 }
 
+void print_copy_category_error(enum copy_category_error e)
+{
+	switch (e) {
+	case COPYCATG_ERR_OK:
+		printw("ERROR OK");
+		break;
+	case COPYCATG_ERR_FGETS:
+		printw("COULD NOT READ LINE");
+		break;
+	case COPYCATG_ERR_NO_PREV:
+		printw("NO PREVIOUS DATE");
+		break;
+	}
+	refresh();
+	getch();
+}
+
 /* For creating a new budget. Returns malloc'd struct full_date which must
  * be free'd by the caller. Use nc_create_new_budget_intret to automatically
  * free the return value. */
@@ -329,6 +367,8 @@ struct full_date *nc_create_new_budget(void)
 {
 
 	struct full_date *date = malloc(sizeof(*date));
+	struct full_date prev_month;
+	int copy_catg_ret = 0;
 	if (date == NULL) {
 		mem_alloc_fail();
 	}
@@ -348,16 +388,19 @@ struct full_date *nc_create_new_budget(void)
 	}
 
 	if (confirm_copy_categories()) {
-		/* DEBUG */
-		printw("CONFIRMED");
-		refresh();
-		getch();
+		prev_month = (struct full_date) {
+			.month = (date->month == 1) ? 12 : date->month - 1,
+			.year = (date->month == 1) ? date->year - 1 : date->year
+		};
+
+		copy_catg_ret = copy_categories_to_new_budget(&prev_month, date);
+		if (copy_catg_ret != COPYCATG_ERR_OK) {
+			print_copy_category_error(copy_catg_ret);
+		}
+	} else {
+		insert_budget_record("Income", date->month, date->year, TT_INCOME, 0);
+		insert_budget_record("Saving", date->month, date->year, TT_EXPENSE, 0);
 	}
-
-
-
-	insert_budget_record("Income", date->month, date->year, TT_INCOME, 0);
-	insert_budget_record("Saving", date->month, date->year, TT_EXPENSE, 0);
 
 	return date;
 }
