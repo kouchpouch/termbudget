@@ -266,9 +266,6 @@ static struct MenuParams *init_add_menu(void)
 /* Tokenize the budget string, find the line number to insert the date on, 
  * change date fields, write to tmp file and move. Use the budget tokens to 
  * string func in file write.c */
-
-/* File writing optimization should be implemented to complete the write for 
- * all budget strings at once instead of one by one */
 enum copy_category_error copy_categories_to_new_budget
 (struct full_date *date_src, struct full_date *date_dst)
 {
