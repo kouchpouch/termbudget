@@ -36,18 +36,6 @@ void debug_print_d_string(struct d_string *d_str)
 	refresh();
 }
 
-int remove_trailing_newline(struct d_string *d_str)
-{
-	for (size_t i = d_str->len; i > 0; i--) {
-		if (d_str->string[i] == '\n') {
-			d_str->string[i] = '\0';
-			return 1;
-		}
-	}
-
-	return 0;
-}
-
 struct d_string *create_d_string(size_t init_sz)
 {
 	size_t alloc_sz;
