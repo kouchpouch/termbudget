@@ -289,10 +289,6 @@ enum copy_category_error copy_categories_to_new_budget
 	char new_str[LINE_BUFFER] = { 0 };
 	unsigned int insert_line = sort_budget_csv(date_dst->month, date_dst->year);
 
-	/* TODO: Write all categories at once instead of opening and closing the
-	 * file for each category.
-	 * TODO: Fix the ordering to match the previous month. Step one should fix 
-	 * this, right now the categories are copied but they are backwards. */
 	for (size_t i = 0; i < old_fpis->size; i++) {
 		bfptr = open_budget_csv("r");
 		fseek(bfptr, old_fpis->data[i], SEEK_SET);

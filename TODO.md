@@ -93,7 +93,7 @@
 - [ ] Menu key to (A)dd (F1) on main menu should allow the user to select
         creating a new transaction, creating a new category, roll over
         previous month's data to the target month, or exit.
-- [ ] Creating a budget is too complicated. User should just enter a date
+- [X] Creating a budget is too complicated. User should just enter a date
         and be brought to the new budget with some default categories or 
         option to roll over the previous budget.
 - [ ] Read view needs to scroll back to the record or category after editing.
@@ -108,7 +108,7 @@
         item in a linked list. Probably will be faster to scroll, no I/O. Note:
         Benchmark the time it takes to build the list vs the time saved
         on scrolling. If the tradeoff is worth it, change the data structure.
-- [ ] Category copying to a new budget should be written in one chunk
+- [X] Category copying to a new budget should be written in one chunk
 
 #### Refactors
 - [X] After main feature set is done and working, refactor to make main.c
