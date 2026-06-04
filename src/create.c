@@ -22,6 +22,7 @@
 #include <string.h>
 
 #include "create.h"
+#include "dynamic_string.h"
 #include "get_date.h"
 #include "main.h"
 #include "categories.h"
@@ -273,6 +274,8 @@ enum copy_category_error copy_categories_to_new_budget
 {
 	struct vec_d *old_fpis = get_budget_catg_by_date_bo(date_src->month,
 													    date_src->year);
+	struct d_string *d_str = create_d_string(old_fpis->size + 
+										  (old_fpis->size * LINE_BUFFER));
 	if (old_fpis->size == 0) {
 		free(old_fpis);
 		return COPYCATG_ERR_NO_PREV;
@@ -281,10 +284,10 @@ enum copy_category_error copy_categories_to_new_budget
 	struct budget_tokens_buff tokens;
 	FILE *bfptr = NULL;
 	FILE *tmpfptr = NULL;
-	unsigned int insert_line = sort_budget_csv(date_dst->month, date_dst->year);
-	char linebuff[LINE_BUFFER] = { 0 };
 	char *old_str;
+	char linebuff[LINE_BUFFER] = { 0 };
 	char new_str[LINE_BUFFER] = { 0 };
+	unsigned int insert_line = sort_budget_csv(date_dst->month, date_dst->year);
 
 	/* TODO: Write all categories at once instead of opening and closing the
 	 * file for each category.
@@ -303,13 +306,19 @@ enum copy_category_error copy_categories_to_new_budget
 			tokens.m = date_dst->month;
 			tokens.y = date_dst->year;
 			budget_tokens_buffer_to_string(new_str, sizeof(new_str), &tokens);
-			tmpfptr = insert_into_file(bfptr, new_str, insert_line);
-			mv_tmp_to_budget_file(tmpfptr, bfptr);
+			concatenate_d_string(&d_str, new_str, strlen(new_str));
 			memset(new_str, 0, sizeof(new_str));
 		}
 	}
 
+	tmpfptr = insert_into_file(bfptr, d_str->string, insert_line);
+	mv_tmp_to_budget_file(tmpfptr, bfptr);
+
 	free(old_fpis);
+	old_fpis = NULL;
+
+	free(d_str);
+	d_str = NULL;
 
 	return COPYCATG_ERR_OK;
 }
