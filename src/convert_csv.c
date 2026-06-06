@@ -91,7 +91,7 @@ static void insert_record(struct transaction_tokens *ld)
 		}
 	}
 
-	rename(TEMP_FILE_DIR, CONVERTED_FILE_DIR); 
+	rename(TEMP_DIR, CONVERTED_FILE_DIR); 
 	fclose(convfptr);
 	fclose(tmpfptr);
 }
