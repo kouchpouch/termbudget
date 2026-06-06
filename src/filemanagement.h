@@ -19,15 +19,27 @@
 #ifndef FILEMANAGEMENT_H
 #define FILEMANAGEMENT_H
 
-#define RECORD_DIR "./data.csv"
-#define RECORD_BAK_DIR "./data.csv.bak"
-#define TEMP_FILE_DIR "./tmp"
-#define CONVERTED_FILE_DIR "./converted.csv"
-#define BUDGET_DIR "./budget.csv"
-#define BUDGET_BAK_DIR "./budget.csv.bak"
-
 #include <stdio.h>
+#include "dynamic_string.h"
 
+#ifdef DEVELOPMENT_ENV 
+#define RECORD_DIR         "./data.csv"
+#define RECORD_BAK_DIR     "./data.csv.bak"
+#define TEMP_DIR      "./tmp"
+#define CONVERTED_FILE_DIR "./converted.csv"
+#define BUDGET_DIR         "./budget.csv"
+#define BUDGET_BAK_DIR     "./budget.csv.bak"
+#else
+#define RECORD_FILE     "/data.csv"
+#define RECORD_BAK_FILE "/data.csv.bak"
+#define TEMP_FILE       "/tmp"
+#define CONVERTED_FILE  "/converted.csv"
+#define BUDGET_FILE     "/budget.csv"
+#define BUDGET_BAK_FILE "/budget.csv.bak"
+#endif
+
+
+int create_program_directory(void);
 FILE *open_record_csv(char *mode);
 FILE *open_budget_csv(char *mode);
 FILE *open_temp_csv(void);
