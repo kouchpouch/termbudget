@@ -333,6 +333,8 @@ int main(int argc, char **argv)
 		}
 	}
 
+	create_program_directory();
+
 	if (verify_flag) {
 		assert(record_len_verification());
 		corrected = verify_categories_exist_in_budget();
