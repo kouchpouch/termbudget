@@ -285,10 +285,6 @@ static void print_usage(void)
 
 int main(int argc, char **argv)
 {
-	if (verify_files_exist() == -1) {
-		exit(1);
-	}
-
 	debug_flag = 0;
 	cli_flag = 0;
 	verify_flag = 1;
@@ -333,7 +329,15 @@ int main(int argc, char **argv)
 		}
 	}
 
+#ifdef DEVELOPMENT_ENV
+	puts("USING DEVELOPMENT ENVIRONMENT DIRECTORIES");
+#else
 	create_program_directory();
+#endif
+
+	if (verify_files_exist() == -1) {
+		exit(1);
+	}
 
 	if (verify_flag) {
 		assert(record_len_verification());
