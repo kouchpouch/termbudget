@@ -33,7 +33,11 @@ static void write_temp_header(FILE *convfptr)
 
 static void create_csv(void)
 {
+#ifdef DEVELOPMENT_ENV
 	FILE *fptr = fopen(CONVERTED_FILE_DIR, "w+");
+#else
+	FILE *fptr = fopen(converted_file_dir, "w+");
+#endif
 	if (fptr == NULL) {
 		perror("Failed to open file");
 		exit(1);
@@ -54,7 +58,11 @@ static FILE *open_csv(char *dir)
 
 static void insert_record(struct transaction_tokens *ld)
 {
+#ifdef DEVELOPMENT_ENV
 	FILE *convfptr = fopen(CONVERTED_FILE_DIR, "r");
+#else
+	FILE *convfptr = fopen(converted_file_dir, "r");
+#endif
 	if (convfptr == NULL) {
 		perror("Failed to open file");
 		exit(1);
@@ -91,7 +99,11 @@ static void insert_record(struct transaction_tokens *ld)
 		}
 	}
 
+#ifdef DEVELOPMENT_ENV 
 	rename(TEMP_DIR, CONVERTED_FILE_DIR); 
+#else
+	rename(tmp_file_dir, converted_file_dir); 
+#endif
 	fclose(convfptr);
 	fclose(tmpfptr);
 }
@@ -139,7 +151,11 @@ static size_t tokenize_and_convert(FILE *fptr)
 size_t convert_chase_csv(char *dir)
 {
 	printf("FILE: %s\n", dir);
+#ifdef DEVELOPMENT_ENV
 	printf("CONVERTED: %s\n", CONVERTED_FILE_DIR);
+#else
+	printf("CONVERTED: %s\n", converted_file_dir);
+#endif
 	FILE *fptr = open_csv(dir);
 	create_csv();
 	size_t count = tokenize_and_convert(fptr);
