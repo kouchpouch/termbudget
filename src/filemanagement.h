@@ -24,7 +24,7 @@
 
 #ifdef __linux__
 #include <linux/limits.h>
-#else
+#elif !defined(PATH_MAX)
 #define PATH_MAX 4096
 #endif
 
