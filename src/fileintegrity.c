@@ -90,7 +90,6 @@ bool record_len_verification(void)
 
 	seek_beyond_header(fptr);
 
-
 	while (1) {
 		str = fgets(linebuff, sizeof(linebuff), fptr);
 		if (str == NULL) {
@@ -99,44 +98,44 @@ bool record_len_verification(void)
 
 		tokenize_record(pld, &str);
 		if (intlen(pld->day) > 2) {
-			printf("Day on line %d in %s exceeds maximum length\n", 
-				   linenumber, RECORD_DIR);
+			printf("Day on line %d in record file exceeds maximum length\n", 
+				   linenumber);
 			return false;
 		}
 
 		if (intlen(pld->month) > 2) {
-			printf("Month on line %d in %s exceeds maximum length\n", 
-		  		   linenumber, RECORD_DIR);
+			printf("Month on line %d in record file exceeds maximum length\n", 
+		  		   linenumber);
 			return false;
 		}
 
 		if (pld->year > MAX_YEAR || pld->year < MIN_YEAR) {
-			printf("Year on line %d in %s out of range\n", 
-		  		   linenumber, RECORD_DIR);
+			printf("Year on line %d in record file out of range\n", 
+		  		   linenumber);
 			return false;
 		}
 
 		if (strlen(pld->category) > MAX_LEN_CATG) {
-			printf("Category on line %d in %s exceeds maximum length\n", 
-		  		   linenumber, RECORD_DIR);
+			printf("Category on line %d in record file exceeds maximum length\n", 
+		  		   linenumber);
 			return false;
 		}
 
 		if (strlen(pld->desc) > MAX_LEN_DESC) {
-			printf("Description on line %d in %s exceeds maximum length\n", 
-		  		   linenumber, RECORD_DIR);
+			printf("Description on line %d in record file exceeds maximum length\n", 
+		  		   linenumber);
 			return false;
 		}
 
 		if (pld->transtype != 0 && pld->transtype != 1) {
-			printf("Invalid transcation type on line %d in %s\n", 
-		  		   linenumber, RECORD_DIR);
+			printf("Invalid transcation type on line %d in record file\n", 
+		  		   linenumber);
 			return false;
 		}
 
 		if (intlen((int)pld->amount) > MAX_LEN_AMOUNT) {
-			printf("Amount on line %d in %s exceeds maximum length\n", 
-		  		   linenumber, RECORD_DIR);
+			printf("Amount on line %d in record file exceeds maximum length\n", 
+		  		   linenumber);
 			return false;
 		}
 
