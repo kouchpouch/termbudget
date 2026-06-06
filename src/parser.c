@@ -36,7 +36,7 @@ struct record_search_for {
 
 int get_total_csv_lines(void)
 {
-	FILE *fptr = fopen(RECORD_DIR, "r");
+	FILE *fptr = open_record_csv("r");
 	int lines = 0;
 	char buff[256];
 	while (fgets(buff, sizeof(buff), fptr) != NULL) {
