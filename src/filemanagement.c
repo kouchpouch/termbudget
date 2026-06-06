@@ -29,24 +29,19 @@
 #include "filemanagement.h"
 #include "dynamic_string.h"
 #include "flags.h"
-#include "tui.h"
-
-#ifdef __linux__
-#include <linux/limits.h>
-#else
-#define PATH_MAX 4096
-#endif
 
 #ifndef DEVELOPMENT_ENV
-static char program_dir        [PATH_MAX];
-static char record_dir         [PATH_MAX];
-static char record_bak_dir     [PATH_MAX];
-static char tmp_file_dir       [PATH_MAX];
-static char converted_file_dir [PATH_MAX];
-static char budget_dir         [PATH_MAX];
-static char budget_bak_dir     [PATH_MAX];
 
-static void init_directories(void) {
+char program_dir        [PATH_MAX];
+char record_dir         [PATH_MAX];
+char record_bak_dir     [PATH_MAX];
+char tmp_file_dir       [PATH_MAX];
+char converted_file_dir [PATH_MAX];
+char budget_dir         [PATH_MAX];
+char budget_bak_dir     [PATH_MAX];
+
+static void init_dir_variables(void)
+{
 	memset(program_dir,        0, sizeof(program_dir));
 	memset(record_dir,         0, sizeof(record_dir));
 	memset(record_bak_dir,     0, sizeof(record_bak_dir));
@@ -55,6 +50,48 @@ static void init_directories(void) {
 	memset(budget_dir,         0, sizeof(budget_dir));
 	memset(budget_bak_dir,     0, sizeof(budget_bak_dir));
 }
+
+static void set_directories(struct d_string *p)
+{
+	strcat(program_dir, p->string);
+
+	strcat(record_dir, program_dir);
+	assert(strlen(record_dir) + strlen(RECORD_FILE) < PATH_MAX);
+	strcat(record_dir, RECORD_FILE);
+
+	strcat(record_bak_dir, program_dir);
+	assert(strlen(record_bak_dir) + strlen(RECORD_BAK_FILE) < PATH_MAX);
+	strcat(record_bak_dir, RECORD_BAK_FILE);
+
+	strcat(tmp_file_dir, program_dir);
+	assert(strlen(tmp_file_dir) + strlen(TEMP_FILE) < PATH_MAX);
+	strcat(tmp_file_dir, TEMP_FILE);
+
+	strcat(converted_file_dir, program_dir);
+	assert(strlen(converted_file_dir) + strlen(CONVERTED_FILE) < PATH_MAX);
+	strcat(converted_file_dir, CONVERTED_FILE);
+
+	strcat(budget_dir, program_dir);
+	assert(strlen(budget_dir) + strlen(BUDGET_FILE) < PATH_MAX);
+	strcat(budget_dir, BUDGET_FILE);
+
+	strcat(budget_bak_dir, program_dir);
+	assert(strlen(budget_bak_dir) + strlen(BUDGET_BAK_FILE) < PATH_MAX);
+	strcat(budget_bak_dir, BUDGET_BAK_FILE);
+}
+
+static void debug_print_directories(void)
+{
+	printf("%s\n", "------Program files------");
+	printf("%s\n", program_dir);
+	printf("%s\n", record_dir);
+	printf("%s\n", record_bak_dir);
+	printf("%s\n", tmp_file_dir);
+	printf("%s\n", converted_file_dir);
+	printf("%s\n", budget_dir);
+	printf("%s\n", budget_bak_dir);
+}
+
 #endif
 
 enum err_data_dir {
@@ -153,7 +190,7 @@ static int make_program_data_dir(char *full_path)
 	return 0;
 }
 
-void handle_err_data_dir(enum err_data_dir e)
+static void handle_err_data_dir(enum err_data_dir e)
 {
 	switch (e) {
 	case ERR_DATA_OK:
@@ -194,8 +231,16 @@ int create_program_directory(void)
 		printf("Program data full path: %s\n", full_path->string);
 	}
 
+	assert(full_path->len < PATH_MAX);
+
 #ifdef DEVELOPMENT_ENV
 	puts("USING DEVELOPMENT ENVIRONMENT DIRECTORIES");
+#else
+	init_dir_variables();
+	set_directories(full_path);
+	if (debug_flag) {
+		debug_print_directories();
+	}
 #endif
 
 	return 0;
@@ -217,14 +262,22 @@ FILE *open_file(char *mode, char *dir)
 /* Opens BUDGET_DIR with open_file() */
 FILE *open_budget_csv(char *mode)
 {
+#ifdef DEVELOPMENT_ENV
 	FILE *f = open_file(mode, BUDGET_DIR);
+#else
+	FILE *f = open_file(mode, budget_dir);
+#endif
 	return f;
 }
 
 /* Opens RECORD_DIR with open_file() */
 FILE *open_record_csv(char *mode)
 {
+#ifdef DEVELOPMENT_ENV
 	FILE *f = open_file(mode, RECORD_DIR);
+#else
+	FILE *f = open_file(mode, record_dir);
+#endif
 	return f;
 }
 
@@ -232,7 +285,11 @@ FILE *open_record_csv(char *mode)
  * exists, checks for fopen() failures. */
 FILE *open_temp_csv(void)
 {
+#ifdef DEVELOPMENT_ENV
 	FILE *tmpfptr = fopen(TEMP_DIR, "w+");
+#else
+	FILE *tmpfptr = fopen(tmp_file_dir, "w+");
+#endif
 	if (tmpfptr == NULL) {
 		perror(NULL);
 		exit(1);
@@ -260,7 +317,11 @@ static int move_tmp_to_main(FILE *tmp, FILE *main, char *dir, char *backdir)
 		perror("Failed to move main file");	
 		return -1;
 	}
+#ifdef DEVELOPMENT_ENV
 	if (rename(TEMP_DIR, dir) == -1) {
+#else
+	if (rename(tmp_file_dir, dir) == -1) {
+#endif
 		perror("Failed to move temporary file");	
 		return -1;
 	}
@@ -271,7 +332,11 @@ static int move_tmp_to_main(FILE *tmp, FILE *main, char *dir, char *backdir)
  * BUDGET_BAK_DIR */
 int mv_tmp_to_budget_file(FILE *tmp, FILE* main)
 {
+#ifdef DEVELOPMENT_ENV
 	int retval = move_tmp_to_main(tmp, main, BUDGET_DIR, BUDGET_BAK_DIR);
+#else
+	int retval = move_tmp_to_main(tmp, main, budget_dir, budget_bak_dir);
+#endif
 	return retval;
 }
 
@@ -279,6 +344,10 @@ int mv_tmp_to_budget_file(FILE *tmp, FILE* main)
  * RECORD_BAK_DIR */
 int mv_tmp_to_record_file(FILE *tmp, FILE* main)
 {
+#ifdef DEVELOPMENT_ENV
 	int retval = move_tmp_to_main(tmp, main, RECORD_DIR, RECORD_BAK_DIR);
+#else
+	int retval = move_tmp_to_main(tmp, main, record_dir, record_bak_dir);
+#endif
 	return retval;
 }
