@@ -18,8 +18,188 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <errno.h>
+#include <string.h>
+#include <stdbool.h>
+#include <assert.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <dirent.h>
 
 #include "filemanagement.h"
+#include "dynamic_string.h"
+#include "flags.h"
+#include "tui.h"
+
+#ifdef __linux__
+#include <linux/limits.h>
+#else
+#define PATH_MAX 4096
+#endif
+
+#ifndef DEVELOPMENT_ENV
+static char program_dir        [PATH_MAX];
+static char record_dir         [PATH_MAX];
+static char record_bak_dir     [PATH_MAX];
+static char tmp_file_dir       [PATH_MAX];
+static char converted_file_dir [PATH_MAX];
+static char budget_dir         [PATH_MAX];
+static char budget_bak_dir     [PATH_MAX];
+
+static void init_directories(void) {
+	memset(program_dir,        0, sizeof(program_dir));
+	memset(record_dir,         0, sizeof(record_dir));
+	memset(record_bak_dir,     0, sizeof(record_bak_dir));
+	memset(tmp_file_dir,       0, sizeof(tmp_file_dir));
+	memset(converted_file_dir, 0, sizeof(converted_file_dir));
+	memset(budget_dir,         0, sizeof(budget_dir));
+	memset(budget_bak_dir,     0, sizeof(budget_bak_dir));
+}
+#endif
+
+enum err_data_dir {
+	ERR_DATA_OK = 0,
+	ERR_DATA_NOEXIST,
+	ERR_DATA_NOENV,
+};
+
+static bool is_root(void)
+{
+	char *username = getenv("USER");
+	if (strcasecmp("root", username) == 0) {
+		return true;
+	} else if (username == NULL) {
+		return true;
+	} else {
+		return false;
+	}
+}
+
+static bool dir_exists(char *path)
+{
+	DIR *d = opendir(path);
+	if (d == NULL) {
+		perror("opendir()");
+		printf("PATH: %s\n", path);
+		return false;
+	} else {
+		closedir(d);
+		return true;
+	}
+}
+
+static enum err_data_dir get_dir_by_env(struct d_string *path, char *env)
+{
+	char *dir = getenv(env);
+
+	if (dir == NULL) {
+		if (debug_flag) {
+			printf("%s $%s\n", "Could not get environment variable", env);
+		}
+		return ERR_DATA_NOENV;
+	}
+
+	if (!dir_exists(dir)) {
+		return ERR_DATA_NOEXIST;
+	} else {
+		if (debug_flag) {
+			printf("%s $%s\n", "Found environment variable", env);
+		}
+	}
+
+	concatenate_d_string(&path, dir, strlen(dir));
+	return ERR_DATA_OK;
+}
+
+/* Returns the full path to the user data directory */
+static enum err_data_dir get_user_data_dir(struct d_string *path_buffer)
+{
+	enum err_data_dir e;
+	char append_dir[] = "/.local/share";
+
+	if (is_root()) {
+		puts("Do not run this program as root, exiting");
+		exit(1);
+	}
+
+	if ((e = get_dir_by_env(path_buffer, "XDG_DATA_HOME")) != ERR_DATA_OK) {
+		if ((e = get_dir_by_env(path_buffer, "HOME")) != ERR_DATA_OK) {
+			return e;
+		} else {
+			concatenate_d_string(&path_buffer, append_dir, strlen(append_dir));
+		}
+	}
+
+	if (!dir_exists(path_buffer->string)) {
+		return ERR_DATA_NOEXIST;
+	}
+
+	return ERR_DATA_OK;
+}
+
+static int make_program_data_dir(char *full_path)
+{
+	errno = 0;
+	if (mkdir(full_path, 0777) == -1) {
+		if (errno == EEXIST) {
+			printf("%s already exists\n", full_path);
+			return 0;
+		} else {
+			perror("mkdir()");
+			return -1;
+		}
+	}
+
+	return 0;
+}
+
+void handle_err_data_dir(enum err_data_dir e)
+{
+	switch (e) {
+	case ERR_DATA_OK:
+		break;
+
+	case ERR_DATA_NOEXIST:
+		break;
+
+	case ERR_DATA_NOENV:
+		printf("%s\n", "Environment variable $HOME or $XDG_DATA_HOME are not set");
+		printf("%s\n", "Cannot find program data directory. Exiting");
+		exit(1);
+	}
+}
+
+int create_program_directory(void)
+{
+	struct d_string *full_path = create_d_string(PATH_MAX);
+	char *subdir_name = "/termbudget";
+
+	enum err_data_dir err = 0;
+	err = get_user_data_dir(full_path);
+	if (err != ERR_DATA_OK) {
+		handle_err_data_dir(err);
+	}
+
+	concatenate_d_string(&full_path, subdir_name, strlen(subdir_name));
+
+	if (!dir_exists(full_path->string)) {
+		make_program_data_dir(full_path->string);
+	} else {
+		if (debug_flag) {
+			printf("Program directory exists\n");
+		}
+	}
+
+	if (debug_flag) {
+		printf("Program data full path: %s\n", full_path->string);
+	}
+
+#ifdef DEVELOPMENT_ENV
+	puts("USING DEVELOPMENT ENVIRONMENT DIRECTORIES");
+#endif
+
+	return 0;
+}
 
 /* Opens file at "dir", checks if the fopen function fails and terminates
  * program if it does. */
@@ -48,11 +228,11 @@ FILE *open_record_csv(char *mode)
 	return f;
 }
 
-/* Creates a temporary file in TEMP_FILE_DIR, opens and truncates if it already
+/* Creates a temporary file in TEMP_FILE, opens and truncates if it already
  * exists, checks for fopen() failures. */
 FILE *open_temp_csv(void)
 {
-	FILE *tmpfptr = fopen(TEMP_FILE_DIR, "w+");
+	FILE *tmpfptr = fopen(TEMP_DIR, "w+");
 	if (tmpfptr == NULL) {
 		perror(NULL);
 		exit(1);
@@ -80,7 +260,7 @@ static int move_tmp_to_main(FILE *tmp, FILE *main, char *dir, char *backdir)
 		perror("Failed to move main file");	
 		return -1;
 	}
-	if (rename(TEMP_FILE_DIR, dir) == -1) {
+	if (rename(TEMP_DIR, dir) == -1) {
 		perror("Failed to move temporary file");	
 		return -1;
 	}
