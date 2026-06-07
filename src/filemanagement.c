@@ -104,6 +104,9 @@ enum err_data_dir {
 	ERR_DATA_NOENV,
 };
 
+/* Returns true if the $USER environment variable is not set or returns "root".
+ * Returns false if $USER returns a non-null string that is not 
+ * "root", case is ignored. */
 static bool is_root(void)
 {
 	char *username = getenv("USER");
@@ -116,8 +119,11 @@ static bool is_root(void)
 	}
 }
 
+/* Returns true if a the dir at 'path' exists, false if it does not.
+ * If opendir() fails, errno is printed to stderror */
 static bool dir_exists(char *path)
 {
+	errno = 0;
 	DIR *d = opendir(path);
 	if (d == NULL) {
 		perror("opendir()");
