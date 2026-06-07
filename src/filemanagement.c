@@ -30,7 +30,7 @@
 #include "dynamic_string.h"
 #include "flags.h"
 
-#ifndef DEVELOPMENT_ENV
+#ifndef TB_RELATIVE_DIRS
 
 char program_dir        [PATH_MAX];
 char record_dir         [PATH_MAX];
@@ -40,6 +40,7 @@ char converted_file_dir [PATH_MAX];
 char budget_dir         [PATH_MAX];
 char budget_bak_dir     [PATH_MAX];
 
+/* Sets all dir variables to zero */
 static void init_dir_variables(void)
 {
 	memset(program_dir,        0, sizeof(program_dir));
@@ -51,6 +52,9 @@ static void init_dir_variables(void)
 	memset(budget_bak_dir,     0, sizeof(budget_bak_dir));
 }
 
+/* Fills the dir variables with the full path plus the file name as is defined
+ * by macros. Assertions for each path to verify it does not exceed PATH_MAX
+ */
 static void set_directories(struct d_string *p)
 {
 	strcat(program_dir, p->string);
@@ -80,6 +84,7 @@ static void set_directories(struct d_string *p)
 	strcat(budget_bak_dir, BUDGET_BAK_FILE);
 }
 
+/* Prints all dir variables */
 static void debug_print_directories(void)
 {
 	printf("%s\n", "------Program files------");
@@ -152,7 +157,7 @@ static enum err_data_dir get_dir_by_env(struct d_string *path, char *env)
 static enum err_data_dir get_user_data_dir(struct d_string *path_buffer)
 {
 	enum err_data_dir e;
-	char append_dir[] = "/.local/share";
+	char *append_dir = "/.local/share";
 
 	if (is_root()) {
 		puts("Do not run this program as root, exiting");
@@ -233,14 +238,16 @@ int create_program_directory(void)
 
 	assert(full_path->len < PATH_MAX);
 
-#ifdef DEVELOPMENT_ENV
-	puts("USING DEVELOPMENT ENVIRONMENT DIRECTORIES");
-#else
+#ifndef TB_RELATIVE_DIRS
 	init_dir_variables();
 	set_directories(full_path);
 	if (debug_flag) {
 		debug_print_directories();
 	}
+	free(full_path);
+	full_path = NULL;
+#else
+	puts("USING RELATIVE DIRECTORIES");
 #endif
 
 	return 0;
@@ -262,7 +269,7 @@ FILE *open_file(char *mode, char *dir)
 /* Opens BUDGET_DIR with open_file() */
 FILE *open_budget_csv(char *mode)
 {
-#ifdef DEVELOPMENT_ENV
+#ifdef TB_RELATIVE_DIRS
 	FILE *f = open_file(mode, BUDGET_DIR);
 #else
 	FILE *f = open_file(mode, budget_dir);
@@ -273,7 +280,7 @@ FILE *open_budget_csv(char *mode)
 /* Opens RECORD_DIR with open_file() */
 FILE *open_record_csv(char *mode)
 {
-#ifdef DEVELOPMENT_ENV
+#ifdef TB_RELATIVE_DIRS
 	FILE *f = open_file(mode, RECORD_DIR);
 #else
 	FILE *f = open_file(mode, record_dir);
@@ -285,7 +292,7 @@ FILE *open_record_csv(char *mode)
  * exists, checks for fopen() failures. */
 FILE *open_temp_csv(void)
 {
-#ifdef DEVELOPMENT_ENV
+#ifdef TB_RELATIVE_DIRS
 	FILE *tmpfptr = fopen(TEMP_DIR, "w+");
 #else
 	FILE *tmpfptr = fopen(tmp_file_dir, "w+");
@@ -317,7 +324,7 @@ static int move_tmp_to_main(FILE *tmp, FILE *main, char *dir, char *backdir)
 		perror("Failed to move main file");	
 		return -1;
 	}
-#ifdef DEVELOPMENT_ENV
+#ifdef TB_RELATIVE_DIRS
 	if (rename(TEMP_DIR, dir) == -1) {
 #else
 	if (rename(tmp_file_dir, dir) == -1) {
@@ -332,7 +339,7 @@ static int move_tmp_to_main(FILE *tmp, FILE *main, char *dir, char *backdir)
  * BUDGET_BAK_DIR */
 int mv_tmp_to_budget_file(FILE *tmp, FILE* main)
 {
-#ifdef DEVELOPMENT_ENV
+#ifdef TB_RELATIVE_DIRS
 	int retval = move_tmp_to_main(tmp, main, BUDGET_DIR, BUDGET_BAK_DIR);
 #else
 	int retval = move_tmp_to_main(tmp, main, budget_dir, budget_bak_dir);
@@ -344,7 +351,7 @@ int mv_tmp_to_budget_file(FILE *tmp, FILE* main)
  * RECORD_BAK_DIR */
 int mv_tmp_to_record_file(FILE *tmp, FILE* main)
 {
-#ifdef DEVELOPMENT_ENV
+#ifdef TB_RELATIVE_DIRS
 	int retval = move_tmp_to_main(tmp, main, RECORD_DIR, RECORD_BAK_DIR);
 #else
 	int retval = move_tmp_to_main(tmp, main, record_dir, record_bak_dir);

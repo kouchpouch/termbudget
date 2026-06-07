@@ -329,8 +329,8 @@ int main(int argc, char **argv)
 		}
 	}
 
-#ifdef DEVELOPMENT_ENV
-	puts("USING DEVELOPMENT ENVIRONMENT DIRECTORIES");
+#ifdef TB_RELATIVE_DIRS
+	puts("USING RELATIVE DIRECTORIES");
 #else
 	create_program_directory();
 #endif

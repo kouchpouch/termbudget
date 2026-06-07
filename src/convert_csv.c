@@ -33,7 +33,7 @@ static void write_temp_header(FILE *convfptr)
 
 static void create_csv(void)
 {
-#ifdef DEVELOPMENT_ENV
+#ifdef TB_RELATIVE_DIRS
 	FILE *fptr = fopen(CONVERTED_FILE_DIR, "w+");
 #else
 	FILE *fptr = fopen(converted_file_dir, "w+");
@@ -58,7 +58,7 @@ static FILE *open_csv(char *dir)
 
 static void insert_record(struct transaction_tokens *ld)
 {
-#ifdef DEVELOPMENT_ENV
+#ifdef TB_RELATIVE_DIRS
 	FILE *convfptr = fopen(CONVERTED_FILE_DIR, "r");
 #else
 	FILE *convfptr = fopen(converted_file_dir, "r");
@@ -99,7 +99,7 @@ static void insert_record(struct transaction_tokens *ld)
 		}
 	}
 
-#ifdef DEVELOPMENT_ENV 
+#ifdef TB_RELATIVE_DIRS 
 	rename(TEMP_DIR, CONVERTED_FILE_DIR); 
 #else
 	rename(tmp_file_dir, converted_file_dir); 
@@ -151,7 +151,7 @@ static size_t tokenize_and_convert(FILE *fptr)
 size_t convert_chase_csv(char *dir)
 {
 	printf("FILE: %s\n", dir);
-#ifdef DEVELOPMENT_ENV
+#ifdef TB_RELATIVE_DIRS
 	printf("CONVERTED: %s\n", CONVERTED_FILE_DIR);
 #else
 	printf("CONVERTED: %s\n", converted_file_dir);
