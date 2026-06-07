@@ -362,6 +362,19 @@ void print_copy_category_error(enum copy_category_error e)
 	getch();
 }
 
+/* Checks if there is an entry in the budget.csv file */
+static bool previous_budget_exists(void) {
+	bool retval;
+	FILE *fptr = open_budget_csv("r");
+	if (get_total_file_lines(fptr) > 1) {
+		retval = true;
+	} else {
+		retval = false;
+	}
+	fclose(fptr);
+	return retval;
+}
+
 /* For creating a new budget. Returns malloc'd struct full_date which must
  * be free'd by the caller. Use nc_create_new_budget_intret to automatically
  * free the return value. */
@@ -389,17 +402,19 @@ struct full_date *nc_create_new_budget(void)
 		return NULL;
 	}
 
-	if (confirm_copy_categories()) {
-		prev_month = (struct full_date) {
-			.month = (date->month == 1) ? 12 : date->month - 1,
-			.year = (date->month == 1) ? date->year - 1 : date->year
-		};
+	if (previous_budget_exists()) {
+		if (confirm_copy_categories()) {
+			prev_month = (struct full_date) {
+				.month = (date->month == 1) ? 12 : date->month - 1,
+				.year = (date->month == 1) ? date->year - 1 : date->year
+			};
 
-		copy_catg_ret = copy_categories_to_new_budget(&prev_month, date);
-		if (copy_catg_ret != COPYCATG_ERR_OK) {
-			print_copy_category_error(copy_catg_ret);
-			insert_budget_record("Income", date->month, date->year, TT_INCOME, 0);
-			insert_budget_record("Saving", date->month, date->year, TT_EXPENSE, 0);
+			copy_catg_ret = copy_categories_to_new_budget(&prev_month, date);
+			if (copy_catg_ret != COPYCATG_ERR_OK) {
+				print_copy_category_error(copy_catg_ret);
+				insert_budget_record("Income", date->month, date->year, TT_INCOME, 0);
+				insert_budget_record("Saving", date->month, date->year, TT_EXPENSE, 0);
+			}
 		}
 	} else {
 		insert_budget_record("Income", date->month, date->year, TT_INCOME, 0);
