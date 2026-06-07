@@ -53,8 +53,7 @@ static void init_dir_variables(void)
 }
 
 /* Fills the dir variables with the full path plus the file name as is defined
- * by macros. Assertions for each path to verify it does not exceed PATH_MAX
- */
+ * by macros. Assertions for each path to verify it does not exceed PATH_MAX */
 static void set_directories(struct d_string *p)
 {
 	strcat(program_dir, p->string);
@@ -202,12 +201,17 @@ static void handle_err_data_dir(enum err_data_dir e)
 		break;
 
 	case ERR_DATA_NOEXIST:
+		printf("%s\n", "Could not find program file directory, "
+		               "it does not exist");
 		break;
 
 	case ERR_DATA_NOENV:
-		printf("%s\n", "Environment variable $HOME or $XDG_DATA_HOME are not set");
+		printf("%s\n", "Environment variable $HOME or $XDG_DATA_HOME "
+                        "are not set");
 		printf("%s\n", "Cannot find program data directory. Exiting");
 		exit(1);
+	default:
+		break;
 	}
 }
 
