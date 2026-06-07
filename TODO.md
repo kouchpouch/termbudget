@@ -99,6 +99,8 @@
 - [ ] Read view needs to scroll back to the record or category after editing.
 - [ ] Create build system
 - [X] ESC should also quit
+- [X] Files are placed into the user's .local/share directory. Dir "termbudget"
+        is created if one does not exist.
 
 #### Optimization
 - [ ] Create an interface for editing data within the liked list to avoid
