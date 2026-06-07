@@ -20,7 +20,6 @@
 #define FILEMANAGEMENT_H
 
 #include <stdio.h>
-#include "dynamic_string.h"
 
 #ifdef __linux__
 #include <linux/limits.h>
@@ -29,20 +28,22 @@
 #endif
 
 #ifdef TB_RELATIVE_DIRS 
+
 #define RECORD_DIR         "./data.csv"
 #define RECORD_BAK_DIR     "./data.csv.bak"
 #define TEMP_DIR           "./tmp"
 #define CONVERTED_FILE_DIR "./converted.csv"
 #define BUDGET_DIR         "./budget.csv"
 #define BUDGET_BAK_DIR     "./budget.csv.bak"
+
 #else
 
-#define RECORD_FILE     "/data.csv"
-#define RECORD_BAK_FILE "/data.csv.bak"
-#define TEMP_FILE       "/tmp"
-#define CONVERTED_FILE  "/converted.csv"
-#define BUDGET_FILE     "/budget.csv"
-#define BUDGET_BAK_FILE "/budget.csv.bak"
+#define RECORD_FILE        "/data.csv"
+#define RECORD_BAK_FILE    "/data.csv.bak"
+#define TEMP_FILE          "/tmp"
+#define CONVERTED_FILE     "/converted.csv"
+#define BUDGET_FILE        "/budget.csv"
+#define BUDGET_BAK_FILE    "/budget.csv.bak"
 
 extern char program_dir        [PATH_MAX];
 extern char record_dir         [PATH_MAX];
