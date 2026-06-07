@@ -82,8 +82,8 @@ struct transaction_tokens {
 	int linenum;
 };
 
-/* Returns total lines in the CSV */
-int get_total_csv_lines(void);
+/* Returns total lines in 'fptr' */
+int get_total_file_lines(FILE *fptr);
 
 /* Returns the line number of byte-offset b in file CSV_DIR */
 unsigned int boff_to_linenum(long b);

@@ -34,11 +34,10 @@ struct record_search_for {
 	bool amt;
 };
 
-int get_total_csv_lines(void)
+int get_total_file_lines(FILE *fptr)
 {
-	FILE *fptr = open_record_csv("r");
 	int lines = 0;
-	char buff[256];
+	char buff[LINE_BUFFER];
 	while (fgets(buff, sizeof(buff), fptr) != NULL) {
 		lines++;
 	}
