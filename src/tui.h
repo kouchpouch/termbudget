@@ -58,6 +58,7 @@
 #define INPUT_MSG_Y_OFFSET 2
 #define MAX_Y_CATG_SELECT 22 // Maximum of 20 categories on the screen
 
+
 struct column_width {
 	int date;
 	int catg;
@@ -96,6 +97,8 @@ void nc_exit_window_key(WINDOW *wptr);
 
 /* Exits window wptr */
 void nc_exit_window(WINDOW *wptr);
+
+WINDOW *newwin_centered(int y, int x, WINDOW *w);
 
 /* Removes and refreshes wptr to remove error message.
  * For use with input subwindows. Dimensions are hard coded to be 4 above

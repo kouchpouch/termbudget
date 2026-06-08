@@ -16,6 +16,7 @@
  * Author: kouchpouch <https://github.com/kouchpouch/termbudget>
  */
 
+#include "tui.h"
 #include <ncurses.h>
 #include <string.h>
 #include <string.h>
@@ -69,6 +70,28 @@ void nc_exit_window(WINDOW *wptr)
 	wclear(wptr);
 	wrefresh(wptr);
 	delwin(wptr);
+}
+
+/* Returns newwin() centered around WINDOW *w of 'y' rows and 'x' columns.
+ * Checks if the dimensions would exceed the dimensions of WINDOW *w and if 
+ * it does, sets the dimensions to be equal to the dimensions of WINDOW *w */
+WINDOW *newwin_centered(int y, int x, WINDOW *w)
+{
+	int max_y, max_x;
+
+	if (w == NULL || y < 1 || x < 1) {
+		return NULL;
+	}
+
+	getmaxyx(w, max_y, max_x);
+	if (max_y < 0 || max_x < 0) {
+		return NULL;
+	}
+
+	(x > max_x) ? (x = max_x) : x;
+	(y > max_y) ? (y = max_y) : y;
+	
+	return newwin(y, x, (max_y / 2) - (y / 2), (max_x / 2) - (x / 2));
 }
 
 void clear_input_error_message(WINDOW *wptr)
@@ -250,27 +273,26 @@ struct ReadWins *create_read_windows(void)
 WINDOW *create_category_select_parent(int n)
 {
 	int win_y, win_x;
-	int begin_y, begin_x;
+	int max_y, max_x;
 	WINDOW *wptr;
+	getmaxyx(stdscr, max_y, max_x);
 
-	if (n + BOX_OFFSET > getmaxy(stdscr) 
-		&& n + BOX_OFFSET <= MAX_Y_CATG_SELECT) {
-		win_y = getmaxy(stdscr) - BOX_OFFSET;
+	if (n + BOX_OFFSET > max_y && n + BOX_OFFSET <= MAX_Y_CATG_SELECT) {
+		win_y = max_y - BOX_OFFSET;
 	} else if (n + BOX_OFFSET > MAX_Y_CATG_SELECT) {
 		win_y = MAX_Y_CATG_SELECT;
 	} else {
 		win_y = n + BOX_OFFSET;
 	}
 
-	if (getmaxx(stdscr) >= MAX_LEN_CATG) {
+	if (max_x >= MAX_LEN_CATG) {
 		win_x = MAX_LEN_CATG + BOX_OFFSET;
 	} else {
-		win_x = getmaxx(stdscr);
+		win_x = max_x;
 	}
 
-	begin_y = getmaxy(stdscr) / 2 - win_y / 2;
-	begin_x = getmaxx(stdscr) / 2 - win_x / 2;
-	wptr = newwin(win_y, win_x, begin_y, begin_x);
+	wptr = newwin_centered(win_y, win_x, stdscr);
+
 	if (wptr == NULL) {
 		window_creation_fail();
 	}
@@ -297,11 +319,10 @@ WINDOW *create_category_select_subwindow(WINDOW *wptr_parent)
 
 WINDOW *create_input_subwindow_n_rows(int n)
 {
-	int max_y, max_x;
-	int win_y, win_x;
+	int win_y, win_x, max_x;
 	WINDOW *wptr;
-	
-	getmaxyx(stdscr, max_y, max_x);
+
+	max_x = getmaxx(stdscr);
 
 	if (n <= INPUT_WIN_ROWS + BOX_OFFSET) {
 		if (n % 2 == 0) {
@@ -323,7 +344,7 @@ WINDOW *create_input_subwindow_n_rows(int n)
 		win_x = max_x;
 	}
 
-	wptr = newwin(win_y, win_x, (max_y / 2) - win_y / 2, (max_x / 2) - win_x / 2);
+	wptr = newwin_centered(win_y, win_x, stdscr);
 
 	if (wptr == NULL) {
 		window_creation_fail();
@@ -336,11 +357,10 @@ WINDOW *create_input_subwindow_n_rows(int n)
 
 WINDOW *create_input_subwindow_force_rows(int n)
 {
-	int max_y, max_x;
+	int max_x = getmaxx(stdscr);
 	int win_y, win_x;
 	WINDOW *wptr;
 	
-	getmaxyx(stdscr, max_y, max_x);
 	win_y = n;
 
 	if (max_x >= MIN_COLUMNS + 20) {
@@ -349,7 +369,7 @@ WINDOW *create_input_subwindow_force_rows(int n)
 		win_x = max_x;
 	}
 
-	wptr = newwin(win_y, win_x, (max_y / 2) - win_y / 2, (max_x / 2) - win_x / 2);
+	wptr = newwin_centered(win_y, win_x, stdscr);
 
 	if (wptr == NULL) {
 		window_creation_fail();
@@ -362,11 +382,10 @@ WINDOW *create_input_subwindow_force_rows(int n)
 
 WINDOW *create_input_subwindow(void)
 {
-	int max_y, max_x;
+	int max_x = getmaxx(stdscr);
 	int win_y, win_x;
 	WINDOW *wptr;
 	
-	getmaxyx(stdscr, max_y, max_x);
 	win_y = INPUT_WIN_ROWS;
 
 	if (max_x >= MIN_COLUMNS + 20) {
@@ -375,7 +394,7 @@ WINDOW *create_input_subwindow(void)
 		win_x = max_x;
 	}
 
-	wptr = newwin(win_y, win_x, (max_y / 2) - win_y / 2, (max_x / 2) - win_x / 2);
+	wptr = newwin_centered(win_y, win_x, stdscr);
 
 	if (wptr == NULL) {
 		window_creation_fail();
@@ -527,7 +546,6 @@ static void nc_print_footer(WINDOW *wptr, struct Footer *pf)
 {
 	int max_y, cur;
 	max_y = getmaxy(wptr);
-	//mvwchgat(wptr, max_y - 1, 0, getmaxx(wptr), A_INVIS, 0, NULL);
 
 	/* Clear the footer line of any old menu items */
 	wmove(wptr, max_y - 1, 0);
