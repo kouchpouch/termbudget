@@ -41,7 +41,14 @@ bool validate_record_header(void)
 		return false;
 	}
 
-	int arr[] = {rh->month, rh->day, rh->year, rh->catg, rh->desc, rh->transtype, rh->value};
+	int arr[] = {rh->month,
+		         rh->day,
+		         rh->year,
+		         rh->catg,
+		         rh->desc,
+		         rh->transtype,
+		         rh->value};
+
 	for (int i = 0; i < rh->n_fields; i++) {
 		if (arr[i] < 0) {
 			free(rh);
