@@ -234,6 +234,10 @@ end_of_str:
 
 int seek_beyond_header(FILE *fptr)
 {
+	if (ftell(fptr) != 0) {
+		rewind(fptr);
+	}
+
 	int i = 0;
 	char c = getc(fptr);
 	while (c != '\n' && c != EOF) {
