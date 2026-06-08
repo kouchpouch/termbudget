@@ -34,17 +34,25 @@ enum AddMainMenu {
 }; 
 
 void insert_budget_record(char *catg, int m, int y, int transtype, double amt);
+
 char *create_budget_record(int yr, int mo);
+
 void insert_transaction_record(int insert_line, struct transaction_tokens *ld);
 
 /* Optional parameters int month, year. If add transaction is selected while
  * on the read screen these will be auto-filled. */
 void create_transaction(int year, int month);
+
 void create_transaction_default(void);
+
 int nc_create_new_budget_intret(void);
+
 struct full_date *nc_create_new_budget(void);
+
 int get_add_selection(void);
+
 void add_main_with_date(struct dates_flags *dates);
+
 void add_main_no_date(void);
 
 #endif

@@ -375,6 +375,16 @@ static bool previous_budget_exists(void) {
 	return retval;
 }
 
+/* TODO: Create a small window selection containing previous budget date 
+ * pairs. */
+static void select_budget_date_to_copy(struct full_date *fd)
+{
+	WINDOW *wptr = newwin_centered(15, 30, stdscr);
+	box(wptr, 0, 0);
+	mvwxcprintw(wptr, 7, "This is a placeholder");
+	nc_exit_window_key(wptr);
+}
+
 /* For creating a new budget. Returns malloc'd struct full_date which must
  * be free'd by the caller. Use nc_create_new_budget_intret to automatically
  * free the return value. */
@@ -402,8 +412,11 @@ struct full_date *nc_create_new_budget(void)
 		return NULL;
 	}
 
+/* Quick-n-dirty method of getting the absolute previous month, but this 
+ * is obviosuly not sufficient */
 	if (previous_budget_exists()) {
 		if (confirm_copy_categories()) {
+			select_budget_date_to_copy(NULL);
 			prev_month = (struct full_date) {
 				.month = (date->month == 1) ? 12 : date->month - 1,
 				.year = (date->month == 1) ? date->year - 1 : date->year
