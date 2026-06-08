@@ -375,10 +375,26 @@ static bool previous_budget_exists(void) {
 	return retval;
 }
 
+/* TODO: Create some generic vector to store the three values that we need, 
+ * the month, year, and number of categories. */
+// static struct vec_d *get_dates_to_copy_from(void)
+// {
+// 	;
+// }
+
 /* TODO: Create a small window selection containing previous budget date 
  * pairs. */
 static void select_budget_date_to_copy(struct full_date *fd)
 {
+	FILE *bfptr = open_budget_csv("r");
+	/* TODO: Create an enumeration to handle the field value, this manual
+	 * way is prone to bugs. */
+	struct vec_d *years = get_years_with_data(bfptr, 1);
+
+	/* TODO: Loop over getting the months with data for each year, append the 
+	 * data to a generic dynamic vector. */
+//	struct vec_d *months = get_months_with_data(bfptr, int matchyear, int field);
+
 	WINDOW *wptr = newwin_centered(15, 30, stdscr);
 	box(wptr, 0, 0);
 	mvwxcprintw(wptr, 7, "This is a placeholder");
