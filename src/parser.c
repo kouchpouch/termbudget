@@ -379,6 +379,9 @@ double get_expenditures_per_category(struct budget_tokens *bt)
 
 struct vec_d *get_years_with_data(FILE *fptr, int field)
 {
+	if (ftell(fptr) != 0) {
+		fseek(fptr, 0, SEEK_SET);
+	}
 	struct vec_d *pr = vec_d_create();
 
 	char linebuff[LINE_BUFFER] = { 0 };
@@ -430,6 +433,9 @@ static void init_data_array(struct vec_d *vec)
  * based on the header. */
 struct vec_d *get_months_with_data(FILE *fptr, int matchyear, int field)
 {
+	if (ftell(fptr) != 0) {
+		fseek(fptr, 0, SEEK_SET);
+	}
 	int year;
 	int month;
 	int i = 0;
