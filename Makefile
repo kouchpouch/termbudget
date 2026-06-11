@@ -26,4 +26,5 @@ termbudget:
 		src/overview.c \
 		src/vector.c \
 		src/dynamic_string.c \
+		src/vector_generic.c \
 		-lncurses -o termbudget
