@@ -35,6 +35,7 @@
 #include "filemanagement.h"
 #include "file_write.h"
 #include "vector.h"
+#include "vector_generic.h"
 
 enum copy_category_error {
 	COPYCATG_ERR_OK,
@@ -377,28 +378,69 @@ static bool previous_budget_exists(void) {
 
 /* TODO: Create some generic vector to store the three values that we need, 
  * the month, year, and number of categories. */
-// static struct vec_d *get_dates_to_copy_from(void)
-// {
-// 	;
-// }
+static struct vec_generic *get_dates_to_copy_from(struct full_date *fd)
+{
+	FILE *bfptr = open_budget_csv("r");
+	struct vec_generic *vg = create_vec_generic(sizeof(struct vec2l), 0);
+	struct vec2l selections = { 0 };
+
+	/* TODO: Create an enumeration to handle the field value, this manual
+	 * way is prone to bugs. */
+	struct vec_d *years  = get_years_with_data(bfptr, 1);
+	if (years == NULL) {
+		free_vec_generic(vg);
+		fclose(bfptr);
+		return NULL;
+	}
+	struct vec_d *months = NULL;
+
+	for (size_t i = 0; i < years->size; i++) {
+		selections.a = years->data[i];
+		months = get_months_with_data(bfptr, years->data[i], 0);
+		if (months == NULL) {
+			break;
+		}
+		for (size_t j = 0; j < months->size; j++) {
+			selections.b = months->data[j];
+			if (selections.a <= fd->year) {
+				if (selections.b < fd->month && selections.b != 0) {
+					push_vec_generic(&selections, sizeof(struct vec2l), vg);
+				}
+			}
+		}
+		free(months);
+		months = NULL;
+	};
+
+	free(years);
+	fclose(bfptr);
+	return vg;
+}
 
 /* TODO: Create a small window selection containing previous budget date 
  * pairs. */
 static void select_budget_date_to_copy(struct full_date *fd)
 {
-	FILE *bfptr = open_budget_csv("r");
-	/* TODO: Create an enumeration to handle the field value, this manual
-	 * way is prone to bugs. */
-	struct vec_d *years = get_years_with_data(bfptr, 1);
+	struct vec_generic *dates = get_dates_to_copy_from(fd);
+	if (dates == NULL) {
+		return;
+	}
 
-	/* TODO: Loop over getting the months with data for each year, append the 
-	 * data to a generic dynamic vector. */
-//	struct vec_d *months = get_months_with_data(bfptr, int matchyear, int field);
+	void *test;
+	struct vec2l *v;
+	for (size_t i = 0; i < dates->count; i++) {
+		test = get_vec_generic(i, dates);
+		v = (struct vec2l *)test;
+		printw("%ld, %ld @ %p\n", v->a, v->b, test);
+		refresh();
+		getch();
+	}
 
 	WINDOW *wptr = newwin_centered(15, 30, stdscr);
 	box(wptr, 0, 0);
 	mvwxcprintw(wptr, 7, "This is a placeholder");
 	nc_exit_window_key(wptr);
+	free_vec_generic(dates);
 }
 
 /* For creating a new budget. Returns malloc'd struct full_date which must
@@ -432,7 +474,7 @@ struct full_date *nc_create_new_budget(void)
  * is obviosuly not sufficient */
 	if (previous_budget_exists()) {
 		if (confirm_copy_categories()) {
-			select_budget_date_to_copy(NULL);
+			select_budget_date_to_copy(date);
 			prev_month = (struct full_date) {
 				.month = (date->month == 1) ? 12 : date->month - 1,
 				.year = (date->month == 1) ? date->year - 1 : date->year
