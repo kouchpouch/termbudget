@@ -49,7 +49,7 @@ struct timespec benchmark_tp;
 
 void mem_alloc_fail(void) 
 {
-	perror("Failed to allocate memory\n");
+	perror("Failed to allocate memory");
 	exit(1);
 }
 
