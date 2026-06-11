@@ -101,7 +101,7 @@
 - [X] ESC should also quit
 - [X] Files are placed into the user's .local/share directory. Dir "termbudget"
         is created if one does not exist.
-- [ ] Write an interface for type generic dynamic arrays.
+- [X] Write an interface for type generic dynamic arrays.
 
 #### Optimization
 - [ ] Create an interface for editing data within the liked list to avoid
