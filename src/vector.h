@@ -39,6 +39,12 @@ struct vec2i {
 	int b;
 };
 
+struct vec3i {
+	int a;
+	int b;
+	int c;
+};
+
 /* Dynamic "std vector"/array of long */
 struct vec_d {
 	size_t capacity;
