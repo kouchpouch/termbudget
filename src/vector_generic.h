@@ -70,5 +70,6 @@ struct vec_generic {
 void push_vec_generic(void *data, size_t size, struct vec_generic *v);
 struct vec_generic *create_vec_generic(size_t data_size, size_t init_count);
 void *get_vec_generic(size_t idx, struct vec_generic *v);
+void free_vec_generic(struct vec_generic *v);
 
 #endif
