@@ -39,6 +39,17 @@ struct vec2i {
 	int b;
 };
 
+struct vec2l {
+	long a;
+	long b;
+};
+
+struct vec3l {
+	long a;
+	long b;
+	long c;
+};
+
 struct vec3i {
 	int a;
 	int b;
