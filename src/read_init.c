@@ -47,21 +47,6 @@
 #define RRET_BYDATE 1
 #define RRET_QUIT 2
 
-static const char *abbr_months[] = {
-	"JAN", 
-	"FEB", 
-	"MAR", 
-	"APR",
-	"MAY",
-	"JUN",
-	"JUL",
-	"AUG",
-	"SEP",
-	"OCT",
-	"NOV",
-	"DEC"
-};
-
 struct date_select_scroll {
 	int selected_date;
 	int date_idx;

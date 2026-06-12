@@ -36,21 +36,6 @@ enum GraphRatios {
 	NO_EXPENSE = -2,
 };
 
-static const char *abbr_months[] = {
-	"JAN", 
-	"FEB", 
-	"MAR", 
-	"APR",
-	"MAY",
-	"JUN",
-	"JUL",
-	"AUG",
-	"SEP",
-	"OCT",
-	"NOV",
-	"DEC"
-};
-
 struct overview_bar_graph {
 	double height_exp;
 	double height_inc;
