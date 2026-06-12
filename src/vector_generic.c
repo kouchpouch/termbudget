@@ -56,6 +56,18 @@ void push_vec_generic(void *data, size_t size, struct vec_generic *v)
 	memcpy(dest, data, size);
 }
 
+/* Same as get_vec_generic(), except returns n - idx */
+void *get_vec_generic_reverse(size_t idx, struct vec_generic *v)
+{
+	if (idx > v->count) {
+		return NULL;
+	}
+	/* Tail points to the last initialized chunk of memory */
+	void *tail = (char *)v->data + (v->data_size * (v->count - 1)); 
+	void *ret = (char *)tail - (v->data_size * idx); 
+	return ret;
+}
+
 void *get_vec_generic(size_t idx, struct vec_generic *v)
 {
 	if (idx > v->count) {
