@@ -66,6 +66,9 @@
 #define UNSET_KEEP_BIT(x) (x) &= 0x7F
 #define KEEP_BIT_IS_SET(x) ((x) & 0x80) == 0x80 ? 1 : 0
 
+extern const char *abbr_months[];
+extern const char *fullname_months[];
+
 enum read_return_flags {
 	RRET_DEFAULT,
 	RRET_BYDATE,
