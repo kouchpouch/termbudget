@@ -36,8 +36,37 @@
 #include "categories.h"
 #include "convert_csv.h"
 #include "flags.h"
-
 #include "benchmark.h"
+
+const char *abbr_months[] = {
+	"JAN", 
+	"FEB", 
+	"MAR", 
+	"APR",
+	"MAY",
+	"JUN",
+	"JUL",
+	"AUG",
+	"SEP",
+	"OCT",
+	"NOV",
+	"DEC"
+};
+
+const char *fullname_months[] = {
+	"January", 
+	"February", 
+	"March", 
+	"April",
+	"May",
+	"June",
+	"July",
+	"August",
+	"September", /* Longest month name */
+	"October",
+	"November",
+	"December"
+};
 
 /* GLOBAL FLAGS. Defined in flags.h, initialized here in main.c */
 int debug_flag;
