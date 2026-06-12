@@ -276,6 +276,7 @@ enum copy_category_error copy_categories_to_new_budget
 										  (old_fpis->size * LINE_BUFFER));
 	if (old_fpis->size == 0) {
 		free(old_fpis);
+		free(d_str);
 		return COPYCATG_ERR_NO_PREV;
 	}
 
@@ -294,6 +295,7 @@ enum copy_category_error copy_categories_to_new_budget
 		if (old_str == NULL) {
 			fclose(bfptr);
 			free(old_fpis);
+			free(d_str);
 			return COPYCATG_ERR_FGETS;
 		} else {
 			tokenize_budget_string(&tokens, old_str);
@@ -403,7 +405,9 @@ static struct vec_generic *get_dates_to_copy_from(struct full_date *fd)
 		for (size_t j = 0; j < months->size; j++) {
 			selections.b = months->data[j];
 			if (selections.a <= fd->year) {
-				if (selections.b < fd->month && selections.b != 0) {
+				if ((selections.a < fd->year && selections.b != 0) || 
+					(selections.a == fd->year && selections.b < fd->month 
+					&& selections.b != 0)) {
 					push_vec_generic(&selections, sizeof(struct vec2l), vg);
 				}
 			}
@@ -421,24 +425,29 @@ static struct vec_generic *get_dates_to_copy_from(struct full_date *fd)
  * pairs. */
 static void select_budget_date_to_copy(struct full_date *fd)
 {
+	size_t i, y;
+	void *tmp = NULL;
+	WINDOW *wptr = NULL;
+	struct vec2l *v = NULL;
 	struct vec_generic *dates = get_dates_to_copy_from(fd);
 	if (dates == NULL) {
 		return;
 	}
 
-	void *test;
-	struct vec2l *v;
-	for (size_t i = 0; i < dates->count; i++) {
-		test = get_vec_generic(i, dates);
-		v = (struct vec2l *)test;
-		printw("%ld, %ld @ %p\n", v->a, v->b, test);
-		refresh();
-		getch();
+	wptr = newwin_centered(16, 32, stdscr);
+
+	for (y = 1, i = 0; i < dates->count && i < 14; y++, i++) {
+		tmp = get_vec_generic_reverse(i, dates);
+		v = (struct vec2l *)tmp;
+		/* -1 to zero index the month */
+		mvwprintw(wptr, y, BOX_OFFSET, "%s", fullname_months[v->b - 1]);
+		mvwprintw(wptr, y, BOX_OFFSET + strlen("september") + 2, "%ld", v->a);
 	}
 
-	WINDOW *wptr = newwin_centered(15, 30, stdscr);
 	box(wptr, 0, 0);
-	mvwxcprintw(wptr, 7, "This is a placeholder");
+	mvwxcprintw(wptr, 0, "Select Date to Copy From");
+	refresh();
+
 	nc_exit_window_key(wptr);
 	free_vec_generic(dates);
 }
