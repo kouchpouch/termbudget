@@ -421,41 +421,89 @@ static struct vec_generic *get_dates_to_copy_from(struct full_date *fd)
 	return vg;
 }
 
+static void refresh_wins(WINDOW *parent, WINDOW *left, WINDOW *right)
+{
+	wrefresh(left);
+	wrefresh(right);
+}
+
+static void draw_borders(WINDOW *parent, WINDOW *left, WINDOW *right, int x_split)
+{
+	char *left_header  = "Select Date";
+	char *right_header = "Preview";
+	mvwvline(parent, 1, x_split, 0, getmaxx(parent) - BOX_OFFSET);
+	box(parent, 0, 0);
+	mvwhline(parent, 0, x_split, ACS_TTEE, 1);
+	mvwhline(parent, getmaxy(parent) - 1, x_split, ACS_BTEE, 1);
+
+	mvwprintw(parent, 0, getmaxx(left) / 2 - strlen(left_header) / 2, "%s", left_header); 
+	mvwprintw(parent, 0, x_split + (getmaxx(right) / 2 - strlen(left_header) / 2), "%s", right_header); 
+
+	refresh();
+	wrefresh(parent);
+}
+
+static int create_copy_windows(WINDOW **parent,
+                               WINDOW **left,
+							   WINDOW **right,
+							   int *max_x,
+							   int *max_y,
+							   int x_split)
+{
+	int ret = 0;
+	if (*max_x > MIN_ROWS || *max_y > MIN_COLUMNS) {
+		if (*max_x > getmaxx(stdscr)) {
+			*max_x = getmaxx(stdscr);
+			ret = 1;
+		}
+		if (*max_y > getmaxy(stdscr)) {
+			*max_y = getmaxy(stdscr);
+			ret = 1;
+		}
+	}
+
+	int begin_y = (getmaxy(stdscr) / 2) - (*max_y / 2);
+	int begin_x = (getmaxx(stdscr) / 2) - (*max_x / 2);
+	*parent = newwin(*max_y, *max_x, begin_y, begin_x); 
+	*left = newwin(*max_y - BOX_OFFSET, x_split - 1, begin_y + 1, begin_x + 1);
+	*right = newwin(*max_y - BOX_OFFSET, *max_x - BOX_OFFSET - x_split, \
+				    begin_y + 1, begin_x + x_split + 1);
+
+	return ret;
+}
+
 /* TODO: Create a small window selection containing previous budget date 
  * pairs. */
 static void select_budget_date_to_copy(struct full_date *fd)
 {
-	size_t i, y;
-	void *tmp = NULL;
-	WINDOW *wptr = NULL;
-	struct vec2l *v = NULL;
+	int print_y = 0;
+	int x_split = strlen(LONGEST_LEN_MONTH) + MAX_LEN_YEAR + 8;
+	int max_y = 16;
+	int max_x = MIN_COLUMNS + 20;
+	WINDOW *parentw, *leftsw, *rightsw;
 	struct vec_generic *dates = get_dates_to_copy_from(fd);
 	if (dates == NULL) {
 		return;
 	}
 
-	wptr = newwin_centered(16, 32, stdscr);
+	create_copy_windows(&parentw, &leftsw, &rightsw, &max_x, &max_y, x_split);
+	draw_borders(parentw, leftsw, rightsw, x_split);
 
-	VEC_GENERIC_FOREACH(struct vec2l *, item, dates) {
-		printw("Item b: %ld, Item a: %ld\n", item->b, item->a);
+	VEC_GENERIC_FOREACH_REVERSE(struct vec2l *, item, dates) {
+		mvwprintw(leftsw, print_y, 0, "%s", fullname_months[item->b - 1]);
+		mvwprintw(leftsw, print_y, getmaxx(leftsw) - MAX_LEN_YEAR, "%ld", item->a);
+		print_y++;
+		if (print_y > max_y - BOX_OFFSET) {
+			break;
+		}
 	}
 
-	refresh();
+	refresh_wins(parentw, leftsw, rightsw);
 	getch();
 
-	for (y = 1, i = 0; i < dates->count && i < 14; y++, i++) {
-		tmp = get_vec_generic_reverse(i, dates);
-		v = (struct vec2l *)tmp;
-		/* -1 to zero index the month */
-		mvwprintw(wptr, y, BOX_OFFSET, "%s", fullname_months[v->b - 1]);
-		mvwprintw(wptr, y, BOX_OFFSET + strlen("september") + 2, "%ld", v->a);
-	}
-
-	box(wptr, 0, 0);
-	mvwxcprintw(wptr, 0, "Select Date to Copy From");
-	refresh();
-
-	nc_exit_window_key(wptr);
+	nc_exit_window_key(parentw);
+	nc_exit_window(leftsw);
+	nc_exit_window(rightsw);
 	free_vec_generic(dates);
 }
 
