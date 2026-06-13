@@ -436,6 +436,13 @@ static void select_budget_date_to_copy(struct full_date *fd)
 
 	wptr = newwin_centered(16, 32, stdscr);
 
+	VEC_GENERIC_FOREACH(struct vec2l *, item, dates) {
+		printw("Item b: %ld, Item a: %ld\n", item->b, item->a);
+	}
+
+	refresh();
+	getch();
+
 	for (y = 1, i = 0; i < dates->count && i < 14; y++, i++) {
 		tmp = get_vec_generic_reverse(i, dates);
 		v = (struct vec2l *)tmp;
@@ -484,12 +491,7 @@ struct full_date *nc_create_new_budget(void)
 	if (previous_budget_exists()) {
 		if (confirm_copy_categories()) {
 			select_budget_date_to_copy(date);
-			prev_month = (struct full_date) {
-				.month = (date->month == 1) ? 12 : date->month - 1,
-				.year = (date->month == 1) ? date->year - 1 : date->year
-			};
-
-			copy_catg_ret = copy_categories_to_new_budget(&prev_month, date);
+/*			copy_catg_ret = copy_categories_to_new_budget(&prev_month, date); */
 			if (copy_catg_ret != COPYCATG_ERR_OK) {
 				print_copy_category_error(copy_catg_ret);
 				insert_budget_record("Income", date->month, date->year, TT_INCOME, 0);
