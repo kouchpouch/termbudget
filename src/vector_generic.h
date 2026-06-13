@@ -43,7 +43,7 @@
  * one byte at a time... because char = 1 byte;
  *
  * Pseudo-code:
- * void *destination = (char *)data + (data size + index)
+ * void *destination = (char *)data + (data size * index)
  * +------+------+------+------+------+------+------+------+------+------+
  * | data | data | data | data | data | data | data | data | data | data |
  * +------+------+------+------+------+------+------+------+------+------+
@@ -55,10 +55,18 @@
  *        +-------------------------------------------------------+
  *        |
  *        The last 'element' of the memory == .count == \
- *        (char *)data + (data size + count).
+ *        (char *)data + (data size * count).
  *
  * For each 'index', add the data size to the pointer.
  */
+
+#define VEC_GENERIC_FOREACH(T, item, vec) \
+	if (vec == NULL) goto vec_generic_foreach_fail; \
+	T item = vec->data; \
+	for (size_t i = 0; \
+		 i < vec->count; \
+		 i++, item = (void *)((char *)vec->data + (vec->data_size * i))) \
+vec_generic_foreach_fail: \
 
 struct vec_generic {
 	size_t data_size; /* Size of each element */
