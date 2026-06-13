@@ -43,6 +43,9 @@
 
 #define ESCAPE_ASCII 27
 
+/* The word 'september' is the longest month by character count */
+#define LONGEST_LEN_MONTH "september"
+
 #define INPUT_IS_QUIT(x) \
 	((x) == 'q' || (x) == 'Q' || (x) == KEY_F(QUIT) || \
 	(x) == ESCAPE_ASCII) ? 1 : 0 \
