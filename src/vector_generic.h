@@ -60,13 +60,21 @@
  * For each 'index', add the data size to the pointer.
  */
 
+/* For each item of size 'data_size' the memory allocated at a generic 
+ * vector's data member is casted the argument 'T' and exposed as 
+ * 'item' */
 #define VEC_GENERIC_FOREACH(T, item, vec) \
-	if (vec == NULL) goto vec_generic_foreach_fail; \
 	T item = vec->data; \
 	for (size_t i = 0; \
 		 i < vec->count; \
 		 i++, item = (void *)((char *)vec->data + (vec->data_size * i))) \
-vec_generic_foreach_fail: \
+
+/* Reverse of VEC_GENERIC_FOREACH, conditional checks if i wraps around. */
+#define VEC_GENERIC_FOREACH_REVERSE(T, item, vec) \
+	T item = (void *)((char *)vec->data + (vec->data_size * (vec->count - 1))); \
+	for (size_t i = vec->count - 1; \
+		 i < vec->count; \
+		 i--, item = (void *)((char *)vec->data + (vec->data_size * i))) \
 
 struct vec_generic {
 	size_t data_size; /* Size of each element */
