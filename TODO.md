@@ -221,3 +221,5 @@
          and pressing the page up/page dn key.
 - [X] 26 Cannot change case of letters when renaming.
 - [X] 27 Segfault on moving the last category up to the top
+- [ ] 28 When copying a previous budget and deleting the first category,
+            the program returns to the home screen.
