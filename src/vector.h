@@ -63,7 +63,8 @@ struct vec_d {
 	long data[];
 };
 
-/* Dynamic "std vector"/array of char * */
+/* Dynamic "std vector"/array of char *
+ * Must be free'd with free_categories() function in categories.h */
 struct catg_vec {
 	size_t capacity;
 	size_t size;
@@ -79,7 +80,8 @@ void vec_d_append_many(struct vec_d **v, long *data, size_t data_len);
 /* Appends "data" to the end of the v->data array and reallocs if required */
 void catg_vec_append(struct catg_vec **v, char *data);
 
-/* Appends "data" to the end of the v->data array and reallocs if required */
+/* Appends "data" to the end of the v->data array and reallocs if required
+ * Must be free'd with free_categories() function in categories.h */
 void vec_d_append(struct vec_d **v, long data);
 
 void ved_d_delete(struct vec_d *v, size_t idx);
