@@ -24,6 +24,7 @@
 #include "create.h"
 #include "dynamic_string.h"
 #include "get_date.h"
+#include "helper.h"
 #include "main.h"
 #include "categories.h"
 #include "edit_categories.h"
@@ -41,6 +42,12 @@ enum copy_category_error {
 	COPYCATG_ERR_OK,
 	COPYCATG_ERR_NO_PREV,
 	COPYCATG_ERR_FGETS,
+};
+
+enum copy_loop_how {
+	COPYLOOP_INIT = 0,
+	COPYLOOP_SCROLL_DN,
+	COPYLOOP_SCROLL_UP,
 };
 
 /* Creates an ncurses subwindow and returns the user's input as a boolean */
@@ -378,8 +385,6 @@ static bool previous_budget_exists(void) {
 	return retval;
 }
 
-/* TODO: Create some generic vector to store the three values that we need, 
- * the month, year, and number of categories. */
 static struct vec_generic *get_dates_to_copy_from(struct full_date *fd)
 {
 	FILE *bfptr = open_budget_csv("r");
@@ -421,23 +426,24 @@ static struct vec_generic *get_dates_to_copy_from(struct full_date *fd)
 	return vg;
 }
 
-static void refresh_wins(WINDOW *parent, WINDOW *left, WINDOW *right)
-{
-	wrefresh(left);
-	wrefresh(right);
-}
-
 static void draw_borders(WINDOW *parent, WINDOW *left, WINDOW *right, int x_split)
 {
-	char *left_header  = "Select Date";
+	char *left_header  = "Budget to Copy";
 	char *right_header = "Preview";
 	mvwvline(parent, 1, x_split, 0, getmaxx(parent) - BOX_OFFSET);
 	box(parent, 0, 0);
 	mvwhline(parent, 0, x_split, ACS_TTEE, 1);
 	mvwhline(parent, getmaxy(parent) - 1, x_split, ACS_BTEE, 1);
 
-	mvwprintw(parent, 0, getmaxx(left) / 2 - strlen(left_header) / 2, "%s", left_header); 
-	mvwprintw(parent, 0, x_split + (getmaxx(right) / 2 - strlen(left_header) / 2), "%s", right_header); 
+	mvwprintw(parent,
+		      0,
+		      ((getmaxx(left) / 2) - (strlen(left_header) / 2)) + 1,
+		      "%s", left_header); 
+	mvwprintw(parent,
+		      0,
+			  x_split + (getmaxx(right) / 2 - strlen(left_header) / 2) + 2,
+			  "%s",
+			  right_header); 
 
 	refresh();
 	wrefresh(parent);
@@ -472,7 +478,106 @@ static int create_copy_windows(WINDOW **parent,
 	return ret;
 }
 
-static void select_budget_date_to_copy(struct full_date *fd)
+static void print_preview(struct catg_vec *catg_str, WINDOW *rightsw)
+{
+	int j;
+	size_t i;
+	wclear(rightsw);
+	for (i = 0, j = 0; i < catg_str->size && j < getmaxy(rightsw); i++, j++) {
+		mvwprintw(rightsw, i, 0, "%s", catg_str->categories[i]);
+		mvwchgat(rightsw, i, 0, -1, A_NORMAL, category_color(i), NULL); 
+	}
+	wrefresh(rightsw);
+}
+
+static int print_copy_loop(size_t *scrl_idx,
+						   struct full_date *new_date,
+						   struct vec_generic *dates,
+						   WINDOW *leftsw,
+						   WINDOW *rightsw,
+						   enum copy_loop_how how)
+{
+	struct catg_vec *catg_str = NULL;
+	struct vec2l *curr = NULL;
+	switch (how) {
+	
+	case(COPYLOOP_INIT):
+		if (*scrl_idx != 0) {
+			return -1;
+		}
+		break;
+
+	case(COPYLOOP_SCROLL_DN):
+		unhighlight(leftsw, *scrl_idx, 0, getmaxx(leftsw));
+		(*scrl_idx)++;
+		break;
+
+	case(COPYLOOP_SCROLL_UP):
+		unhighlight(leftsw, *scrl_idx, 0, getmaxx(leftsw));
+		(*scrl_idx)--;
+		break;
+	}
+
+	curr = get_vec_generic_reverse(*scrl_idx, dates);
+	new_date->month = curr->b;
+	new_date->year = curr->a;
+	catg_str = get_budget_catg_by_date(curr->b, curr->a);
+	print_preview(catg_str, rightsw);
+	highlight(leftsw, *scrl_idx, 0, getmaxx(leftsw));
+	free_categories(catg_str);
+	catg_str = NULL;
+	wrefresh(leftsw);
+	wrefresh(rightsw);
+	return 0;
+}
+
+static struct full_date *copy_loop(struct vec_generic *dates,
+								   WINDOW *leftsw,
+								   WINDOW *rightsw)
+{
+	int c = 0;
+	size_t scrl_idx = 0;
+	struct full_date *new_date = malloc(sizeof(struct full_date));
+
+	print_copy_loop(&scrl_idx, new_date, dates, leftsw, rightsw, COPYLOOP_INIT);
+
+	while (c != 'q') {
+		c = getch();
+		switch(c) {
+
+		case ('j'):
+		case KEY_DOWN:
+			if (scrl_idx < dates->count - 1) {
+				print_copy_loop(&scrl_idx, 
+					new_date, dates, leftsw, rightsw, COPYLOOP_SCROLL_DN);
+			}
+			break;
+
+		case ('k'):
+		case KEY_UP:
+			if (scrl_idx > 0) {
+				print_copy_loop(&scrl_idx, 
+					new_date, dates, leftsw, rightsw, COPYLOOP_SCROLL_UP);
+			}
+			break;
+
+		CASE_QUIT
+			free(new_date);
+			return NULL;
+			break;
+
+		CASE_ENTER
+			return new_date;
+
+		default:
+			break;
+		}
+	}
+
+	return new_date;
+}
+
+static struct full_date *select_budget_date_to_copy(struct full_date *fd)
 {
 	int print_y = 0;
 	int x_split = strlen(LONGEST_LEN_MONTH) + MAX_LEN_YEAR + 8;
@@ -480,40 +585,32 @@ static void select_budget_date_to_copy(struct full_date *fd)
 	int max_x = MIN_COLUMNS + 20;
 	WINDOW *parentw, *leftsw, *rightsw;
 	struct vec_generic *dates = get_dates_to_copy_from(fd);
-	struct catg_vec *catg_str = NULL;
+	struct full_date *new_date = NULL;
 	if (dates == NULL) {
-		return;
+		return NULL;
 	}
 
 	create_copy_windows(&parentw, &leftsw, &rightsw, &max_x, &max_y, x_split);
 	draw_borders(parentw, leftsw, rightsw, x_split);
 
 	VEC_GENERIC_FOREACH_REVERSE(struct vec2l *, item, dates) {
-		catg_str = get_budget_catg_by_date(item->b, item->a);
 		mvwprintw(leftsw, print_y, 0, "%s", fullname_months[item->b - 1]);
 		mvwprintw(leftsw, print_y, getmaxx(leftsw) - MAX_LEN_YEAR, "%ld", item->a);
-		for (size_t j = 0; j < catg_str->size && j < getmaxy(rightsw); j++) {
-			mvwprintw(rightsw, j, 0, "%s", catg_str->categories[j]);
-		}
-		/* DEBUG */
-		refresh_wins(parentw, leftsw, rightsw);
-		getch();
-		/* DEBUG */
-		free(catg_str);
-		catg_str = NULL;
+		wclear(rightsw);
 		print_y++;
 		if (print_y > max_y - BOX_OFFSET) {
 			break;
 		}
 	}
 
-	refresh_wins(parentw, leftsw, rightsw);
-	getch();
+	new_date = copy_loop(dates, leftsw, rightsw);
 
-	nc_exit_window_key(parentw);
+	free_vec_generic(dates);
+	nc_exit_window(parentw);
 	nc_exit_window(leftsw);
 	nc_exit_window(rightsw);
-	free_vec_generic(dates);
+
+	return new_date;
 }
 
 /* For creating a new budget. Returns malloc'd struct full_date which must
@@ -523,7 +620,7 @@ struct full_date *nc_create_new_budget(void)
 {
 
 	struct full_date *date = malloc(sizeof(*date));
-	struct full_date prev_month;
+	struct full_date *copy_date = NULL;
 	int copy_catg_ret = 0;
 	if (date == NULL) {
 		mem_alloc_fail();
@@ -543,21 +640,17 @@ struct full_date *nc_create_new_budget(void)
 		return NULL;
 	}
 
-/* Quick-n-dirty method of getting the absolute previous month, but this 
- * is obviosuly not sufficient */
-	if (previous_budget_exists()) {
-		if (confirm_copy_categories()) {
-			select_budget_date_to_copy(date);
-/*			copy_catg_ret = copy_categories_to_new_budget(&prev_month, date); */
+	if (previous_budget_exists() && confirm_copy_categories()) {
+		copy_date = select_budget_date_to_copy(date);
+		if (copy_date != NULL) {
+			copy_catg_ret = copy_categories_to_new_budget(copy_date, date); 
 			if (copy_catg_ret != COPYCATG_ERR_OK) {
 				print_copy_category_error(copy_catg_ret);
+			} else {
 				insert_budget_record("Income", date->month, date->year, TT_INCOME, 0);
 				insert_budget_record("Saving", date->month, date->year, TT_EXPENSE, 0);
 			}
 		}
-	} else {
-		insert_budget_record("Income", date->month, date->year, TT_INCOME, 0);
-		insert_budget_record("Saving", date->month, date->year, TT_EXPENSE, 0);
 	}
 
 	return date;
