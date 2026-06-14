@@ -472,8 +472,6 @@ static int create_copy_windows(WINDOW **parent,
 	return ret;
 }
 
-/* TODO: Create a small window selection containing previous budget date 
- * pairs. */
 static void select_budget_date_to_copy(struct full_date *fd)
 {
 	int print_y = 0;
@@ -482,6 +480,7 @@ static void select_budget_date_to_copy(struct full_date *fd)
 	int max_x = MIN_COLUMNS + 20;
 	WINDOW *parentw, *leftsw, *rightsw;
 	struct vec_generic *dates = get_dates_to_copy_from(fd);
+	struct catg_vec *catg_str = NULL;
 	if (dates == NULL) {
 		return;
 	}
@@ -490,8 +489,18 @@ static void select_budget_date_to_copy(struct full_date *fd)
 	draw_borders(parentw, leftsw, rightsw, x_split);
 
 	VEC_GENERIC_FOREACH_REVERSE(struct vec2l *, item, dates) {
+		catg_str = get_budget_catg_by_date(item->b, item->a);
 		mvwprintw(leftsw, print_y, 0, "%s", fullname_months[item->b - 1]);
 		mvwprintw(leftsw, print_y, getmaxx(leftsw) - MAX_LEN_YEAR, "%ld", item->a);
+		for (size_t j = 0; j < catg_str->size && j < getmaxy(rightsw); j++) {
+			mvwprintw(rightsw, j, 0, "%s", catg_str->categories[j]);
+		}
+		/* DEBUG */
+		refresh_wins(parentw, leftsw, rightsw);
+		getch();
+		/* DEBUG */
+		free(catg_str);
+		catg_str = NULL;
 		print_y++;
 		if (print_y > max_y - BOX_OFFSET) {
 			break;
