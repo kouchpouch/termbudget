@@ -65,7 +65,7 @@ void catg_vec_append(struct catg_vec **v, char *data)
 	
 	if ((*v)->capacity < (*v)->size + 1) {
 		multiplier = (*v)->capacity / REALLOC_INCR;
-		realloc_sz = sizeof(struct vec_d) + (((*v)->capacity + 
+		realloc_sz = sizeof(struct catg_vec) + (((*v)->capacity + 
 			         (REALLOC_INCR * multiplier)) *
 					 sizeof(long));
 		tmp = realloc(*v, realloc_sz);
