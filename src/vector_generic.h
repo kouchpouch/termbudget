@@ -69,7 +69,7 @@
 		 i < vec->count; \
 		 i++, item = (void *)((char *)vec->data + (vec->data_size * i))) \
 
-/* Reverse of VEC_GENERIC_FOREACH, conditional checks if i wraps around. */
+/* Reverse of VEC_GENERIC_FOREACH */
 #define VEC_GENERIC_FOREACH_REVERSE(T, item, vec) \
 	T item = (void *)((char *)vec->data + (vec->data_size * (vec->count - 1))); \
 	for (size_t i = vec->count - 1; \
