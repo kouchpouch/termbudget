@@ -373,14 +373,22 @@ void print_copy_category_error(enum copy_category_error e)
 }
 
 /* Checks if there is an entry in the budget.csv file */
-static bool previous_budget_exists(void) {
-	bool retval;
+static bool previous_budget_exists(struct full_date *date) {
 	FILE *fptr = open_budget_csv("r");
-	if (get_total_file_lines(fptr) > 1) {
-		retval = true;
-	} else {
-		retval = false;
-	}
+	int total_lines = get_total_file_lines(fptr);
+	bool retval = false;
+
+	if (total_lines > 1) {
+		struct budget_tokens *bt = tokenize_budget_line(total_lines - 1);
+		if (bt != NULL) {
+			if ((bt->y == date->year && bt->m < date->month) 
+				|| bt->y < date->year) {
+				free_budget_tokens(bt);
+				retval = true;
+			}
+		}
+	} 
+
 	fclose(fptr);
 	return retval;
 }
@@ -640,17 +648,19 @@ struct full_date *nc_create_new_budget(void)
 		return NULL;
 	}
 
-	if (previous_budget_exists() && confirm_copy_categories()) {
+	if (previous_budget_exists(date) && confirm_copy_categories()) {
 		copy_date = select_budget_date_to_copy(date);
 		if (copy_date != NULL) {
 			copy_catg_ret = copy_categories_to_new_budget(copy_date, date); 
 			if (copy_catg_ret != COPYCATG_ERR_OK) {
 				print_copy_category_error(copy_catg_ret);
-			} else {
 				insert_budget_record("Income", date->month, date->year, TT_INCOME, 0);
 				insert_budget_record("Saving", date->month, date->year, TT_EXPENSE, 0);
 			}
 		}
+	} else {
+		insert_budget_record("Income", date->month, date->year, TT_INCOME, 0);
+		insert_budget_record("Saving", date->month, date->year, TT_EXPENSE, 0);
 	}
 
 	return date;
