@@ -38,7 +38,7 @@ OBJS     := $(SRC_FILES:%.c=$(OBJ_DIR)/%.o)
 
 .PHONY: all clean
 
-all: clean $(TARGET)
+all: $(TARGET)
 
 $(TARGET): $(OBJS)
 	$(CC) $(CFLAGS) $^ -o $@ $(LIBS)
