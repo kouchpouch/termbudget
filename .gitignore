@@ -11,3 +11,4 @@ termbudget.*
 vgcore.*
 valgrind*
 .DS_Store
+obj/
