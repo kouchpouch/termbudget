@@ -34,9 +34,9 @@ struct record_search_for {
 	bool amt;
 };
 
-int get_total_file_lines(FILE *fptr)
+unsigned int get_total_file_lines(FILE *fptr)
 {
-	int lines = 0;
+	unsigned int lines = 0;
 	char buff[LINE_BUFFER];
 	while (fgets(buff, sizeof(buff), fptr) != NULL) {
 		lines++;
