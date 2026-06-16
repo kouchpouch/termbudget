@@ -218,7 +218,7 @@
 - [X] 23 When no transactions exist it is impossible to quit
 - [X] 24 Out of bounds access not checked in refresh_budget_loop
 - [X] 25 Incorrect numbers shown for records displayed when sorted by date
-         and pressing the page up/page dn key.
+            and pressing the page up/page dn key.
 - [X] 26 Cannot change case of letters when renaming.
 - [X] 27 Segfault on moving the last category up to the top
 - [ ] 28 When copying a previous budget and deleting the first category,
@@ -226,3 +226,4 @@
 - [ ] 29 read_init.c, function 'input_year()' misleads the user by printing
             press F1 or the 'a' key to get started, but instead goes through
             numerous blocks.
+- [ ] 30 segfault if the copy budget loop starts and there are no members
