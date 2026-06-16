@@ -223,3 +223,6 @@
 - [X] 27 Segfault on moving the last category up to the top
 - [ ] 28 When copying a previous budget and deleting the first category,
             the program returns to the home screen.
+- [ ] 29 read_init.c, function 'input_year()' misleads the user by printing
+            press F1 or the 'a' key to get started, but instead goes through
+            numerous blocks.
