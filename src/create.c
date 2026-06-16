@@ -372,22 +372,14 @@ void print_copy_category_error(enum copy_category_error e)
 	getch();
 }
 
-/* Checks if there is an entry in the budget.csv file */
 static bool previous_budget_exists(struct full_date *date) {
 	FILE *fptr = open_budget_csv("r");
-	int total_lines = get_total_file_lines(fptr);
+	unsigned int total_lines = get_total_file_lines(fptr);
 	bool retval = false;
-
-	if (total_lines > 1) {
-		struct budget_tokens *bt = tokenize_budget_line(total_lines - 1);
-		if (bt != NULL) {
-			if ((bt->y == date->year && bt->m < date->month) 
-				|| bt->y < date->year) {
-				free_budget_tokens(bt);
-				retval = true;
-			}
-		}
-	} 
+	printw("%u, %u\n", sort_budget_csv(date->month, date->year), total_lines);
+	if (total_lines > 1 && sort_budget_csv(date->month, date->year) != 1) {
+		retval = true;
+	}
 
 	fclose(fptr);
 	return retval;
@@ -434,31 +426,29 @@ static struct vec_generic *get_dates_to_copy_from(struct full_date *fd)
 	return vg;
 }
 
-static void draw_borders(WINDOW *parent, WINDOW *left, WINDOW *right, int x_split)
+static void draw_borders(WINDOW *parent,
+						 WINDOW *left,
+						 WINDOW *right,
+						 int x_split)
 {
-	char *left_header  = "Budget to Copy";
-	char *right_header = "Preview";
+	char *l_header  = "Budget to Copy";
+	char *r_header = "Preview";
+	int l_header_pos = (getmaxx(left) / 2) - (strlen(l_header) / 2) + 1;
+	int r_header_pos = x_split + (getmaxx(right) / 2 - strlen(l_header) / 2) + 2;
 	mvwvline(parent, 1, x_split, 0, getmaxx(parent) - BOX_OFFSET);
 	box(parent, 0, 0);
 	mvwhline(parent, 0, x_split, ACS_TTEE, 1);
 	mvwhline(parent, getmaxy(parent) - 1, x_split, ACS_BTEE, 1);
 
-	mvwprintw(parent,
-		      0,
-		      ((getmaxx(left) / 2) - (strlen(left_header) / 2)) + 1,
-		      "%s", left_header); 
-	mvwprintw(parent,
-		      0,
-			  x_split + (getmaxx(right) / 2 - strlen(left_header) / 2) + 2,
-			  "%s",
-			  right_header); 
+	mvwprintw(parent, 0, l_header_pos, "%s", l_header); 
+	mvwprintw(parent, 0, r_header_pos, "%s", r_header); 
 
 	refresh();
 	wrefresh(parent);
 }
 
 static int create_copy_windows(WINDOW **parent,
-                               WINDOW **left,
+							   WINDOW **left,
 							   WINDOW **right,
 							   int *max_x,
 							   int *max_y,
@@ -621,6 +611,12 @@ static struct full_date *select_budget_date_to_copy(struct full_date *fd)
 	return new_date;
 }
 
+static void create_default_budget(struct full_date *date)
+{
+	insert_budget_record("Income", date->month, date->year, TT_INCOME, 0);
+	insert_budget_record("Saving", date->month, date->year, TT_EXPENSE, 0);
+}
+
 /* For creating a new budget. Returns malloc'd struct full_date which must
  * be free'd by the caller. Use nc_create_new_budget_intret to automatically
  * free the return value. */
@@ -654,13 +650,11 @@ struct full_date *nc_create_new_budget(void)
 			copy_catg_ret = copy_categories_to_new_budget(copy_date, date); 
 			if (copy_catg_ret != COPYCATG_ERR_OK) {
 				print_copy_category_error(copy_catg_ret);
-				insert_budget_record("Income", date->month, date->year, TT_INCOME, 0);
-				insert_budget_record("Saving", date->month, date->year, TT_EXPENSE, 0);
+				create_default_budget(date);
 			}
 		}
 	} else {
-		insert_budget_record("Income", date->month, date->year, TT_INCOME, 0);
-		insert_budget_record("Saving", date->month, date->year, TT_EXPENSE, 0);
+		create_default_budget(date);
 	}
 
 	return date;
