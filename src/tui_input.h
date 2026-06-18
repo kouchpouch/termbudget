@@ -23,6 +23,11 @@
 
 #include "parser.h"
 
+struct short_date {
+	int month;
+	int year;
+};
+
 struct full_date {
 	int day;
 	int month;
