@@ -251,9 +251,11 @@ static void scroll_month(WINDOW *wptr, int tmp,
 }
 
 /* On a non-select, the return value is the inverted menukeys value */
-static void select_month(WINDOW *wptr, struct dates_flags *df)
+static int select_month(WINDOW *wptr,
+						 struct short_date *date,
+						 struct record_select *rs)
 {
-	struct vec_d *months_data = get_all_months(df->year);
+	struct vec_d *months_data = get_all_months(date->year);
 	struct date_select_scroll scroll = { 0 };
 	int monlen = strlen(abbr_months[0]);
 	int c = 0;
@@ -269,7 +271,7 @@ static void select_month(WINDOW *wptr, struct dates_flags *df)
 		}
 	}
 
-	if (df->year == get_current_year() && current_mo_idx != -1) {
+	if (date->year == get_current_year() && current_mo_idx != -1) {
 		wmove(wptr, BOX_OFFSET + current_mo_idx, BOX_OFFSET);
 		scroll.date_idx = current_mo_idx;
 		wchgat(wptr, monlen, A_REVERSE, REVERSE_COLOR, NULL);
@@ -304,27 +306,27 @@ static void select_month(WINDOW *wptr, struct dates_flags *df)
 		case KEY_F(ADD):
 			free(months_data);
 			months_data = NULL;
-			df->month_flag = ADD;
-			return;
+			rs->flag = ADD;
+			return 1;
 
 		case KEY_RESIZE:
 			free(months_data);
 			months_data = NULL;
-			df->month_flag = RESIZE;
-			return;
+			rs->flag = RESIZE;
+			return 1;
 
 		CASE_ENTER
 			scroll.selected_date = months_data->data[scroll.date_idx];
 			free(months_data);
 			months_data = NULL;
-			df->month = scroll.selected_date;
-			return;
+			date->month = scroll.selected_date;
+			return 0;
 
 		CASE_QUIT
 			free(months_data);
 			months_data = NULL;
-			df->month_flag = QUIT;
-			return;
+			rs->flag = QUIT;
+			return 1;
 
 		default: 
 			break;
@@ -333,6 +335,7 @@ static void select_month(WINDOW *wptr, struct dates_flags *df)
 
 	free(months_data);
 	months_data = NULL;
+	return 0;
 }
 
 static void scroll_year(WINDOW *wptr,
@@ -349,17 +352,21 @@ static void scroll_year(WINDOW *wptr,
 }
 
 /* On a non-select, the return value is the inverted menukeys value */
-static void select_year(WINDOW *wptr, struct dates_flags *df)
+static int select_year(WINDOW *wptr, 
+						struct short_date *date,
+						struct record_select *rs)
 {
 	keypad(wptr, true);	
 
 	struct vec_d *years = get_all_years();
 	if (years == NULL) {
-		df->year_flag = NO_RCRD;
-		return;
+		rs->flag = NO_RCRD;
+		return 1;
 	}
 
 	int n_years = size_to_int(years->size);
+
+	/* TODO: Handle this case */
 	if (n_years < 0) {
 		printf("Too many years");
 		exit(1);
@@ -415,27 +422,27 @@ static void select_year(WINDOW *wptr, struct dates_flags *df)
 		case KEY_F(ADD):
 			free(years);
 			years = NULL;
-			df->year_flag = ADD;
-			return;
+			rs->flag = ADD;
+			return 1;
 
 		case KEY_RESIZE:
 			free(years);
 			years = NULL;
-			df->year_flag = RESIZE;
-			return;
+			rs->flag = RESIZE;
+			return 1;
 
 		CASE_ENTER
 			scroll.selected_date = years->data[scroll.scroll_idx];
 			free(years);
 			years = NULL;
-			df->year = scroll.selected_date;
-			df->year_flag = 0;
-			return;
+			date->year = scroll.selected_date;
+			rs->flag = 0;
+			return 0;
 
 		CASE_QUIT
 			free(years);
-			df->year_flag = QUIT;
-			return;
+			rs->flag = QUIT;
+			return 1;
 
 		default: 
 			break;
@@ -444,51 +451,61 @@ static void select_year(WINDOW *wptr, struct dates_flags *df)
 
 	free(years);
 	years = NULL;
+	return 0;
 }
 
-static void input_year(WINDOW *wptr, struct dates_flags *df)
+static int input_year(WINDOW *wptr,
+					   struct short_date *date,
+					   struct record_select *rs)
 {
-	select_year(wptr, df);
+	int c = 0;
+	int select_year_ret = select_year(wptr, date, rs);
 
-	if (df->year_flag == NO_RCRD) {
+	if (rs->flag == NO_RCRD) {
 		mvwxcprintw(wptr, getmaxy(wptr) / 2, 
 			  "No records exist, press 'a' or 'F1' to get started");
-		wgetch(wptr);
+		c = wgetch(wptr);
+		if (c == 'a' || c == KEY_F(ADD)) {
+			rs->flag = ADD;
+		} else {
+			rs->flag = QUIT;
+		}
 	}
+
+	return select_year_ret;
 }
 
-static void get_dates(struct record_select *sr, struct dates_flags *dates)
+static int get_dates(struct record_select *rs,
+					 struct short_date *date)
 {
 	WINDOW *wptr = newwin(LINES - 1, 0, 0, 0);
 	box(wptr, 0, 0);
 
-	if (!month_or_year_exists(dates->month, dates->year)) {
-		dates->month = 0;
-		dates->year = 0;
+	if (!month_or_year_exists(date->month, date->year)) {
+		date->month = 0;
+		date->year = 0;
 	}
 
-	if (dates->year == 0) {
-		input_year(wptr, dates);
-		if (dates->year_flag != 0) {
-			dates->month_flag = NO_SELECT;
-			dates->year = -1;
-			dates->month = -1;
-			sr->flag = dates->year_flag;
+	if (date->year == 0) {
+		if (input_year(wptr, date, rs) != 0) {
+			if (rs->flag == ADD) {
+				date->year = -1;
+				date->month = -1;
+			}
 			nc_exit_window(wptr);
-			return;
+			return 1;
 		}
 	}
 
-	if (dates->month == 0) {
-		select_month(wptr, dates);
-		if (dates->month_flag != 0) {
-			sr->flag = dates->month_flag;
+	if (date->month == 0) {
+		if (select_month(wptr, date, rs) != 0) {
 			nc_exit_window(wptr);
-			return;
+			return 1;
 		}
 	}
 	
 	nc_exit_window(wptr);
+	return 0;
 }
 
 static void debug_fields(void)
@@ -501,20 +518,20 @@ static void debug_fields(void)
 	move(0,0);
 
 	printw("Budget Fields: %d, %d, %d, %d, %d\n",
-	 bh->month,
-	 bh->year,
-	 bh->catg,
-	 bh->transtype, 
-	 bh->value);
+		bh->month,
+		bh->year,
+		bh->catg,
+		bh->transtype, 
+		bh->value);
 
 	printw("Record Fields: %d, %d, %d, %d, %d, %d, %d\n", 
-	 rh->month,
-	 rh->day,
-	 rh->year,
-	 rh->catg,
-	 rh->desc,
-	 rh->transtype,
-	 rh->value);
+		rh->month,
+		rh->day,
+		rh->year,
+		rh->catg,
+		rh->desc,
+		rh->transtype,
+		rh->value);
 
 	free(bh);
 	fclose(bfptr);
@@ -691,38 +708,44 @@ static void cleanup_read_setup(struct vec_d *rec_fpis,
 
 void nc_read_setup(struct read_state *r_state)
 {
+	FILE *fptr, *bfptr;
+	struct vec_d *pidx, *rec_line_nums, *rec_fpis;
+	struct ReadWins *wins;
+	size_t n_records;
+	int get_date_err, c;
+	bool sidebar_exists;
+
+	struct record_select rs = {
+		.flag = -1,
+		.opt = -1,
+	};
+
+	struct short_date date = {
+		.month = r_state->month,
+		.year = r_state->year,
+	};
+
 	UNSET_KEEP_BIT(r_state->flag);
+
 	nc_print_main_menu_footer(stdscr);
 	if (debug_flag) {
 		nc_print_debug_flag(stdscr);
 	}
 	refresh();
 
-	struct record_select rs = {
-		.flag = -1,
-		.opt = -1,
-	};
-	struct dates_flags date = {
-		.month = r_state->month,
-		.year = r_state->year,
-		.year_flag = 0,
-		.month_flag = 0
-	};
-
-	get_dates(&rs, &date);
-	if (date.year_flag != 0 || date.month_flag != 0) {
+	get_date_err = get_dates(&rs, &date);
+	if (get_date_err != 0) {
 		goto err_select_date_fail;
 	}
 
-	FILE *fptr = open_record_csv("r");
-	struct vec_d *pidx = index_csv(fptr);
-	struct vec_d *rec_line_nums = NULL;
-	struct vec_d *rec_fpis = NULL;
-	size_t n_records;
-	bool sidebar_exists;
+	fptr = open_record_csv("r");
+	pidx = index_csv(fptr);
+	rec_line_nums = NULL;
+	rec_fpis = NULL;
+
 	/* To hold the return value of wgetch()/getch() */
-	int c;
-	struct ReadWins *wins = create_read_windows();
+	c = 0;
+	wins = create_read_windows();
 	rs.scroll_back = r_state->scroll_back;
 
 	if (debug_flag) {
@@ -788,7 +811,7 @@ void nc_read_setup(struct read_state *r_state)
 	if (r_state->sort == SORT_DATE) {
 		nc_read_loop(wins, fptr, &rs, rec_fpis, r_state->head);
 	} else if (r_state->sort == SORT_CATG) {
-		FILE *bfptr = open_budget_csv("r");
+		bfptr = open_budget_csv("r");
 		nc_read_budget_loop(wins, fptr, bfptr, &rs, rec_fpis, r_state->head); 
 		fclose(bfptr);
 	}
@@ -801,9 +824,6 @@ void nc_read_setup(struct read_state *r_state)
 	r_state->scroll_back_fpi = rs.index;
 
 err_select_date_fail:
-	printw("RS FLAG: %d\n", rs.flag);
-	refresh();
-	getch();
 	switch (rs.flag) {
 
 	case NO_SELECT:
