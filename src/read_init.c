@@ -452,7 +452,7 @@ static void input_year(WINDOW *wptr, struct dates_flags *df)
 
 	if (df->year_flag == NO_RCRD) {
 		mvwxcprintw(wptr, getmaxy(wptr) / 2, 
-			  "No records exist, add (F1) to get started");
+			  "No records exist, press 'a' or 'F1' to get started");
 		wgetch(wptr);
 	}
 }
@@ -471,6 +471,8 @@ static void get_dates(struct record_select *sr, struct dates_flags *dates)
 		input_year(wptr, dates);
 		if (dates->year_flag != 0) {
 			dates->month_flag = NO_SELECT;
+			dates->year = -1;
+			dates->month = -1;
 			sr->flag = dates->year_flag;
 			nc_exit_window(wptr);
 			return;
@@ -799,6 +801,9 @@ void nc_read_setup(struct read_state *r_state)
 	r_state->scroll_back_fpi = rs.index;
 
 err_select_date_fail:
+	printw("RS FLAG: %d\n", rs.flag);
+	refresh();
+	getch();
 	switch (rs.flag) {
 
 	case NO_SELECT:
