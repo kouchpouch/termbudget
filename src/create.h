@@ -51,7 +51,7 @@ struct full_date *nc_create_new_budget(void);
 
 int get_add_selection(void);
 
-void add_main_with_date(struct dates_flags *dates);
+void add_main_with_date(struct short_date *date);
 
 void add_main_no_date(void);
 

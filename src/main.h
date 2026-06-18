@@ -83,13 +83,6 @@ enum sort_by {
 	SORT_CATG = 1
 };
 
-struct dates_flags {
-	int year;
-	int month;
-	unsigned char year_flag;
-	unsigned char month_flag;
-};
-
 /* Forward declaration for data structures in vector.h */
 struct vec_d;
 struct vec2f_fin;
