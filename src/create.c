@@ -37,6 +37,7 @@
 #include "file_write.h"
 #include "vector.h"
 #include "vector_generic.h"
+#include "flags.h"
 
 enum copy_category_error {
 	COPYCATG_ERR_OK,
@@ -375,8 +376,15 @@ void print_copy_category_error(enum copy_category_error e)
 static bool previous_budget_exists(struct full_date *date) {
 	FILE *fptr = open_budget_csv("r");
 	unsigned int total_lines = get_total_file_lines(fptr);
+	unsigned int insert_line = sort_budget_csv(date->month, date->year);
 	bool retval = false;
-	printw("%u, %u\n", sort_budget_csv(date->month, date->year), total_lines);
+
+	if (debug_flag) {
+		printw("Insertion Line: %u, Total Lines: %u\n",
+		 insert_line,
+		 total_lines);
+	}
+
 	if (total_lines > 1 && sort_budget_csv(date->month, date->year) != 1) {
 		retval = true;
 	}
@@ -674,7 +682,7 @@ int nc_create_new_budget_intret(void) {
 	}
 }
 
-void add_main_with_date(struct dates_flags *dates)
+void add_main_with_date(struct short_date *date)
 {
 	enum add_sel {
 		ADD_TRNS = 0,
@@ -687,11 +695,11 @@ void add_main_with_date(struct dates_flags *dates)
 
 	switch (add_sel) {
 	case ADD_TRNS:
-		create_transaction(dates->year, dates->month);
+		create_transaction(date->year, date->month);
 		break;
 
 	case ADD_CATG:
-		ret = create_budget_record(dates->year, dates->month);
+		ret = create_budget_record(date->year, date->month);
 		free(ret);
 		break;
 
