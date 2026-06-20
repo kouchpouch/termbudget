@@ -626,9 +626,9 @@ static void create_default_budget(struct full_date *date)
 }
 
 /* For creating a new budget. Returns malloc'd struct full_date which must
- * be free'd by the caller. Use nc_create_new_budget_intret to automatically
+ * be free'd by the caller. Use create_new_budget_intret to automatically
  * free the return value. */
-struct full_date *nc_create_new_budget(void)
+struct full_date *create_new_budget(void)
 {
 
 	struct full_date *date = malloc(sizeof(*date));
@@ -668,12 +668,12 @@ struct full_date *nc_create_new_budget(void)
 	return date;
 }
 
-/* Wrapper around nc_create_new_budget() but frees the struct full_date and 
+/* Wrapper around create_new_budget() but frees the struct full_date and 
  * only returns an int to indicate success or failure.
  * Most of the time this function's return value has no use. Use this to avoid 
  * future bugs */
-int nc_create_new_budget_intret(void) {
-	struct full_date *d = nc_create_new_budget();
+int create_new_budget_intret(void) {
+	struct full_date *d = create_new_budget();
 	if (d != NULL) {
 		free(d);
 		return -1;
@@ -731,7 +731,7 @@ void add_main_no_date(void)
 		break;
 
 	case ADD_BUDG:
-		nc_create_new_budget_intret();
+		create_new_budget_intret();
 		break;
 	
 	default:
