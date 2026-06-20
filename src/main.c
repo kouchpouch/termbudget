@@ -237,13 +237,15 @@ static int ncurses_main_menu(WINDOW *wptr)
 					free(ret);
 					break;
 				case ADD_BUDG:
-					date = nc_create_new_budget();
+					date = create_new_budget();
 					if (date != NULL) {
 						rret.month = date->month;
 						rret.year = date->year;
+						rret.flag = RRET_BYDATE;
 						free(date);
 						date = NULL;
-						nc_read_setup(&rret);
+						goto reader_test;
+						// nc_read_setup(&rret);
 					}
 					break;
 				default:
@@ -262,6 +264,9 @@ static int ncurses_main_menu(WINDOW *wptr)
 		case KEY_F(READ):
 			wclear(wptr);
 			nc_read_setup_default(&rret);
+/* TODO: This could be more graceful */
+/* TODO: We'll call this temporary */
+reader_test:
 			while (rret.flag != RRET_QUIT) {
 				conditionally_free_linked_list(&rret);
 				if (debug_flag) {
