@@ -45,9 +45,9 @@ void create_transaction(int year, int month);
 
 void create_transaction_default(void);
 
-int nc_create_new_budget_intret(void);
+int create_new_budget_intret(void);
 
-struct full_date *nc_create_new_budget(void);
+struct full_date *create_new_budget(void);
 
 int get_add_selection(void);
 
