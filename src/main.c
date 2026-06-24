@@ -209,6 +209,7 @@ static int ncurses_main_menu(WINDOW *wptr)
 
 	char *ret;
 	int c = 0;
+	bool skip_input = false;
 
 	while (c != KEY_F(QUIT) && c != 'q') {
 		nc_print_welcome(wptr);
@@ -217,7 +218,12 @@ static int ncurses_main_menu(WINDOW *wptr)
 			nc_print_debug_flag(wptr);
 		}
 		wrefresh(wptr);
-		c = getch();
+
+		if (!skip_input) {
+			c = getch();
+		}
+
+		skip_input = false;
 
 		conditionally_free_linked_list(&rret);
 
@@ -229,9 +235,11 @@ static int ncurses_main_menu(WINDOW *wptr)
 			add_sel = get_add_selection();
 
 			switch (add_sel) {
+				/* This probably shouldn't even be an option */
 				case ADD_TRNS:
 					create_transaction_default();
 					break;
+				/* This probably shouldn't even be an option */
 				case ADD_CATG:
 					ret = create_budget_record(0, 0);
 					free(ret);
@@ -244,8 +252,8 @@ static int ncurses_main_menu(WINDOW *wptr)
 						rret.flag = RRET_BYDATE;
 						free(date);
 						date = NULL;
-						goto reader_test;
-						// nc_read_setup(&rret);
+						c = 'r';
+						skip_input = true;
 					}
 					break;
 				default:
@@ -263,10 +271,15 @@ static int ncurses_main_menu(WINDOW *wptr)
 		case ('r'):
 		case KEY_F(READ):
 			wclear(wptr);
-			nc_read_setup_default(&rret);
-/* TODO: This could be more graceful */
-/* TODO: We'll call this temporary */
-reader_test:
+
+			if (rret.year == 0) { 
+				nc_read_setup_default(&rret);
+			} else if (rret.year > 0 && rret.month == 0) {
+				nc_read_setup_year(rret.year, &rret);
+			} else {
+				nc_read_setup(&rret);
+			}
+
 			while (rret.flag != RRET_QUIT) {
 				conditionally_free_linked_list(&rret);
 				if (debug_flag) {
@@ -287,6 +300,7 @@ reader_test:
 				}
 			}
 			break;
+
 		case ('Q'):
 		case ('q'):
 		case KEY_F(QUIT):

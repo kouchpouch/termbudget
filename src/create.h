@@ -26,6 +26,7 @@
 #include "vector.h"
 #include "parser.h"
 #include "tui_input.h"
+#include "read_init.h"
 
 enum AddMainMenu {
 	ADD_TRANSACTION = 0,
@@ -33,17 +34,17 @@ enum AddMainMenu {
 	CREATE_BUDGET
 }; 
 
-void insert_budget_record(char *catg, int m, int y, int transtype, double amt);
+int insert_budget_record(char *catg, int m, int y, int transtype, double amt);
 
 char *create_budget_record(int yr, int mo);
 
-void insert_transaction_record(int insert_line, struct transaction_tokens *ld);
+int insert_transaction_record(int insert_line, struct transaction_tokens *ld);
 
 /* Optional parameters int month, year. If add transaction is selected while
  * on the read screen these will be auto-filled. */
-void create_transaction(int year, int month);
+int create_transaction(int year, int month);
 
-void create_transaction_default(void);
+int create_transaction_default(void);
 
 int create_new_budget_intret(void);
 
@@ -53,6 +54,6 @@ int get_add_selection(void);
 
 void add_main_with_date(struct short_date *date);
 
-void add_main_no_date(void);
+void add_main_no_date(struct read_state *rs);
 
 #endif

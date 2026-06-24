@@ -833,8 +833,8 @@ err_select_date_fail:
 	case ADD:
 		nc_print_input_footer(stdscr);
 		if (date.year < 0 || date.month < 0) {
-			add_main_no_date();
-			r_state->flag = RRET_DEFAULT;
+			add_main_no_date(r_state);
+			//r_state->flag = RRET_DEFAULT;
 		} else {
 			add_main_with_date(&date);
 			r_state->flag = RRET_BYDATE;

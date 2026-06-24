@@ -29,6 +29,7 @@
 #include "categories.h"
 #include "edit_categories.h"
 #include "parser.h"
+#include "read_init.h"
 #include "sorter.h"
 #include "tui.h"
 #include "tui_input.h"
@@ -79,7 +80,7 @@ static void insert_budget_record_from_ld(struct transaction_tokens *ld)
 
 /* Writes the a csv record containing the data passed into the arguments
  * to budget.csv into the appropriate line sorted by date. */
-void insert_budget_record(char *catg, int m, int y, int transtype, double amt) 
+int insert_budget_record(char *catg, int m, int y, int transtype, double amt) 
 {
 	unsigned int insert_line = sort_budget_csv(m, y);
 	FILE *fptr = open_budget_csv("r");
@@ -91,7 +92,7 @@ void insert_budget_record(char *catg, int m, int y, int transtype, double amt)
 
 	tmpfptr = insert_into_file(fptr, insert_str, insert_line);
 
-	mv_tmp_to_budget_file(tmpfptr, fptr);
+	return mv_tmp_to_budget_file(tmpfptr, fptr);
 }
 
 /* For a la carte budget category creation, returns a malloc'd char * which
@@ -142,7 +143,7 @@ char *create_budget_record(int yr, int mo)
 }
 
 /* Adds a record to the CSV on line linetoadd */
-void insert_transaction_record(int insert_line, struct transaction_tokens *ld)
+int insert_transaction_record(int insert_line, struct transaction_tokens *ld)
 {
 	if (!category_exists_in_budget(ld->category, ld->month, ld->year)) {
 		insert_budget_record_from_ld(ld);
@@ -156,26 +157,28 @@ void insert_transaction_record(int insert_line, struct transaction_tokens *ld)
 
 	tmpfptr = insert_into_file(fptr, insert_str, insert_line);
 	
-	mv_tmp_to_record_file(tmpfptr, fptr);
+	return mv_tmp_to_record_file(tmpfptr, fptr);
 }
 
 /* Optional parameters int month, year. If add transaction is selected while
- * on the read screen these will be auto-filled. */
-void create_transaction(int year, int month)
+ * on the read screen these will be auto-filled. Returns 1 on failure, 0 on
+ * success */
+int create_transaction(int year, int month)
 {
 	struct transaction_tokens userlinedata_, *uld = &userlinedata_;
 	unsigned int result_line;
 	struct full_date fd;
+	int retval = 1;
 
 	nc_print_input_footer(stdscr);
 
 	if (year == 0 || month == 0) {
 		if (nc_input_full_date(month, 0, year, &fd) == -1) {
-			return;
+			return 1;
 		}
 	} else {
 		if (nc_input_full_date_on_day(month, 0, year, &fd) == -1) {
-			return;
+			return 1;
 		}
 	}
 	uld->month = fd.month;
@@ -184,13 +187,13 @@ void create_transaction(int year, int month)
 
 	uld->category = nc_select_category(uld->month, uld->year);
 	if (uld->category == NULL) {
-		return;
+		return 1;
 	}
 
 	uld->desc = nc_input_string("Enter Description");
 	if (uld->desc == NULL) {
 		free(uld->category);
-		return;
+		return 1;
 	}
 
 	uld->transtype = nc_input_transaction_type();
@@ -208,18 +211,21 @@ void create_transaction(int year, int month)
 	}
 
 	result_line = sort_record_csv(uld->month, uld->day, uld->year);
-	insert_transaction_record(result_line, uld);
+	retval = insert_transaction_record(result_line, uld);
 
 input_quit:
 	free(uld->category);
 	free(uld->desc);
+
 // 	This was causing the nc_read_setup function to be called twice
 //	nc_read_setup(uld->year, uld->month, sort);
+
+	return retval;
 }
 
-void create_transaction_default(void)
+int create_transaction_default(void)
 {
-	create_transaction(0, 0);
+	return create_transaction(0, 0);
 }
 
 static struct MenuParams *init_add_main_menu(void)
@@ -373,7 +379,8 @@ void print_copy_category_error(enum copy_category_error e)
 	getch();
 }
 
-static bool previous_budget_exists(struct full_date *date) {
+static bool previous_budget_exists(struct full_date *date)
+{
 	FILE *fptr = open_budget_csv("r");
 	unsigned int total_lines = get_total_file_lines(fptr);
 	unsigned int insert_line = sort_budget_csv(date->month, date->year);
@@ -717,13 +724,14 @@ void add_main_with_date(struct short_date *date)
 	}
 }
 
-void add_main_no_date(void)
+void add_main_no_date(struct read_state *rs)
 {
 	enum add_sel {
 		ADD_TRNS = 0,
 		ADD_CATG,
 		ADD_BUDG
 	} add_sel;
+	struct full_date *date;
 	char *ret;
 	struct MenuParams *mp = init_add_main_menu();
 	add_sel = nc_input_menu(mp);
@@ -740,7 +748,13 @@ void add_main_no_date(void)
 		break;
 
 	case ADD_BUDG:
-		create_new_budget_intret();
+		date = create_new_budget();
+		if (date != NULL) {
+			rs->year = date->year;
+			rs->month = date->month;
+			rs->flag = RRET_BYDATE;
+			free(date);
+		}
 		break;
 	
 	default:
