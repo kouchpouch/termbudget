@@ -676,6 +676,7 @@ struct full_date *create_new_budget(void)
 				print_copy_category_error(copy_catg_ret);
 				create_default_budget(date);
 			}
+			free(copy_date);
 		}
 	} else {
 		create_default_budget(date);
