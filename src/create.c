@@ -97,32 +97,33 @@ int insert_budget_record(char *catg, int m, int y, int transtype, double amt)
 
 /* For a la carte budget category creation, returns a malloc'd char * which
  * is free'd by the caller */
-char *create_budget_record(int yr, int mo)
+int create_budget_record(int yr, int mo)
 {
 	char *catg;
 	int transtype;
+	int retval;
 	struct catg_vec *psc;
 	double amt;
 
 	if (mo == 0 || yr == 0) {
 		yr = nc_input_year(0);
 		if (yr == -1) {
-			return NULL;
+			return 1;
 		}
 		mo = nc_input_month(0, yr);
 		if (mo == -1) {
-			return NULL;
+			return 1;
 		}
 	}
 
 	catg = nc_input_string("Enter Category");
 	if (catg == NULL) {
-		return NULL;
+		return 1;
 	}
 	transtype = nc_input_category_type();
 	if (transtype < 0) {
 		free(catg);
-		return NULL;
+		return 1;
 	}
 
 	psc = get_budget_catg_by_date(mo, yr);
@@ -130,16 +131,19 @@ char *create_budget_record(int yr, int mo)
 		nc_message("That Category Already Exists");
 		free(catg);
 		free_categories(psc);
-		return NULL;
+		return 1;
 	}
 
 	amt = nc_input_budget_amount();
 	if (confirm_budget_category(catg, amt)) {
-		insert_budget_record(catg, mo, yr, transtype, amt);
+		retval = insert_budget_record(catg, mo, yr, transtype, amt);
+	} else {
+		return 1;
 	}
 
 	free_categories(psc);
-	return catg;
+	free(catg);
+	return retval;
 }
 
 /* Adds a record to the CSV on line linetoadd */
@@ -230,7 +234,7 @@ int create_transaction_default(void)
 
 static struct MenuParams *init_add_main_menu(void)
 {
-	int n_str = 3;
+	int n_str = 2;
 	int idx = 0;
 	struct MenuParams *mp = malloc(sizeof(*mp) + (sizeof(char *) * n_str));
 	if (mp == NULL) {
@@ -240,7 +244,7 @@ static struct MenuParams *init_add_main_menu(void)
 	mp->items = n_str;
 	mp->title = "Select Data Type to Add";
 	mp->strings[idx++] = "Add Transaction";
-	mp->strings[idx++] = "Add Category";
+//	mp->strings[idx++] = "Add Category";
 	mp->strings[idx++] = "Create New Budget";
 
 	assert(idx == n_str);
@@ -250,9 +254,9 @@ static struct MenuParams *init_add_main_menu(void)
 
 /* Creates an ncurses selection menu and returns the value of the selected
  * item */
-int get_add_selection(void)
+enum add_selection get_add_selection(void)
 {
-	enum AddMainMenu add_sel;
+	enum add_selection add_sel;
 	struct MenuParams *mp = init_add_main_menu();
 	add_sel = nc_input_menu(mp);
 	free(mp);
@@ -705,7 +709,6 @@ void add_main_with_date(struct short_date *date)
 		ADD_TRNS = 0,
 		ADD_CATG
 	} add_sel;
-	char *ret;
 	struct MenuParams *mp = init_add_menu();
 	add_sel = nc_input_menu(mp);
 	free(mp);
@@ -716,8 +719,7 @@ void add_main_with_date(struct short_date *date)
 		break;
 
 	case ADD_CATG:
-		ret = create_budget_record(date->year, date->month);
-		free(ret);
+		create_budget_record(date->year, date->month);
 		break;
 
 	default:
@@ -733,7 +735,6 @@ void add_main_no_date(struct read_state *rs)
 		ADD_BUDG
 	} add_sel;
 	struct full_date *date;
-	char *ret;
 	struct MenuParams *mp = init_add_main_menu();
 	add_sel = nc_input_menu(mp);
 	free(mp);
@@ -744,8 +745,7 @@ void add_main_no_date(struct read_state *rs)
 		break;
 
 	case ADD_CATG:
-		ret = create_budget_record(0, 0);
-		free(ret);
+		create_budget_record(0, 0);
 		break;
 
 	case ADD_BUDG:

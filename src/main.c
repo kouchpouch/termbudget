@@ -200,14 +200,7 @@ static int ncurses_main_menu(WINDOW *wptr)
 		.head = NULL
 	};
 	struct full_date *date;
-
-	enum add_sel {
-		ADD_TRNS = 0,
-		ADD_CATG,
-		ADD_BUDG
-	} add_sel;
-
-	char *ret;
+	enum add_selection add_sel;
 	int c = 0;
 	bool skip_input = false;
 
@@ -235,16 +228,23 @@ static int ncurses_main_menu(WINDOW *wptr)
 			add_sel = get_add_selection();
 
 			switch (add_sel) {
-				/* This probably shouldn't even be an option */
-				case ADD_TRNS:
+
+				/* If a budget doesn't exist for the date which the user
+				 * attemps to create a transaction at, create a budget. */
+				case CREATE_TRANSACTION:
 					create_transaction_default();
 					break;
-				/* This probably shouldn't even be an option */
+
+				/* This probably shouldn't even be an option
+				 * ...and it's not anymore. */
+				/*
 				case ADD_CATG:
 					ret = create_budget_record(0, 0);
 					free(ret);
 					break;
-				case ADD_BUDG:
+				*/
+
+				case ADD_BUDGET:
 					date = create_new_budget();
 					if (date != NULL) {
 						rret.month = date->month;
@@ -272,12 +272,16 @@ static int ncurses_main_menu(WINDOW *wptr)
 		case KEY_F(READ):
 			wclear(wptr);
 
-			if (rret.year == 0) { 
-				nc_read_setup_default(&rret);
-			} else if (rret.year > 0 && rret.month == 0) {
-				nc_read_setup_year(rret.year, &rret);
+			if (rret.flag == RRET_BYDATE) {
+				if (rret.year == 0) { 
+					nc_read_setup_default(&rret);
+				} else if (rret.year > 0 && rret.month == 0) {
+					nc_read_setup_year(rret.year, &rret);
+				} else {
+					nc_read_setup(&rret);
+				}
 			} else {
-				nc_read_setup(&rret);
+				nc_read_setup_default(&rret);
 			}
 
 			while (rret.flag != RRET_QUIT) {

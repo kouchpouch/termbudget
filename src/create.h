@@ -28,15 +28,14 @@
 #include "tui_input.h"
 #include "read_init.h"
 
-enum AddMainMenu {
-	ADD_TRANSACTION = 0,
-	ADD_CATEGORY,
-	CREATE_BUDGET
-}; 
+enum add_selection {
+	CREATE_TRANSACTION = 0,
+	ADD_BUDGET
+};
 
 int insert_budget_record(char *catg, int m, int y, int transtype, double amt);
 
-char *create_budget_record(int yr, int mo);
+int create_budget_record(int yr, int mo);
 
 int insert_transaction_record(int insert_line, struct transaction_tokens *ld);
 
@@ -50,7 +49,7 @@ int create_new_budget_intret(void);
 
 struct full_date *create_new_budget(void);
 
-int get_add_selection(void);
+enum add_selection get_add_selection(void);
 
 void add_main_with_date(struct short_date *date);
 
