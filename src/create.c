@@ -487,10 +487,16 @@ static int create_copy_windows(WINDOW **parent,
 static void print_preview(struct catg_vec *catg_str, WINDOW *rightsw)
 {
 	int j;
+	int maxx;
 	size_t i;
+
 	wclear(rightsw);
+	maxx = getmaxx(rightsw);
+
 	for (i = 0, j = 0; i < catg_str->size && j < getmaxy(rightsw); i++, j++) {
-		mvwprintw(rightsw, i, 0, "%s", catg_str->categories[i]);
+		/* Only print as many characters as can fix on a single 
+		 * line in rightsw */
+		mvwprintw(rightsw, i, 0, "%.*s", maxx, catg_str->categories[i]);
 		mvwchgat(rightsw, i, 0, -1, A_NORMAL, category_color(i), NULL); 
 	}
 	wrefresh(rightsw);
@@ -528,10 +534,12 @@ static int print_copy_loop(size_t *scrl_idx,
 	new_date->month = curr->b;
 	new_date->year = curr->a;
 	catg_str = get_budget_catg_by_date(curr->b, curr->a);
+
 	print_preview(catg_str, rightsw);
 	highlight(leftsw, *scrl_idx, 0, getmaxx(leftsw));
 	free_categories(catg_str);
 	catg_str = NULL;
+
 	wrefresh(leftsw);
 	wrefresh(rightsw);
 	return 0;
@@ -599,6 +607,7 @@ static struct full_date *select_budget_date_to_copy(struct full_date *fd)
 	create_copy_windows(&parentw, &leftsw, &rightsw, &max_x, &max_y, x_split);
 	draw_borders(parentw, leftsw, rightsw, x_split);
 
+	/* Print each month and year pair */
 	VEC_GENERIC_FOREACH_REVERSE(struct vec2l *, item, dates) {
 		mvwprintw(leftsw, print_y, 0, "%s", fullname_months[item->b - 1]);
 		mvwprintw(leftsw, print_y, getmaxx(leftsw) - MAX_LEN_YEAR, "%ld", item->a);
