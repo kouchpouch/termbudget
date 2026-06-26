@@ -25,6 +25,7 @@
 #include "parser.h"
 #include "tui_sidebar.h"
 #include "flags.h"
+#include "helper.h"
 
 enum FooterAttr {
 	ON,

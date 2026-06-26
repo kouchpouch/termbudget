@@ -30,6 +30,7 @@
 #include "tui_input_menu.h"
 #include "filemanagement.h"
 #include "flags.h"
+#include "helper.h"
 
 enum fields {
 	EDIT_AMNT = 0,
