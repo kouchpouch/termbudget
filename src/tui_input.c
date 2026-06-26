@@ -1138,7 +1138,7 @@ manual_selection:
 			nc_exit_window(wptr_parent);
 			nc_exit_window(wptr);
 			nc_print_input_footer(stdscr);
-			return create_budget_record(year, month);
+			return create_category(year, month);
 
 		CASE_ENTER
 			break;
