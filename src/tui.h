@@ -21,7 +21,6 @@
 
 #include <ncurses.h>
 
-#include "helper.h"
 #include "parser.h"
 
 /* Minimum length to display the full names of each field

@@ -19,7 +19,6 @@
 #ifndef READ_INIT_H
 #define READ_INIT_H
 
-#include <stdio.h>
 #include "categories.h"
 
 struct read_state {

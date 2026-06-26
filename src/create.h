@@ -19,11 +19,6 @@
 #ifndef CREATE_H
 #define CREATE_H
 
-#include <stdio.h>
-#include <stdlib.h>
-
-#include "main.h"
-#include "vector.h"
 #include "parser.h"
 #include "tui_input.h"
 #include "read_init.h"
@@ -35,7 +30,8 @@ enum add_selection {
 
 int insert_budget_record(char *catg, int m, int y, int transtype, double amt);
 
-int create_budget_record(int yr, int mo);
+char *create_category(int yr, int mo);
+int create_category_intret(int yr, int mo);
 
 int insert_transaction_record(int insert_line, struct transaction_tokens *ld);
 

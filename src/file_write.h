@@ -19,9 +19,10 @@
 #ifndef FILE_WRITE_H
 #define FILE_WRITE_H
 
-#include "parser.h"
 #include <stdio.h>
 #include <stdbool.h>
+
+#include "parser.h"
 
 int budget_tokens_buffer_to_string(char *buffer,
 								   size_t size,

@@ -19,7 +19,7 @@
 #ifndef DYNAMIC_STRING_H
 #define DYNAMIC_STRING_H
 
-#include <stdlib.h>
+#include <stddef.h>
 
 struct d_string {
 	size_t capacity;

@@ -20,8 +20,6 @@
 #define BENCHMARK_H
 
 #include <time.h>
-#include <stdio.h>
-#include <time.h>
 
 extern long double benchmark_begin, benchmark_end;
 extern struct timespec benchmark_tp;

@@ -19,7 +19,7 @@
 #ifndef VECTOR_GENERIC_H
 #define VECTOR_GENERIC_H
 
-#include <stdio.h>
+#include <stddef.h>
 
 /*             
  *              struct vec_generic
@@ -63,18 +63,18 @@
 /* For each item of size 'data_size' the memory allocated at a generic 
  * vector's data member is casted the argument 'T' and exposed as 
  * 'item' */
-#define VEC_GENERIC_FOREACH(T, item, vec) \
-	T item = vec->data; \
-	for (size_t i = 0; \
-		 i < vec->count; \
-		 i++, item = (void *)((char *)vec->data + (vec->data_size * i))) \
+#define VEC_GENERIC_FOREACH(T, item, vec)                                      \
+	T item = vec->data;                                                        \
+	for (size_t i = 0;                                                         \
+		 i < vec->count;                                                       \
+		 i++, item = (void *)((char *)vec->data + (vec->data_size * i)))       \
 
 /* Reverse of VEC_GENERIC_FOREACH */
-#define VEC_GENERIC_FOREACH_REVERSE(T, item, vec) \
-	T item = (void *)((char *)vec->data + (vec->data_size * (vec->count - 1))); \
-	for (size_t i = vec->count - 1; \
-		 i < vec->count; \
-		 i--, item = (void *)((char *)vec->data + (vec->data_size * i))) \
+#define VEC_GENERIC_FOREACH_REVERSE(T, item, vec)                              \
+	T item = (void *)((char *)vec->data + (vec->data_size * (vec->count - 1)));\
+	for (size_t i = vec->count - 1;                                            \
+		 i < vec->count;                                                       \
+		 i--, item = (void *)((char *)vec->data + (vec->data_size * i)))       \
 
 struct vec_generic {
 	size_t data_size; /* Size of each element */

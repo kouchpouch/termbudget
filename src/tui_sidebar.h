@@ -23,6 +23,7 @@
 #define MIN_COLUMNS_SIDEBAR MIN_COLUMNS + SIDEBAR_COLUMNS
 
 #include <ncurses.h>
+
 #include "tui.h"
 #include "categories.h"
 #include "vector.h"

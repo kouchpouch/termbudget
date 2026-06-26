@@ -21,7 +21,6 @@
 
 #include <stdbool.h>
 
-#include "main.h"
 #include "categories.h"
 
 bool duplicate_category_exists(struct catg_vec *psc, char *catg);

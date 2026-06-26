@@ -19,7 +19,7 @@
 #ifndef CONVERT_CSV_H
 #define CONVERT_CSV_H
 
-#include <stdio.h>
+#include <stddef.h>
 
 size_t convert_chase_csv(char *dir);
 
