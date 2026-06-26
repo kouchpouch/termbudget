@@ -95,35 +95,32 @@ int insert_budget_record(char *catg, int m, int y, int transtype, double amt)
 	return mv_tmp_to_budget_file(tmpfptr, fptr);
 }
 
-/* For a la carte budget category creation, returns a malloc'd char * which
- * is free'd by the caller */
-int create_budget_record(int yr, int mo)
+char *create_category(int yr, int mo)
 {
 	char *catg;
 	int transtype;
-	int retval;
 	struct catg_vec *psc;
 	double amt;
 
 	if (mo == 0 || yr == 0) {
 		yr = nc_input_year(0);
 		if (yr == -1) {
-			return 1;
+			return NULL;
 		}
 		mo = nc_input_month(0, yr);
 		if (mo == -1) {
-			return 1;
+			return NULL;
 		}
 	}
 
 	catg = nc_input_string("Enter Category");
 	if (catg == NULL) {
-		return 1;
+		return NULL;
 	}
 	transtype = nc_input_category_type();
 	if (transtype < 0) {
 		free(catg);
-		return 1;
+		return NULL;
 	}
 
 	psc = get_budget_catg_by_date(mo, yr);
@@ -131,19 +128,29 @@ int create_budget_record(int yr, int mo)
 		nc_message("That Category Already Exists");
 		free(catg);
 		free_categories(psc);
-		return 1;
+		return NULL;
 	}
 
 	amt = nc_input_budget_amount();
 	if (confirm_budget_category(catg, amt)) {
-		retval = insert_budget_record(catg, mo, yr, transtype, amt);
+		insert_budget_record(catg, mo, yr, transtype, amt);
 	} else {
-		return 1;
+		return NULL;
 	}
 
 	free_categories(psc);
-	free(catg);
-	return retval;
+	return catg;
+}
+
+int create_category_intret(int yr, int mo)
+{
+	char *catg = create_category(yr, mo);
+	if (catg == NULL) {
+		return 1;
+	} else {
+		free(catg);
+		return 0;
+	}
 }
 
 /* Adds a record to the CSV on line linetoadd */
@@ -719,7 +726,7 @@ void add_main_with_date(struct short_date *date)
 		break;
 
 	case ADD_CATG:
-		create_budget_record(date->year, date->month);
+		create_category_intret(date->year, date->month);
 		break;
 
 	default:
@@ -745,7 +752,7 @@ void add_main_no_date(struct read_state *rs)
 		break;
 
 	case ADD_CATG:
-		create_budget_record(0, 0);
+		create_category_intret(0, 0);
 		break;
 
 	case ADD_BUDG:
