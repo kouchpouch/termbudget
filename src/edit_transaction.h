@@ -19,6 +19,8 @@
 #ifndef EDIT_TRANSACTION_H
 #define EDIT_TRANSACTION_H
 
+#include "read_init.h"
+
 enum EditRecordFields {
 	NO_RCRD_SELECT,
 	EDIT_RCRD_DATE,
