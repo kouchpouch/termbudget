@@ -738,7 +738,6 @@ void add_main_no_date(struct read_state *rs)
 {
 	enum add_sel {
 		ADD_TRNS = 0,
-		ADD_CATG,
 		ADD_BUDG
 	} add_sel;
 	struct full_date *date;
@@ -751,9 +750,9 @@ void add_main_no_date(struct read_state *rs)
 		create_transaction_default();
 		break;
 
-	case ADD_CATG:
-		create_category_intret(0, 0);
-		break;
+//	case ADD_CATG:
+//		create_category_intret(0, 0);
+//		break;
 
 	case ADD_BUDG:
 		date = create_new_budget();
