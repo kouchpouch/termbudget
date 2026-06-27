@@ -12,3 +12,4 @@ vgcore.*
 valgrind*
 .DS_Store
 obj/
+.vscode
