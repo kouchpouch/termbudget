@@ -79,7 +79,9 @@
         categories that do not exist, the function should check if only
         income exists in a certain category, and set that transtype to
         income.
-~~- [ ] Refactor legacy_read_csv for CLI mode~~
+
+~- [ ] Refactor legacy_read_csv for CLI mode~
+
 - [ ] Refactor any function that uses seek_n_fields with an integer literal
         to use a header parsing function to determine field location.
 - [X] Sidebar scrolling
