@@ -1,18 +1,18 @@
-CC          := gcc
-LIBS        := -lncurses
+CC        := gcc
+LIBS      := -lncurses
 
-SRC_DIR     := ./src
-OBJ_DIR     := ./obj
-BINARY      := termbudget
+SRC_DIR   := ./src
+OBJ_DIR   := ./obj
+BINARY    := termbudget
 
-SRCS        := $(wildcard $(SRC_DIR)/*.c)
-OBJS        := $(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(SRCS))
+SRCS      := $(wildcard $(SRC_DIR)/*.c)
+OBJS      := $(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(SRCS))
 
-DEPS        := $(OBJS:.o=.d)
+DEPS      := $(OBJS:.o=.d)
 
-DEP_FLAGS   := -MP -MD
+DEP_FLAGS := -MP -MD
 
-CFLAGS      := -g -Wall -Wextra -Wpedantic -Werror $(DEP_FLAGS)
+CFLAGS    := -g -Wall -Wextra -Wpedantic -Werror $(DEP_FLAGS)
 
 .PHONY: all clean
 
