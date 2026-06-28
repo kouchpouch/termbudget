@@ -390,6 +390,9 @@ void print_copy_category_error(enum copy_category_error e)
 	getch();
 }
 
+/* Returns true if there is a record in the budget.csv previous to the date
+ * in the 'date' argument. Otherwise, returns false. The budget csv must
+ * be sorted before running this function. */
 static bool previous_budget_exists(struct full_date *date)
 {
 	FILE *fptr = open_budget_csv("r");
@@ -419,7 +422,7 @@ static struct vec_generic *get_dates_to_copy_from(struct full_date *fd)
 
 	/* TODO: Create an enumeration to handle the field value, this manual
 	 * way is prone to bugs. */
-	struct vec_d *years  = get_years_with_data(bfptr, 1);
+	struct vec_d *years  = get_years_with_data(bfptr, BUDGET_YEAR_FIELD);
 	if (years == NULL) {
 		free_vec_generic(vg);
 		fclose(bfptr);
@@ -435,12 +438,11 @@ static struct vec_generic *get_dates_to_copy_from(struct full_date *fd)
 		}
 		for (size_t j = 0; j < months->size; j++) {
 			selections.b = months->data[j];
-			if (selections.a <= fd->year) {
-				if ((selections.a < fd->year && selections.b != 0) || 
-					(selections.a == fd->year && selections.b < fd->month 
-					&& selections.b != 0)) {
-					push_vec_generic(&selections, sizeof(struct vec2l), vg);
-				}
+			if ((selections.a < fd->year && selections.b != 0) || 
+				(selections.a == fd->year && selections.b < fd->month 
+				&& selections.b != 0)) 
+			{
+				push_vec_generic(&selections, sizeof(struct vec2l), vg);
 			}
 		}
 		free(months);

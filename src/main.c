@@ -329,7 +329,7 @@ static void print_usage(void)
 {
 	printf("\x1b[1mUsage: termbudget [OPTIONS]\x1b[0m\n\n");
 	printf("OPTIONS:\n");
-	printf("-c               CLI MODE\n");
+//	printf("-c               CLI MODE\n");
 	printf("-d               DEBUG\n");
 	printf("-v               NO VERIFY, does not verify csv records formatting.\n");
 	printf("--convert FILE   Converts FILE to termbudget compatible CSV\n");
@@ -343,11 +343,13 @@ int main(int argc, char **argv)
 
 	char opt[LINE_BUFFER] = { 0 };
 	int corrected = 0;
+	int flag;
+	size_t i;
 	size_t count;
 
 	if (argc > 1) {
 		strncpy(opt, argv[1], LINE_BUFFER);
-		for (size_t i = 1; i < strlen(opt); i++) { /* Args start at 1 */
+		for (i = 1; i < strlen(opt); i++) { /* Args start at 1 */
 			if (opt[0] == '-') {
 				switch (opt[i]) {
 
@@ -355,9 +357,12 @@ int main(int argc, char **argv)
 					debug_flag = 1;
 					break;
 
-				case ('c'):
-					cli_flag = 1;
-					break;
+/* CLI mode is going to be removed in the release 
+ * It's a useless leftover feature. */
+/*				case ('c'):
+ *					cli_flag = 1;
+ *					break;
+ */
 
 				case ('v'):
 					verify_flag = 0;
@@ -404,7 +409,7 @@ int main(int argc, char **argv)
 
 	if (!cli_flag) {
 		stdscr = nc_init_stdscr();
-		int flag = 0;
+		flag = 0;
 		while (flag == 0) {
 			flag = ncurses_main_menu(stdscr);
 		}

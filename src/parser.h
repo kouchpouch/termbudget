@@ -32,6 +32,11 @@ enum transtypes {
 	TT_INCOME = 1
 };
 
+enum year_field_number {
+	BUDGET_YEAR_FIELD = 1,
+	RECORD_YEAR_FIELD = 2,
+};
+
 struct budget_header {
 	int month;
 	int year;

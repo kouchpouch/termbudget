@@ -200,7 +200,7 @@ int verify_categories_exist_in_budget(void)
 
 	/* Go through each year and find the matching months, then find the
 	 * matching categories, then compare. */
-	years = get_years_with_data(rfptr, 2);
+	years = get_years_with_data(rfptr, RECORD_YEAR_FIELD);
 	if (years == NULL) {
 		return 0;
 	}

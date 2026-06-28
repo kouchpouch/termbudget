@@ -25,6 +25,7 @@
 #include "main.h"
 #include "helper.h"
 #include "create.h"
+#include "parser.h"
 #include "sorter.h"
 #include "input.h"
 #include "filemanagement.h"
@@ -250,7 +251,7 @@ static void cli_read_csv(void)
 
 	struct transaction_tokens linedata_, *ld = &linedata_;
 
-	struct vec_d *years = get_years_with_data(fptr, 2);
+	struct vec_d *years = get_years_with_data(fptr, RECORD_YEAR_FIELD);
 	rewind(fptr);
 
 	while (year_record_exists == false) {

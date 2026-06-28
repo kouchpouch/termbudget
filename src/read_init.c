@@ -146,8 +146,8 @@ static struct vec_d *get_all_years(void)
 	FILE *rfptr = open_record_csv("r");
 	FILE *bfptr = open_budget_csv("r");
 
-	struct vec_d *pr = get_years_with_data(rfptr, 2);
-	struct vec_d *pb = get_years_with_data(bfptr, 1);
+	struct vec_d *pr = get_years_with_data(rfptr, RECORD_YEAR_FIELD);
+	struct vec_d *pb = get_years_with_data(bfptr, BUDGET_YEAR_FIELD);
 	struct vec_d *retval;
 
 	if (pr == NULL && pb != NULL) {
