@@ -79,7 +79,7 @@
         categories that do not exist, the function should check if only
         income exists in a certain category, and set that transtype to
         income.
-- [ ] Refactor legacy_read_csv for CLI mode
+~~- [ ] Refactor legacy_read_csv for CLI mode~~
 - [ ] Refactor any function that uses seek_n_fields with an integer literal
         to use a header parsing function to determine field location.
 - [X] Sidebar scrolling
@@ -88,20 +88,21 @@
 - [ ] On the user input prompts, show relevant data on the window as the
         user goes from prompt to prompt. Such as, show the date entered so
         far and the remaining values left per category.
-- [ ] Have option to roll categories from previous month to the next month
+- [X] Have option to roll categories from previous month to the next month
 - [X] Annotate tui_input.h
-- [ ] Menu key to (A)dd (F1) on main menu should allow the user to select
-        creating a new transaction, creating a new category, roll over
+- [X] Menu key to (A)dd (F1) on main menu should allow the user to select
+        creating a new transaction, ~~creating a new category~~, roll over
         previous month's data to the target month, or exit.
 - [X] Creating a budget is too complicated. User should just enter a date
         and be brought to the new budget with some default categories or 
         option to roll over the previous budget.
 - [ ] Read view needs to scroll back to the record or category after editing.
-- [ ] Create build system
+- [X] Create build system (used make)
 - [X] ESC should also quit
 - [X] Files are placed into the user's .local/share directory. Dir "termbudget"
         is created if one does not exist.
 - [X] Write an interface for type generic dynamic arrays.
+- [ ] Make sure the calculation functions do not overflow
 
 #### Optimization
 - [ ] Create an interface for editing data within the liked list to avoid
