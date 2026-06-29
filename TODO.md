@@ -229,4 +229,5 @@
 - [X] 29 read_init.c, function 'input_year()' misleads the user by printing
             press F1 or the 'a' key to get started, but instead goes through
             numerous blocks.
-- [ ] 30 segfault if the copy budget loop starts and there are no members
+- [X] 30 segfault if the copy budget loop starts and there are no members
+            Fixed with a conditional
