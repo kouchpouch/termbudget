@@ -54,4 +54,7 @@ int compare_for_sort(const void *a, const void *b);
 int size_to_int(size_t n);
 
 bool int_to_size_safe(int n);
+
+char *x_strtok(char **line, char delimiter);
+
 #endif

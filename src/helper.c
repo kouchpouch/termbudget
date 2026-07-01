@@ -16,11 +16,11 @@
  * Author: kouchpouch <https://github.com/kouchpouch/termbudget>
  */
 
-#include <limits.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include <limits.h>
 #include <string.h>
+
 #include "helper.h"
 
 void *clear_buf(void *buf, size_t sz)
@@ -114,4 +114,34 @@ bool int_to_size_safe(int n)
 	bool ret;
 	n >= 0 ? (ret = true) : (ret = false);
 	return ret;
+}
+
+/* *line must be writable memory. *line must be null terminated.
+ * The underlying string will be modified. Handles empty fields.
+ * Returns a pointer to the first token delimited by 'delimiter' and the
+ * token is null terminated. Subsequent calls to this function will return
+ * the next token. Returns NULL if no more tokens exist. */
+char *x_strtok(char **line, char delimiter)
+{
+	size_t i = 1;
+	char *ret = *line;
+	while (*ret != delimiter && *ret != '\0') {
+		ret++;
+		i++;
+	}
+	if (*ret == delimiter) {
+		*ret = '\0';
+		ret++;
+		*line = ret;
+	} else if (*ret == '\0') {
+		*line = ret;
+		ret++;
+		if (i == 1) {
+			return NULL;
+		}
+	} else {
+		return NULL;
+	}
+
+	return ret - i;
 }
