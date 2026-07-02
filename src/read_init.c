@@ -587,7 +587,7 @@ static struct vec_d *sort_by_category(FILE *fptr,
 			}
 
 			seek_n_fields(&line, 3);
-			token = strsep(&line, ",");
+			token = x_strtok(&line, ',');
 			if (token == NULL) {
 				free(prsc);
 				prsc = NULL;
