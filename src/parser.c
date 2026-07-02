@@ -21,6 +21,7 @@
 #include <string.h>
 
 #include "parser.h"
+#include "helper.h"
 #include "main.h"
 #include "tui.h"
 #include "filemanagement.h"
@@ -83,7 +84,7 @@ unsigned int boff_to_linenum_budget(long b)
 void seek_n_fields(char **line, int n)
 {
 	for (int i = 0; i < n; i++) {
-		strsep(line, ",");
+		x_strtok(line, ','); 
 	}
 }
 
@@ -126,9 +127,9 @@ struct record_header *parse_record_header(FILE *fptr)
 	int cmp;
 
 	for (int i = 0; i < n_fields; i++) {
-		token = strsep(&header, ",");
+		token = x_strtok(&header, ',');
 		if (token == NULL) {
-			// end of string is reached
+			/* end of string is reached */
 			goto end_of_str;
 		}
 		token[strcspn(token, "\n")] = '\0';
@@ -196,9 +197,9 @@ struct budget_header *parse_budget_header(FILE *fptr)
 	int cmp;
 
 	for (int i = 0; i < n_fields; i++) {
-		token = strsep(&header, ",");
+		token = x_strtok(&header, ',');
 		if (token == NULL) {
-			// end of string is reached
+			/* end of string is reached */
 			goto end_of_str;
 		}
 		token[strcspn(token, "\n")] = '\0';
@@ -273,10 +274,8 @@ void free_budget_tokens(struct budget_tokens *pbt)
 	free(pbt);
 }
 
-/* 
- * Loop through each category in the budget. Returns true or false if the
- * category exists for the given date range 
- */
+/* Loop through each category in the budget. Returns true or false if the
+ * category exists for the given date range */
 bool category_exists_in_budget(char *catg, int month, int year)
 {
 	struct budget_tokens *bt;
@@ -311,10 +310,11 @@ bool month_or_year_exists(int m, int y)
 			break;
 		}
 		mo_exists = false;
-		if (atoi(strsep(&str, ",")) == m) {
+
+		if (atoi(x_strtok(&str, ',')) == m) {
 			mo_exists = true;
 		}
-		if (atoi(strsep(&str, ",")) == y && mo_exists) {
+		if (atoi(x_strtok(&str, ',')) == y && mo_exists) {
 			fclose(bfptr);
 			return true;
 		}
@@ -346,11 +346,11 @@ double get_expenditures_per_category_fast(struct catg_node *node)
 			break;
 		}
 		seek_n_fields(&str, 5);
-		transtype = atoi(strsep(&str, ","));
+		transtype = atoi(x_strtok(&str, ','));
 		if (transtype == TT_EXPENSE) {
-			total -= atof(strsep(&str, ","));
+			total -= atof(x_strtok(&str, ','));
 		} else {
-			total += atof(strsep(&str, ","));
+			total += atof(x_strtok(&str, ','));
 		}
 	}
 
@@ -403,13 +403,13 @@ struct vec_d *get_years_with_data(FILE *fptr, int field)
 		return NULL;
 	}
 	seek_n_fields(&str, field);
-	tempyear = atoi(strsep(&str, ","));
+	tempyear = atoi(x_strtok(&str, ','));
 	prevyear = tempyear;
 	vec_d_append(&pr, tempyear);
 
 	while ((str = fgets(linebuff, sizeof(linebuff), fptr)) != NULL) {
 		seek_n_fields(&str, field);
-		tempyear = atoi(strsep(&str, ","));
+		tempyear = atoi(x_strtok(&str, ','));
 		if (tempyear != prevyear) {
 			prevyear = tempyear;
 			vec_d_append(&pr, tempyear);
@@ -456,9 +456,9 @@ struct vec_d *get_months_with_data(FILE *fptr, int matchyear, int field)
 	}
 
 	while ((str = fgets(linebuff, sizeof(linebuff), fptr)) != NULL) {
-		month = atol(strsep(&str, ","));
+		month = atol(x_strtok(&str, ','));
 		seek_n_fields(&str, field);
-		year = atol(strsep(&str, ","));
+		year = atol(x_strtok(&str, ','));
 		if (matchyear == year) {
 			if (months->data[0] == 0) {
 				months->data[0] = month;
@@ -495,9 +495,9 @@ struct vec_d *get_matching_line_nums(FILE *fptr, int month, int year)
 			break;
 		}
 
-		line_month = atoi(strsep(&str, ","));
+		line_month = atoi(x_strtok(&str, ','));
 		seek_n_fields(&str, 1);
-		line_year = atoi(strsep(&str, ","));
+		line_year = atoi(x_strtok(&str, ','));
 		if (year == line_year && month == line_month) {
 			vec_d_append(&pl, linenumber);
 		}
@@ -520,20 +520,20 @@ struct catg_vec *get_categories(int month, int year)
 	seek_beyond_header(fptr);
 
 	while ((line = fgets(linebuff, sizeof(linebuff), fptr)) != NULL) {
-		if (month != atoi(strsep(&line, ","))) {
+		if (month != atoi(x_strtok(&line, ','))) {
 			goto duplicate_exists;
 		}
 
 		seek_n_fields(&line, 1);
 		
-		if (year != atoi(strsep(&line, ","))) {
+		if (year != atoi(x_strtok(&line, ','))) {
 			goto duplicate_exists;
 		}
 
-		token = strsep(&line, ",");
+		token = x_strtok(&line, ',');
 		token[strcspn(token, "\n")] = '\0';
 
-		if (pc->size != 0) { // Duplicate Check
+		if (pc->size != 0) { /* Duplicate Check */
 			for (size_t i = 0; i < pc->size; i++) {
 				if (strcasecmp(pc->categories[i], token) == 0) {
 					goto duplicate_exists;
@@ -544,12 +544,12 @@ struct catg_vec *get_categories(int month, int year)
 		catg_vec_append(&pc, strdup(token));
 
 duplicate_exists:
-		memset(linebuff, 0, sizeof(linebuff)); // Reset the Buffer
+		memset(linebuff, 0, sizeof(linebuff)); /* Reset the Buffer */
 	}
 
 	fclose(fptr);
 	fptr = NULL;
-	return pc; // Struct and each index of categories must be free'd
+	return pc; /* Struct and each index of categories must be free'd */
 }
 
 /* Sets all members of struct search_for to false */
@@ -694,9 +694,9 @@ struct catg_vec *get_budget_catg_by_date(int month, int year)
 			break;
 		}
 
-		m = atoi(strsep(&str, ","));
-		y = atoi(strsep(&str, ","));
-		catg = strsep(&str, ",");
+		m = atoi(x_strtok(&str, ','));
+		y = atoi(x_strtok(&str, ','));
+		catg = x_strtok(&str, ',');
 
 		if (y == year && m == month) {
 			catg_vec_append(&pc, strdup(catg));
@@ -723,8 +723,8 @@ struct vec_d *get_budget_catg_by_date_bo(int month, int year)
 		if (str == NULL) {
 			break;
 		}
-		m = atoi(strsep(&str, ","));
-		y = atoi(strsep(&str, ","));
+		m = atoi(x_strtok(&str, ','));
+		y = atoi(x_strtok(&str, ','));
 
 		if (y == year && m == month) {
 			vec_d_append(&pcbo, bo);
@@ -745,12 +745,12 @@ void tokenize_budget_string(struct budget_tokens_buff *tokens, char *budget)
 	}
 	char *tmp;
 
-	tokens->m = atoi(strsep(&budget, ","));
-	tokens->y = atoi(strsep(&budget, ","));
-	tmp = strsep(&budget, ",");
+	tokens->m = atoi(x_strtok(&budget, ','));
+	tokens->y = atoi(x_strtok(&budget, ','));
+	tmp = x_strtok(&budget, ',');
 	memcpy(tokens->catg, tmp, strlen(tmp) + 1); /* Hold null-byte */
-	tokens->transtype = atoi(strsep(&budget, ","));
-	tokens->amount = atof(strsep(&budget, ","));
+	tokens->transtype = atoi(x_strtok(&budget, ','));
+	tokens->amount = atof(x_strtok(&budget, ','));
 }
 
 struct budget_tokens *tokenize_budget_fpi(long bo)
@@ -775,16 +775,16 @@ struct budget_tokens *tokenize_budget_fpi(long bo)
 		return NULL;
 	}
 
-	pbt->m = atoi(strsep(&str, ","));
-	pbt->y = atoi(strsep(&str, ","));
-	tmp = strndup(strsep(&str, ","), MAX_LEN_CATG);
+	pbt->m = atoi(x_strtok(&str, ','));
+	pbt->y = atoi(x_strtok(&str, ','));
+	tmp = strndup(x_strtok(&str, ','), MAX_LEN_CATG);
 	if (tmp == NULL) {
 		free(pbt);
 		mem_alloc_fail();
 	}
 	pbt->catg = tmp;
-	pbt->transtype = atoi(strsep(&str, ","));
-	pbt->amount = atof(strsep(&str, ","));
+	pbt->transtype = atoi(x_strtok(&str, ','));
+	pbt->amount = atof(x_strtok(&str, ','));
 
 	fclose(fptr);
 	return pbt;
@@ -827,16 +827,16 @@ struct budget_tokens *tokenize_budget_line(long line)
 		return NULL;
 	}
 
-	pbt->m = atoi(strsep(&str, ","));
-	pbt->y = atoi(strsep(&str, ","));
-	tmp = strndup(strsep(&str, ","), MAX_LEN_CATG);
+	pbt->m = atoi(x_strtok(&str, ','));
+	pbt->y = atoi(x_strtok(&str, ','));
+	tmp = strndup(x_strtok(&str, ','), MAX_LEN_CATG);
 	if (tmp == NULL) {
 		free(pbt);
 		mem_alloc_fail();
 	}
 	pbt->catg = tmp;
-	pbt->transtype = atoi(strsep(&str, ","));
-	pbt->amount = atof(strsep(&str, ","));
+	pbt->transtype = atoi(x_strtok(&str, ','));
+	pbt->amount = atof(x_strtok(&str, ','));
 
 	return pbt;
 }
@@ -874,7 +874,7 @@ void tokenize_record(struct transaction_tokens *ld, char **str)
 {
 	char *token;
 	for (size_t i = 0; i < CSV_FIELDS; i++) {
-		token = strsep(str, ",");
+		token = x_strtok(str, ',');
 		if (token == NULL) break;
 		switch (i) {
 		case 0:
@@ -915,11 +915,11 @@ double get_record_amount(long b)
 	str = fgets(linebuff, sizeof(linebuff), fptr);
 	seek_n_fields(&str, 5);
 	fclose(fptr);
-	transtype = atoi(strsep(&str, ","));
+	transtype = atoi(x_strtok(&str, ','));
 	if (transtype == 0) {
-		return -(atof(strsep(&str, ",")));
+		return -(atof(x_strtok(&str, ',')));
 	} else {
-		return atof(strsep(&str, ","));
+		return atof(x_strtok(&str, ','));
 	}
 }
 
@@ -953,7 +953,7 @@ int get_int_field(int line, int field)
 
 	seek_n_fields(&str, field - 1);
 
-	return atoi(strsep(&str, ","));
+	return atoi(x_strtok(&str, ','));
 }
 
 struct vec_d *index_csv(FILE *fptr)
