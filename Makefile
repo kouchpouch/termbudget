@@ -12,7 +12,9 @@ DEPS      := $(OBJS:.o=.d)
 
 DEP_FLAGS := -MP -MD
 
-CFLAGS    := -g -Wall -Wextra -Wpedantic -Werror $(DEP_FLAGS)
+STANDARD  := c99
+DEFINES   := -D_GNU_SOURCE
+CFLAGS    := -g -Wall -Wextra -Wpedantic -Werror --std=$(STANDARD) $(DEP_FLAGS) $(DEFINES)
 
 .PHONY: all clean
 
