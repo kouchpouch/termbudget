@@ -26,6 +26,7 @@
 #include "main.h"
 #include "parser.h"
 #include "filemanagement.h"
+#include "helper.h"
 
 struct sorter_search_for {
 	bool greater_year;
@@ -54,8 +55,8 @@ static int lines_to_last_occurance(FILE *fptr, int month, int year)
 		if (str == NULL) {
 			break;
 		}
-		monthtok = atoi(strsep(&str, ","));
-		yeartok = atoi(strsep(&str, ","));
+		monthtok = x_strtok_to_int(&str, ',');
+		yeartok = x_strtok_to_int(&str, ',');
 		if (monthtok == month && yeartok == year) {
 			i++;
 		} else {
@@ -90,8 +91,8 @@ unsigned int sort_budget_csv(int month, int year)
 	while ((str = fgets(linebuff, sizeof(linebuff), fptr)) != NULL) {
 		line++;
 
-		monthtok = atoi(strsep(&str, ","));
-		yeartok = atoi(strsep(&str, ","));
+		monthtok = x_strtok_to_int(&str, ',');
+		yeartok = x_strtok_to_int(&str, ',');
 
 		if (yeartok < year) {
 			found.lesser_year = true;
@@ -160,9 +161,9 @@ unsigned int sort_record_csv(int month, int day, int year)
 	while ((str = fgets(linebuff, sizeof(linebuff), fptr)) != NULL) {
 		line++;
 
-		monthtok = atoi(strsep(&str, ","));
-		daytok = atoi(strsep(&str, ","));
-		yeartok = atoi(strsep(&str, ","));
+		monthtok = x_strtok_to_int(&str, ',');
+		daytok = x_strtok_to_int(&str, ',');
+		yeartok = x_strtok_to_int(&str, ',');
 
 		if (yeartok < year) {
 			found.lesser_year = true;
@@ -239,9 +240,9 @@ unsigned int sort_converted_csv(int month, int day, int year, FILE *fptr)
 	while ((str = fgets(linebuff, sizeof(linebuff), fptr)) != NULL) {
 		line++;
 
-		monthtok = atoi(strsep(&str, ","));
-		daytok = atoi(strsep(&str, ","));
-		yeartok = atoi(strsep(&str, ","));
+		monthtok = x_strtok_to_int(&str, ',');
+		daytok = x_strtok_to_int(&str, ',');
+		yeartok = x_strtok_to_int(&str, ',');
 
 		if (yeartok < year) {
 			found.lesser_year = true;
