@@ -50,11 +50,13 @@ long min_val(long a, long b);
 
 int compare_for_sort(const void *a, const void *b);
 
-/* Safely casts size_t to and integer. Returns -1 on unsafe cast */
+/* Safely casts size_t to an integer. Returns -1 on unsafe cast */
 int size_to_int(size_t n);
 
 bool int_to_size_safe(int n);
 
 char *x_strtok(char **line, char delimiter);
+
+int x_strtok_to_int(char **line, char delimiter);
 
 #endif

@@ -145,3 +145,15 @@ char *x_strtok(char **line, char delimiter)
 
 	return ret - i;
 }
+
+/* Avoids a NULL dereference when converting a token from x_strtok() to an
+ * int. */
+int x_strtok_to_int(char **line, char delimiter)
+{
+	char *tmp = x_strtok(line, delimiter);
+	if (tmp == NULL) {
+		return 0;
+	} else {
+		return atoi(tmp);
+	}
+}
