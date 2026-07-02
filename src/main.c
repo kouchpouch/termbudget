@@ -28,6 +28,7 @@
 #include "main.h"
 #include "cli.h"
 #include "create.h"
+#include "helper.h"
 #include "read_init.h"
 #include "fileintegrity.h"
 #include "filemanagement.h"
@@ -90,6 +91,7 @@ void calculate_balance(struct vec2f_fin *pb, struct vec_d *pbo)
 	int type;
 	char linebuff[LINE_BUFFER] = { 0 };
 	char *line;
+	char *tmp;
 
 	for (size_t i = 0; i < pbo->size; i++) {
 		fseek(fptr, pbo->data[i], SEEK_SET);
@@ -98,11 +100,16 @@ void calculate_balance(struct vec2f_fin *pb, struct vec_d *pbo)
 			break;
 		}
 		seek_n_fields(&line, 5);
-		type = atoi(strsep(&line, ","));
+		type = x_strtok_to_int(&line, ',');
+		tmp = x_strtok(&line, ',');
 		if (type == 0) {
-			pb->expense += atof(strsep(&line, ","));
+			if (tmp != NULL) {
+				pb->expense += atof(tmp);
+			}
 		} else {
-			pb->income += atof(strsep(&line, ","));
+			if (tmp != NULL) {
+				pb->income += atof(tmp);
+			}
 		}
 	}
 	fclose(fptr);
