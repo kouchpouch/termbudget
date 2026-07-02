@@ -24,6 +24,7 @@
 #include "parser.h"
 #include "sorter.h"
 #include "filemanagement.h"
+#include "helper.h"
 
 static void write_temp_header(FILE *convfptr)
 {
@@ -115,22 +116,30 @@ static size_t tokenize_and_convert(FILE *fptr)
 	char buffer[LINE_BUFFER];
 	double amount;
 	size_t count = 0;
+	char *tmp;
 
-	// Skip the header
+	/* Skip the header */
 	fgets(buffer, sizeof(buffer), fptr); 
 
 	while (1) {
 		str = fgets(buffer, sizeof(buffer), fptr); 
 		if (str == NULL)
 			break;
-		ld->month = atoi(strsep(&str, "/"));
-		ld->day = atoi(strsep(&str, "/"));
-		ld->year = atoi(strsep(&str, "/"));
-		(void)strsep(&str, ",");
-		ld->desc = strsep(&str, ",");
-		ld->category = strsep(&str, ",");
-		(void)strsep(&str, ",");
-		amount = atof(strsep(&str, ","));
+		ld->month = x_strtok_to_int(&str, '/');
+		ld->day = x_strtok_to_int(&str, '/');
+		ld->year = x_strtok_to_int(&str, '/');
+
+		x_strtok(&str, ',');
+
+		ld->desc = x_strtok(&str, ',');
+		ld->category = x_strtok(&str, ',');
+
+		x_strtok(&str, ',');
+
+		tmp = x_strtok(&str, ',');
+		if (tmp != NULL) {
+			amount = atof(tmp);
+		}
 
 		if (amount < 0.0) {
 			ld->transtype = 0;
