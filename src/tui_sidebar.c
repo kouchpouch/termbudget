@@ -64,9 +64,10 @@ WINDOW *create_sidebar_parent(WINDOW *wptr_parent, int std_y, int std_x)
 
 WINDOW *create_sidebar_body(WINDOW *wptr_parent, WINDOW *wptr_sidebar_parent)
 {
-	// This really should come from the return value of print_parent_header
+	// TODO: This should come from the return value of print_parent_header
 	int head_y = 5;
-	WINDOW *wptr = newwin(getmaxy(wptr_sidebar_parent) - head_y, SIDEBAR_COLUMNS + 1, head_y, getmaxx(wptr_parent) - 1); 
+	WINDOW *wptr = newwin(getmaxy(wptr_sidebar_parent) - head_y, 
+					   SIDEBAR_COLUMNS + 1, head_y, getmaxx(wptr_parent) - 1); 
 	if (wptr == NULL) {
 		window_creation_fail();
 	}

@@ -634,12 +634,12 @@ static void print_sort_text(WINDOW *wptr, int sort)
 
 static void free_windows(struct ReadWins *wins)
 {
+	if (wins->sidebar_parent != NULL) {
+		nc_exit_window(wins->sidebar_body);
+		nc_exit_window(wins->sidebar_parent);
+	}
 	nc_exit_window(wins->data);
 	nc_exit_window(wins->parent);
-	if (wins->sidebar_parent != NULL) {
-		nc_exit_window(wins->sidebar_parent);
-		nc_exit_window(wins->sidebar_body);
-	}
 	free(wins);
 }
 
@@ -704,6 +704,7 @@ static void cleanup_read_setup(struct vec_d *rec_fpis,
 	rec_fpis = NULL;
 	rec_line_nums = NULL;
 	pidx = NULL;
+	wins = NULL;
 }
 
 void nc_read_setup(struct read_state *r_state)
@@ -731,7 +732,7 @@ void nc_read_setup(struct read_state *r_state)
 	if (debug_flag) {
 		nc_print_debug_flag(stdscr);
 	}
-	refresh();
+//	refresh();
 
 	get_date_err = get_dates(&rs, &date);
 	if (get_date_err != 0) {
@@ -924,7 +925,7 @@ err_select_date_fail:
 		r_state->flag = RRET_QUIT;
 		break;
 	}
-	refresh();
+//	refresh();
 }
 
 void nc_read_setup_default(struct read_state *r_state)
