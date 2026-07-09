@@ -916,7 +916,9 @@ err_select_date_fail:
 		}
 		if (date.month > 0 && date.year > 0) {
 			r_state->flag = RRET_BYDATE;
-			SET_KEEP_BIT(r_state->flag);
+			/* The resize flag is set when SHIFT + HOME || 'K' is pressed,
+			 * so the keep bit must not be set. */
+			// SET_KEEP_BIT(r_state->flag);
 		} else {
 			r_state->flag = RRET_DEFAULT;
 		}
@@ -946,7 +948,6 @@ err_select_date_fail:
 		r_state->flag = RRET_QUIT;
 		break;
 	}
-//	refresh();
 }
 
 void nc_read_setup_default(struct read_state *r_state)
