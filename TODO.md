@@ -103,6 +103,9 @@
         is created if one does not exist.
 - [X] Write an interface for type generic dynamic arrays.
 - [ ] Make sure the calculation functions do not overflow
+- [ ] User should be able to delete a category and all associated transactions
+- [ ] User should be able to delete an entire budget
+- [ ] Add flag to remove orphaned categories
 
 #### Optimization
 - [ ] Create an interface for editing data within the liked list to avoid
@@ -229,3 +232,4 @@
             numerous blocks.
 - [X] 30 segfault if the copy budget loop starts and there are no members
             Fixed with a conditional
+- [ ] 31 Invalid reads during consecutive resizing
