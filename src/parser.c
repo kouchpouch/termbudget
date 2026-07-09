@@ -45,8 +45,17 @@ unsigned int get_total_file_lines(FILE *fptr)
 	return lines;
 }
 
+/* The header of a CSV is line 0, the first line of user data is line 1.
+ * This function does not check the argument 'b' is actually found, if 'b' is
+ * not a byte offset value that lands on the beginning of a line, this
+ * function will return the total lines in the file. If 'b' is 0, the function
+ * returns zero. */
 unsigned int boff_to_linenum(long b)
 {
+	if (b == 0) {
+		return 0;
+	}
+
 	FILE *fptr = open_record_csv("r");
 	char linebuff[LINE_BUFFER] = { 0 }; 
 	int linenum = 0;
