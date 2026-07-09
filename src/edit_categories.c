@@ -19,9 +19,9 @@
 #include <ncurses.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "edit_categories.h"
-#include "edit_transaction.h"
 #include "file_write.h"
 #include "main.h"
 #include "categories.h"
@@ -32,6 +32,8 @@
 #include "filemanagement.h"
 #include "flags.h"
 #include "helper.h"
+#include "vector.h"
+#include "vector_generic.h"
 
 enum fields {
 	EDIT_AMNT = 0,
@@ -102,29 +104,23 @@ static void delete_category(long b)
  * If the user tries to delete a category that contains members, this warns
  * the user that the action cannot be completed.
  */
-static void debug_test_function(struct catg_node *curr)
+static void delete_category_and_transactions(struct catg_node *curr)
 {
-	move(0, 0);
-	printw("Transaction FPIs\n");
-	/* TODO: Calling delete_transaction_fpi in a for loop will not work, since
-	 * the file is modified and the FPIs change. A new function needs to be
-	 * written to delete many lines at once */
+	FILE *fptr = open_record_csv("r");
+	FILE *tmpfptr;
+	struct vec_generic *lines = create_vec_generic(sizeof(int), curr->data->size);
+	int line;
 	for (size_t i = 0; i < curr->data->size; i++) {
-		printw("Deleteing %ld. ", curr->data->data[i]);
-		delete_transaction_fpi(curr->data->data[i]);
+		line = boff_to_linenum(curr->data->data[i]);
+		push_vec_generic((void *)&line, sizeof(int), lines);
 	}
-	refresh();
-	getch();
-}
 
-/* TODO: Make this a possible option, even with transactions */
-// static void invalid_delete_warning(void)
-// {
-// 	WINDOW *wptr = create_input_subwindow();
-// 	mvwxcprintw(wptr, 3, "Cannot delete a category");
-// 	mvwxcprintw(wptr, 4, "which contains records");
-// 	nc_exit_window_key(wptr);
-// }
+	tmpfptr = delete_many_in_file(fptr, (int *)lines->data, lines->count);
+	mv_tmp_to_record_file(tmpfptr, fptr);
+	
+	free_vec_generic(lines);
+	delete_category(curr->catg_fp);
+}
 
 static bool nc_confirm_amount(double amt)
 {
@@ -383,8 +379,10 @@ void nc_edit_category(long node_idx, long nmembers, struct catg_node *head)
 
 	case DEL_CATG:
 		if (nmembers > 0) {
-			debug_test_function(curr);
-			goto err_fail;
+			if (nc_confirm_input("Delete category and all associated transactions?")) {
+				delete_category_and_transactions(curr);
+				goto err_fail;
+			}
 		}
 		if (!nc_confirm_input("Confirm Delete")) {
 			goto err_fail;
