@@ -31,6 +31,8 @@ enum EditRecordFields {
 	EDIT_RCRD_DELETE,
 };
 
+void delete_transaction_fpi(long b);
+
 int nc_edit_transaction(long b, struct read_state *rret);
 
 int nc_edit_transaction_opt(long b, 
