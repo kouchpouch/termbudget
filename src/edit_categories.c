@@ -21,6 +21,7 @@
 #include <string.h>
 
 #include "edit_categories.h"
+#include "edit_transaction.h"
 #include "file_write.h"
 #include "main.h"
 #include "categories.h"
@@ -101,13 +102,29 @@ static void delete_category(long b)
  * If the user tries to delete a category that contains members, this warns
  * the user that the action cannot be completed.
  */
-static void invalid_delete_warning(void)
+static void debug_test_function(struct catg_node *curr)
 {
-	WINDOW *wptr = create_input_subwindow();
-	mvwxcprintw(wptr, 3, "Cannot delete a category");
-	mvwxcprintw(wptr, 4, "which contains records");
-	nc_exit_window_key(wptr);
+	move(0, 0);
+	printw("Transaction FPIs\n");
+	/* TODO: Calling delete_transaction_fpi in a for loop will not work, since
+	 * the file is modified and the FPIs change. A new function needs to be
+	 * written to delete many lines at once */
+	for (size_t i = 0; i < curr->data->size; i++) {
+		printw("Deleteing %ld. ", curr->data->data[i]);
+		delete_transaction_fpi(curr->data->data[i]);
+	}
+	refresh();
+	getch();
 }
+
+/* TODO: Make this a possible option, even with transactions */
+// static void invalid_delete_warning(void)
+// {
+// 	WINDOW *wptr = create_input_subwindow();
+// 	mvwxcprintw(wptr, 3, "Cannot delete a category");
+// 	mvwxcprintw(wptr, 4, "which contains records");
+// 	nc_exit_window_key(wptr);
+// }
 
 static bool nc_confirm_amount(double amt)
 {
@@ -366,7 +383,7 @@ void nc_edit_category(long node_idx, long nmembers, struct catg_node *head)
 
 	case DEL_CATG:
 		if (nmembers > 0) {
-			invalid_delete_warning();
+			debug_test_function(curr);
 			goto err_fail;
 		}
 		if (!nc_confirm_input("Confirm Delete")) {
