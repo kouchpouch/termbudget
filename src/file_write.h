@@ -32,5 +32,6 @@ int line_data_to_string(char *buffer, size_t size, struct transaction_tokens *ld
 FILE *delete_in_file(FILE *fptr, int delete_line);
 FILE *replace_in_file(FILE *fptr, char *replace_str, int replace_line);
 FILE *insert_into_file(FILE *fptr, char *insert_str, int insert_line);
+FILE *delete_many_in_file(FILE *fptr, int *lines, size_t n_lines);
 
 #endif

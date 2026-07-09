@@ -129,7 +129,7 @@ static void print_invalid_opt_error_and_exit(void)
  * Returns number of lines written.
  */
 static void write_string_to_file(FILE *fptr,
-								 FILE* tmpfptr,
+								 FILE *tmpfptr,
 								 struct file_write_vars *opts)
 {
 	char line_buffer[LINE_BUFFER] = { 0 };
@@ -211,6 +211,33 @@ FILE *delete_in_file(FILE *fptr, int delete_line)
 
 	FILE *tmpfptr = open_temp_csv();
 	write_string_to_file(fptr, tmpfptr, &opts);
+
+	return tmpfptr;
+}
+
+FILE *delete_many_in_file(FILE *fptr, int *lines, size_t n_lines)
+{
+	char line_buffer[LINE_BUFFER] = { 0 };
+	char *str;
+	FILE *tmpfptr = open_temp_csv();
+	size_t i;
+	size_t s = 0;
+	int current_line = 0;
+	bool skip;
+
+	while((str = fgets(line_buffer, sizeof(line_buffer), fptr)) != NULL) {
+		skip = false;
+		for (i = s; i < n_lines; i++) {
+			if (lines[i] == current_line) {
+				s++;
+				skip = true;
+			}
+		}
+		if (!skip) {
+			fputs(str, tmpfptr);
+		}
+		current_line++;
+	}
 
 	return tmpfptr;
 }
