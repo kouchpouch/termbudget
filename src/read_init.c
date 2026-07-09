@@ -707,6 +707,26 @@ static void cleanup_read_setup(struct vec_d *rec_fpis,
 	wins = NULL;
 }
 
+/* Debug function */
+// static void print_read_state(struct read_state *r_state)
+// {
+// 	if (r_state->head) {
+// 		printw("Head exists ");
+// 	} else {
+// 		printw("Head is NULL");
+// 	}
+// 
+// 	printw("FPI: %ld ", r_state->fpi);
+// 	printw("SCRL_BACK_FPI: %ld ", r_state->scroll_back_fpi);
+// 	printw("YEAR: %d ", r_state->year);
+// 	printw("MONTH: %d ", r_state->month);
+// 	printw("SCRL_BACK: %d ", r_state->scroll_back);
+// 	printw("SORT: %d ", r_state->sort);
+// 	printw("FLAG: %d ", r_state->flag);
+// 	refresh();
+// 	getch();
+// }
+
 void nc_read_setup(struct read_state *r_state)
 {
 	FILE *fptr, *bfptr;
@@ -896,6 +916,7 @@ err_select_date_fail:
 		}
 		if (date.month > 0 && date.year > 0) {
 			r_state->flag = RRET_BYDATE;
+			SET_KEEP_BIT(r_state->flag);
 		} else {
 			r_state->flag = RRET_DEFAULT;
 		}
