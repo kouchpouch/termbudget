@@ -41,6 +41,13 @@ struct field_select {
 	int nx;
 };
 
+void delete_transaction_fpi(long b)
+{
+	FILE *fptr = open_record_csv("r");
+	FILE *tmpfptr = delete_in_file(fptr, boff_to_linenum(b));
+	mv_tmp_to_record_file(tmpfptr, fptr);
+}
+
 static void delete_transaction(int line)
 {
 	FILE *fptr = open_record_csv("r");
