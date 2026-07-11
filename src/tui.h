@@ -75,6 +75,7 @@ enum menukeys {
 	SORT,
 	OVERVIEW,
 	EDIT_CATG,
+	REFRESH_LINKED_LIST,
 	RESIZE,
 	NO_RCRD
 };
