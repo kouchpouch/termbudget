@@ -907,7 +907,7 @@ void nc_read_budget_loop(struct ReadWins *wins,
 		case KEY_SHOME: // "SHIFT + HOME"
 			if (s_vars.catg_data == -1 && s_vars.catg_node != 0) {
 				mv_category_to_top(&head, s_vars.catg_node);
-				rs->flag = RESIZE;
+				rs->flag = REFRESH_LINKED_LIST;
 				rs->index = 0;
 				return;
 			}
