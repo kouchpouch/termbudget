@@ -889,7 +889,10 @@ void nc_read_budget_loop(struct ReadWins *wins,
 		if (debug_flag) {
 			print_debug_line(&s_vars);
 		}
-		c = wgetch(wins->data);
+		wtimeout(wins->data, INPUT_TIMEOUT);
+		while ((c = wgetch(wins->data)) == ERR) {
+			;
+		}
 
 		switch (c) {
 
@@ -1164,7 +1167,10 @@ void nc_read_loop(struct ReadWins *wins,
 
 		if (debug_flag) {
 		}
-		c = wgetch(wins->data);
+		wtimeout(wins->data, INPUT_TIMEOUT);
+		while ((c = wgetch(wins->data)) == ERR) {
+			;
+		}
 
 		switch (c) {
 

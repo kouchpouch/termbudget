@@ -56,6 +56,7 @@
 #define MAX_LEN_DESC 64
 #define INPUT_MSG_Y_OFFSET 2
 #define MAX_Y_CATG_SELECT 22 // Maximum of 20 categories on the screen
+#define INPUT_TIMEOUT 200
 
 
 struct column_width {

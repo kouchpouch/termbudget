@@ -16,6 +16,7 @@
  * Author: kouchpouch <https://github.com/kouchpouch/termbudget>
  */
 
+#include <asm-generic/ioctls.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -25,6 +26,8 @@
 #include <ncurses.h>
 #include <limits.h>
 #include <signal.h>
+#include <sys/ioctl.h>
+#include <unistd.h>
 
 #include "main.h"
 #include "cli.h"
@@ -41,6 +44,8 @@
 #include "benchmark.h"
 
 volatile int resize_ncurses = 0;
+
+void do_resize(void);
 
 const char *abbr_months[] = {
 	"JAN", 
@@ -228,6 +233,7 @@ static int ncurses_main_menu(WINDOW *wptr)
 
 		skip_input = false;
 
+		do_resize();
 		conditionally_free_linked_list(&rret);
 
 		switch (c) {
@@ -235,6 +241,7 @@ static int ncurses_main_menu(WINDOW *wptr)
 		case ('a'):
 		case KEY_F(ADD):
 			wclear(wptr);
+			do_resize();
 			add_sel = get_add_selection();
 
 			switch (add_sel) {
@@ -281,6 +288,7 @@ static int ncurses_main_menu(WINDOW *wptr)
 		case ('r'):
 		case KEY_F(READ):
 			wclear(wptr);
+			do_resize();
 
 			if (rret.flag == RRET_BYDATE) {
 				if (rret.year == 0) { 
@@ -295,6 +303,7 @@ static int ncurses_main_menu(WINDOW *wptr)
 			}
 
 			while (rret.flag != RRET_QUIT) {
+				do_resize();
 				conditionally_free_linked_list(&rret);
 				if (debug_flag) {
 					printw("MO: %d, YR: %d\n", rret.month, rret.year);
@@ -323,7 +332,9 @@ static int ncurses_main_menu(WINDOW *wptr)
 
 		case KEY_RESIZE:
 			wclear(wptr);
+			do_resize();
 			break;
+
 		case ('H'):
 		case ('h'):
 		case ('?'):
@@ -347,9 +358,19 @@ static void print_usage(void)
 
 void catch_sigwinch(int sig)
 {
+	(void)sig;
+	resize_ncurses = 1;
+	ungetch(KEY_RESIZE);
+}
+
+void do_resize(void)
+{
 	if (resize_ncurses) {
-		resizeterm(LINES, COLS);
+		struct winsize ws;
+		ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws); /* Get terminal size */
+		resize_term((int)ws.ws_row, (int)ws.ws_col);
 		refresh();
+		resize_ncurses = 0;
 	}
 }
 
