@@ -16,6 +16,7 @@
  * Author: kouchpouch <https://github.com/kouchpouch/termbudget>
  */
 
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -910,15 +911,25 @@ err_select_date_fail:
 		}
 		break;
 
+	case REFRESH_LINKED_LIST:
+		if (date.month > 0 && date.year > 0) {
+			r_state->flag = RRET_BYDATE;
+		} else {
+			r_state->flag = RRET_DEFAULT;
+		}
+		break;
+
+		break;
+
 	case RESIZE:
+		resize_ncurses = 1;
+		raise(SIGWINCH);
 		while (test_terminal_size() == -1) {
 			getch();
 		}
 		if (date.month > 0 && date.year > 0) {
 			r_state->flag = RRET_BYDATE;
-			/* The resize flag is set when SHIFT + HOME || 'K' is pressed,
-			 * so the keep bit must not be set. */
-			// SET_KEEP_BIT(r_state->flag);
+			SET_KEEP_BIT(r_state->flag);
 		} else {
 			r_state->flag = RRET_DEFAULT;
 		}

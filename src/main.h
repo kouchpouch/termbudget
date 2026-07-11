@@ -71,6 +71,7 @@
 
 extern const char *abbr_months[];
 extern const char *fullname_months[];
+extern volatile int resize_ncurses;
 
 enum read_return_flags {
 	RRET_DEFAULT,

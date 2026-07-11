@@ -24,6 +24,7 @@
 #include <assert.h>
 #include <ncurses.h>
 #include <limits.h>
+#include <signal.h>
 
 #include "main.h"
 #include "cli.h"
@@ -38,6 +39,8 @@
 #include "convert_csv.h"
 #include "flags.h"
 #include "benchmark.h"
+
+volatile int resize_ncurses = 0;
 
 const char *abbr_months[] = {
 	"JAN", 
@@ -342,6 +345,14 @@ static void print_usage(void)
 	printf("--convert FILE   Converts FILE to termbudget compatible CSV\n");
 }
 
+void catch_sigwinch(int sig)
+{
+	if (resize_ncurses) {
+		resizeterm(LINES, COLS);
+		refresh();
+	}
+}
+
 int main(int argc, char **argv)
 {
 	debug_flag = 0;
@@ -416,6 +427,7 @@ int main(int argc, char **argv)
 
 	if (!cli_flag) {
 		stdscr = nc_init_stdscr();
+		signal(SIGWINCH, catch_sigwinch); 
 		flag = 0;
 		while (flag == 0) {
 			flag = ncurses_main_menu(stdscr);
