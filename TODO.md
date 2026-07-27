@@ -106,7 +106,7 @@
 - [X] User should be able to delete a category and all associated transactions
 - [ ] User should be able to delete an entire budget
 - [ ] Add flag to remove orphaned categories
-- [ ] Allow categories to be moved up and down, not just to the top.
+- [X] Allow categories to be moved up and down, not just to the top.
 - [ ] Add undo
 
 #### Optimization
@@ -237,3 +237,4 @@
             Fixed with a conditional
 - [X] 31 Invalid reads during consecutive resizing
 - [ ] 32 Wrong scrollback position in the read view while sorted by date
+- [ ] 33 Overview resizing is borked
