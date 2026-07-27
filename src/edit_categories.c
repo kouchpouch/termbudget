@@ -40,6 +40,8 @@ enum fields {
 	EDIT_TYPE,
 	ZERO_AMNT,
 	RENAME_CATG,
+	MOVE_UP,
+	MOVE_DN,
 	MOVE_TO_TOP,
 	DEL_CATG
 };
@@ -155,6 +157,49 @@ static bool nc_confirm_amount(double amt)
 	return false;
 }
 
+int mv_category(struct catg_node **head, size_t idx, bool up)
+{
+	struct budget_tokens *bt;
+	struct catg_node *curr;
+	struct catg_node *tmp;
+	unsigned int insert_ln;
+
+	if (idx == 0 && up) {
+		return 1;
+	}
+
+	curr = get_node_by_idx(*head, idx);
+
+	if (up) {
+		tmp = curr->prev;
+	} else {
+		tmp = curr->next;
+	}
+
+	if (tmp == NULL) {
+		return 1;
+	}
+
+	insert_ln = boff_to_linenum_budget(tmp->catg_fp);
+	bt = tokenize_budget_fpi(curr->catg_fp);
+	if (bt == NULL) {
+		return 1;
+	}
+
+	delete_category(curr->catg_fp);
+	insert_category(bt, insert_ln);
+
+	if (up) {
+		shift_catg_node(head, idx, SHIFT_BACKWARD);
+	} else {
+		shift_catg_node(head, idx, SHIFT_FORWARD);
+	}
+
+	free_budget_tokens(bt);
+
+	return 0;
+}
+
 void mv_category_to_top(struct catg_node **head, size_t idx)
 {
 	if (idx == 0) {
@@ -177,7 +222,7 @@ void mv_category_to_top(struct catg_node **head, size_t idx)
 
 static int select_catg_field(void)
 {
-	const size_t n_options = 6;
+	const size_t n_options = 8;
 	int retval;
 	struct MenuParams *mp = malloc(sizeof(*mp) + (sizeof(char *) * n_options));
 	if (mp == NULL) {
@@ -190,6 +235,8 @@ static int select_catg_field(void)
 	mp->strings[EDIT_TYPE] = "Edit Type";
 	mp->strings[ZERO_AMNT] = "Zero Out";
 	mp->strings[RENAME_CATG] = "Rename";
+	mp->strings[MOVE_UP] = "Move up";
+	mp->strings[MOVE_DN] = "Move down";
 	mp->strings[MOVE_TO_TOP] = "Move to top";
 	mp->strings[DEL_CATG] = "Delete";
 
@@ -396,6 +443,14 @@ void nc_edit_category(long node_idx, long nmembers, struct catg_node *head)
 		replace_many_records_categories(head, node_idx, bt->catg);
 		break;
 
+	case MOVE_UP:
+		mv_category(&head, node_idx, true);
+		break;
+
+	case MOVE_DN:
+		mv_category(&head, node_idx, false);
+		break;
+
 	case MOVE_TO_TOP:
 		mv_category_to_top(&head, node_idx);
 		break;
@@ -418,10 +473,18 @@ void nc_edit_category(long node_idx, long nmembers, struct catg_node *head)
 		break;
 	}
 
-	if (select != DEL_CATG) {
-		replace_category(bt, b);
-	} else {
+	switch (select) {
+	case MOVE_UP:
+	case MOVE_DN:
+		break;
+
+	case DEL_CATG:
 		delete_category(b);
+		break;
+
+	default:
+		replace_category(bt, b);
+		break;
 	}
 
 err_fail:
