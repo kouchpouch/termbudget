@@ -381,6 +381,11 @@ void nc_edit_category(long node_idx, long nmembers, struct catg_node *head)
 		if (nmembers > 0) {
 			if (nc_confirm_input("Delete category and all associated transactions?")) {
 				delete_category_and_transactions(curr);
+				if (!nc_confirm_input("Confirm Delete")) {
+					goto err_fail;
+				}
+				goto err_fail;
+			} else {
 				goto err_fail;
 			}
 		}
