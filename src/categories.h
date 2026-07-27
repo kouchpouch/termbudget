@@ -33,6 +33,11 @@ struct catg_node {
 	long catg_fp;
 };
 
+enum catg_node_shift {
+	SHIFT_BACKWARD = 0,
+	SHIFT_FORWARD = 1
+};
+
 void free_categories(struct catg_vec *pc);
 
 /*
@@ -79,6 +84,9 @@ struct catg_node *insert_catg_node(struct catg_node **head,
 
 /* Deletes node at index "idx" of the doubly linked list. */
 void delete_catg_node(struct catg_node *head, size_t idx);
+
+/* Shift the node at 'src' either forwards or backwards. */
+void shift_catg_node(struct catg_node **head, size_t src, bool forward);
 
 /* Frees the entire doubly linked list */
 void free_catg_nodes(struct catg_node *head);
