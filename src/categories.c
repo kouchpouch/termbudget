@@ -170,6 +170,53 @@ void delete_catg_node(struct catg_node *head, size_t idx)
 	free(tmp);
 }
 
+void shift_catg_node(struct catg_node **head, size_t src, bool forward)
+{
+	struct catg_node *s_node;
+	struct catg_node *d_node;
+	size_t dst;
+	if (forward) {
+		dst = src + 1;
+	} else {
+		if (src == 0) {
+			return;
+		}
+		dst = src - 1;
+	}
+
+	/* If the source is before the destination, insert the source after dest
+	 * and vice versa */
+
+	s_node = get_node_by_idx(*head, src);
+	d_node = get_node_by_idx(*head, dst);
+
+	if (forward) {
+		if (d_node->next != NULL) {
+			d_node->next->prev = s_node;
+		}
+		d_node->prev = s_node->prev;
+		if (s_node->prev != NULL) {
+			s_node->prev->next = d_node;
+		}
+		s_node->prev = d_node;
+		s_node->next = d_node->next;
+		d_node->next = s_node;
+	} else {
+		if (d_node->prev != NULL) {
+			d_node->prev->next = s_node;
+		} else {
+			*head = s_node;
+		}
+		d_node->next = s_node->next;
+		s_node->prev = d_node->prev;
+		d_node->prev = s_node;
+		if (s_node->next != NULL) {
+			s_node->next->prev = d_node;
+		}
+		s_node->next = d_node;
+	}
+}
+
 /* Verifies that the pointer "alleged_head" is the actual head of the 
  * linked list. And if it isn't, set the alleged head to the real head. */
 static void verify_head(struct catg_node **alleged_head)
