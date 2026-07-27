@@ -325,7 +325,7 @@ WINDOW *create_input_subwindow_n_rows(int n)
 
 	max_x = getmaxx(stdscr);
 
-	if (n <= INPUT_WIN_ROWS + BOX_OFFSET) {
+	if (n < INPUT_WIN_ROWS) {
 		if (n % 2 == 0) {
 			win_y = INPUT_WIN_ROWS;
 		} else {
