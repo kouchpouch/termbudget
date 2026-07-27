@@ -103,9 +103,11 @@
         is created if one does not exist.
 - [X] Write an interface for type generic dynamic arrays.
 - [ ] Make sure the calculation functions do not overflow
-- [ ] User should be able to delete a category and all associated transactions
+- [X] User should be able to delete a category and all associated transactions
 - [ ] User should be able to delete an entire budget
 - [ ] Add flag to remove orphaned categories
+- [ ] Allow categories to be moved up and down, not just to the top.
+- [ ] Add undo
 
 #### Optimization
 - [ ] Create an interface for editing data within the liked list to avoid
@@ -192,8 +194,9 @@
       new record is added, like a record in May, the may record will be
       inserted between the two records in January.
 - [X] 9 Budget sorter is jank, doesn't work.
-- [X] 10 refresh_on_detail_close_uniform in main.c when sorted by category doesn't
-     re-color the categories, a new func needs to be made to handle this.
+- [X] 10 refresh_on_detail_close_uniform in main.c when sorted by category 
+    doesn't re-color the categories, a new func needs to be made to handle
+    this.
 - [X] 11 When selecting a category in ncurses, empty categories are not shown.
      The way the function retrieves categories needs to be changed.
 - [X] 12 Seg fault when deleting a category and that category is the only
@@ -232,4 +235,5 @@
             numerous blocks.
 - [X] 30 segfault if the copy budget loop starts and there are no members
             Fixed with a conditional
-- [ ] 31 Invalid reads during consecutive resizing
+- [X] 31 Invalid reads during consecutive resizing
+- [ ] 32 Wrong scrollback position in the read view while sorted by date
