@@ -231,6 +231,36 @@ static void free_lda(struct transaction_tokens **lda, size_t sz)
 	free(lda);
 }
 
+static void replace_category_field(struct transaction_tokens **lda,
+								   struct catg_node *node,
+								   size_t n_recs,
+								   char *catg)
+{
+	size_t i;
+
+	for (i = 0; i < n_recs; i++) {
+		lda[i] = malloc(sizeof(struct transaction_tokens));
+		if (lda[i] == NULL) {
+			mem_alloc_fail();
+		}
+	}
+
+	for (i = 0; i < n_recs; i++) {
+		tokenize_record_fpi(node->data->data[i], lda[i]);
+		free(lda[i]->category);
+		lda[i]->category = strndup(catg, strlen(catg));;
+	}
+}
+
+static void get_lines_to_replace(struct catg_node *node,
+								 size_t n_recs,
+								 size_t *del_lines)
+{
+	for (size_t i = 0; i < n_recs; i++) {
+		del_lines[i] = boff_to_linenum(node->data->data[i]) + 1;
+	}
+}
+
 /* Thinking out loud: We don't want this function to replace each category
  * one by one. Instead we want to have an array of line numbers to replace
  * all in one chunk. The records are already sorted, we just need a way to
@@ -241,19 +271,20 @@ static void free_lda(struct transaction_tokens **lda, size_t sz)
 /*---*/
 
 /* Replaces the category field of records contained in nodes[node_idx] with
- * catg. */
+ * 'catg'. */
 static int replace_many_records_categories(struct catg_node *head,
 										   size_t node_idx,
 										   char *catg)
 {
+	char linebuff[LINE_BUFFER] = { 0 };
 	struct catg_node *tmp = get_node_by_idx(head, node_idx);
 	struct replace_records_vars rr = { 0 };
 	FILE *fptr;
 	FILE *tmpfptr;
 	char *str;
-	char linebuff[LINE_BUFFER] = { 0 };
 	size_t n_recs = tmp->data->size;
 	size_t del_lines[n_recs];
+	size_t i;
 
 	struct transaction_tokens **lda = malloc(
 		sizeof(struct transaction_tokens) * n_recs);
@@ -261,16 +292,8 @@ static int replace_many_records_categories(struct catg_node *head,
 		mem_alloc_fail();
 	}
 
-	for (size_t i = 0; i < n_recs; i++) {
-		lda[i] = malloc(sizeof(struct transaction_tokens));
-		if (lda[i] == NULL) {
-			mem_alloc_fail();
-		}
-		tokenize_record_fpi(tmp->data->data[i], lda[i]);
-		free(lda[i]->category);
-		lda[i]->category = strndup(catg, strlen(catg));;
-		del_lines[i] = boff_to_linenum(tmp->data->data[i]) + 1;
-	}
+	get_lines_to_replace(tmp, n_recs, del_lines);
+	replace_category_field(lda, tmp, n_recs, catg);
 
 	fptr = open_record_csv("r");
 	tmpfptr = open_temp_csv();
@@ -278,7 +301,7 @@ static int replace_many_records_categories(struct catg_node *head,
 	while ((str = fgets(linebuff, sizeof(linebuff), fptr)) != NULL) {
 		rr.line++;
 		rr.temp_line = 0;
-		for (size_t i = 0; i < n_recs; i++) {
+		for (i = 0; i < n_recs; i++) {
 			if (del_lines[i] == rr.line) {
 				rr.temp_line = del_lines[i];
 				rr.temp_idx = i;
