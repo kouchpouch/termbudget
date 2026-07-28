@@ -906,15 +906,33 @@ void nc_read_budget_loop(struct ReadWins *wins,
 			scroll_n_prev_categories(1, head, &s_vars, rfptr, bfptr);
 			break;
 
-		case ('K'):
-		case KEY_SHOME: // "SHIFT + HOME"
-			if (s_vars.catg_data == -1 && s_vars.catg_node != 0) {
-				mv_category_to_top(&head, s_vars.catg_node);
+		case ('J'):
+			if (s_vars.catg_data == -1) {
+				mv_category(&head, s_vars.catg_node, false);
 				rs->flag = REFRESH_LINKED_LIST;
 				rs->index = 0;
 				return;
 			}
 			break;
+
+		case ('K'):
+			if (s_vars.catg_data == -1 && s_vars.catg_node != 0) {
+				mv_category(&head, s_vars.catg_node, true);
+				rs->flag = REFRESH_LINKED_LIST;
+				rs->index = 0;
+				return;
+			}
+			break;
+
+//		case ('K'):
+//		case KEY_SHOME: // "SHIFT + HOME"
+//			if (s_vars.catg_data == -1 && s_vars.catg_node != 0) {
+//				mv_category_to_top(&head, s_vars.catg_node);
+//				rs->flag = REFRESH_LINKED_LIST;
+//				rs->index = 0;
+//				return;
+//			}
+//			break;
 
 		case ('?'):
 			subwin_y = show_help_subwindow();
