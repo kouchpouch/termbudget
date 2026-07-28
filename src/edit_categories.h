@@ -25,6 +25,8 @@
 
 bool duplicate_category_exists(struct catg_vec *psc, char *catg);
 
+int mv_category(struct catg_node **head, size_t idx, bool up);
+
 /* Moves the category found at FPI nodes[i]->catg_fp to the top of its
  * siblings with the same date range. */
 void mv_category_to_top(struct catg_node **head, size_t idx);
