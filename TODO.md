@@ -108,6 +108,7 @@
 - [ ] Add flag to remove orphaned categories
 - [X] Allow categories to be moved up and down, not just to the top.
 - [ ] Add undo
+- [ ] Add option to show line numbers
 
 #### Optimization
 - [ ] Create an interface for editing data within the liked list to avoid
@@ -238,3 +239,4 @@
 - [X] 31 Invalid reads during consecutive resizing
 - [ ] 32 Wrong scrollback position in the read view while sorted by date
 - [ ] 33 Overview resizing is borked
+- [X] 34 Wrong scrollback position when moving a category up or down
