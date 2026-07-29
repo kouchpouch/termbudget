@@ -833,6 +833,31 @@ void debug_columns(WINDOW *wptr, struct column_width *cw)
 	wgetch(wptr);
 }
 
+static size_t get_catg_move_scrollback(int catg_node,
+									   struct catg_node *head,
+									   bool up)
+{
+	struct catg_node *curr = head;
+	int i;
+	int retval = 0;
+
+	if (up) {
+		catg_node -= 1;
+	} else {
+		catg_node += 1;
+	}
+
+	for (i = 0; i < catg_node; i++) {
+		retval += curr->data->size + 1;
+		curr = curr->next;
+		if (curr == NULL) {
+			return 0;
+		}
+	}
+
+	return retval;
+}
+
 /* Main loop for the user to interact with when selecting the read menu option.
  * If sorted by anything other than 'Category', nc_read_loop will be used.
  *
@@ -907,8 +932,11 @@ void nc_read_budget_loop(struct ReadWins *wins,
 			break;
 
 		case ('J'):
-			if (s_vars.catg_data == -1) {
+			if (s_vars.catg_data == -1 &&
+			    s_vars.catg_node + 1 != (int)get_total_nodes(head))
+			{
 				mv_category(&head, s_vars.catg_node, false);
+				rs->scroll_back = get_catg_move_scrollback(s_vars.catg_node, head, false);
 				rs->flag = REFRESH_LINKED_LIST;
 				rs->index = 0;
 				return;
@@ -918,6 +946,7 @@ void nc_read_budget_loop(struct ReadWins *wins,
 		case ('K'):
 			if (s_vars.catg_data == -1 && s_vars.catg_node != 0) {
 				mv_category(&head, s_vars.catg_node, true);
+				rs->scroll_back = get_catg_move_scrollback(s_vars.catg_node, head, true);
 				rs->flag = REFRESH_LINKED_LIST;
 				rs->index = 0;
 				return;
