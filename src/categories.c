@@ -197,6 +197,8 @@ void shift_catg_node(struct catg_node **head, size_t src, bool forward)
 		d_node->prev = s_node->prev;
 		if (s_node->prev != NULL) {
 			s_node->prev->next = d_node;
+		} else {
+			*head = d_node;
 		}
 		s_node->prev = d_node;
 		s_node->next = d_node->next;
