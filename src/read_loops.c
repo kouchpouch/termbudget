@@ -845,6 +845,9 @@ static size_t get_catg_move_scrollback(int catg_node,
 		catg_node -= 1;
 	} else {
 		catg_node += 1;
+		if (catg_node == 1 && head->data->size == 0) {
+			return 1;
+		}
 	}
 
 	for (i = 0; i < catg_node; i++) {
@@ -936,7 +939,8 @@ void nc_read_budget_loop(struct ReadWins *wins,
 			    s_vars.catg_node + 1 != (int)get_total_nodes(head))
 			{
 				mv_category(&head, s_vars.catg_node, false);
-				rs->scroll_back = get_catg_move_scrollback(s_vars.catg_node, head, false);
+				rs->scroll_back = get_catg_move_scrollback(s_vars.catg_node,
+											   			   head, false);
 				rs->flag = REFRESH_LINKED_LIST;
 				rs->index = 0;
 				return;
@@ -946,7 +950,8 @@ void nc_read_budget_loop(struct ReadWins *wins,
 		case ('K'):
 			if (s_vars.catg_data == -1 && s_vars.catg_node != 0) {
 				mv_category(&head, s_vars.catg_node, true);
-				rs->scroll_back = get_catg_move_scrollback(s_vars.catg_node, head, true);
+				rs->scroll_back = get_catg_move_scrollback(s_vars.catg_node,
+											   			   head, true);
 				rs->flag = REFRESH_LINKED_LIST;
 				rs->index = 0;
 				return;
