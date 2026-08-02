@@ -429,7 +429,7 @@ void nc_edit_category(long node_idx, long nmembers, struct catg_node *head)
 			}
 			bt->amount = tmp;
 		} else {
-			if (-(tmp) < 0.0) {
+			if (-(tmp) <= 0.0) {
 				tmp = -0.0;
 			}
 			bt->amount = -(tmp);
