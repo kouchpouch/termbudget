@@ -109,6 +109,7 @@
 - [X] Allow categories to be moved up and down, not just to the top.
 - [ ] Add undo
 - [ ] Add option to show line numbers
+- [ ] Add search
 
 #### Optimization
 - [ ] Create an interface for editing data within the liked list to avoid
