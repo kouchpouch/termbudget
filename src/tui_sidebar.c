@@ -107,22 +107,31 @@ static int print_body_graphs_and_values(double inc,
 										int y,
 										int i)
 {
+	char graph[GRAPH_LENGTH];
+	double remaining = 0.0;
+	int graph_len;
+	int fill_graph;
+	int graph_x_begin;
+	int remain_x_begin;
+	int planned_x_begin;
+	int tracked_x_begin;
+
 	if (!check_y_fit(wptr, y)) {
 		return 0;
 	}
-	char graph[GRAPH_LENGTH];
+
 	for (int i = 0; i < GRAPH_LENGTH; i++) {
 		graph[i] = ' ';
 	}
 	graph[sizeof(graph) - 1] = '\0';
-	double remaining = 0;
+
 	if (exp <= 0) {
 		remaining = inc + exp;
 	} else {
 		remaining = inc - exp;
 	}
 
-	int graph_len;
+	remaining = normalize_near_zero(remaining);
 
 	if (inc == 0) {
 		graph_len = GRAPH_LENGTH - 1;
@@ -137,11 +146,10 @@ static int print_body_graphs_and_values(double inc,
 		graph_len = 0;
 	}
 
-	int fill_graph;
-	int graph_x_begin = (getmaxx(wptr) - GRAPH_LENGTH) / 2;
-	int remain_x_begin = (getmaxx(wptr) - graph_x_begin - strlen(" Remaining") - finlen(remaining) - BOX_OFFSET - 4);
-	int planned_x_begin = (getmaxx(wptr) - graph_x_begin - strlen(" Planned") - finlen(inc) - BOX_OFFSET - 4);
-	int tracked_x_begin = BOX_OFFSET + 6;
+	graph_x_begin = (getmaxx(wptr) - GRAPH_LENGTH) / 2;
+	remain_x_begin = (getmaxx(wptr) - graph_x_begin - strlen(" Remaining") - finlen(remaining) - BOX_OFFSET - 4);
+	planned_x_begin = (getmaxx(wptr) - graph_x_begin - strlen(" Planned") - finlen(inc) - BOX_OFFSET - 4);
+	tracked_x_begin = BOX_OFFSET + 6;
 
 	mvwaddch(wptr, y, getmaxx(wptr) - 5 - BOX_OFFSET, ACS_URCORNER);
 	mvwaddch(wptr, y, getmaxx(wptr) - 5 - BOX_OFFSET - 1, ACS_HLINE);
