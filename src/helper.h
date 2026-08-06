@@ -59,4 +59,6 @@ char *x_strtok(char **line, char delimiter);
 
 int x_strtok_to_int(char **line, char delimiter);
 
+double normalize_near_zero(double x);
+
 #endif
