@@ -157,3 +157,14 @@ int x_strtok_to_int(char **line, char delimiter)
 		return atoi(tmp);
 	}
 }
+
+double normalize_near_zero(double x)
+{
+	/* Margin of error */
+	double epsilon = 0.001;
+	if (x > 0.0 - epsilon && x < 0.0 + epsilon) {
+		return 0.0;
+	} else {
+		return x;
+	}
+}
