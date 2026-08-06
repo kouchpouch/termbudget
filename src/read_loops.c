@@ -111,6 +111,8 @@ static void print_catg_balances(WINDOW *wptr,
 		remaining = planned + exp;
 	}
 
+	remaining = normalize_near_zero(remaining);
+
 	if (tt == TT_INCOME) {
 		if (full_inc_len + finlen(planned) + finlen(exp) < width) {
 			wprintw(wptr, "Planned: $%.2f, Received: $%.2f", planned, exp);
