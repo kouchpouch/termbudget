@@ -88,6 +88,8 @@ enum sort_by {
 struct vec_d;
 struct vec2f_fin;
 
+void do_resize(void);
+
 /* Exits the program with "exit(1)" and prints the error message. */
 void mem_alloc_fail(void);
 
