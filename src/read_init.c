@@ -16,7 +16,6 @@
  * Author: kouchpouch <https://github.com/kouchpouch/termbudget>
  */
 
-#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -753,7 +752,6 @@ void nc_read_setup(struct read_state *r_state)
 	if (debug_flag) {
 		nc_print_debug_flag(stdscr);
 	}
-//	refresh();
 
 	get_date_err = get_dates(&rs, &date);
 	if (get_date_err != 0) {
