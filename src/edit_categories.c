@@ -424,15 +424,16 @@ void nc_edit_category(long node_idx, long nmembers, struct catg_node *head)
 	case ZERO_AMNT:
 		tmp = get_expenditures_per_category_fast(curr);
 		if (bt->transtype == TT_INCOME) {
-			if (tmp < 0.0) {
+			if (tmp <= 0.0) {
 				tmp = 0.0;
 			}
 			bt->amount = tmp;
 		} else {
 			if (-(tmp) <= 0.0) {
-				tmp = -0.0;
+				bt->amount = 0.0;
+			} else {
+				bt->amount = -(tmp);
 			}
-			bt->amount = -(tmp);
 		}
 		break;
 
