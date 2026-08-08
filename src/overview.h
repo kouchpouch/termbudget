@@ -19,6 +19,6 @@
 #ifndef OVERVIEW_H
 #define OVERVIEW_H
 
-void overview_setup(int year);
+int overview_loop(int year);
 
 #endif
