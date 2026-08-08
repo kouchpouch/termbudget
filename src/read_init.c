@@ -895,7 +895,7 @@ err_select_date_fail:
 		break;
 
 	case OVERVIEW:
-		overview_setup(date.year);
+		overview_loop(date.year);
 		r_state->flag = RRET_BYDATE;
 		SET_KEEP_BIT(r_state->flag);
 		break;
