@@ -130,7 +130,7 @@
     - [X] Move edit feature to its own source files
     - [X] Move CLI feature to its own source files
     - [X] Move overview feature to its own source files
-- [ ] cli.c/h
+~- [ ] cli.c/h~
 - [X] 1st pass--Rename structs, extract functions, general code cleanup
 - [X] Replace any function which dynamically allocates memory into a
         dynamically sized array with type Vec. This will prevent having
@@ -189,8 +189,8 @@
       year and month, the TUI doesn't refresh properly.
 - [X] 6 Sorter function can't handle adding a record between two years which
       doesn't already exist.
-- [ ] 7 Input too short warning when entering a single digit line number in 
-      CLI mode
+~- [ ] 7 Input too short warning when entering a single digit line number in 
+      CLI mode~
 - [X] 8 Sorter still doesn't completely work. Adding months between months
       doesn't work as intended. If January has 2 records in it and a
       new record is added, like a record in May, the may record will be
@@ -239,5 +239,5 @@
             Fixed with a conditional
 - [X] 31 Invalid reads during consecutive resizing
 - [ ] 32 Wrong scrollback position in the read view while sorted by date
-- [ ] 33 Overview resizing is borked
+- [X] 33 Overview resizing is borked
 - [X] 34 Wrong scrollback position when moving a category up or down
