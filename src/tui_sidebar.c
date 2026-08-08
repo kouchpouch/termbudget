@@ -246,6 +246,7 @@ static int print_parent_header(WINDOW *wptr, struct vec_d *psc, double leftover)
 	struct vec2f_fin pb;
 	calculate_balance(&pb, psc);
 	double remaining = pb.income - pb.expense;
+	remaining = normalize_near_zero(remaining);
 
 	mvwprintw(wptr, y, x, "Income:");
 	mvwprintw(wptr, y, max_x - (finlen(pb.income) + BOX_OFFSET), "$%.2f", pb.income);
@@ -256,7 +257,7 @@ static int print_parent_header(WINDOW *wptr, struct vec_d *psc, double leftover)
 	y++;
 
 	mvwprintw(wptr, y, x, "Remaining:");
-	if (pb.income - pb.expense < 0) {
+	if (remaining < 0.0) {
 		wattron(wptr, COLOR_PAIR(1));
 	}
 	mvwprintw(wptr, y, max_x - (finlen(remaining) + BOX_OFFSET), "$%.2f", remaining);
