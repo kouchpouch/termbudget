@@ -286,13 +286,16 @@ static void print_overview_months(WINDOW *wptr, int space)
 	}
 }
 
-static unsigned char overview_loop(WINDOW *wptr,
-									 struct vec_d *months,
-									 int year)
+static unsigned char print_overview(WINDOW *wptr,
+									struct vec_d *months,
+									int year)
 {
 	unsigned char flag = 0;
 	int c = 0;
 	int space = calculate_overview_columns(wptr);
+
+	wtimeout(wptr, INPUT_TIMEOUT);
+
 	if (space > 0) {
 		print_overview_months(wptr, space);
 		print_overview_balances(wptr, months, year, space);
@@ -304,7 +307,7 @@ static unsigned char overview_loop(WINDOW *wptr,
 		wrefresh(wptr);
 	}
 
-	while (1) {
+	while (!INPUT_IS_QUIT(c)) {
 		c = wgetch(wptr);
 		switch (c) {
 		case KEY_RESIZE:
@@ -320,7 +323,7 @@ static unsigned char overview_loop(WINDOW *wptr,
 	return flag;
 }
 
-void overview_setup(int year)
+int overview_setup(int year)
 {
 	WINDOW *wptr_parent = newwin(LINES - 1, 0, 0, 0);
 	WINDOW *wptr_data = create_lines_subwindow(getmaxy(wptr_parent) - 1,
@@ -336,19 +339,26 @@ void overview_setup(int year)
 	mvwxcprintw_digit(wptr_parent, 0, year);
 	wrefresh(wptr_parent);
 	
-	flag = overview_loop(wptr_data, months, year);
+	flag = print_overview(wptr_data, months, year);
 
 	free(months);
 	nc_exit_window(wptr_parent);
 	nc_exit_window(wptr_data);
 
-	switch (flag) {
-	case RESIZE:
-		overview_setup(year);
-		break;
-	case QUIT:
-		break;
-	default:
-		break;
-	}
+	return flag;
 }
+
+int overview_loop(int year)
+{
+	int flag = 0;
+
+	while (flag != QUIT) {
+		flag = overview_setup(year);
+		if (flag == RESIZE) {
+			do_resize();
+		}
+	}
+
+	return flag;
+}
+
