@@ -69,6 +69,13 @@
 		 i < vec->count;                                                       \
 		 i++, item = (void *)((char *)vec->data + (vec->data_size * i)))       \
 
+/* For each to the capacity of the vector */
+#define VEC_GENERIC_FOREACH_CAP(T, item, vec)                                  \
+	T item = vec->data;                                                        \
+	for (size_t i = 0;                                                         \
+		 i < vec->capacity;                                                    \
+		 i++, item = (void *)((char *)vec->data + (vec->data_size * i)))       \
+
 /* Reverse of VEC_GENERIC_FOREACH */
 #define VEC_GENERIC_FOREACH_REVERSE(T, item, vec)                              \
 	T item = (void *)((char *)vec->data + (vec->data_size * (vec->count - 1)));\
