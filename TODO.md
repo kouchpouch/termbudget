@@ -110,6 +110,8 @@
 - [ ] Add undo
 - [ ] Add option to show line numbers
 - [ ] Add search
+- [ ] When adding a transaction, it shall be placed at the end of matching
+        prior-added dates.
 
 #### Optimization
 - [ ] Create an interface for editing data within the liked list to avoid
