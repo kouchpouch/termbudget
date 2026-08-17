@@ -16,6 +16,7 @@
  * Author: kouchpouch <https://github.com/kouchpouch/termbudget>
  */
 
+#include <stdlib.h>
 #include <string.h>
 #include <ncurses.h>
 #include <limits.h>
@@ -100,7 +101,7 @@ static int print_body_categories(char *str, WINDOW *wptr, int y, int x, int i)
 	return 1;
 }
 
-static int print_body_graphs_and_values(double inc,
+static int print_body_graphs_and_values(double planned,
 										double exp,
 										int tt,
 										WINDOW *wptr,
@@ -125,40 +126,37 @@ static int print_body_graphs_and_values(double inc,
 	}
 	graph[sizeof(graph) - 1] = '\0';
 
-	if (tt == TT_EXPENSE) {
-		if (exp >= 0) {
-			remaining = exp + inc;
-		} else {
-			remaining = exp - inc;
-		}
-	} else {
-		remaining = inc + exp;
-	}
+	/* The 'exp' variable holds a positive number when income outweighs expenses,
+	 * a negative number when expenses outweigh income. */
+	remaining = planned + exp;
 
 	remaining = normalize_near_zero(remaining);
 
-	if (inc == 0) {
+	if (planned == 0) {
 		graph_len = GRAPH_LENGTH - 1;
 	} else {
-		graph_len = (GRAPH_LENGTH - 1) * (1 - (remaining / inc));
-	}
-	if (graph_len > GRAPH_LENGTH - 1) {
-		graph_len = GRAPH_LENGTH - 1;
+		if (tt == TT_INCOME) {
+			graph_len = (GRAPH_LENGTH - 1) * (exp / planned);
+		} else {
+			graph_len = (GRAPH_LENGTH - 1) * (1 - (remaining / planned));
+		}
 	}
 
-	if (graph_len < 0) {
+	if (graph_len > GRAPH_LENGTH - 1) {
+		graph_len = GRAPH_LENGTH - 1;
+	} else if (graph_len < 0) {
 		graph_len = 0;
 	}
 
 	graph_x_begin = (getmaxx(wptr) - GRAPH_LENGTH) / 2;
 	remain_x_begin = (getmaxx(wptr) - graph_x_begin - strlen(" Remaining") - finlen(remaining) - BOX_OFFSET - 4);
-	planned_x_begin = (getmaxx(wptr) - graph_x_begin - strlen(" Planned") - finlen(inc) - BOX_OFFSET - 4);
+	planned_x_begin = (getmaxx(wptr) - graph_x_begin - strlen(" Planned") - finlen(planned) - BOX_OFFSET - 4);
 	tracked_x_begin = BOX_OFFSET + 6;
 
 	mvwaddch(wptr, y, getmaxx(wptr) - 5 - BOX_OFFSET, ACS_URCORNER);
 	mvwaddch(wptr, y, getmaxx(wptr) - 5 - BOX_OFFSET - 1, ACS_HLINE);
 	if (tt == TT_INCOME) {
-		mvwprintw(wptr, y, planned_x_begin, " $%.2f Planned", inc);
+		mvwprintw(wptr, y, planned_x_begin, " $%.2f Planned", planned);
 	} else {
 		if (remaining < 0) {
 			wattron(wptr, COLOR_PAIR(1));
@@ -176,7 +174,6 @@ static int print_body_graphs_and_values(double inc,
 	wattron(wptr, COLOR_PAIR(category_color(i)));
 	mvwprintw(wptr, y, graph_x_begin, "[%s]", graph);
 	mvwchgat(wptr, y, graph_x_begin + 1, graph_len, A_REVERSE, category_color(i), NULL);
-	//wattroff(wptr, COLOR_PAIR(category_color(i)));
 	fill_graph = graph_x_begin + 1 + graph_len;
 	for (int j = fill_graph; j < getmaxx(wptr) - graph_x_begin - 1; j++) {
 		mvwaddch(wptr, y, j, ACS_BULLET);
@@ -192,7 +189,7 @@ static int print_body_graphs_and_values(double inc,
 	if (tt == TT_INCOME) {
 		mvwprintw(wptr, y, tracked_x_begin, " $%.2f Received", exp);
 	} else {
-		mvwprintw(wptr, y, tracked_x_begin, " $%.2f Tracked", inc - remaining);
+		mvwprintw(wptr, y, tracked_x_begin, " $%.2f Tracked", planned - remaining);
 	}
 
 	return 4;
