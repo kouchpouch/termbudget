@@ -243,3 +243,5 @@
 - [ ] 32 Wrong scrollback position in the read view while sorted by date
 - [X] 33 Overview resizing is borked
 - [X] 34 Wrong scrollback position when moving a category up or down
+- [X] 35 In an expense category with only income transactions, the calculation
+            in the sidebar for dollars remaining is incorrect.
