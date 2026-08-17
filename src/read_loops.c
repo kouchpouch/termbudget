@@ -102,17 +102,17 @@ static void print_catg_balances(WINDOW *wptr,
 								int width)
 {
 	// Safe cast, we know these strings aren't greater than INT_MAX
-	char *full_inc_string = "Planned: $, Received: $";
-	char *full_exp_string = "Planned: $, Remaining: $";
+	char *full_inc_string  = "Planned: $, Received: $";
+	char *full_exp_string  = "Planned: $, Remaining: $";
 	char *short_inc_string = "Plan: $, Rcvd: $";
 	char *short_exp_string = "Plan: $, Rem: $";
-	char *abbreviated = "P$, R$";
+	char *abbreviated      = "P$, R$";
 
-	int full_inc_len = (int)strlen(full_inc_string);
-	int full_exp_len = (int)strlen(full_exp_string);
-	int short_inc_len = (int)strlen(short_inc_string);
-	int short_exp_len = (int)strlen(short_exp_string);
-	int abbreviated_len = (int)strlen(abbreviated);
+	int full_inc_len       = (int)strlen(full_inc_string);
+	int full_exp_len       = (int)strlen(full_exp_string);
+	int short_inc_len      = (int)strlen(short_inc_string);
+	int short_exp_len      = (int)strlen(short_exp_string);
+	int abbreviated_len    = (int)strlen(abbreviated);
 
 	remaining = normalize_near_zero(remaining);
 
@@ -126,7 +126,6 @@ static void print_catg_balances(WINDOW *wptr,
 		}
 	} else if (tt == TT_EXPENSE) {
 		if (full_exp_len + finlen(planned) + finlen(remaining) < width) {
-			//wprintw(wptr, "Plan: $%.2f, Rem: $%.2f, Exp: $%.2f", planned, remaining, exp);
 			wprintw(wptr, "Planned: $%.2f, Remaining: $%.2f", planned, remaining);
 		} else if (short_exp_len + finlen(planned) + finlen(remaining) < width) {
 			wprintw(wptr, "Plan: $%.2f, Rem: $%.2f", planned, remaining);
@@ -203,12 +202,15 @@ static double print_category_hr(WINDOW *wptr,
 								int y)
 {
 	char *etc = "..";
+	double expenses = get_expenditures_per_category_fast(node);
+	double remaining;
 	int lenetc = (int)strlen(etc);
 	int x = 0;
 	int print_offset = 0;
-	double expenses = get_expenditures_per_category_fast(node);
-	double remaining;
+
 	wattron(wptr, A_REVERSE);
+
+	expenses = get_expenditures_per_category_fast(node);
 
 	/* Move cursor past the date columns */
 	wmove(wptr, y, x += cw->date - print_offset);
@@ -221,15 +223,7 @@ static double print_category_hr(WINDOW *wptr,
 	/* Move cursor past the category column */
 	wmove(wptr, y, x += cw->catg - print_offset);
 
-	if (bt->transtype == TT_EXPENSE) {
-		if (expenses >= 0) {
-			remaining = expenses + bt->amount;
-		} else {
-			remaining = expenses - bt->amount;
-		}
-	} else {
-		remaining = bt->amount + expenses;
-	}
+	remaining = expenses + bt->amount;
 
 	print_catg_balances(wptr,
 						bt->transtype,
