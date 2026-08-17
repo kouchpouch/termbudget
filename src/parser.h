@@ -122,9 +122,12 @@ bool category_exists_in_budget(char *catg, int month, int year);
 
 /* Returns bool if a month or year exists. Only checks BUDGET_DIR, as any
  * record there must either contain records or categories. Month parameter
- * is optional, call function with the month paramater <= 0*/
+ * is optional, call function with the month paramater <= 0 */
 bool month_or_year_exists(int m, int y);
 
+/* Faster version of get_expenditures_per_category, but requires a built
+ * catg_node linked list. The 'count_expenses' boolean, if true, counts
+ * expenses into the returned value */
 double get_expenditures_per_category_fast(struct catg_node *node);
 
 /* Returns all income records subtracted by expense records */
