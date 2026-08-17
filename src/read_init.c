@@ -918,9 +918,6 @@ err_select_date_fail:
 		break;
 
 	case RESIZE:
-//		while (test_terminal_size() == -1) {
-//			getch();
-//		}
 		if (date.month > 0 && date.year > 0) {
 			r_state->flag = RRET_BYDATE;
 			SET_KEEP_BIT(r_state->flag);
