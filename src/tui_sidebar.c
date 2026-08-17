@@ -125,10 +125,14 @@ static int print_body_graphs_and_values(double inc,
 	}
 	graph[sizeof(graph) - 1] = '\0';
 
-	if (exp <= 0) {
-		remaining = inc + exp;
+	if (tt == TT_EXPENSE) {
+		if (exp >= 0) {
+			remaining = exp + inc;
+		} else {
+			remaining = exp - inc;
+		}
 	} else {
-		remaining = inc - exp;
+		remaining = inc + exp;
 	}
 
 	remaining = normalize_near_zero(remaining);
