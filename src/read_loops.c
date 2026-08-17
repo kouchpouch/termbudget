@@ -53,7 +53,9 @@ struct visible_range {
 struct scroll_vars {
 	struct column_width *cw;
 	struct visible_range *vr;
-	struct vec_generic *negative_catgs;
+	struct vec_generic *negative_catgs; /* Tracks whether the category index
+	remaining value is negative, positive, or unknown. Values are enumerated by
+	'enum catg_remaining' */
 	WINDOW *wptr_data;
 	WINDOW *wptr_parent;
 	size_t sidebar_idx;
@@ -219,8 +221,12 @@ static double print_category_hr(WINDOW *wptr,
 	/* Move cursor past the category column */
 	wmove(wptr, y, x += cw->catg - print_offset);
 
-	if (expenses > 0) {
-		remaining = expenses - bt->amount;
+	if (bt->transtype == TT_EXPENSE) {
+		if (expenses >= 0) {
+			remaining = expenses + bt->amount;
+		} else {
+			remaining = expenses - bt->amount;
+		}
 	} else {
 		remaining = bt->amount + expenses;
 	}
@@ -281,7 +287,9 @@ static void print_init_budget_loop(struct scroll_vars *sv,
 			mvwchgat(sv->wptr_data, sv->displayed, 0, -1, A_NORMAL, category_color(i), NULL); 
 		}
 
-		/* mvwchgat(sv->wptr_data, sv->displayed, 0, -1, A_NORMAL, category_color(i), NULL); */
+		/* 
+		mvwchgat(sv->wptr_data, sv->displayed, 0, -1, A_NORMAL, category_color(i), NULL);
+		*/
 
 		sv->displayed++;
 
@@ -896,6 +904,7 @@ static size_t get_catg_move_scrollback(int catg_node,
 	return retval;
 }
 
+/* Initializes the negative category vector values with CR_UNKNOWN (-1) */
 void initialize_negative_catg_vector(struct vec_generic **negative_catgs,
 									 size_t total_nodes)
 {
