@@ -555,9 +555,16 @@ static void scroll_n_prev_records(int n,
 	}
 }
 
-static void unhighlight_and_color_catg(WINDOW *wptr, int y, int node_idx)
+static void unhighlight_and_color_catg(WINDOW *wptr,
+									   int y,
+									   int node_idx,
+									   bool red)
 {
-	mvwchgat(wptr, y, 0, -1, A_NORMAL, category_color(node_idx), NULL); 
+	if (red) {
+		mvwchgat(wptr, y, 0, -1, A_NORMAL, COLOR_RED, NULL); 
+	} else {
+		mvwchgat(wptr, y, 0, -1, A_NORMAL, category_color(node_idx), NULL); 
+	}
 }
 
 /* Returns 1 if the text was scrolled up, 0 if a normal scroll occured, -1
@@ -578,7 +585,11 @@ static int scroll_prev_category(struct catg_node *head,
 	if (sv->catg_data < 0) {
 		/* Unhighlight, recolor, and ready sv members to access the last
 		 * record of the previous category */
-		unhighlight_and_color_catg(sv->wptr_data, sv->cur_y, sv->catg_node);
+		if (*(int *)get_vec_generic(sv->catg_node, sv->negative_catgs) == CR_NEGATIVE) {
+			unhighlight_and_color_catg(sv->wptr_data, sv->cur_y, sv->catg_node, true);
+		} else {
+			unhighlight_and_color_catg(sv->wptr_data, sv->cur_y, sv->catg_node, false);
+		}
 		sv->catg_node--;
 		tmp = get_node_by_idx(head, sv->catg_node);
 		sv->catg_data = tmp->data->size - 1;
@@ -649,7 +660,11 @@ static int scroll_next_category(struct catg_node *head,
 	if (sv->catg_data < 0 && tmp->data->size > 0) {
 		/* Unhighlight, recolor, and ready sv members to access the 0th records
 		 * of that category */
-		unhighlight_and_color_catg(sv->wptr_data, sv->cur_y, sv->catg_node);
+		if (*(int *)get_vec_generic(sv->catg_node, sv->negative_catgs) == CR_NEGATIVE) {
+			unhighlight_and_color_catg(sv->wptr_data, sv->cur_y, sv->catg_node, true);
+		} else {
+			unhighlight_and_color_catg(sv->wptr_data, sv->cur_y, sv->catg_node, false);
+		}
 		sv->catg_data = 0;
 		retval++;
 
@@ -665,7 +680,11 @@ static int scroll_next_category(struct catg_node *head,
 	} else if (sv->catg_data == (int)tmp->data->size - 1) {
 		/* If cursor is on a category which contains no records */
 		if (tmp->data->size == 0) {
-			unhighlight_and_color_catg(sv->wptr_data, sv->cur_y, sv->catg_node);
+			if (*(int *)get_vec_generic(sv->catg_node, sv->negative_catgs) == CR_NEGATIVE) {
+				unhighlight_and_color_catg(sv->wptr_data, sv->cur_y, sv->catg_node, true);
+			} else {
+				unhighlight_and_color_catg(sv->wptr_data, sv->cur_y, sv->catg_node, false);
+			}
 		/* If the cursor is on a record and the next line is a category */
 		} else {
 			unhighlight(sv->wptr_data, sv->cur_y, 0, -1);
@@ -996,7 +1015,7 @@ void nc_read_budget_loop(struct ReadWins *wins,
 											   			   head, false);
 				rs->flag = REFRESH_LINKED_LIST;
 				rs->index = 0;
-				return;
+				goto read_loop_return;
 			}
 			break;
 
@@ -1007,19 +1026,9 @@ void nc_read_budget_loop(struct ReadWins *wins,
 											   			   head, true);
 				rs->flag = REFRESH_LINKED_LIST;
 				rs->index = 0;
-				return;
+				goto read_loop_return;
 			}
 			break;
-
-//		case ('K'):
-//		case KEY_SHOME: // "SHIFT + HOME"
-//			if (s_vars.catg_data == -1 && s_vars.catg_node != 0) {
-//				mv_category_to_top(&head, s_vars.catg_node);
-//				rs->flag = REFRESH_LINKED_LIST;
-//				rs->index = 0;
-//				return;
-//			}
-//			break;
 
 		case ('?'):
 			subwin_y = show_help_subwindow();
@@ -1104,7 +1113,7 @@ void nc_read_budget_loop(struct ReadWins *wins,
 		case KEY_F(ADD):
 			rs->flag = ADD;
 			rs->scroll_back = s_vars.select_idx;
-			return;
+			goto read_loop_return;
 
 		case ('E'):
 		case ('e'):
@@ -1119,7 +1128,7 @@ void nc_read_budget_loop(struct ReadWins *wins,
 				rs->index = tmp->data->data[s_vars.catg_data];
 			}
 			rs->scroll_back = s_vars.select_idx;
-			return;
+			goto read_loop_return;
 
 		case ('d'):
 			c = 0;
@@ -1133,7 +1142,7 @@ void nc_read_budget_loop(struct ReadWins *wins,
 					rs->index = tmp->data->data[s_vars.catg_data];
 					rs->opt = EDIT_RCRD_DELETE;
 					rs->scroll_back = s_vars.select_idx;
-					return;
+					goto read_loop_return;
 				}
 			}
 			c = 0;
@@ -1144,21 +1153,21 @@ void nc_read_budget_loop(struct ReadWins *wins,
 		case KEY_F(READ):
 			rs->flag = READ;
 			rs->index = 0;
-			return;
+			goto read_loop_return;
 
 		case ('Q'):
 		case ('q'):
 		case KEY_F(QUIT):
 			rs->flag = QUIT;
 			rs->index = 0;
-			return;
+			goto read_loop_return;
 
 		case ('S'):
 		case ('s'):
 		case KEY_F(SORT):
 			rs->flag = SORT;
 			rs->index = 0;
-			return;
+			goto read_loop_return;
 
 		case ('O'):
 		case ('o'):
@@ -1166,7 +1175,7 @@ void nc_read_budget_loop(struct ReadWins *wins,
 			rs->flag = OVERVIEW;
 			rs->index = 0;
 			rs->scroll_back = s_vars.select_idx;
-			return;
+			goto read_loop_return;
 
 		/* Alternate HOME and END sequences, especially for TMUX */
 		case ESCAPE_ASCII:
@@ -1186,12 +1195,15 @@ void nc_read_budget_loop(struct ReadWins *wins,
 		case KEY_RESIZE:
 			rs->flag = RESIZE;
 			rs->index = 0;
-			return;
+			goto read_loop_return;
 		}
 	}
 
 	rs->flag = NO_SELECT;
 	rs->index = 0;
+
+read_loop_return:
+	free_vec_generic(s_vars.negative_catgs);
 	return;
 }
 
