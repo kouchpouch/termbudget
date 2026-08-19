@@ -101,6 +101,38 @@ static int print_body_categories(char *str, WINDOW *wptr, int y, int x, int i)
 	return 1;
 }
 
+static int calculate_graph_length(int transaction_type,
+								  double planned,
+								  double expenses,
+								  double remaining)
+{
+	int length = 0;
+
+	if (planned == 0) {
+		length = GRAPH_LENGTH - 1;
+		/* Bug 36 fix
+		 * Handles edge case where a category has a planned value of zero and
+		 * only contains income transactions */
+		if (transaction_type == TT_EXPENSE && expenses > 0) {
+			length = 0;
+		}
+	} else {
+		if (transaction_type == TT_INCOME) {
+			length = (GRAPH_LENGTH - 1) * (expenses / planned);
+		} else {
+			length = (GRAPH_LENGTH - 1) * (1 - (remaining / planned));
+		}
+	}
+
+	if (length > GRAPH_LENGTH - 1) {
+		length = GRAPH_LENGTH - 1;
+	} else if (length < 0) {
+		length = 0;
+	}
+
+	return length;
+}
+
 static int print_body_graphs_and_values(double planned,
 										double exp,
 										int tt,
@@ -129,24 +161,9 @@ static int print_body_graphs_and_values(double planned,
 	/* The 'exp' variable holds a positive number when income outweighs expenses,
 	 * a negative number when expenses outweigh income. */
 	remaining = planned + exp;
-
 	remaining = normalize_near_zero(remaining);
 
-	if (planned == 0) {
-		graph_len = GRAPH_LENGTH - 1;
-	} else {
-		if (tt == TT_INCOME) {
-			graph_len = (GRAPH_LENGTH - 1) * (exp / planned);
-		} else {
-			graph_len = (GRAPH_LENGTH - 1) * (1 - (remaining / planned));
-		}
-	}
-
-	if (graph_len > GRAPH_LENGTH - 1) {
-		graph_len = GRAPH_LENGTH - 1;
-	} else if (graph_len < 0) {
-		graph_len = 0;
-	}
+	graph_len = calculate_graph_length(tt, planned, exp, remaining);
 
 	graph_x_begin = (getmaxx(wptr) - GRAPH_LENGTH) / 2;
 	remain_x_begin = (getmaxx(wptr) - graph_x_begin - strlen(" Remaining") - finlen(remaining) - BOX_OFFSET - 4);
