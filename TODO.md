@@ -245,3 +245,5 @@
 - [X] 34 Wrong scrollback position when moving a category up or down
 - [X] 35 In an expense category with only income transactions, the calculation
             in the sidebar for dollars remaining is incorrect.
+- [X] 36 When an expense category has only an income transaction, graph length
+            is incorrect.
