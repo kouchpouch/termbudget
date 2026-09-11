@@ -1053,6 +1053,7 @@ static void draw_scroll_indicator(WINDOW *wptr)
 	wrefresh(wptr);
 }
 
+
 char *nc_select_category(int month, int year)
 {
 	struct catg_vec *pc = get_budget_catg_by_date(month, year);
@@ -1083,6 +1084,7 @@ char *nc_select_category(int month, int year)
 	/* Print intital data based on window size */
 	for (int i = 0; i < getmaxy(wptr) && i < sz; i++) {
 		mvwxcprintw(wptr, i, pc->categories[i]);
+		mvwchgat(wptr, getcury(wptr), 0, -1, A_NORMAL, category_color(i), NULL);
 		displayed++;
 	}
 
@@ -1101,7 +1103,8 @@ char *nc_select_category(int month, int year)
 		case ('j'):
 		case KEY_DOWN:
 			if (selection_idx + 1 < sz) {
-				mvwchgat(wptr, cur, 0, -1, A_NORMAL, 0, NULL);
+				mvwchgat(wptr, cur, 0, -1, A_NORMAL,
+			 			 category_color(selection_idx), NULL);
 				cur++;
 				selection_idx++;
 
@@ -1118,7 +1121,8 @@ char *nc_select_category(int month, int year)
 		case ('k'):
 		case KEY_UP:
 			if (selection_idx - 1 >= 0) {
-				mvwchgat(wptr, cur, 0, -1, A_NORMAL, 0, NULL);
+				mvwchgat(wptr, cur, 0, -1, A_NORMAL,
+			  			 category_color(selection_idx), NULL);
 				cur--;
 				selection_idx--;
 
