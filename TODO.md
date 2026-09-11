@@ -112,6 +112,8 @@
 - [ ] Add search
 - [ ] When adding a transaction, it shall be placed at the end of matching
         prior-added dates.
+- [X] When selecting a category the category list colors should match those
+        on the read page.
 
 #### Optimization
 - [ ] Create an interface for editing data within the liked list to avoid
