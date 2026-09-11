@@ -133,6 +133,7 @@ static int calculate_graph_length(int transaction_type,
 	return length;
 }
 
+/* TODO: Refactor. Remove magic numbers, extract functions */
 static int print_body_graphs_and_values(double planned,
 										double exp,
 										int tt,
