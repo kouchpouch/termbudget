@@ -134,10 +134,14 @@ unsigned int sort_budget_csv(int month, int year)
 	return result_line;
 }
 
+
 /* We assume that the CSV is sorted by date already. Because every operation
  * to edit or add a transaction will go through the sorting function to
  * determine where to insert the record. */
-unsigned int sort_record_csv(int month, int day, int year)
+static unsigned int sort_record_csv_static(int month,
+										   int day,
+										   int year,
+										   bool append)
 {
 	struct sorter_search_for found;
 	FILE *fptr = open_record_csv("r");
@@ -183,7 +187,11 @@ unsigned int sort_record_csv(int month, int day, int year)
 		if (yeartok == year && monthtok == month && daytok == day) {
 			found.lesser_day = false;
 			result_line = line;
-			break;
+			if (append) {
+				continue;
+			} else {
+				break;
+			}
 		}
 
 		if (yeartok == year && monthtok == month && daytok > day) {
@@ -216,6 +224,16 @@ unsigned int sort_record_csv(int month, int day, int year)
 	fclose(fptr);
 
 	return result_line;
+}
+
+unsigned int sort_record_csv(int month, int day, int year)
+{
+	return sort_record_csv_static(month, day, year, false);
+}
+
+unsigned int sort_record_csv_append(int month, int day, int year)
+{
+	return sort_record_csv_static(month, day, year, true);
 }
 
 unsigned int sort_converted_csv(int month, int day, int year, FILE *fptr)
