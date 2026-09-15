@@ -221,7 +221,8 @@ int create_transaction(int year, int month)
 		goto input_quit;
 	}
 
-	result_line = sort_record_csv(uld->month, uld->day, uld->year);
+	result_line = sort_record_csv_append(uld->month, uld->day, uld->year);
+
 	retval = insert_transaction_record(result_line, uld);
 
 input_quit:
