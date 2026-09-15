@@ -24,8 +24,15 @@
 /* Returns the line sorted by date to insert data for budget.csv */
 unsigned int sort_budget_csv(int month, int year);
 
-/* A new version of sort_csv() with less chaos */
+/* Returns the FIRST resultant line of the CSV containing the month, day, and
+ * year arguments. Or the line where data matching the date arguments should
+ * be placed. */
 unsigned int sort_record_csv(int month, int day, int year);
+
+/* Same behavior as sort_record_csv(), however the return value is the
+ * line FOLLOWING the last matching record by date. I.E. returns the line
+ * sorted for the purpose of appending data. */
+unsigned int sort_record_csv_append(int month, int day, int year);
 
 unsigned int sort_converted_csv(int month, int day, int year, FILE *fptr);
 
