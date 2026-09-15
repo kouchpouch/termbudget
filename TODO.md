@@ -110,7 +110,7 @@
 - [ ] Add undo
 - [ ] Add option to show line numbers
 - [ ] Add search
-- [ ] When adding a transaction, it shall be placed at the end of matching
+- [X] When adding a transaction, it shall be placed at the end of matching
         prior-added dates.
 - [X] When selecting a category the category list colors should match those
         on the read page.
