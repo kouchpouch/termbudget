@@ -88,6 +88,14 @@
 - [ ] On the user input prompts, show relevant data on the window as the
         user goes from prompt to prompt. Such as, show the date entered so
         far and the remaining values left per category.
+    For editing categories:
+    - [X] Show previous name when editing name
+    - [ ] Show planned amount when changing planned amount, also show total
+            "left to budget".
+    For editing transactions:
+    - [ ] Show previous date
+    - [ ] Show previous amount
+    - [ ] Show left to budget in category when editing amount
 - [X] Have option to roll categories from previous month to the next month
 - [X] Annotate tui_input.h
 - [X] Menu key to (A)dd (F1) on main menu should allow the user to select
