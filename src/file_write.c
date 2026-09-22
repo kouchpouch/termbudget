@@ -20,9 +20,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "main.h"
 #include "filemanagement.h"
 #include "flags.h"
+#include "main.h"
 #include "parser.h"
 
 struct file_write_vars {

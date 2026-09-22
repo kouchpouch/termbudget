@@ -17,14 +17,14 @@
  */
 
 #include <stdio.h>
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
 
+#include "filemanagement.h"
+#include "helper.h"
 #include "main.h"
 #include "parser.h"
 #include "sorter.h"
-#include "filemanagement.h"
-#include "helper.h"
 
 static void write_temp_header(FILE *convfptr)
 {

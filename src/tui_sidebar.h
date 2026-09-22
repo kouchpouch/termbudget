@@ -24,8 +24,8 @@
 
 #include <ncurses.h>
 
-#include "tui.h"
 #include "categories.h"
+#include "tui.h"
 #include "vector.h"
 
 void draw_body_border(WINDOW *wptr);

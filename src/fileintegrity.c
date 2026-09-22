@@ -16,19 +16,19 @@
  * Author: kouchpouch <https://github.com/kouchpouch/termbudget>
  */
 
-#include "fileintegrity.h"
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include "categories.h"
-#include "filemanagement.h"
 #include "create.h"
+#include "fileintegrity.h"
+#include "filemanagement.h"
 #include "helper.h"
 #include "main.h"
 #include "parser.h"
 #include "tui.h"
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdbool.h>
-#include <string.h>
 
 bool validate_record_header(void)
 {

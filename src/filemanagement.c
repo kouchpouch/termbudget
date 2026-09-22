@@ -16,18 +16,18 @@
  * Author: kouchpouch <https://github.com/kouchpouch/termbudget>
  */
 
+#include <assert.h>
+#include <dirent.h>
+#include <errno.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <errno.h>
 #include <string.h>
-#include <stdbool.h>
-#include <assert.h>
-#include <sys/types.h>
 #include <sys/stat.h>
-#include <dirent.h>
+#include <sys/types.h>
 
-#include "filemanagement.h"
 #include "dynamic_string.h"
+#include "filemanagement.h"
 #include "flags.h"
 
 #ifndef TB_RELATIVE_DIRS

@@ -16,9 +16,9 @@
  * Author: kouchpouch <https://github.com/kouchpouch/termbudget>
  */
 
-#include <stdlib.h>
-#include <stdbool.h>
 #include <limits.h>
+#include <stdbool.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "helper.h"

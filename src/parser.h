@@ -19,8 +19,8 @@
 #ifndef PARSER_H
 #define PARSER_H
 
-#include <stdio.h>
 #include <stdbool.h>
+#include <stdio.h>
 
 #include "categories.h"
 #include "vector.h"

@@ -19,8 +19,8 @@
 #ifndef CATEGORIES_H
 #define CATEGORIES_H
 
-#include <stdio.h>
 #include <ncurses.h>
+#include <stdio.h>
 
 #include "main.h"
 #include "vector.h"

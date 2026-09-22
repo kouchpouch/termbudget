@@ -16,21 +16,21 @@
  * Author: kouchpouch <https://github.com/kouchpouch/termbudget>
  */
 
-#include <stdio.h>
-#include <stdlib.h>
 #include <assert.h>
 #include <limits.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
-#include "main.h"
-#include "helper.h"
 #include "create.h"
+#include "file_write.h"
+#include "filemanagement.h"
+#include "flags.h"
+#include "helper.h"
+#include "input.h"
+#include "main.h"
 #include "parser.h"
 #include "sorter.h"
-#include "input.h"
-#include "filemanagement.h"
-#include "file_write.h"
-#include "flags.h"
 
 static void print_record_vert(struct transaction_tokens *ld)
 {

@@ -16,16 +16,16 @@
  * Author: kouchpouch <https://github.com/kouchpouch/termbudget>
  */
 
-#include "tui.h"
 #include <ncurses.h>
-#include <string.h>
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
+#include <string.h>
 
-#include "parser.h"
-#include "tui_sidebar.h"
 #include "flags.h"
 #include "helper.h"
+#include "parser.h"
+#include "tui.h"
+#include "tui_sidebar.h"
 
 enum FooterAttr {
 	ON,

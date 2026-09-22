@@ -16,11 +16,11 @@
  * Author: kouchpouch <https://github.com/kouchpouch/termbudget>
  */
 
-#include "tui.h"
-#include "tui_input_menu.h"
-
 #include <ncurses.h>
 #include <string.h>
+
+#include "tui.h"
+#include "tui_input_menu.h"
 
 void print_items(struct MenuParams *mp, WINDOW *wptr, int first_y)
 {

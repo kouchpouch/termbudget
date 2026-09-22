@@ -19,8 +19,8 @@
 #ifndef FILE_WRITE_H
 #define FILE_WRITE_H
 
-#include <stdio.h>
 #include <stdbool.h>
+#include <stdio.h>
 
 #include "parser.h"
 

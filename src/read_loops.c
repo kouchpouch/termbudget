@@ -16,29 +16,28 @@
  * Author: kouchpouch <https://github.com/kouchpouch/termbudget>
  */
 
+#include <assert.h>
+#include <limits.h>
+#include <ncurses.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
-#include <ncurses.h>
-#include <assert.h>
-#include <limits.h>
 #include <time.h>
 
-#include "read_loops.h"
-#include "read_init.h"
-#include "main.h"
-#include "edit_transaction.h"
+#include "benchmark.h"
+#include "categories.h"
 #include "edit_categories.h"
+#include "edit_transaction.h"
+#include "flags.h"
 #include "helper.h"
+#include "main.h"
+#include "parser.h"
+#include "read_init.h"
+#include "read_loops.h"
 #include "tui.h"
 #include "tui_sidebar.h"
 #include "vector.h"
-#include "parser.h"
-#include "categories.h"
-#include "flags.h"
-
-#include "benchmark.h"
 #include "vector_generic.h"
 
 #define NUM_BUFFER_SZ 3 /* for vim-like number buffer */

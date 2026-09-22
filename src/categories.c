@@ -16,8 +16,8 @@
  * Author: kouchpouch <https://github.com/kouchpouch/termbudget>
  */
 
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "categories.h"
 #include "parser.h"

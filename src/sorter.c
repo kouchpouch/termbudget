@@ -16,17 +16,17 @@
  * Author: kouchpouch <https://github.com/kouchpouch/termbudget>
  */
 
+#include <limits.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
-#include <limits.h>
 
-#include "sorter.h"
-#include "main.h"
-#include "parser.h"
 #include "filemanagement.h"
 #include "helper.h"
+#include "main.h"
+#include "parser.h"
+#include "sorter.h"
 
 struct sorter_search_for {
 	bool greater_year;

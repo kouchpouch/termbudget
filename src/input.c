@@ -16,16 +16,16 @@
  * Author: kouchpouch <https://github.com/kouchpouch/termbudget>
  */
 
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <ctype.h>
 #include <string.h>
 
-#include "parser.h"
 #include "categories.h"
-#include "main.h"
-#include "helper.h"
 #include "flags.h"
+#include "helper.h"
+#include "main.h"
+#include "parser.h"
 
 char *user_input(int n)
 {

@@ -16,17 +16,17 @@
  * Author: kouchpouch <https://github.com/kouchpouch/termbudget>
  */
 
+#include <limits.h>
+#include <ncurses.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ncurses.h>
-#include <limits.h>
 
-#include "main.h"
-#include "tui.h"
-#include "tui_sidebar.h"
-#include "parser.h"
 #include "categories.h"
 #include "helper.h"
+#include "main.h"
+#include "parser.h"
+#include "tui.h"
+#include "tui_sidebar.h"
 
 #define GRAPH_LENGTH 30
 

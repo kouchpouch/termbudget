@@ -20,8 +20,8 @@
 #define CREATE_H
 
 #include "parser.h"
-#include "tui_input.h"
 #include "read_init.h"
+#include "tui_input.h"
 
 enum add_selection {
 	CREATE_TRANSACTION = 0,

@@ -16,31 +16,30 @@
  * Author: kouchpouch <https://github.com/kouchpouch/termbudget>
  */
 
+#include <ncurses.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
-#include <ncurses.h>
 #include <time.h>
 
+#include "benchmark.h"
+#include "categories.h"
+#include "create.h"
+#include "edit_categories.h"
+#include "edit_transaction.h"
+#include "filemanagement.h"
+#include "flags.h"
+#include "get_date.h"
+#include "helper.h"
+#include "main.h"
 #include "overview.h"
+#include "parser.h"
 #include "read_init.h"
 #include "read_loops.h"
-#include "create.h"
-#include "main.h"
-#include "edit_transaction.h"
-#include "edit_categories.h"
-#include "get_date.h"
-#include "filemanagement.h"
-#include "helper.h"
 #include "tui.h"
 #include "tui_sidebar.h"
 #include "vector.h"
-#include "parser.h"
-#include "categories.h"
-#include "flags.h"
-
-#include "benchmark.h"
 
 /* 'R'ead 'RET'urn values */
 #define RRET_DEFAULT 0

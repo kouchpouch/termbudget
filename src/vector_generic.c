@@ -16,9 +16,9 @@
  * Author: kouchpouch <https://github.com/kouchpouch/termbudget>
  */
 
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <assert.h>
 #include <string.h>
 
 #include "main.h"

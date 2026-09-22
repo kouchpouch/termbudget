@@ -16,31 +16,31 @@
  * Author: kouchpouch <https://github.com/kouchpouch/termbudget>
  */
 
+#include <assert.h>
+#include <limits.h>
+#include <limits.h>
+#include <ncurses.h>
+#include <signal.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
-#include <limits.h>
-#include <assert.h>
-#include <ncurses.h>
-#include <limits.h>
-#include <signal.h>
 #include <sys/ioctl.h>
 #include <unistd.h>
 
-#include "main.h"
+#include "benchmark.h"
+#include "categories.h"
 #include "cli.h"
+#include "convert_csv.h"
 #include "create.h"
-#include "helper.h"
-#include "read_init.h"
 #include "fileintegrity.h"
 #include "filemanagement.h"
-#include "tui.h"
-#include "parser.h"
-#include "categories.h"
-#include "convert_csv.h"
 #include "flags.h"
-#include "benchmark.h"
+#include "helper.h"
+#include "main.h"
+#include "parser.h"
+#include "read_init.h"
+#include "tui.h"
 
 volatile int resize_ncurses = 0;
 

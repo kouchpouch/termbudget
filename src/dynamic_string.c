@@ -16,13 +16,14 @@
  * Author: kouchpouch <https://github.com/kouchpouch/termbudget>
  */
 
+#include <ncurses.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ncurses.h>
-#include "main.h"
+
 #include "dynamic_string.h"
 #include "flags.h"
+#include "main.h"
 
 void debug_print_d_string(struct d_string *d_str)
 {

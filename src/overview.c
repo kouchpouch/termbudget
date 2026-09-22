@@ -16,17 +16,17 @@
  * Author: kouchpouch <https://github.com/kouchpouch/termbudget>
  */
 
-#include <stdio.h>
 #include <ncurses.h>
+#include <stdio.h>
 
-#include "main.h"
-#include "tui.h"
-#include "helper.h"
-#include "parser.h"
-#include "overview.h"
-#include "vector.h"
-#include "flags.h"
 #include "filemanagement.h"
+#include "flags.h"
+#include "helper.h"
+#include "main.h"
+#include "overview.h"
+#include "parser.h"
+#include "tui.h"
+#include "vector.h"
 
 #define MIN_OVERIVEW_WIDTH 84
 #define OVERVIEW_BAR_WIDTH 3

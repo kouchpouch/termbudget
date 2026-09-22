@@ -19,10 +19,10 @@
 #ifndef READ_LOOPS_H
 #define READ_LOOPS_H
 
+#include "categories.h"
 #include "read_init.h"
 #include "tui.h"
 #include "vector.h"
-#include "categories.h"
 
 void nc_read_loop(struct ReadWins *wins, 
 				  FILE *fptr, 

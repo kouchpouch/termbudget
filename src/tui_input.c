@@ -16,22 +16,22 @@
  * Author: kouchpouch <https://github.com/kouchpouch/termbudget>
  */
 
+#include <assert.h>
+#include <ctype.h>
+#include <limits.h>
+#include <ncurses.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ncurses.h>
-#include <ctype.h>
-#include <limits.h>
-#include <assert.h>
 
+#include "create.h"
+#include "flags.h"
+#include "helper.h"
+#include "main.h"
 #include "parser.h"
 #include "tui.h"
 #include "tui_input.h"
 #include "tui_input_menu.h"
-#include "main.h"
-#include "helper.h"
-#include "create.h"
-#include "flags.h"
 
 #define DATE_SUBWINDOW_ROWS 9
 
