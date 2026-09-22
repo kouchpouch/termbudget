@@ -16,22 +16,22 @@
  * Author: kouchpouch <https://github.com/kouchpouch/termbudget>
  */
 
+#include <assert.h>
+#include <limits.h>
 #include <ncurses.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <assert.h>
-#include <limits.h>
 
-#include "main.h"
 #include "create.h"
+#include "edit_transaction.h"
+#include "file_write.h"
+#include "filemanagement.h"
+#include "main.h"
 #include "parser.h"
 #include "read_init.h"
 #include "sorter.h"
-#include "edit_transaction.h"
 #include "tui.h"
 #include "tui_input.h"
-#include "filemanagement.h"
-#include "file_write.h"
 
 struct field_select {
 	int y_cursor;
@@ -168,7 +168,7 @@ static int nc_edit_csv_record(int replace_line,
 		break;
 
 	case EDIT_RCRD_DESC:
-		ld->desc = nc_input_string("Enter Description");
+		ld->desc = input_string("Enter Description");
 		if (ld->desc == NULL) {
 			goto err_fail;
 		}
