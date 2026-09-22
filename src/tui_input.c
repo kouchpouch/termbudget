@@ -631,7 +631,7 @@ static bool valid_input_character(int c)
 	}
 }
 
-static void nc_user_input(int n, WINDOW *wptr, struct UserInput *pui)
+static void nc_user_input(int n, WINDOW *wptr, struct user_input *pui)
 {
 	int max_y, max_x;
 	size_t buffersize = n + 1; // Plus 1 to hold null terminator
@@ -721,7 +721,7 @@ static void nc_input_n_digits(struct UserInputDigit *puid,
 							  size_t max_len,
 							  size_t min_len) 
 {
-	struct UserInput pui_, *pui = &pui_;
+	struct user_input pui_, *pui = &pui_;
 	puid->flag = 0;
 	nc_user_input(max_len, wptr, pui);
 	while (pui->str == NULL && pui->flag != QUIT) {
@@ -937,19 +937,48 @@ int nc_input_day(int month, int year, int old_day)
 	}
 }
 
-/* Returns NULL on quit */
-char *nc_input_string(char *msg)
+/* Returns NULL on user-quit */
+static char *input_string_internal(char *msg, WINDOW *wptr)
+{
+	if (wptr == NULL) {
+		wptr = create_input_subwindow();
+	}
+	struct user_input user_input;
+
+	mvwxcprintw(wptr, INPUT_MSG_Y_OFFSET, msg);
+	do {
+		nc_user_input(STDIN_LARGE_BUFF, wptr, &user_input);
+	} while (user_input.str == NULL && user_input.flag != QUIT);
+	wrefresh(wptr);
+	nc_exit_window(wptr);
+	return user_input.str;
+}
+
+/* Wrapper for input_string_internal() */
+char *input_string(char *msg)
+{
+	return input_string_internal(msg, NULL);
+}
+
+/* Wrapper for input_string_internal(), bring your own window */
+char *input_string_byow(char *msg, WINDOW *wptr)
+{
+	return input_string_internal(msg, wptr);
+}
+
+/* Returns a struct containing the subwindow pointer, the y subtext
+ * coordinates, and the max X coordinate value. Use this function when custom
+ * subtext needs to be printed on the window, then use input_string_byow(). */
+struct window_coords create_input_window_get_coords(void)
 {
 	WINDOW *wptr_input = create_input_subwindow();
-	struct UserInput pui_, *pui = &pui_;
+	struct window_coords input_win_info = {
+		.wptr = wptr_input,
+		.y = INPUT_MSG_Y_OFFSET +1,
+		.x = getmaxx(wptr_input)
+	};
 
-	mvwxcprintw(wptr_input, INPUT_MSG_Y_OFFSET, msg);
-	do {
-		nc_user_input(STDIN_LARGE_BUFF, wptr_input, pui);
-	} while (pui->str == NULL && pui->flag != QUIT);
-	wrefresh(wptr_input);
-	nc_exit_window(wptr_input);
-	return pui->str;
+	return input_win_info;
 }
 
 int nc_input_category_type(void)
@@ -997,7 +1026,7 @@ int nc_input_transaction_type(void)
 double nc_input_amount(void)
 {
 	WINDOW *wptr_input = create_input_subwindow();
-	struct UserInput pui_, *pui = &pui_;
+	struct user_input pui_, *pui = &pui_;
 	double amount;
 
 	mvwxcprintw(wptr_input, INPUT_MSG_Y_OFFSET, "Enter Amount");
@@ -1022,7 +1051,7 @@ double nc_input_amount(void)
 double nc_input_budget_amount(void)
 {
 	WINDOW *wptr_input = create_input_subwindow();
-	struct UserInput pui_, *pui = &pui_;
+	struct user_input pui_, *pui = &pui_;
 	double amount;
 
 	mvwxcprintw(wptr_input, INPUT_MSG_Y_OFFSET, "Enter Planned Amount for this Category");
