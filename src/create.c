@@ -17,28 +17,28 @@
  */
 
 #include <assert.h>
-#include <stdio.h>
 #include <ncurses.h>
+#include <stdio.h>
 #include <string.h>
 
+#include "categories.h"
 #include "create.h"
 #include "dynamic_string.h"
+#include "edit_categories.h"
+#include "file_write.h"
+#include "filemanagement.h"
+#include "flags.h"
 #include "get_date.h"
 #include "helper.h"
 #include "main.h"
-#include "categories.h"
-#include "edit_categories.h"
 #include "parser.h"
 #include "read_init.h"
 #include "sorter.h"
 #include "tui.h"
 #include "tui_input.h"
 #include "tui_input_menu.h"
-#include "filemanagement.h"
-#include "file_write.h"
 #include "vector.h"
 #include "vector_generic.h"
-#include "flags.h"
 
 enum copy_category_error {
 	COPYCATG_ERR_OK,
@@ -113,7 +113,7 @@ char *create_category(int yr, int mo)
 		}
 	}
 
-	catg = nc_input_string("Enter Category");
+	catg = input_string("Enter Category");
 	if (catg == NULL) {
 		return NULL;
 	}
@@ -201,7 +201,7 @@ int create_transaction(int year, int month)
 		return 1;
 	}
 
-	uld->desc = nc_input_string("Enter Description");
+	uld->desc = input_string("Enter Description");
 	if (uld->desc == NULL) {
 		free(uld->category);
 		return 1;
