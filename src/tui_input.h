@@ -34,9 +34,15 @@ struct full_date {
 	int year;
 };
 
-struct UserInput {
+struct user_input {
 	char *str;
 	int flag;
+};
+
+struct window_coords {
+	WINDOW *wptr;
+	int x;
+	int y;
 };
 
 int nc_input_full_date(int old_mo,
@@ -63,7 +69,11 @@ int nc_input_year(int old_year);
 
 int nc_input_day(int month, int year, int old_day);
 
-char *nc_input_string(char *msg);
+char *input_string(char *msg);
+
+char *input_string_byow(char *msg, WINDOW *wptr);
+
+struct window_coords create_input_window_get_coords(void);
 
 int nc_input_category_type(void);
 
