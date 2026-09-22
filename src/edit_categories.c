@@ -21,17 +21,17 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "categories.h"
 #include "edit_categories.h"
 #include "file_write.h"
+#include "filemanagement.h"
+#include "flags.h"
+#include "helper.h"
 #include "main.h"
-#include "categories.h"
 #include "parser.h"
 #include "tui.h"
 #include "tui_input.h"
 #include "tui_input_menu.h"
-#include "filemanagement.h"
-#include "flags.h"
-#include "helper.h"
 #include "vector.h"
 #include "vector_generic.h"
 
@@ -249,7 +249,18 @@ static int select_catg_field(void)
 static int rename_category(struct budget_tokens *bt)
 {
 	struct catg_vec *psc = get_budget_catg_by_date(bt->m, bt->y);
-	char *catg = nc_input_string("Renaming Category");
+	struct window_coords win_coords = create_input_window_get_coords();
+
+	char *subtext_prefix = "Editing: ";
+	size_t tmp = strlen(subtext_prefix) + strlen(bt->catg);
+	int print_x = (win_coords.x / 2) - (size_to_int(tmp) / 2);
+
+	mvwprintw(win_coords.wptr,
+		   win_coords.y,
+		   print_x,
+		   "%s%s", subtext_prefix, bt->catg);
+
+	char *catg = input_string_byow("Renaming Category", win_coords.wptr);
 	if (catg == NULL) {
 		return -1;
 	}
