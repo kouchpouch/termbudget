@@ -131,7 +131,7 @@ char *create_category(int yr, int mo)
 		return NULL;
 	}
 
-	amt = nc_input_budget_amount();
+	amt = input_budget_amount_create();
 	if (confirm_budget_category(catg, amt)) {
 		insert_budget_record(catg, mo, yr, transtype, amt);
 	} else {

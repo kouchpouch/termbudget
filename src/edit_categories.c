@@ -415,7 +415,7 @@ void nc_edit_category(long node_idx, long nmembers, struct catg_node *head)
 	switch (select) {
 
 	case EDIT_AMNT:
-		bt->amount = nc_input_budget_amount();
+		bt->amount = input_budget_amount_edit(bt->amount, 0);
 		if (bt->amount < 0.0) {
 			goto err_fail;
 		}

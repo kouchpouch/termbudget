@@ -1048,13 +1048,24 @@ double nc_input_amount(void)
 	}
 }
 
-double nc_input_budget_amount(void)
+static double input_budget_amount(bool edit, double previous, double tracked)
 {
 	WINDOW *wptr_input = create_input_subwindow();
 	struct user_input pui_, *pui = &pui_;
 	double amount;
 
-	mvwxcprintw(wptr_input, INPUT_MSG_Y_OFFSET, "Enter Planned Amount for this Category");
+	/* Print input text */
+	mvwxcprintw(wptr_input,
+			 INPUT_MSG_Y_OFFSET, 
+			 "Enter Planned Amount for this Category");
+	/* Print subtext */
+	if (edit) {
+		mvwprintw(wptr_input,
+			INPUT_MSG_Y_OFFSET + 1,
+			1, /* TODO: CALCULATE X VALUE */
+			"Current Amount: $%.2f, Tracked: $%.2f", previous, tracked);
+	}
+
 	keypad(wptr_input, true);
 
 	nc_user_input(MAX_LEN_AMOUNT, wptr_input, pui);
@@ -1071,6 +1082,18 @@ double nc_input_budget_amount(void)
 	} else {
 		return -1;
 	}
+}
+
+/* For editing a category's amount. Arguments 'previous' and 'tracked' will
+ * be printed in the subtext of the input window */
+double input_budget_amount_edit(double previous, double tracked)
+{
+	return input_budget_amount(true, previous, tracked);
+}
+
+double input_budget_amount_create(void)
+{
+	return input_budget_amount(false, 0, 0);
 }
 
 static void draw_scroll_indicator(WINDOW *wptr)
