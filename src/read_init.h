@@ -45,4 +45,6 @@ void nc_read_setup_default(struct read_state *r_state);
 
 void nc_read_setup_year(int sel_year, struct read_state *r_state);
 
+double get_left_to_budget(struct catg_node *head);
+
 #endif
