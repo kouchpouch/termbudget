@@ -23,6 +23,9 @@
 #include "read_init.h"
 #include "tui_input.h"
 
+/* Max float macro to indiciate that the subtext shall not be printed */
+#define NO_LEFT_TO_BUDGET 0xFFFFFFFF 
+
 enum add_selection {
 	CREATE_TRANSACTION = 0,
 	ADD_BUDGET
@@ -41,7 +44,7 @@ int insert_transaction_record(int insert_line, struct transaction_tokens *ld);
 
 /* Optional parameters int month, year. If add transaction is selected while
  * on the read screen these will be auto-filled. */
-int create_transaction(int year, int month);
+int create_transaction(int year, int month, double left_to_budget);
 
 int create_transaction_default(void);
 
