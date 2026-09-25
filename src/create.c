@@ -174,7 +174,7 @@ int insert_transaction_record(int insert_line, struct transaction_tokens *ld)
 /* Optional parameters int month, year. If add transaction is selected while
  * on the read screen these will be auto-filled. Returns 1 on failure, 0 on
  * success */
-int create_transaction(int year, int month)
+int create_transaction(int year, int month, double left_to_budget)
 {
 	struct transaction_tokens userlinedata_, *uld = &userlinedata_;
 	unsigned int result_line;
@@ -196,7 +196,7 @@ int create_transaction(int year, int month)
 	uld->day = fd.day;
 	uld->year = fd.year;
 
-	uld->category = nc_select_category(uld->month, uld->year);
+	uld->category = select_category(uld->month, uld->year, left_to_budget);
 	if (uld->category == NULL) {
 		return 1;
 	}
@@ -237,7 +237,7 @@ input_quit:
 
 int create_transaction_default(void)
 {
-	return create_transaction(0, 0);
+	return create_transaction(0, 0, NO_LEFT_TO_BUDGET);
 }
 
 static struct MenuParams *init_add_main_menu(void)
@@ -723,13 +723,15 @@ void add_main_with_date(struct read_state *r_state, struct short_date *date)
 
 	switch (add_sel) {
 	case ADD_TRNS:
-		create_transaction(date->year, date->month);
+		create_transaction(date->year,
+						   date->month,
+						   get_left_to_budget(r_state->head));
 		break;
 
 	case ADD_CATG:
 		create_category_intret(date->year,
-					  date->month,
-					  get_left_to_budget(r_state->head));
+					           date->month,
+					           get_left_to_budget(r_state->head));
 		break;
 
 	default:
