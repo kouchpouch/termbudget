@@ -1048,22 +1048,55 @@ double nc_input_amount(void)
 	}
 }
 
+static int calc_catg_create_x_coord(double left_to_budget, int max_x)
+{
+	size_t temp = strlen("Left to Budget: $");
+	int retval = size_to_int(temp);
+
+	retval += finlen((int)left_to_budget);
+	retval = (max_x / 2) - (retval / 2);
+
+	return retval;
+}
+
+static int calc_catg_edit_x_coord(double previous, double tracked, int max_x)
+{
+	size_t temp = 0;
+	char *substring_one = "Current Amount: $";
+	char *substring_two = ", Tracked: $";
+	int retval;
+
+	temp += strlen(substring_one) + strlen(substring_two);
+	temp += finlen((int)previous) + finlen((int)tracked);
+
+	retval = size_to_int(temp);
+	retval = (max_x / 2) - (retval / 2);
+
+	return retval;
+}
+
 static double input_budget_amount(bool edit, double previous, double tracked)
 {
 	WINDOW *wptr_input = create_input_subwindow();
 	struct user_input pui_, *pui = &pui_;
 	double amount;
+	int print_x;
 
-	/* Print input text */
 	mvwxcprintw(wptr_input,
 			 INPUT_MSG_Y_OFFSET, 
 			 "Enter Planned Amount for this Category");
-	/* Print subtext */
 	if (edit) {
+		print_x = calc_catg_edit_x_coord(previous, tracked, getmaxx(wptr_input));
 		mvwprintw(wptr_input,
 			INPUT_MSG_Y_OFFSET + 1,
-			1, /* TODO: CALCULATE X VALUE */
+			print_x,
 			"Current Amount: $%.2f, Tracked: $%.2f", previous, tracked);
+	} else if (tracked != NO_LEFT_TO_BUDGET) {
+		print_x = calc_catg_create_x_coord(tracked, getmaxx(wptr_input));
+		mvwprintw(wptr_input,
+			INPUT_MSG_Y_OFFSET + 1,
+			print_x,
+			"Left to Budget: $%.2f", tracked);
 	}
 
 	keypad(wptr_input, true);
@@ -1091,9 +1124,9 @@ double input_budget_amount_edit(double previous, double tracked)
 	return input_budget_amount(true, previous, tracked);
 }
 
-double input_budget_amount_create(void)
+double input_budget_amount_create(double left_to_budget)
 {
-	return input_budget_amount(false, 0, 0);
+	return input_budget_amount(false, 0, left_to_budget);
 }
 
 static void draw_scroll_indicator(WINDOW *wptr)
@@ -1106,7 +1139,7 @@ static void draw_scroll_indicator(WINDOW *wptr)
 }
 
 
-char *nc_select_category(int month, int year)
+char *select_category(int month, int year, double get_left_to_budget)
 {
 	struct catg_vec *pc = get_budget_catg_by_date(month, year);
 	WINDOW *wptr_parent = create_category_select_parent(pc->size);
@@ -1194,7 +1227,7 @@ manual_selection:
 			nc_exit_window(wptr_parent);
 			nc_exit_window(wptr);
 			nc_print_input_footer(stdscr);
-			return create_category(year, month);
+			return create_category(year, month, get_left_to_budget);
 
 		CASE_ENTER
 			break;
