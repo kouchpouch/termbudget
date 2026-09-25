@@ -88,11 +88,11 @@
 - [ ] On the user input prompts, show relevant data on the window as the
         user goes from prompt to prompt. Such as, show the date entered so
         far and the remaining values left per category.
-    For editing categories:
+    For editing/creating categories:
     - [X] Show previous name when editing name
-    - [ ] Show planned amount when changing planned amount, also show total
+    - [X] Show planned amount when changing planned amount, also show total
             "left to budget".
-    For editing transactions:
+    For editing/creating transactions:
     - [ ] Show previous date
     - [ ] Show previous amount
     - [ ] Show left to budget in category when editing amount
