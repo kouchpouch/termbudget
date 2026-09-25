@@ -95,7 +95,7 @@ int insert_budget_record(char *catg, int m, int y, int transtype, double amt)
 	return mv_tmp_to_budget_file(tmpfptr, fptr);
 }
 
-char *create_category(int yr, int mo)
+char *create_category(int yr, int mo, double left_to_budget)
 {
 	char *catg;
 	int transtype;
@@ -131,8 +131,8 @@ char *create_category(int yr, int mo)
 		return NULL;
 	}
 
-	amt = input_budget_amount_create();
-	if (confirm_budget_category(catg, amt)) {
+	amt = input_budget_amount_create(left_to_budget);
+	if (amt >= 0.0 && confirm_budget_category(catg, amt)) {
 		insert_budget_record(catg, mo, yr, transtype, amt);
 	} else {
 		return NULL;
@@ -142,11 +142,11 @@ char *create_category(int yr, int mo)
 	return catg;
 }
 
-int create_category_intret(int yr, int mo)
+int create_category_intret(int yr, int mo, double left_to_budget)
 {
-	char *catg = create_category(yr, mo);
+	char *catg = create_category(yr, mo, left_to_budget);
 	if (catg == NULL) {
-		return 1;
+		return -1;
 	} else {
 		free(catg);
 		return 0;
@@ -421,8 +421,6 @@ static struct vec_generic *get_dates_to_copy_from(struct full_date *fd)
 	struct vec_generic *vg = create_vec_generic(sizeof(struct vec2l), 0);
 	struct vec2l selections = { 0 };
 
-	/* TODO: Create an enumeration to handle the field value, this manual
-	 * way is prone to bugs. */
 	struct vec_d *years  = get_years_with_data(bfptr, BUDGET_YEAR_FIELD);
 	if (years == NULL) {
 		free_vec_generic(vg);
@@ -713,7 +711,7 @@ int create_new_budget_intret(void) {
 	}
 }
 
-void add_main_with_date(struct short_date *date)
+void add_main_with_date(struct read_state *r_state, struct short_date *date)
 {
 	enum add_sel {
 		ADD_TRNS = 0,
@@ -729,7 +727,9 @@ void add_main_with_date(struct short_date *date)
 		break;
 
 	case ADD_CATG:
-		create_category_intret(date->year, date->month);
+		create_category_intret(date->year,
+					  date->month,
+					  get_left_to_budget(r_state->head));
 		break;
 
 	default:
@@ -752,10 +752,6 @@ void add_main_no_date(struct read_state *rs)
 	case ADD_TRNS:
 		create_transaction_default();
 		break;
-
-//	case ADD_CATG:
-//		create_category_intret(0, 0);
-//		break;
 
 	case ADD_BUDG:
 		date = create_new_budget();
