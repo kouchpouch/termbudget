@@ -5,10 +5,10 @@
   A terminal user interface (TUI) budgeting program made with ncurses.
 </h3>
 
-<h1>
+<h3>
     AI was not used to make this project aside from choosing a default color
     palette. I do not use AI, I enjoy programming.
-</h1>
+</h3>
 
 <p align="center">
   <img src="/assets/read_view.png" />
