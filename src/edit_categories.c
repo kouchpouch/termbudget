@@ -29,6 +29,7 @@
 #include "helper.h"
 #include "main.h"
 #include "parser.h"
+#include "read_init.h"
 #include "tui.h"
 #include "tui_input.h"
 #include "tui_input_menu.h"
@@ -415,7 +416,8 @@ void nc_edit_category(long node_idx, long nmembers, struct catg_node *head)
 	switch (select) {
 
 	case EDIT_AMNT:
-		bt->amount = input_budget_amount_edit(bt->amount, 0);
+		bt->amount = input_budget_amount_edit(bt->amount,
+										get_left_to_budget(head));
 		if (bt->amount < 0.0) {
 			goto err_fail;
 		}
