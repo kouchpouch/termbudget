@@ -81,10 +81,10 @@ int nc_input_transaction_type(void);
 
 double nc_input_amount(void);
 
-double input_budget_amount_create(void);
+double input_budget_amount_create(double left_to_budget);
 
 double input_budget_amount_edit(double previous, double tracked);
 
-char *nc_select_category(int month, int year);
+char *select_category(int month, int year, double get_left_to_budget);
 
 #endif
