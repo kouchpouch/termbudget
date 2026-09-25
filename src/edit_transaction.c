@@ -121,7 +121,7 @@ static int select_edit_field_loop(WINDOW *wptr)
 static int nc_edit_csv_record(int replace_line,
 							  int edit_field,
 							  struct transaction_tokens *ld,
-							  struct read_state *rret)
+							  struct read_state *r_state)
 {
 	if (replace_line == 0) {
 		puts("Cannot delete line 0");
@@ -153,15 +153,17 @@ static int nc_edit_csv_record(int replace_line,
 		 * in a new position when the date changes */
 		delete_transaction(replace_line);
 		insert_transaction_record(sort_record_csv(ld->month, ld->day, ld->year), ld);
-		if (rret != NULL) {
-			rret->month = fd.month;
-			rret->year = fd.year;
-			rret->flag = RRET_BYDATE;
+		if (r_state != NULL) {
+			r_state->month = fd.month;
+			r_state->year = fd.year;
+			r_state->flag = RRET_BYDATE;
 		}
 		return EDIT_RCRD_DATE;
 
 	case EDIT_RCRD_CATG:
-		ld->category = nc_select_category(ld->month, ld->year);
+		ld->category = select_category(ld->month,
+								       ld->year,
+								       get_left_to_budget(r_state->head));
 		if (ld->category == NULL) {
 			goto err_fail;
 		}
@@ -224,11 +226,11 @@ static int nc_edit_csv_record(int replace_line,
 	return 0;
 
 err_fail:
-	if (rret != NULL) {
-		rret->month = ld->month;
-		rret->year = ld->year;
-		rret->flag = RRET_BYDATE;
-		SET_KEEP_BIT(rret->flag);
+	if (r_state != NULL) {
+		r_state->month = ld->month;
+		r_state->year = ld->year;
+		r_state->flag = RRET_BYDATE;
+		SET_KEEP_BIT(r_state->flag);
 	}
 	return -1;
 }
