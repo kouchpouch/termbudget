@@ -679,7 +679,7 @@ static struct vec2f_fin *get_total_planned(struct catg_node *head)
 	return fin_vals;
 }
 
-static double get_left_to_budget(struct catg_node *head)
+double get_left_to_budget(struct catg_node *head)
 {
 	struct vec2f_fin *fin_vals = get_total_planned(head);
 	double ret = fin_vals->income - fin_vals->expense;
@@ -705,26 +705,6 @@ static void cleanup_read_setup(struct vec_d *rec_fpis,
 	pidx = NULL;
 	wins = NULL;
 }
-
-/* Debug function */
-// static void print_read_state(struct read_state *r_state)
-// {
-// 	if (r_state->head) {
-// 		printw("Head exists ");
-// 	} else {
-// 		printw("Head is NULL");
-// 	}
-// 
-// 	printw("FPI: %ld ", r_state->fpi);
-// 	printw("SCRL_BACK_FPI: %ld ", r_state->scroll_back_fpi);
-// 	printw("YEAR: %d ", r_state->year);
-// 	printw("MONTH: %d ", r_state->month);
-// 	printw("SCRL_BACK: %d ", r_state->scroll_back);
-// 	printw("SORT: %d ", r_state->sort);
-// 	printw("FLAG: %d ", r_state->flag);
-// 	refresh();
-// 	getch();
-// }
 
 void nc_read_setup(struct read_state *r_state)
 {
@@ -855,7 +835,7 @@ err_select_date_fail:
 			add_main_no_date(r_state);
 			//r_state->flag = RRET_DEFAULT;
 		} else {
-			add_main_with_date(&date);
+			add_main_with_date(r_state, &date);
 			r_state->flag = RRET_BYDATE;
 		}
 		break;
