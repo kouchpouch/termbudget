@@ -30,8 +30,12 @@ enum add_selection {
 
 int insert_budget_record(char *catg, int m, int y, int transtype, double amt);
 
-char *create_category(int yr, int mo);
-int create_category_intret(int yr, int mo);
+char *create_category(int yr, int mo, double left_to_budget);
+
+/* Use when the category name is not needed to be returned. The category name
+ * string is free'd before return.
+ * Returns -1 on failure, 0 on success */
+int create_category_intret(int yr, int mo, double left_to_budget);
 
 int insert_transaction_record(int insert_line, struct transaction_tokens *ld);
 
@@ -47,7 +51,7 @@ struct full_date *create_new_budget(void);
 
 enum add_selection get_add_selection(void);
 
-void add_main_with_date(struct short_date *date);
+void add_main_with_date(struct read_state *r_state, struct short_date *date);
 
 void add_main_no_date(struct read_state *rs);
 
