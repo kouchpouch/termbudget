@@ -38,7 +38,7 @@ struct field_select {
 	int choice;
 	int max_x;
 	int start_x;
-	int nx;
+	int nx; /* Stores the number of characters to highlight in a row */
 };
 
 static void delete_transaction(int line)
@@ -48,22 +48,34 @@ static void delete_transaction(int line)
 	mv_tmp_to_record_file(tmpfptr, fptr);
 }
 
+static bool cursor_is_at_top(struct field_select *fs)
+{
+	return (fs->y_cursor - 1 > 0 ? true : false);
+}
+
+static bool cursor_is_at_bottom(struct field_select *fs, WINDOW *wptr)
+{
+	return (fs->y_cursor + 1 <= (getmaxy(wptr) - BOX_OFFSET)) ? true : false;
+}
+
+/* Scrolls to the previous option (up), wraps around. */
 static void edit_field_loop_scroll_prev(struct field_select *fs, WINDOW *wptr)
 {
-	if (fs->y_cursor - 1 > 0) {
+	if (cursor_is_at_top(fs)) {
 		mvwchgat(wptr, fs->y_cursor, fs->start_x, fs->nx, A_NORMAL, 0, NULL);
 		fs->y_cursor--;
 		highlight(wptr, fs->y_cursor, fs->start_x, fs->nx);
 	} else {
 		mvwchgat(wptr, fs->y_cursor, fs->start_x, fs->nx, A_NORMAL, 0, NULL);
-		fs->y_cursor = INPUT_WIN_ROWS - BOX_OFFSET;
+		fs->y_cursor = getmaxy(wptr) - BOX_OFFSET;
 		highlight(wptr, fs->y_cursor, fs->start_x, fs->nx);
 	}
 }
 
+/* Scrolls to the next option (down), wraps around. */
 static void edit_field_loop_scroll_next(struct field_select *fs, WINDOW *wptr)
 {
-	if (fs->y_cursor + 1 <= (INPUT_WIN_ROWS - BOX_OFFSET)) {
+	if (cursor_is_at_bottom(fs, wptr)) {
 		mvwchgat(wptr, fs->y_cursor, fs->start_x, fs->nx, A_NORMAL, 0, NULL);
 		fs->y_cursor++;
 		highlight(wptr, fs->y_cursor, fs->start_x, fs->nx);
@@ -74,20 +86,30 @@ static void edit_field_loop_scroll_next(struct field_select *fs, WINDOW *wptr)
 	}
 }
 
-static int select_edit_field_loop(WINDOW *wptr)
+/* Initializes window and field_select struct for select_edit_field_loop() */
+static void init_select_edit_field_win(WINDOW *wptr, struct field_select *fs)
 {
-	struct field_select fs;
-	fs.y_cursor = 1;
-	fs.choice = 0;
-	fs.max_x = getmaxx(wptr);
-	fs.start_x = BOX_OFFSET;
-	fs.nx = fs.max_x - (BOX_OFFSET * 2);
+	int max_x = getmaxx(wptr);
 
-	mvwchgat(wptr, 1, fs.start_x, fs.nx, A_REVERSE, REVERSE_COLOR, NULL);
+	*fs = (struct field_select) {
+		.y_cursor = 1,
+		.choice = 0,
+		.max_x = max_x,
+		.start_x = BOX_OFFSET,
+		.nx = max_x - (BOX_OFFSET * 2)
+	};
+
+	mvwchgat(wptr, 1, fs->start_x, fs->nx, A_REVERSE, REVERSE_COLOR, NULL);
 	keypad(wptr, true);
 	box(wptr, 0, 0);
 	mvwxcprintw(wptr, 0, "Select Field to Edit");
 	wrefresh(wptr);
+}
+
+static int select_edit_field_loop(WINDOW *wptr)
+{
+	struct field_select fs;
+	init_select_edit_field_win(wptr, &fs);
 
 	while (1) { 
 		wrefresh(wptr);
@@ -110,6 +132,7 @@ static int select_edit_field_loop(WINDOW *wptr)
 			return fs.y_cursor;
 
 		case ('q'):
+		case ESCAPE_ASCII:
 		case KEY_F(QUIT):
 			return 0;
 		}
@@ -117,8 +140,21 @@ static int select_edit_field_loop(WINDOW *wptr)
 	return 0;
 }
 
+/* Write the data from 'ld' to the record CSV */
+static void write_edits(int replace_line, struct transaction_tokens *ld)
+{
+	FILE *fptr;
+	FILE *tmpfptr;
+	char replace_str[LINE_BUFFER] = { 0 };
+
+	fptr = open_record_csv("r");
+	line_data_to_string(replace_str, sizeof(replace_str), ld);
+	tmpfptr = replace_in_file(fptr, replace_str, replace_line);
+	mv_tmp_to_record_file(tmpfptr, fptr);
+}
+
 /* Ncurses implementation to do the actual file writing */
-static int nc_edit_csv_record(int replace_line,
+static int edit_csv_record(int replace_line,
 							  int edit_field,
 							  struct transaction_tokens *ld,
 							  struct read_state *r_state)
@@ -131,9 +167,6 @@ static int nc_edit_csv_record(int replace_line,
 	replace_line++;
 
 	enum EditRecordFields field = edit_field;
-	char replace_str[LINE_BUFFER] = { 0 };
-	FILE *fptr;
-	FILE *tmpfptr;
 	struct full_date fd;
 
 	switch (field) {
@@ -152,7 +185,10 @@ static int nc_edit_csv_record(int replace_line,
 		/* Have to add and delete here because the record will be placed
 		 * in a new position when the date changes */
 		delete_transaction(replace_line);
-		insert_transaction_record(sort_record_csv(ld->month, ld->day, ld->year), ld);
+		insert_transaction_record(sort_record_csv(ld->month,
+												  ld->day,
+											      ld->year),
+								  ld);
 		if (r_state != NULL) {
 			r_state->month = fd.month;
 			r_state->year = fd.year;
@@ -207,12 +243,7 @@ static int nc_edit_csv_record(int replace_line,
 		goto err_fail;
 	}
 
-	fptr = open_record_csv("r");
-	line_data_to_string(replace_str, sizeof(replace_str), ld);
-	tmpfptr = replace_in_file(fptr, replace_str, replace_line);
-
-	/* mv_tmp_to_record_file() closes the file pointers */
-	mv_tmp_to_record_file(tmpfptr, fptr);
+	write_edits(replace_line, ld);
 
 	if (field == EDIT_RCRD_CATG) {
 		free(ld->category);
@@ -268,7 +299,10 @@ static int edit_transaction(long b, int opt_action, struct read_state *rret)
 	} else {
 		wptr_edit = create_input_subwindow();
 		nc_print_record_vert(wptr_edit, ld, BOX_OFFSET);
-		mvwprintw(wptr_edit, INPUT_WIN_ROWS - BOX_OFFSET, BOX_OFFSET, "%s", "Delete");
+		mvwprintw(wptr_edit,
+			      INPUT_WIN_ROWS - BOX_OFFSET,
+			      BOX_OFFSET,
+			      "%s", "Delete");
 		box(wptr_edit, 0, 0);
 		wrefresh(wptr_edit);
 		field = select_edit_field_loop(wptr_edit);
@@ -284,30 +318,30 @@ static int edit_transaction(long b, int opt_action, struct read_state *rret)
 
 	case EDIT_RCRD_DATE:
 		nc_print_input_footer(stdscr);
-		nc_edit_csv_record(linenum, EDIT_RCRD_DATE, ld, rret);
+		edit_csv_record(linenum, EDIT_RCRD_DATE, ld, rret);
 		break;
 
 	case EDIT_RCRD_CATG:
 		free(ld->category);
 		ld->category = NULL;
-		nc_edit_csv_record(linenum, EDIT_RCRD_CATG, ld, rret);
+		edit_csv_record(linenum, EDIT_RCRD_CATG, ld, rret);
 		break;
 
 	case EDIT_RCRD_DESC:
 		nc_print_input_footer(stdscr);
 		free(ld->desc);
 		ld->desc = NULL;
-		nc_edit_csv_record(linenum, EDIT_RCRD_DESC, ld, rret);
+		edit_csv_record(linenum, EDIT_RCRD_DESC, ld, rret);
 		break;
 
 	case EDIT_RCRD_TYPE:
 		nc_print_input_footer(stdscr);
-		nc_edit_csv_record(linenum, EDIT_RCRD_TYPE, ld, rret);
+		edit_csv_record(linenum, EDIT_RCRD_TYPE, ld, rret);
 		break;
 
 	case EDIT_RCRD_AMNT:
 		nc_print_input_footer(stdscr);
-		nc_edit_csv_record(linenum, EDIT_RCRD_AMNT, ld, rret);
+		edit_csv_record(linenum, EDIT_RCRD_AMNT, ld, rret);
 		break;
 
 	case EDIT_RCRD_DELETE:
