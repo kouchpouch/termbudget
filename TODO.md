@@ -93,7 +93,7 @@
     - [X] Show planned amount when changing planned amount, also show total
             "left to budget".
     For editing/creating transactions:
-    - [ ] Show previous date
+    ~- [X] Show previous date~ # This was already implemented.
     - [ ] Show previous amount
     - [ ] Show left to budget in category when editing amount
 - [X] Have option to roll categories from previous month to the next month
