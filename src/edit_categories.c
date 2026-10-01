@@ -402,6 +402,7 @@ void nc_edit_category(long node_idx, long nmembers, struct catg_node *head)
 	enum fields select;
 	long b = curr->catg_fp;
 	double tmp = 0.0;
+	double remaining;
 
 	select = select_catg_field();
 	if (select < 0) {
@@ -416,8 +417,8 @@ void nc_edit_category(long node_idx, long nmembers, struct catg_node *head)
 	switch (select) {
 
 	case EDIT_AMNT:
-		bt->amount = input_budget_amount_edit(bt->amount,
-										get_left_to_budget(head));
+		remaining = get_expenditures_per_category_fast(curr);
+		bt->amount = input_budget_amount_edit(bt->amount, remaining);
 		if (bt->amount < 0.0) {
 			goto err_fail;
 		}
