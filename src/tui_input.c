@@ -634,7 +634,7 @@ static bool valid_input_character(int c)
 static void nc_user_input(int n, WINDOW *wptr, struct user_input *pui)
 {
 	int max_y, max_x;
-	size_t buffersize = n + 1; // Plus 1 to hold null terminator
+	size_t buffersize = n;
 	int center;
 	char temp[buffersize];
 	int c = 0;
@@ -704,7 +704,7 @@ static void nc_user_input(int n, WINDOW *wptr, struct user_input *pui)
 		return;
 	}
 
-	strncpy(pui->str, temp, buffersize);
+	strncpy(pui->str, temp, buffersize - 1);
 
 	noecho();
 	curs_set(0);
