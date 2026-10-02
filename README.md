@@ -5,11 +5,6 @@
   A terminal user interface (TUI) budgeting program made with ncurses.
 </h3>
 
-<h3>
-    AI was not used to make this project aside from choosing a default color
-    palette. I do not use AI, I enjoy programming.
-</h3>
-
 <p align="center">
   <img src="/assets/read_view.png" />
 </p>
@@ -23,3 +18,7 @@
 * My first real C project.
 * All these budgeting apps these days are a pain and filled with bloat. Why not just budget in your terminal? Throw vim to another window and get your finances in order with termBudget--then get back to programming.
 * May or may not include memory leaks!
+
+<h3>
+    AI/LLMs was/were not used in the development of this project aside from choosing a default color palette.
+</h3>
