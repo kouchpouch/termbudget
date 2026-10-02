@@ -105,7 +105,7 @@ int size_to_int(size_t n)
 	if (n <= INT_MAX) {
 		return (int)n;
 	} else {
-		return -1;
+		return 0;
 	}
 }
 
@@ -167,4 +167,13 @@ double normalize_near_zero(double x)
 	} else {
 		return x;
 	}
+}
+
+int strlen_int(const char *str)
+{
+	size_t len = strlen(str);
+	if (len > INT_MAX) {
+		return -1;
+	}
+	return (int)len;
 }
