@@ -30,6 +30,18 @@
 
 #define GRAPH_LENGTH 30
 
+struct bar_graph_dimensions {
+	/* For terminal symbols */
+	char graph_buffer[GRAPH_LENGTH];
+	int graph_len;
+	int graph_x_begin;
+
+	/* For text */
+	int remain_print_x;
+	int planned_print_x;
+	int tracked_print_x;
+};
+
 void draw_body_border(WINDOW *wptr)
 {
 	wborder(wptr, 0, 0, 0, 0, ACS_LTEE, ACS_RTEE, ACS_BTEE, 0);
@@ -133,81 +145,107 @@ static int calculate_graph_length(int transaction_type,
 	return length;
 }
 
-/* TODO: Refactor. Remove magic numbers, extract functions */
+/* Sets the buffer to all spaces and null terminates. */
+static void init_graph_buffer(char *graph_buff, size_t size)
+{
+	memset(graph_buff, ' ', size);
+	graph_buff[size - 1] = '\0';
+}
+
+/* Calculates the text x coordinate members of struct bar_graph_dimensions */
+static void calculate_graph_text(WINDOW *wptr, 
+								 struct bar_graph_dimensions *graph,
+								 double remaining,
+								 double planned) 
+{
+	int max_x = getmaxx(wptr);
+	int print_offset = graph->graph_x_begin = (max_x - GRAPH_LENGTH) / 2;
+	print_offset += BOX_OFFSET;
+
+	graph->remain_print_x = (max_x - graph->graph_x_begin - \
+		strlen_int(" Remaining") - finlen(remaining) - print_offset);
+
+	graph->planned_print_x = (max_x - graph->graph_x_begin - \
+		strlen_int(" Planned") - finlen(planned) - print_offset);
+	
+	graph->tracked_print_x = BOX_OFFSET + 6;
+}
+
+/* Calculates and sets all members of 'graph' */
+static void init_bar_graph_dimensions(struct bar_graph_dimensions *graph,
+									  WINDOW *wptr,
+									  double remaining,
+									  double planned,
+									  double expenses,
+									  int transaction_type)
+{
+	init_graph_buffer(graph->graph_buffer, sizeof(graph->graph_buffer));
+	graph->graph_len = calculate_graph_length(transaction_type,
+										      planned,
+										      expenses,
+										      remaining);
+	calculate_graph_text(wptr, graph, remaining, planned);
+}
+
 static int print_body_graphs_and_values(double planned,
 										double exp,
 										int tt,
 										WINDOW *wptr,
-										int y,
-										int i)
+										int print_y,
+										int catg_idx)
 {
-	char graph[GRAPH_LENGTH];
-	double remaining = 0.0;
-	int graph_len;
-	int fill_graph;
-	int graph_x_begin;
-	int remain_x_begin;
-	int planned_x_begin;
-	int tracked_x_begin;
+	struct bar_graph_dimensions graph = { 0 };
+	double remaining = normalize_near_zero(planned + exp);
+	int max_x = getmaxx(wptr);
+	bool color_red = (remaining < 0.0) ? true : false;
 
-	if (!check_y_fit(wptr, y)) {
+	if (!check_y_fit(wptr, print_y)) {
 		return 0;
 	}
 
-	for (int i = 0; i < GRAPH_LENGTH; i++) {
-		graph[i] = ' ';
-	}
-	graph[sizeof(graph) - 1] = '\0';
+	init_bar_graph_dimensions(&graph, wptr, remaining, planned, exp, tt);
 
-	/* The 'exp' variable holds a positive number when income outweighs expenses,
-	 * a negative number when expenses outweigh income. */
-	remaining = planned + exp;
-	remaining = normalize_near_zero(remaining);
-
-	graph_len = calculate_graph_length(tt, planned, exp, remaining);
-
-	graph_x_begin = (getmaxx(wptr) - GRAPH_LENGTH) / 2;
-	remain_x_begin = (getmaxx(wptr) - graph_x_begin - strlen(" Remaining") - finlen(remaining) - BOX_OFFSET - 4);
-	planned_x_begin = (getmaxx(wptr) - graph_x_begin - strlen(" Planned") - finlen(planned) - BOX_OFFSET - 4);
-	tracked_x_begin = BOX_OFFSET + 6;
-
-	mvwaddch(wptr, y, getmaxx(wptr) - 5 - BOX_OFFSET, ACS_URCORNER);
-	mvwaddch(wptr, y, getmaxx(wptr) - 5 - BOX_OFFSET - 1, ACS_HLINE);
+	/* Prints terminal decoration */
+	mvwaddch(wptr, print_y, getmaxx(wptr) - 5 - BOX_OFFSET, ACS_URCORNER);
+	mvwaddch(wptr, print_y, getmaxx(wptr) - 5 - BOX_OFFSET - 1, ACS_HLINE);
+	
 	if (tt == TT_INCOME) {
-		mvwprintw(wptr, y, planned_x_begin, " $%.2f Planned", planned);
+		mvwprintw(wptr, print_y, graph.planned_print_x, " $%.2f Planned", planned);
 	} else {
-		if (remaining < 0) {
+		if (color_red) {
 			wattron(wptr, COLOR_PAIR(1));
-			mvwprintw(wptr, y, remain_x_begin, " $%.2f Remaining", remaining);
+		}
+		mvwprintw(wptr, print_y, graph.remain_print_x, " $%.2f Remaining", remaining);
+		if (color_red) {
 			wattroff(wptr, COLOR_PAIR(1));
-		} else {
-			mvwprintw(wptr, y, remain_x_begin, " $%.2f Remaining", remaining);
 		}
 	}
-	y++;
-	if (!check_y_fit(wptr, y)) {
+
+	print_y++;
+	if (!check_y_fit(wptr, print_y)) {
 		return 1;
 	}
 
-	wattron(wptr, COLOR_PAIR(category_color(i)));
-	mvwprintw(wptr, y, graph_x_begin, "[%s]", graph);
-	mvwchgat(wptr, y, graph_x_begin + 1, graph_len, A_REVERSE, category_color(i), NULL);
-	fill_graph = graph_x_begin + 1 + graph_len;
-	for (int j = fill_graph; j < getmaxx(wptr) - graph_x_begin - 1; j++) {
-		mvwaddch(wptr, y, j, ACS_BULLET);
+	wattron(wptr, COLOR_PAIR(category_color(catg_idx)));
+	mvwprintw(wptr, print_y, graph.graph_x_begin, "[%s]", graph.graph_buffer);
+	mvwchgat(wptr, print_y, graph.graph_x_begin + 1, graph.graph_len, A_REVERSE, category_color(catg_idx), NULL);
+	for (int j = graph.graph_x_begin + 1 + graph.graph_len; j < max_x - graph.graph_x_begin - 1; j++) {
+		mvwaddch(wptr, print_y, j, ACS_BULLET);
 	}
-	wattroff(wptr, COLOR_PAIR(category_color(i)));
-	y++;
-	if (!check_y_fit(wptr, y)) {
+	wattroff(wptr, COLOR_PAIR(category_color(catg_idx)));
+
+	print_y++;
+	if (!check_y_fit(wptr, print_y)) {
 		return 2;
 	}
 
-	mvwaddch(wptr, y, BOX_OFFSET + 4, ACS_LLCORNER);
-	mvwaddch(wptr, y, BOX_OFFSET + 5, ACS_HLINE);
+	/* Prints terminal decoration */
+	mvwaddch(wptr, print_y, BOX_OFFSET + 4, ACS_LLCORNER);
+	mvwaddch(wptr, print_y, BOX_OFFSET + 5, ACS_HLINE);
 	if (tt == TT_INCOME) {
-		mvwprintw(wptr, y, tracked_x_begin, " $%.2f Received", exp);
+		mvwprintw(wptr, print_y, graph.tracked_print_x, " $%.2f Received", exp);
 	} else {
-		mvwprintw(wptr, y, tracked_x_begin, " $%.2f Tracked", planned - remaining);
+		mvwprintw(wptr, print_y, graph.tracked_print_x, " $%.2f Tracked", planned - remaining);
 	}
 
 	return 4;
