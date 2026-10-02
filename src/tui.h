@@ -117,6 +117,8 @@ void highlight(WINDOW *wptr, int y, int x, int n);
 
 void unhighlight(WINDOW *wptr, int y, int x, int n);
 
+void color_text(WINDOW *wptr, int y, int x, int n, short color);
+
 /*
  * Print headers for the reading data to wptr, column width is calculated
  * by calculate_columns() automatically. Offsets calculation by an offset

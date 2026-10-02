@@ -147,6 +147,11 @@ void unhighlight(WINDOW *wptr, int y, int x, int n)
 	mvwchgat(wptr, y, x, n, A_NORMAL, 0, NULL); 
 }
 
+void color_text(WINDOW *wptr, int y, int x, int n, short color)
+{
+	mvwchgat(wptr, y, x, n, A_NORMAL, color, NULL); 
+}
+
 void print_column_headers(WINDOW *wptr, int x_off)
 {
 	struct column_width column_width, *cw = &column_width;
