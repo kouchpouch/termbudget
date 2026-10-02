@@ -37,6 +37,14 @@ enum year_field_number {
 	RECORD_YEAR_FIELD = 2,
 };
 
+enum budget_fields {
+	BF_MONTH = 0,
+	BF_YEAR,
+	BF_CATG,
+	BF_TRANSTYPE,
+	BF_VALUE,
+};
+
 struct budget_header {
 	int month;
 	int year;
@@ -220,6 +228,12 @@ void tokenize_record(struct transaction_tokens *ld, char **str);
 
 /* Returns the amount value in RECORD_DIR from file position b */
 double get_record_amount(long b);
+
+/* Writes field into buff, no more than buff_size */
+void get_field_budget_csv(long fpi,
+						  enum budget_fields field,
+						  char *buff,
+						  size_t buff_size);
 
 /* Returns an integer value of a given line number line and of field number 
  * field. Field numbers start at 1 */
