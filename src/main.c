@@ -386,7 +386,7 @@ int main(int argc, char **argv)
 	size_t count;
 
 	if (argc > 1) {
-		strncpy(opt, argv[1], LINE_BUFFER);
+		strncpy(opt, argv[1], LINE_BUFFER - 1);
 		for (i = 1; i < strlen(opt); i++) { /* Args start at 1 */
 			if (opt[0] == '-') {
 				switch (opt[i]) {
