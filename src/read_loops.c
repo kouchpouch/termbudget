@@ -50,22 +50,26 @@ struct visible_range {
 /* Holds the variables used for scrolling and/or selecting transactions and/or 
  * categories */
 struct scroll_vars {
-	struct column_width *cw;
-	struct visible_range *vr;
-	struct vec_generic *negative_catgs; /* Tracks whether the category index
-	remaining value is negative, positive, or unknown. Values are enumerated by
-	'enum catg_remaining' */
-	WINDOW *wptr_data;
-	WINDOW *wptr_parent;
-	size_t sidebar_idx;
-	/* Total size of the data that can be shown. */
-	int total_rows; 
-	/* Total number of records and/or categories displayed on the screen. */
-	int displayed; 
-	int select_idx;
-	int cur_y;
-	int catg_node;
-	int catg_data;
+	struct column_width 	*cw;
+	struct visible_range	*vr;
+	/* negative_catgs tracks whether the category index remaining value is
+	 * negative, positive, or unknown. Values are enumerated by 'enum 
+	 * catg_remaining' */
+	struct vec_generic		*negative_catgs; 
+
+	WINDOW 					*wptr_data;
+	WINDOW 					*wptr_parent;
+	/* sidebar_idx holds the total size of the data that can be shown. */
+	size_t 					sidebar_idx;
+
+	/* total_rows holds the total number of records and/or categories
+	 * displayed on the screen. */
+	int 					total_rows; 
+	int 					displayed; 
+	int 					select_idx;
+	int 					cur_y;
+	int 					catg_node;
+	int 					catg_data;
 };
 
 struct num_buffer {
@@ -194,25 +198,22 @@ static void print_record_hr(WINDOW *wptr,
 }
 
 /* Returns the remaining balance of the category at 'node' */
-static double print_category_hr(WINDOW *wptr,
-								struct column_width *cw,
-								struct budget_tokens *bt,
-								struct catg_node *node,
-								int y)
+static void print_category_hr(WINDOW *wptr,
+							  struct column_width *cw,
+							  struct budget_tokens *bt,
+							  struct catg_node *node,
+							  int y)
 {
 	char *etc = "..";
 	double expenses = get_expenditures_per_category_fast(node);
 	double remaining;
 	int lenetc = (int)strlen(etc);
 	int x = 0;
-	int print_offset = 0;
 
 	wattron(wptr, A_REVERSE);
 
-	expenses = get_expenditures_per_category_fast(node);
-
 	/* Move cursor past the date columns */
-	wmove(wptr, y, x += cw->date - print_offset);
+	wmove(wptr, y, x += cw->date);
 	if ((int)strlen(bt->catg) > cw->catg - lenetc) {
 		wprintw(wptr, "%.*s%s", cw->catg - lenetc, bt->catg, etc);
 	} else {
@@ -220,7 +221,7 @@ static double print_category_hr(WINDOW *wptr,
 	}
 
 	/* Move cursor past the category column */
-	wmove(wptr, y, x += cw->catg - print_offset);
+	wmove(wptr, y, x += cw->catg);
 
 	remaining = expenses + bt->amount;
 
@@ -231,7 +232,7 @@ static double print_category_hr(WINDOW *wptr,
 						remaining,
 						cw->desc);
 
-	wmove(wptr, y, x += cw->desc - print_offset);
+	wmove(wptr, y, x += cw->desc);
 
 	if (shorten_string(wptr)) {
 		wprintw(wptr, "%s", bt->transtype == 0 ? "-" : "+");
@@ -240,8 +241,6 @@ static double print_category_hr(WINDOW *wptr,
 	}
 
 	wattroff(wptr, A_REVERSE);
-
-	return remaining;
 }
 
 static void print_init_budget_loop(struct scroll_vars *sv,
@@ -251,8 +250,8 @@ static void print_init_budget_loop(struct scroll_vars *sv,
 	struct transaction_tokens ld;
 	struct catg_node *curr = head;
 	char *line_str;
-	void *tmp;
-	double remaining;
+	int *tmp;
+//	double remaining;
 	int max_y = getmaxy(sv->wptr_data);
 	int total_nodes = get_total_nodes(head);
 	char linebuff[LINE_BUFFER] = { 0 };
@@ -266,23 +265,13 @@ static void print_init_budget_loop(struct scroll_vars *sv,
 		 && i < total_nodes; i++) 
 	{
 		struct budget_tokens *bt = tokenize_budget_fpi(curr->catg_fp);
-		remaining = print_category_hr(sv->wptr_data,
-									  sv->cw,
-									  bt,
-								      curr,
-								      sv->displayed);
+		print_category_hr(sv->wptr_data, sv->cw, bt, curr, sv->displayed);
 		tmp = get_vec_generic(i, sv->negative_catgs);
-		if (remaining < 0.0) {
-			*(int *)tmp = CR_NEGATIVE;
-			mvwchgat(sv->wptr_data, sv->displayed, 0, -1, A_NORMAL, COLOR_RED, NULL); 
+		if (*tmp == CR_NEGATIVE) {
+			color_text(sv->wptr_data, sv->displayed, 0, -1, COLOR_RED);
 		} else {
-			*(int *)tmp = CR_POSITIVE;
-			mvwchgat(sv->wptr_data, sv->displayed, 0, -1, A_NORMAL, category_color(i), NULL); 
+			color_text(sv->wptr_data, sv->displayed, 0, -1, category_color(i));
 		}
-
-		/* 
-		mvwchgat(sv->wptr_data, sv->displayed, 0, -1, A_NORMAL, category_color(i), NULL);
-		*/
 
 		sv->displayed++;
 
@@ -916,9 +905,35 @@ static size_t get_catg_move_scrollback(int catg_node,
 	return retval;
 }
 
+static void get_negative_catg_vector_values(struct vec_generic *negative_catgs,
+											struct catg_node *head)
+{
+	char buff[LINE_BUFFER] = { 0 };
+	struct catg_node *curr = head;
+	double planned, expenses, remaining;
+	int *tmp;
+
+	assert(get_total_nodes(head) == negative_catgs->count);
+
+	for (size_t i = 0; i < negative_catgs->count; i++) {
+		get_field_budget_csv(curr->catg_fp, BF_VALUE, buff, sizeof(buff));
+		expenses = get_expenditures_per_category_fast(curr);
+		planned = atof(buff);
+		remaining = expenses + planned;
+		remaining = normalize_near_zero(remaining);
+		tmp = get_vec_generic(i, negative_catgs);
+		if (remaining < 0.0) {
+			*tmp = CR_NEGATIVE;
+		} else {
+			*tmp = CR_POSITIVE;
+		}
+		curr = curr->next;
+	}
+}
+
 /* Initializes the negative category vector values with CR_UNKNOWN (-1) */
-void initialize_negative_catg_vector(struct vec_generic **negative_catgs,
-									 size_t total_nodes)
+static void initialize_negative_catg_vector(struct vec_generic **negative_catgs,
+											size_t total_nodes)
 {
 	*negative_catgs = create_vec_generic(sizeof(int), total_nodes);
 	struct vec_generic *tmp = *negative_catgs;
@@ -962,6 +977,7 @@ void nc_read_budget_loop(struct ReadWins *wins,
 	int subwin_y;
 
 	initialize_negative_catg_vector(&s_vars.negative_catgs, get_total_nodes(head));
+	get_negative_catg_vector_values(s_vars.negative_catgs, head);
 
 	s_vars.vr->first = 1;
 
