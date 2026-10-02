@@ -52,19 +52,13 @@ struct visible_range {
 struct scroll_vars {
 	struct column_width 	*cw;
 	struct visible_range	*vr;
-	/* negative_catgs tracks whether the category index remaining value is
-	 * negative, positive, or unknown. Values are enumerated by 'enum 
-	 * catg_remaining' */
-	struct vec_generic		*negative_catgs; 
+	struct vec_generic		*negative_catgs; /* Tracks over-budget catgs */
 
 	WINDOW 					*wptr_data;
 	WINDOW 					*wptr_parent;
 	/* sidebar_idx holds the total size of the data that can be shown. */
 	size_t 					sidebar_idx;
-
-	/* total_rows holds the total number of records and/or categories
-	 * displayed on the screen. */
-	int 					total_rows; 
+	int 					total_rows; /* Total rows drawn on screen */
 	int 					displayed; 
 	int 					select_idx;
 	int 					cur_y;
