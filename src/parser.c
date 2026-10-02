@@ -932,6 +932,24 @@ double get_record_amount(long b)
 	}
 }
 
+void get_field_budget_csv(long fpi,
+						  enum budget_fields field,
+						  char *buff,
+						  size_t buff_size)
+{
+	char linebuff[LINE_BUFFER] = { 0 };
+	char *line;
+	char *token;
+	FILE *fptr = open_budget_csv("r");
+
+	fseek(fptr, fpi, SEEK_SET);
+	line = fgets(linebuff, sizeof(linebuff), fptr);
+
+	seek_n_fields(&line, field);
+	token = x_strtok(&line, ',');
+	strncpy(buff, token, buff_size - 1);
+}
+
 int get_int_field(int line, int field)
 {
 	FILE *fptr = open_record_csv("r");
