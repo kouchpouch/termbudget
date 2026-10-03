@@ -100,12 +100,15 @@ static bool verify_sidebar_strlen(char *str, WINDOW *wptr)
 /* Prints the string 'str' and returns the number of rows printed to */
 static int print_body_categories(char *str, WINDOW *wptr, int y, int x, int i)
 {
+	int print_n = getmaxx(wptr) - (BOX_OFFSET + 2);
+
 	if (!check_y_fit(wptr, y)) {
 		return 0;
 	}
+
 	wattron(wptr, COLOR_PAIR(category_color(i)));
 	if (!verify_sidebar_strlen(str, wptr)) {
-		mvwprintw(wptr, y, x, "%.*s%s", getmaxx(wptr) - (BOX_OFFSET + 2), str, "..");
+		mvwprintw(wptr, y, x, "%.*s%s", print_n, str, "..");
 	} else {
 		mvwprintw(wptr, y, x, "%s", str);
 	}
@@ -197,6 +200,7 @@ static int print_body_graphs_and_values(double planned,
 	struct bar_graph_dimensions graph = { 0 };
 	double remaining = normalize_near_zero(planned + exp);
 	int max_x = getmaxx(wptr);
+	int lines_printed = 0;
 	bool color_red = (remaining < 0.0) ? true : false;
 
 	if (!check_y_fit(wptr, print_y)) {
@@ -221,23 +225,19 @@ static int print_body_graphs_and_values(double planned,
 		}
 	}
 
+	lines_printed++;
 	print_y++;
-	if (!check_y_fit(wptr, print_y)) {
-		return 1;
-	}
 
 	wattron(wptr, COLOR_PAIR(category_color(catg_idx)));
 	mvwprintw(wptr, print_y, graph.graph_x_begin, "[%s]", graph.graph_buffer);
 	mvwchgat(wptr, print_y, graph.graph_x_begin + 1, graph.graph_len, A_REVERSE, category_color(catg_idx), NULL);
-	for (int j = graph.graph_x_begin + 1 + graph.graph_len; j < max_x - graph.graph_x_begin - 1; j++) {
+	for (int j = graph.graph_x_begin + graph.graph_len + 1; j < max_x - graph.graph_x_begin - 1; j++) {
 		mvwaddch(wptr, print_y, j, ACS_BULLET);
 	}
 	wattroff(wptr, COLOR_PAIR(category_color(catg_idx)));
 
+	lines_printed++;
 	print_y++;
-	if (!check_y_fit(wptr, print_y)) {
-		return 2;
-	}
 
 	/* Prints terminal decoration */
 	mvwaddch(wptr, print_y, BOX_OFFSET + 4, ACS_LLCORNER);
@@ -248,47 +248,36 @@ static int print_body_graphs_and_values(double planned,
 		mvwprintw(wptr, print_y, graph.tracked_print_x, " $%.2f Tracked", planned - remaining);
 	}
 
-	return 4;
+	lines_printed++;
+	return lines_printed;
 }
 
-int init_sidebar_body(WINDOW *wptr, struct catg_node *head, size_t i)
+int init_sidebar_body(WINDOW *wptr, struct catg_node *head, size_t node_idx)
 {
-	struct catg_node *tmp = get_node_by_idx(head, i);
+	struct catg_node *curr = get_node_by_idx(head, node_idx);
 	struct budget_tokens *bt = NULL;
 	int n_displayed = 0;
-	int y = 1;
-	int x = 1;
+	int print_y = 1;
+	int print_x = 1;
 	double exp;
 
 	wclear(wptr);
 	draw_body_border(wptr);
 
-	while (y < getmaxy(wptr) - 4) {
-		bt = tokenize_budget_fpi(tmp->catg_fp);
-		exp = get_expenditures_per_category_fast(tmp);
-		if (tmp->next == NULL) {
-			y += print_body_categories(bt->catg, wptr, y, x, i);
-			if (!check_y_fit(wptr, y)) {
-				free_budget_tokens(bt);
-				break;
-			}
-			y += print_body_graphs_and_values(bt->amount, exp, bt->transtype, wptr, y, i);
-			free_budget_tokens(bt);
-			bt = NULL;
-			break;
-		} else {
-			y += print_body_categories(bt->catg, wptr, y, x, i);
-			if (!check_y_fit(wptr, y)) {
-				free_budget_tokens(bt);
-				break;
-			}
-			y += print_body_graphs_and_values(bt->amount, exp, bt->transtype, wptr, y, i);
-			free_budget_tokens(bt);
-			bt = NULL;
-		}
-		i++;
+	while (print_y < getmaxy(wptr) - 4) {
+		bt = tokenize_budget_fpi(curr->catg_fp);
+		exp = get_expenditures_per_category_fast(curr);
+		print_y += print_body_categories(bt->catg, wptr, print_y, print_x, node_idx);
+		print_y += print_body_graphs_and_values(bt->amount, exp, bt->transtype, wptr, print_y, node_idx);
+		free_budget_tokens(bt);
+		bt = NULL;
+		node_idx++;
 		n_displayed++;
-		tmp = tmp->next;
+
+		if (curr->next == NULL) {
+			break;
+		}
+		curr = curr->next;
 	}
 
 	wrefresh(wptr);
