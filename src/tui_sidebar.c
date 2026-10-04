@@ -28,6 +28,9 @@
 #include "tui.h"
 #include "tui_sidebar.h"
 
+/* The TUI sidebar lives on the right side of the main read view, if there's
+ * enough room to draw it. There are */
+
 #define GRAPH_LENGTH 30
 
 struct bar_graph_dimensions {
@@ -55,6 +58,8 @@ static void write_parent_title(WINDOW *wptr)
 	wrefresh(wptr);
 }
 
+/* If 'y' is greater than the window's maximum (y - 1) (to offset for window
+ * border) the function returns false. */
 static bool check_y_fit(WINDOW *wptr, int y)
 {
 	if (y >= getmaxy(wptr) - 1) {
@@ -190,12 +195,12 @@ static void init_bar_graph_dimensions(struct bar_graph_dimensions *graph,
 	calculate_graph_text(wptr, graph, remaining, planned);
 }
 
-static int print_body_graphs_and_values(double planned,
+static int print_body_graphs_and_values(WINDOW *wptr,
+										double planned,
 										double exp,
-										int tt,
-										WINDOW *wptr,
 										int print_y,
-										int catg_idx)
+										int catg_idx,
+										int tt)
 {
 	struct bar_graph_dimensions graph = { 0 };
 	double remaining = normalize_near_zero(planned + exp);
@@ -230,8 +235,10 @@ static int print_body_graphs_and_values(double planned,
 
 	wattron(wptr, COLOR_PAIR(category_color(catg_idx)));
 	mvwprintw(wptr, print_y, graph.graph_x_begin, "[%s]", graph.graph_buffer);
-	mvwchgat(wptr, print_y, graph.graph_x_begin + 1, graph.graph_len, A_REVERSE, category_color(catg_idx), NULL);
-	for (int j = graph.graph_x_begin + graph.graph_len + 1; j < max_x - graph.graph_x_begin - 1; j++) {
+	mvwchgat(wptr, print_y, graph.graph_x_begin + 1, graph.graph_len,
+		     A_REVERSE, category_color(catg_idx), NULL);
+	for (int j = graph.graph_x_begin + graph.graph_len + 1; 
+	     j < max_x - graph.graph_x_begin - 1; j++) {
 		mvwaddch(wptr, print_y, j, ACS_BULLET);
 	}
 	wattroff(wptr, COLOR_PAIR(category_color(catg_idx)));
@@ -245,7 +252,8 @@ static int print_body_graphs_and_values(double planned,
 	if (tt == TT_INCOME) {
 		mvwprintw(wptr, print_y, graph.tracked_print_x, " $%.2f Received", exp);
 	} else {
-		mvwprintw(wptr, print_y, graph.tracked_print_x, " $%.2f Tracked", planned - remaining);
+		mvwprintw(wptr, print_y, graph.tracked_print_x, " $%.2f Tracked",
+			      planned - remaining);
 	}
 
 	lines_printed++;
@@ -268,7 +276,8 @@ int init_sidebar_body(WINDOW *wptr, struct catg_node *head, size_t node_idx)
 		bt = tokenize_budget_fpi(curr->catg_fp);
 		exp = get_expenditures_per_category_fast(curr);
 		print_y += print_body_categories(bt->catg, wptr, print_y, print_x, node_idx);
-		print_y += print_body_graphs_and_values(bt->amount, exp, bt->transtype, wptr, print_y, node_idx);
+		print_y += print_body_graphs_and_values(wptr, bt->amount, exp, print_y,
+										  		node_idx, bt->transtype);
 		free_budget_tokens(bt);
 		bt = NULL;
 		node_idx++;
@@ -286,32 +295,37 @@ int init_sidebar_body(WINDOW *wptr, struct catg_node *head, size_t node_idx)
 
 static int print_parent_header(WINDOW *wptr, struct vec_d *psc, double leftover)
 {
-	int x = 1;
-	int y = 1;
-	int max_x = getmaxx(wptr);
 	struct vec2f_fin pb;
 	calculate_balance(&pb, psc);
 	double remaining = pb.income - pb.expense;
 	remaining = normalize_near_zero(remaining);
+	int x = 1;
+	int y = 1;
+	int max_x = getmaxx(wptr);
+	int print_x = 0;
 
 	mvwprintw(wptr, y, x, "Income:");
-	mvwprintw(wptr, y, max_x - (finlen(pb.income) + BOX_OFFSET), "$%.2f", pb.income);
+	print_x = max_x - finlen(pb.income) + BOX_OFFSET;
+	mvwprintw(wptr, y, print_x, "$%.2f", pb.income);
 	y++;
 
 	mvwprintw(wptr, y, x, "Expenses:");
-	mvwprintw(wptr, y, max_x - (finlen(pb.expense) + BOX_OFFSET), "$%.2f", pb.expense);
+	print_x = max_x - finlen(pb.expense) + BOX_OFFSET;
+	mvwprintw(wptr, y, print_x, "$%.2f", pb.expense);
 	y++;
 
 	mvwprintw(wptr, y, x, "Remaining:");
 	if (remaining < 0.0) {
 		wattron(wptr, COLOR_PAIR(1));
 	}
-	mvwprintw(wptr, y, max_x - (finlen(remaining) + BOX_OFFSET), "$%.2f", remaining);
+	print_x = max_x - finlen(remaining) + BOX_OFFSET;
+	mvwprintw(wptr, y, print_x, "$%.2f", remaining);
 	wattroff(wptr, COLOR_PAIR(1));
 	y++;
 
 	mvwprintw(wptr, y, x, "Left to Budget:");
-	mvwprintw(wptr, y, max_x - (finlen(leftover) + BOX_OFFSET), "$%.2f", leftover);
+	print_x = max_x - finlen(leftover) + BOX_OFFSET;
+	mvwprintw(wptr, y, print_x, "$%.2f", leftover);
 	y++;
 
 	wrefresh(wptr);
