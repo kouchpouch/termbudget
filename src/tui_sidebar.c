@@ -29,7 +29,13 @@
 #include "tui_sidebar.h"
 
 /* The TUI sidebar lives on the right side of the main read view, if there's
- * enough room to draw it. There are */
+ * enough room to draw it. The sidebar is comprised of 2 ncurses windows, the
+ * parent and body. These windows are created in create_read_windows() in
+ * tui.c. 
+ *
+ * The sidebar parent is a container for the entire sidebar area, includes
+ * the header text. The body is where the bar graphs and values per categories
+ * exist. */
 
 #define GRAPH_LENGTH 30
 
