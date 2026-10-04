@@ -91,6 +91,9 @@ static void print_debug_line(struct scroll_vars *sv)
 	wrefresh(sv->wptr_parent);
 }
 
+/* TODO:
+ * Move all strings left one column, split planned and recieved to thier
+ * own columns so they line up regardless of their values. */
 static void print_catg_balances(WINDOW *wptr,
 								int tt,
 								double planned,
@@ -98,18 +101,17 @@ static void print_catg_balances(WINDOW *wptr,
 								double remaining,
 								int width)
 {
-	// Safe cast, we know these strings aren't greater than INT_MAX
 	char *full_inc_string  = "Planned: $, Received: $";
 	char *full_exp_string  = "Planned: $, Remaining: $";
 	char *short_inc_string = "Plan: $, Rcvd: $";
 	char *short_exp_string = "Plan: $, Rem: $";
 	char *abbreviated      = "P$, R$";
 
-	int full_inc_len       = (int)strlen(full_inc_string);
-	int full_exp_len       = (int)strlen(full_exp_string);
-	int short_inc_len      = (int)strlen(short_inc_string);
-	int short_exp_len      = (int)strlen(short_exp_string);
-	int abbreviated_len    = (int)strlen(abbreviated);
+	int full_inc_len       = strlen_int(full_inc_string);
+	int full_exp_len       = strlen_int(full_exp_string);
+	int short_inc_len      = strlen_int(short_inc_string);
+	int short_exp_len      = strlen_int(short_exp_string);
+	int abbreviated_len    = strlen_int(abbreviated);
 
 	remaining = normalize_near_zero(remaining);
 
