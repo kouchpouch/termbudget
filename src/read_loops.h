@@ -24,13 +24,13 @@
 #include "tui.h"
 #include "vector.h"
 
-void nc_read_loop(struct ReadWins *wins, 
+void nc_read_loop(struct read_wins *wins, 
 				  FILE *fptr, 
 				  struct record_select *sr, 
 				  struct vec_d *psc,
 				  struct catg_node *head);
 
-void nc_read_budget_loop(struct ReadWins *wins,
+void nc_read_budget_loop(struct read_wins *wins,
 						 FILE *rfptr,
 						 FILE *bfptr,
 						 struct record_select *sr,

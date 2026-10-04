@@ -55,7 +55,7 @@
 #define MAX_LEN_CATG 64
 #define MAX_LEN_DESC 64
 #define INPUT_MSG_Y_OFFSET 2
-#define MAX_Y_CATG_SELECT 22 // Maximum of 20 categories on the screen
+#define MAX_Y_CATG_SELECT 22 /* Maximum of 20 categories on the screen */
 #define INPUT_TIMEOUT 200
 
 
@@ -81,7 +81,7 @@ enum menukeys {
 	NO_RCRD
 };
 
-struct ReadWins {
+struct read_wins {
 	WINDOW *parent;
 	WINDOW *sidebar_parent;
 	WINDOW *sidebar_body;
@@ -142,7 +142,7 @@ int mvwxcprintw_digit(WINDOW *wptr, int y, int d);
 /* Creates all three (or two, if the sidebar width check does not return true),
  * for the nc_read_setup function in main.c. If the sidebar window is not
  * created, it is closed with delwin() and the pointer is set to NULL. */
-struct ReadWins *create_read_windows(void);
+struct read_wins *create_read_windows(void);
 
 /* Creates the subwindow for the read function */
 WINDOW *create_lines_subwindow(int max_y, int max_x, int y_off, int x_off);

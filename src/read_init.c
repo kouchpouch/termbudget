@@ -631,7 +631,7 @@ static void print_sort_text(WINDOW *wptr, int sort)
 	wrefresh(wptr);
 }
 
-static void free_windows(struct ReadWins *wins)
+static void free_windows(struct read_wins *wins)
 {
 	if (wins->sidebar_parent != NULL) {
 		nc_exit_window(wins->sidebar_body);
@@ -691,7 +691,7 @@ double get_left_to_budget(struct catg_node *head)
 static void cleanup_read_setup(struct vec_d *rec_fpis,
 							   struct vec_d *rec_line_nums,
 							   struct vec_d *pidx,
-							   struct ReadWins *wins,
+							   struct read_wins *wins,
 							   FILE *fptr)
 {
 	free(rec_fpis);
@@ -710,7 +710,7 @@ void nc_read_setup(struct read_state *r_state)
 {
 	FILE *fptr, *bfptr;
 	struct vec_d *pidx, *rec_line_nums, *rec_fpis;
-	struct ReadWins *wins;
+	struct read_wins *wins;
 	size_t n_records;
 	int get_date_err, c;
 	bool sidebar_exists;

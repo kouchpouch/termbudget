@@ -335,7 +335,7 @@ static void print_balances_text(WINDOW *wptr, struct vec_d *records)
 
 /* Draws all of the window borders, then the border text on top. Call this
  * function any time the borders/text need to be updated. */
-static void draw_read_window_borders_and_text(struct ReadWins *wins,
+static void draw_read_window_borders_and_text(struct read_wins *wins,
 											  struct vec_d *records)
 {
 	/* Draw borders in order for correct intersecting lines */
@@ -944,7 +944,7 @@ static void initialize_negative_catg_vector(struct vec_generic **negative_catgs,
  * Prints scrollable data to the window pointed to by wptr, sorted by Category.
  * Categories will have their own row in the data with a user-modifiable value
  * retrived from BUDGET_DIR. */
-void nc_read_budget_loop(struct ReadWins *wins,
+void nc_read_budget_loop(struct read_wins *wins,
 						 FILE *rfptr,
 						 FILE *bfptr,
 						 struct record_select *rs,
@@ -1250,7 +1250,7 @@ static void print_initial_read_loop(struct scroll_vars *sv,
  * by sr on a MenuKeys press. Prints lines by seeking FPI to the byte offset
  * of records->data. Sort occurs before this function in nc_read_setup.
  */
-void nc_read_loop(struct ReadWins *wins, 
+void nc_read_loop(struct read_wins *wins, 
 				  FILE *fptr, 
 				  struct record_select *rs, 
 				  struct vec_d *records,
