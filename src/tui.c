@@ -236,17 +236,28 @@ WINDOW *create_lines_subwindow(int max_y, int max_x, int y_off, int x_off)
 	return wptr;
 }
 
-struct ReadWins *create_read_windows(void)
+static void readwins_set_null(struct read_wins *wins)
 {
-	struct ReadWins *wins = malloc(sizeof(*wins));
-	int parent_y, parent_x;
-	int y, x;
-	getmaxyx(stdscr, y, x);
-	bool width = verify_sidebar_width(stdscr);
+	*wins = (struct read_wins) {
+		.data = NULL,
+		.parent = NULL,
+		.sidebar_parent = NULL,
+		.sidebar_body = NULL
+	};
+}
+
+struct read_wins *create_read_windows(void)
+{
+	struct read_wins *wins = malloc(sizeof(*wins));
+	int parent_y, parent_x, y, x;
 	int y_off = 1;
 	int x_off = BOX_OFFSET;
+	bool create_sidebar = verify_sidebar_width(stdscr);
 
-	if (width) {
+	getmaxyx(stdscr, y, x);
+	readwins_set_null(wins);
+
+	if (create_sidebar) {
 		wins->parent = newwin(y - 1, x - SIDEBAR_COLUMNS, 0, 0);
 		if (wins->parent == NULL) {
 			window_creation_fail();
@@ -257,15 +268,17 @@ struct ReadWins *create_read_windows(void)
 
 	getmaxyx(wins->parent, parent_y, parent_x);
 
-	if (width) {
+	if (create_sidebar) {
 		wins->sidebar_parent = create_sidebar_parent(wins->parent, y, x);
-		wins->sidebar_body = create_sidebar_body(wins->parent, wins->sidebar_parent);
-	} else {
-		wins->sidebar_parent = NULL;
-		wins->sidebar_body = NULL;
+		wins->sidebar_body = create_sidebar_body(wins->parent,
+										   	     wins->sidebar_parent);
 	}
 
-	wins->data = newwin(parent_y - 1 - y_off * 2, parent_x - x_off * 2, y_off + 1, x_off);
+	wins->data = newwin(parent_y - 1 - y_off * 2,
+					    parent_x - x_off * 2,
+					    y_off + 1,
+					    x_off);
+
 	if (wins->data == NULL) {
 		window_creation_fail();
 	}
