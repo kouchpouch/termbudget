@@ -66,6 +66,31 @@ struct scroll_vars {
 	int 					catg_data;
 };
 
+struct category_text {
+	char *long_plan;
+	char *med_plan;
+	char *short_plan;
+
+	char *long_rcvd;
+	char *med_rcvd;
+	char *short_rcvd;
+
+	char *long_rem;
+	char *med_rem;
+	char *short_rem;
+
+	int len_long_plan;
+	int len_med_plan;
+
+	int len_long_rcvd;
+	int len_med_rcvd;
+
+	int len_long_rem;
+	int len_med_rem;
+
+	int len_short;
+};
+
 struct num_buffer {
 	int result;
 	int buffer[NUM_BUFFER_SZ];
@@ -91,6 +116,79 @@ static void print_debug_line(struct scroll_vars *sv)
 	wrefresh(sv->wptr_parent);
 }
 
+static void init_category_text(struct category_text *txt)
+{
+	*txt = (struct category_text) {
+		.long_plan = "Planned: $",
+		.med_plan = "Plan: $",
+		.short_plan = "P$",
+		
+		.long_rcvd = "Received: $",
+		.med_rcvd = "Rcvd: $",
+		.short_rcvd = "R$",
+
+		.long_rem = "Remaining: $",
+		.med_rem = "Rem: $",
+		.short_rem = "R$",
+	};
+
+	txt->len_long_plan = strlen_int(txt->long_plan);
+	txt->len_med_plan = strlen_int(txt->med_plan);
+	txt->len_long_rcvd = strlen_int(txt->long_rcvd);
+	txt->len_med_rcvd = strlen_int(txt->med_rcvd);
+	txt->len_long_rem = strlen_int(txt->long_rem);
+	txt->len_med_rem = strlen_int(txt->med_rem);
+
+	/* Short len is the same for all short strings */
+	txt->len_short = strlen_int(txt->short_plan);
+}
+
+/* Returns -1 on failure to print, returns 0 on success. */
+static int print_catg_planned(WINDOW *wptr,
+							   struct category_text *txt,
+							   double planned,
+							   int width)
+{
+	char *string;
+	int planned_len = finlen(planned);
+
+	if (txt->len_long_plan + planned_len < width) {
+		string = txt->long_plan;
+	} else if (txt->len_med_plan + planned_len < width) {
+		string = txt->med_plan;
+	} else if (txt->len_short + planned_len < width) {
+		string = txt->short_plan;
+	} else {
+		return -1;
+	}
+	
+	wprintw(wptr, "%s%.2f ", string, planned);
+	return 0;
+}
+
+/* Returns -1 on failure to print, returns 0 on success. */
+static int print_catg_remaining(WINDOW *wptr,
+							   struct category_text *txt,
+							   double planned,
+							   int width)
+{
+	char *string;
+	int planned_len = finlen(planned);
+
+	if (txt->len_long_plan + planned_len < width) {
+		string = txt->long_plan;
+	} else if (txt->len_med_plan + planned_len < width) {
+		string = txt->med_plan;
+	} else if (txt->len_short + planned_len < width) {
+		string = txt->short_plan;
+	} else {
+		return -1;
+	}
+	
+	wprintw(wptr, "%s%.2f ", string, planned);
+	return 0;
+}
+
 /* TODO:
  * Move all strings left one column, split planned and recieved to thier
  * own columns so they line up regardless of their values. */
@@ -101,18 +199,8 @@ static void print_catg_balances(WINDOW *wptr,
 								double remaining,
 								int width)
 {
-	char *full_inc_string  = "Planned: $, Received: $";
-	char *full_exp_string  = "Planned: $, Remaining: $";
-	char *short_inc_string = "Plan: $, Rcvd: $";
-	char *short_exp_string = "Plan: $, Rem: $";
-	char *abbreviated      = "P$, R$";
-
-	int full_inc_len       = strlen_int(full_inc_string);
-	int full_exp_len       = strlen_int(full_exp_string);
-	int short_inc_len      = strlen_int(short_inc_string);
-	int short_exp_len      = strlen_int(short_exp_string);
-	int abbreviated_len    = strlen_int(abbreviated);
-
+	struct category_text txt;
+	init_category_text(&txt);
 	remaining = normalize_near_zero(remaining);
 
 	if (tt == TT_INCOME) {
@@ -210,7 +298,8 @@ static void print_category_hr(WINDOW *wptr,
 
 	/* Move cursor past the date columns */
 	wmove(wptr, y, x += cw->date);
-	if ((int)strlen(bt->catg) > cw->catg - lenetc) {
+
+	if (strlen_int(bt->catg) > cw->catg - lenetc) {
 		wprintw(wptr, "%.*s%s", cw->catg - lenetc, bt->catg, etc);
 	} else {
 		wprintw(wptr, "%s", bt->catg);
