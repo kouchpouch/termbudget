@@ -311,12 +311,12 @@ static int print_parent_header(WINDOW *wptr, struct vec_d *psc, double leftover)
 	int print_x = 0;
 
 	mvwprintw(wptr, y, x, "Income:");
-	print_x = max_x - finlen(pb.income) + BOX_OFFSET;
+	print_x = max_x - finlen(pb.income) - BOX_OFFSET;
 	mvwprintw(wptr, y, print_x, "$%.2f", pb.income);
 	y++;
 
 	mvwprintw(wptr, y, x, "Expenses:");
-	print_x = max_x - finlen(pb.expense) + BOX_OFFSET;
+	print_x = max_x - finlen(pb.expense) - BOX_OFFSET;
 	mvwprintw(wptr, y, print_x, "$%.2f", pb.expense);
 	y++;
 
@@ -324,13 +324,13 @@ static int print_parent_header(WINDOW *wptr, struct vec_d *psc, double leftover)
 	if (remaining < 0.0) {
 		wattron(wptr, COLOR_PAIR(1));
 	}
-	print_x = max_x - finlen(remaining) + BOX_OFFSET;
+	print_x = max_x - finlen(remaining) - BOX_OFFSET;
 	mvwprintw(wptr, y, print_x, "$%.2f", remaining);
 	wattroff(wptr, COLOR_PAIR(1));
 	y++;
 
 	mvwprintw(wptr, y, x, "Left to Budget:");
-	print_x = max_x - finlen(leftover) + BOX_OFFSET;
+	print_x = max_x - finlen(leftover) - BOX_OFFSET;
 	mvwprintw(wptr, y, print_x, "$%.2f", leftover);
 	y++;
 
