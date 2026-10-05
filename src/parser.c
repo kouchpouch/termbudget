@@ -948,6 +948,8 @@ void get_field_budget_csv(long fpi,
 	seek_n_fields(&line, field);
 	token = x_strtok(&line, ',');
 	strncpy(buff, token, buff_size - 1);
+
+	fclose(fptr);
 }
 
 int get_int_field(int line, int field)
