@@ -41,6 +41,7 @@
 #include "vector_generic.h"
 
 #define NUM_BUFFER_SZ 3 /* for vim-like number buffer */
+#define CATEGORY_ATTR A_BOLD
 
 struct visible_range {
 	int first;
@@ -119,44 +120,44 @@ static void print_debug_line(struct scroll_vars *sv)
 static void init_category_text(struct category_text *txt)
 {
 	*txt = (struct category_text) {
-		.long_plan = "Planned: $",
-		.med_plan = "Plan: $",
+		.long_plan  = "Planned: $",
+		.med_plan   = "Plan: $",
 		.short_plan = "P$",
-		
-		.long_rcvd = "Received: $",
-		.med_rcvd = "Rcvd: $",
+
+		.long_rcvd  = "Received: $",
+		.med_rcvd   = "Rcvd: $",
 		.short_rcvd = "R$",
 
-		.long_rem = "Remaining: $",
-		.med_rem = "Rem: $",
-		.short_rem = "R$",
+		.long_rem   = "Remaining: $",
+		.med_rem    = "Rem: $",
+		.short_rem  = "R$",
 	};
 
 	txt->len_long_plan = strlen_int(txt->long_plan);
-	txt->len_med_plan = strlen_int(txt->med_plan);
+	txt->len_med_plan  = strlen_int(txt->med_plan);
 	txt->len_long_rcvd = strlen_int(txt->long_rcvd);
-	txt->len_med_rcvd = strlen_int(txt->med_rcvd);
-	txt->len_long_rem = strlen_int(txt->long_rem);
-	txt->len_med_rem = strlen_int(txt->med_rem);
+	txt->len_med_rcvd  = strlen_int(txt->med_rcvd);
+	txt->len_long_rem  = strlen_int(txt->long_rem);
+	txt->len_med_rem   = strlen_int(txt->med_rem);
 
 	/* Short len is the same for all short strings */
-	txt->len_short = strlen_int(txt->short_plan);
+	txt->len_short     = strlen_int(txt->short_plan);
 }
 
 /* Returns -1 on failure to print, returns 0 on success. */
 static int print_catg_planned(WINDOW *wptr,
-							   struct category_text *txt,
-							   double planned,
-							   int width)
+							  struct category_text *txt,
+							  double planned,
+							  int width)
 {
 	char *string;
-	int planned_len = finlen(planned);
+	int val_len = finlen(planned);
 
-	if (txt->len_long_plan + planned_len < width) {
+	if (txt->len_long_plan + val_len < width) {
 		string = txt->long_plan;
-	} else if (txt->len_med_plan + planned_len < width) {
+	} else if (txt->len_med_plan + val_len < width) {
 		string = txt->med_plan;
-	} else if (txt->len_short + planned_len < width) {
+	} else if (txt->len_short + val_len < width) {
 		string = txt->short_plan;
 	} else {
 		return -1;
@@ -169,57 +170,24 @@ static int print_catg_planned(WINDOW *wptr,
 /* Returns -1 on failure to print, returns 0 on success. */
 static int print_catg_remaining(WINDOW *wptr,
 							   struct category_text *txt,
-							   double planned,
+							   double remaining,
 							   int width)
 {
 	char *string;
-	int planned_len = finlen(planned);
+	int len_val = finlen(remaining);
 
-	if (txt->len_long_plan + planned_len < width) {
-		string = txt->long_plan;
-	} else if (txt->len_med_plan + planned_len < width) {
-		string = txt->med_plan;
-	} else if (txt->len_short + planned_len < width) {
-		string = txt->short_plan;
+	if (txt->len_long_rem + len_val < width) {
+		string = txt->long_rem;
+	} else if (txt->len_med_rem + len_val < width) {
+		string = txt->med_rem;
+	} else if (txt->len_short + len_val < width) {
+		string = txt->short_rem;
 	} else {
 		return -1;
 	}
 	
-	wprintw(wptr, "%s%.2f ", string, planned);
+	wprintw(wptr, "%s%.2f ", string, remaining);
 	return 0;
-}
-
-/* TODO:
- * Move all strings left one column, split planned and recieved to thier
- * own columns so they line up regardless of their values. */
-static void print_catg_balances(WINDOW *wptr,
-								int tt,
-								double planned,
-								double exp,
-								double remaining,
-								int width)
-{
-	struct category_text txt;
-	init_category_text(&txt);
-	remaining = normalize_near_zero(remaining);
-
-	if (tt == TT_INCOME) {
-		if (full_inc_len + finlen(planned) + finlen(exp) < width) {
-			wprintw(wptr, "Planned: $%.2f, Received: $%.2f", planned, exp);
-		} else if (short_inc_len + finlen(planned) + finlen(exp) < width) {
-			wprintw(wptr, "Plan: $%.2f, Rcvd: $%.2f", planned, exp);
-		} else if (abbreviated_len + finlen(planned) + finlen(exp) < width) {
-			wprintw(wptr, "P$%.2f, R$%.2f", planned, exp);
-		}
-	} else if (tt == TT_EXPENSE) {
-		if (full_exp_len + finlen(planned) + finlen(remaining) < width) {
-			wprintw(wptr, "Planned: $%.2f, Remaining: $%.2f", planned, remaining);
-		} else if (short_exp_len + finlen(planned) + finlen(remaining) < width) {
-			wprintw(wptr, "Plan: $%.2f, Rem: $%.2f", planned, remaining);
-		} else if (abbreviated_len + finlen(planned) + finlen(remaining) < width) {
-			wprintw(wptr, "P$%.2f, R$%.2f", planned, remaining);
-		}
-	}
 }
 
 static bool shorten_string(WINDOW *wptr)
@@ -245,6 +213,7 @@ static void print_record_hr(WINDOW *wptr,
 	int lenetc = (int)strlen(etc);
 	int x = 0;
 	bool shorten = shorten_string(wptr);
+
 	wmove(wptr, y, x);
 	if (shorten) {
 		wprintw(wptr, "%d/%d", ld->month, ld->day);
@@ -253,7 +222,7 @@ static void print_record_hr(WINDOW *wptr,
 	}
 
 	wmove(wptr, y, x += cw->date);
-	if ((int)strlen(ld->category) > cw->catg - lenetc) {
+	if (strlen_int(ld->category) > cw->catg - lenetc) {
 		if (getmaxx(wptr) < MIN_COLUMNS) {
 			wprintw(wptr, "%.*s%s", cw->catg - lenetc, ld->category, etc);
 		} else {
@@ -264,7 +233,7 @@ static void print_record_hr(WINDOW *wptr,
 	}
 
 	wmove(wptr, y, x += cw->catg);
-	if ((int)strlen(ld->desc) > cw->desc - lenetc) {
+	if (strlen_int(ld->desc) > cw->desc - lenetc) {
 		wprintw(wptr, "%.*s%s", cw->desc - lenetc, ld->desc, etc);
 	} else {
 		wprintw(wptr, "%s", ld->desc);
@@ -288,36 +257,41 @@ static void print_category_hr(WINDOW *wptr,
 							  struct catg_node *node,
 							  int y)
 {
+	struct category_text txt;
 	char *etc = "..";
 	double expenses = get_expenditures_per_category_fast(node);
 	double remaining;
-	int lenetc = (int)strlen(etc);
+	int len_etc = strlen_int(etc);
 	int x = 0;
 
-	wattron(wptr, A_REVERSE);
+	remaining = expenses + bt->amount;
+	init_category_text(&txt);
 
-	/* Move cursor past the date columns */
-	wmove(wptr, y, x += cw->date);
+	wattron(wptr, CATEGORY_ATTR);
+	/* Move cursor to the print row */
+	wmove(wptr, y, x);
 
-	if (strlen_int(bt->catg) > cw->catg - lenetc) {
-		wprintw(wptr, "%.*s%s", cw->catg - lenetc, bt->catg, etc);
+	/* Print the category name */
+	if (strlen_int(bt->catg) > cw->catg - len_etc) {
+		wprintw(wptr, "%.*s%s", cw->catg - len_etc, bt->catg, etc);
 	} else {
 		wprintw(wptr, "%s", bt->catg);
 	}
 
-	/* Move cursor past the category column */
-	wmove(wptr, y, x += cw->catg);
+	/* Move cursor past the date and category column */
+	x += cw->date;
+	x += cw->catg;
+	wmove(wptr, y, x);
 
-	remaining = expenses + bt->amount;
+	print_catg_planned(wptr, &txt, bt->amount, cw->desc / 2);
 
-	print_catg_balances(wptr,
-						bt->transtype,
-						bt->amount,
-						expenses,
-						remaining,
-						cw->desc);
+	x += cw->desc / 2;
+	wmove(wptr, y, x);
 
-	wmove(wptr, y, x += cw->desc);
+	print_catg_remaining(wptr, &txt, remaining, cw->desc / 2);
+
+	x += cw->desc / 2;
+	wmove(wptr, y, x);
 
 	if (shorten_string(wptr)) {
 		wprintw(wptr, "%s", bt->transtype == 0 ? "-" : "+");
@@ -325,7 +299,7 @@ static void print_category_hr(WINDOW *wptr,
 		wprintw(wptr, "%s", bt->transtype == 0 ? "Expenses" : "Income");
 	}
 
-	wattroff(wptr, A_REVERSE);
+	wattroff(wptr, CATEGORY_ATTR);
 }
 
 static void print_init_budget_loop(struct scroll_vars *sv,
@@ -336,16 +310,13 @@ static void print_init_budget_loop(struct scroll_vars *sv,
 	struct catg_node *curr = head;
 	char *line_str;
 	int *tmp;
-//	double remaining;
 	int max_y = getmaxy(sv->wptr_data);
 	int total_nodes = get_total_nodes(head);
 	char linebuff[LINE_BUFFER] = { 0 };
 
-	/* 
-	 * For each category print the budget line and the records that match 
+	/* For each category print the budget line and the records that match 
 	 * the category. Increment displayed to keep track of how many lines are
-	 * displayed (this is to keep track of scrolling).
-	 */
+	 * displayed (this is to keep track of scrolling). */
 	for (int i = 0; sv->displayed < max_y && sv->displayed < sv->total_rows 
 		 && i < total_nodes; i++) 
 	{
@@ -353,9 +324,9 @@ static void print_init_budget_loop(struct scroll_vars *sv,
 		print_category_hr(sv->wptr_data, sv->cw, bt, curr, sv->displayed);
 		tmp = get_vec_generic(i, sv->negative_catgs);
 		if (*tmp == CR_NEGATIVE) {
-			color_text(sv->wptr_data, sv->displayed, 0, -1, COLOR_RED);
+			mvwchgat(sv->wptr_data, sv->displayed, 0, -1, CATEGORY_ATTR, COLOR_RED, NULL);
 		} else {
-			color_text(sv->wptr_data, sv->displayed, 0, -1, category_color(i));
+			mvwchgat(sv->wptr_data, sv->displayed, 0, -1, CATEGORY_ATTR, category_color(i), NULL);
 		}
 
 		sv->displayed++;
@@ -634,9 +605,9 @@ static void unhighlight_and_color_catg(WINDOW *wptr,
 									   bool red)
 {
 	if (red) {
-		mvwchgat(wptr, y, 0, -1, A_NORMAL, COLOR_RED, NULL); 
+		mvwchgat(wptr, y, 0, -1, CATEGORY_ATTR, COLOR_RED, NULL); 
 	} else {
-		mvwchgat(wptr, y, 0, -1, A_NORMAL, category_color(node_idx), NULL); 
+		mvwchgat(wptr, y, 0, -1, CATEGORY_ATTR, category_color(node_idx), NULL); 
 	}
 }
 
