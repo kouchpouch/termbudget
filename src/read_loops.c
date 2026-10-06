@@ -190,6 +190,28 @@ static int print_catg_remaining(WINDOW *wptr,
 	return 0;
 }
 
+static int print_catg_received(WINDOW *wptr,
+								struct category_text *txt,
+								double rcvd,
+								int width)
+{
+	char *string;
+	int len_val = finlen(rcvd);
+
+	if (txt->len_long_rcvd + len_val < width) {
+		string = txt->long_rcvd;
+	} else if (txt->len_med_rcvd + len_val < width) {
+		string = txt->med_rcvd;
+	} else if (txt->len_short + len_val < width) {
+		string = txt->short_rcvd;
+	} else {
+		return -1;
+	}
+	
+	wprintw(wptr, "%s%.2f ", string, rcvd);
+	return 0;
+}
+
 static bool shorten_string(WINDOW *wptr)
 {
 	if (getmaxx(wptr) + BOX_OFFSET < MIN_COLUMNS + SHORTEN_THRESH) {
@@ -264,7 +286,7 @@ static void print_category_hr(WINDOW *wptr,
 	int len_etc = strlen_int(etc);
 	int x = 0;
 
-	remaining = expenses + bt->amount;
+	remaining = bt->amount + expenses;
 	init_category_text(&txt);
 
 	wattron(wptr, CATEGORY_ATTR);
@@ -288,7 +310,11 @@ static void print_category_hr(WINDOW *wptr,
 	x += cw->desc / 2;
 	wmove(wptr, y, x);
 
-	print_catg_remaining(wptr, &txt, remaining, cw->desc / 2);
+	if (bt->transtype == TT_EXPENSE) {
+		print_catg_remaining(wptr, &txt, remaining, cw->desc / 2);
+	} else {
+		print_catg_received(wptr, &txt, expenses, cw->desc / 2);
+	}
 
 	x += cw->desc / 2;
 	wmove(wptr, y, x);
