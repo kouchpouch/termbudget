@@ -230,7 +230,8 @@ void tokenize_record(struct transaction_tokens *ld, char **str);
 double get_record_amount(long b);
 
 /* Writes field into buff, no more than buff_size */
-void get_field_budget_csv(long fpi,
+void get_field_budget_csv(FILE *fptr,
+						  long fpi,
 						  enum budget_fields field,
 						  char *buff,
 						  size_t buff_size);

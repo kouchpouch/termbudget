@@ -29,6 +29,7 @@
 #include "categories.h"
 #include "edit_categories.h"
 #include "edit_transaction.h"
+#include "filemanagement.h"
 #include "flags.h"
 #include "helper.h"
 #include "main.h"
@@ -992,13 +993,14 @@ static void get_negative_catg_vector_values(struct vec_generic *negative_catgs,
 {
 	char buff[LINE_BUFFER] = { 0 };
 	struct catg_node *curr = head;
-	double planned, expenses, remaining;
 	int *tmp;
+	FILE *fptr = open_budget_csv("r");
+	double planned, expenses, remaining;
 
 	assert(get_total_nodes(head) == negative_catgs->count);
 
 	for (size_t i = 0; i < negative_catgs->count; i++) {
-		get_field_budget_csv(curr->catg_fp, BF_VALUE, buff, sizeof(buff));
+		get_field_budget_csv(fptr, curr->catg_fp, BF_VALUE, buff, sizeof(buff));
 		expenses = get_expenditures_per_category_fast(curr);
 		planned = atof(buff);
 		remaining = expenses + planned;
@@ -1011,6 +1013,8 @@ static void get_negative_catg_vector_values(struct vec_generic *negative_catgs,
 		}
 		curr = curr->next;
 	}
+
+	fclose(fptr);
 }
 
 /* Initializes the negative category vector values with CR_UNKNOWN (-1) */
