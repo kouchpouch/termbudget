@@ -122,6 +122,8 @@
         prior-added dates.
 - [X] When selecting a category the category list colors should match those
         on the read page.
+- [X] Improve readability of categories in the read view.
+- [ ] Implement a configuration file.
 
 #### Optimization
 - [ ] Create an interface for editing data within the liked list to avoid
