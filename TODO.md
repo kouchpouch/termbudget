@@ -123,7 +123,7 @@
 - [X] When selecting a category the category list colors should match those
         on the read page.
 - [X] Improve readability of categories in the read view.
-- [ ] Implement a configuration file.
+- [X] Implement a configuration file.
 
 #### Optimization
 - [ ] Create an interface for editing data within the liked list to avoid
@@ -156,6 +156,7 @@
         action.
     - [X] Create a library with an easy to use API for managing the linked 
             list.
+- [ ] filemanagement.c needs to be re-written.
 
 #### Main Feature Set
 - [X] Create a transaction
