@@ -35,6 +35,7 @@
 #define CONVERTED_FILE_DIR "./converted.csv"
 #define BUDGET_DIR         "./budget.csv"
 #define BUDGET_BAK_DIR     "./budget.csv.bak"
+#define CONFIG_DIR		   "./termbudget.conf"
 
 #else
 
@@ -44,6 +45,7 @@
 #define CONVERTED_FILE     "/converted.csv"
 #define BUDGET_FILE        "/budget.csv"
 #define BUDGET_BAK_FILE    "/budget.csv.bak"
+#define CONFIG_FILE		   "/termbudget.conf"
 
 extern char program_dir        [PATH_MAX];
 extern char record_dir         [PATH_MAX];
@@ -52,12 +54,15 @@ extern char tmp_file_dir       [PATH_MAX];
 extern char converted_file_dir [PATH_MAX];
 extern char budget_dir         [PATH_MAX];
 extern char budget_bak_dir     [PATH_MAX];
+extern char config_dir		   [PATH_MAX];
 
 #endif
 
-int create_program_directory(void);
+int dir_program_create(void);
+int dir_config_create(void);
 FILE *open_record_csv(char *mode);
 FILE *open_budget_csv(char *mode);
+FILE *open_config_file(char *mode);
 FILE *open_temp_csv(void);
 int mv_tmp_to_budget_file(FILE *tmp, FILE* main);
 int mv_tmp_to_record_file(FILE *tmp, FILE* main);
