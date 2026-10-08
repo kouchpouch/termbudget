@@ -305,5 +305,27 @@ int verify_files_exist(void)
 		getchar();
 	}
 
+	FILE *cfptr = open_config_file("a");
+	if (cfptr == NULL) {
+		perror("Failed to open/create config file");
+		return -1;
+	}
+	/* If the config file is empty, write the default config */
+	fseek(cfptr, 0, SEEK_END);
+	if (ftell(cfptr) == 0) {
+		fprintf(cfptr, "# Auto-generated configuration file for termbudget\n\
+color0=#5fafff\n\
+color1=#5f87ff\n\
+color2=#87afff\n\
+color3=#afafff\n\
+color4=#87ff87\n\
+color5=#5fd7af\n\
+color6=#87af87\n\
+color7=#ffaf87\n\
+color8=#ffaf5f\n\
+color9=#ffd878");
+	}
+	fclose(cfptr);
+
 	return 0;
 }
