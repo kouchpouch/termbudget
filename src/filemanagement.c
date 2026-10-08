@@ -39,6 +39,7 @@ char tmp_file_dir       [PATH_MAX];
 char converted_file_dir [PATH_MAX];
 char budget_dir         [PATH_MAX];
 char budget_bak_dir     [PATH_MAX];
+char config_dir			[PATH_MAX];
 
 /* Sets all dir variables to zero */
 static void init_dir_variables(void)
@@ -50,6 +51,7 @@ static void init_dir_variables(void)
 	memset(converted_file_dir, 0, sizeof(converted_file_dir));
 	memset(budget_dir,         0, sizeof(budget_dir));
 	memset(budget_bak_dir,     0, sizeof(budget_bak_dir));
+	memset(config_dir,     	   0, sizeof(config_dir));
 }
 
 /* Fills the dir variables with the full path plus the file name as is defined
@@ -94,6 +96,7 @@ static void debug_print_directories(void)
 	printf("%s\n", converted_file_dir);
 	printf("%s\n", budget_dir);
 	printf("%s\n", budget_bak_dir);
+	printf("%s\n", config_dir);
 }
 
 #endif
@@ -135,7 +138,9 @@ static bool dir_exists(char *path)
 	}
 }
 
-static enum err_data_dir get_dir_by_env(struct d_string *path, char *env)
+/* Returns ERR_DATA_OK on success and concatenates the 'path' with the
+ * directory returned by 'env' */
+static enum err_data_dir dir_get_by_env(struct d_string *path, char *env)
 {
 	char *dir = getenv(env);
 
@@ -158,8 +163,8 @@ static enum err_data_dir get_dir_by_env(struct d_string *path, char *env)
 	return ERR_DATA_OK;
 }
 
-/* Returns the full path to the user data directory */
-static enum err_data_dir get_user_data_dir(struct d_string *path_buffer)
+/* Concatenates the full path to the user data directory on 'path_buffer' */
+static enum err_data_dir dir_get_user_data(struct d_string *path_buffer)
 {
 	enum err_data_dir e;
 	char *append_dir = "/.local/share";
@@ -169,8 +174,8 @@ static enum err_data_dir get_user_data_dir(struct d_string *path_buffer)
 		exit(1);
 	}
 
-	if ((e = get_dir_by_env(path_buffer, "XDG_DATA_HOME")) != ERR_DATA_OK) {
-		if ((e = get_dir_by_env(path_buffer, "HOME")) != ERR_DATA_OK) {
+	if ((e = dir_get_by_env(path_buffer, "XDG_DATA_HOME")) != ERR_DATA_OK) {
+		if ((e = dir_get_by_env(path_buffer, "HOME")) != ERR_DATA_OK) {
 			return e;
 		} else {
 			concatenate_d_string(&path_buffer, append_dir, strlen(append_dir));
@@ -184,7 +189,32 @@ static enum err_data_dir get_user_data_dir(struct d_string *path_buffer)
 	return ERR_DATA_OK;
 }
 
-static int make_program_data_dir(char *full_path)
+static enum err_data_dir dir_get_user_config(struct d_string *path_buffer)
+{
+	enum err_data_dir e;
+	char *append_dir = "/.config";
+
+	if (is_root()) {
+		puts("Do not run this program as root, exiting");
+		exit(1);
+	}
+
+	if ((e = dir_get_by_env(path_buffer, "XDG_CONFIG_HOME")) != ERR_DATA_OK) {
+		if ((e = dir_get_by_env(path_buffer, "HOME")) != ERR_DATA_OK) {
+			return e;
+		} else {
+			concatenate_d_string(&path_buffer, append_dir, strlen(append_dir));
+		}
+	}
+
+	if (!dir_exists(path_buffer->string)) {
+		return ERR_DATA_NOEXIST;
+	}
+
+	return ERR_DATA_OK;
+}
+
+static int dir_create(char *full_path)
 {
 	errno = 0;
 	if (mkdir(full_path, 0777) == -1) {
@@ -221,13 +251,13 @@ static void handle_err_data_dir(enum err_data_dir e)
 	}
 }
 
-int create_program_directory(void)
+int dir_program_create(void)
 {
 	struct d_string *full_path = create_d_string(PATH_MAX);
 	char *subdir_name = "/termbudget";
 
 	enum err_data_dir err = 0;
-	err = get_user_data_dir(full_path);
+	err = dir_get_user_data(full_path);
 	if (err != ERR_DATA_OK) {
 		handle_err_data_dir(err);
 	}
@@ -235,7 +265,7 @@ int create_program_directory(void)
 	concatenate_d_string(&full_path, subdir_name, strlen(subdir_name));
 
 	if (!dir_exists(full_path->string)) {
-		make_program_data_dir(full_path->string);
+		dir_create(full_path->string);
 	} else {
 		if (debug_flag) {
 			printf("Program directory exists\n");
@@ -251,6 +281,49 @@ int create_program_directory(void)
 #ifndef TB_RELATIVE_DIRS
 	init_dir_variables();
 	set_directories(full_path);
+	if (debug_flag) {
+		debug_print_directories();
+	}
+	free(full_path);
+	full_path = NULL;
+#else
+	puts("USING RELATIVE DIRECTORIES");
+#endif
+
+	return 0;
+}
+
+int dir_config_create(void)
+{
+	struct d_string *full_path = create_d_string(PATH_MAX);
+	char *subdir_name = "/termbudget";
+
+	enum err_data_dir err = 0;
+	err = dir_get_user_config(full_path);
+	if (err != ERR_DATA_OK) {
+		handle_err_data_dir(err);
+	}
+
+	concatenate_d_string(&full_path, subdir_name, strlen(subdir_name));
+
+	if (!dir_exists(full_path->string)) {
+		dir_create(full_path->string);
+	} else {
+		if (debug_flag) {
+			printf("%s exists\n", full_path->string);
+		}
+	}
+
+	if (debug_flag) {
+		printf("%s\n", full_path->string);
+	}
+
+	assert(full_path->len < PATH_MAX);
+
+#ifndef TB_RELATIVE_DIRS
+	strcat(config_dir, full_path->string);
+	assert(strlen(config_dir) + strlen(CONFIG_FILE) < PATH_MAX);
+	strcat(config_dir, CONFIG_FILE); 
 	if (debug_flag) {
 		debug_print_directories();
 	}
@@ -294,6 +367,16 @@ FILE *open_record_csv(char *mode)
 	FILE *f = open_file(mode, RECORD_DIR);
 #else
 	FILE *f = open_file(mode, record_dir);
+#endif
+	return f;
+}
+
+FILE *open_config_file(char *mode)
+{
+#ifdef TB_RELATIVE_DIRS
+	FILE *f = open_file(mode, CONFIG_DIR);
+#else
+	FILE *f = open_file(mode, config_dir);
 #endif
 	return f;
 }
