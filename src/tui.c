@@ -12,7 +12,7 @@
  * You should have received a copy of the GNU General Public License along 
  * with this program. If not, see <https://www.gnu.org/licenses/>. 
  *
- * termbudget 2026
+ * Copyright (c) 2026 termbudget
  * Author: kouchpouch <https://github.com/kouchpouch/termbudget>
  */
 
@@ -21,6 +21,7 @@
 #include <string.h>
 #include <string.h>
 
+#include "colors_ncurses.h"
 #include "flags.h"
 #include "helper.h"
 #include "parser.h"
@@ -441,26 +442,18 @@ static void init_color_palette(void)
 {
 	int term_max_colors = tigetnum("colors");
 	if (debug_flag) {
-		printw("Terminal Supports: %d Colors", term_max_colors);
+		printw("Terminal Supports: %d Colors, %d Pairs", term_max_colors,
+		 												 COLOR_PAIRS);
 		getch();
 	}
-	init_pair(1, COLOR_RED, -1);               // #ff0000
-	init_pair(2, COLOR_GREEN, -1);             // #00ff00
-	init_pair(3, COLOR_YELLOW, -1);            // #ffff00
-	/* These colors were picked by a clanker, the only thing in the entire
-	 * program that used the devil. */
+	init_pair(1, COLOR_RED, -1);           // #ff0000
+	init_pair(2, COLOR_GREEN, -1);         // #00ff00
+	init_pair(3, COLOR_YELLOW, -1);        // #ffff00
+
 	if (term_max_colors >= 256) {
-		init_pair(11, 75, -1);                 // #5fafff
-		init_pair(12, 69, -1);                 // #5f87ff
-		init_pair(13, 111, -1);                // #87afff
-		init_pair(14, 147, -1);                // #afafff
-		init_pair(15, 121, -1);                // #87ff87
-		init_pair(16, 79, -1);                 // #5fd7af
-		init_pair(17, 108, -1);                // #87af87
-		init_pair(18, 216, -1);                // #ffaf87
-		init_pair(19, 215, -1);                // #ffaf5f
-		init_pair(20, 222, -1);                // #ffd878
-		init_pair(REVERSE_COLOR, 251, -1);     // #c6c6c6
+		set_default_colors();
+		get_colors_from_config();
+		init_pair(REVERSE_COLOR, 251, -1); // blank
 
 	} else if (term_max_colors < 256 && term_max_colors >= 8) {
 		init_pair(11, COLOR_CYAN, -1);
