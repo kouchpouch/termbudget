@@ -427,7 +427,8 @@ int main(int argc, char **argv)
 #ifdef TB_RELATIVE_DIRS
 	puts("USING RELATIVE DIRECTORIES");
 #else
-	create_program_directory();
+	dir_program_create();
+	dir_config_create();
 #endif
 
 	if (verify_files_exist() == -1) {
