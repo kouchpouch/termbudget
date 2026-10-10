@@ -39,7 +39,6 @@ struct key_type_pair key_type_pair[] = {
 	{"color9", KEY_TYPE_COLOR}
 };
 
-
 inline static char char_to_lower(char c)
 {
 	if (c >= 65 && c <= 90) {
@@ -193,11 +192,13 @@ static struct string_slice slice_get_value(const struct string_slice slice,
 										   const char delim)
 {
 	struct string_slice value = slice;
+	int i;
 
-	int i = 0;
-	do {
-		i++;
-	} while (i < value.len && value.s[i] != delim);
+	for (i = 0; i < value.len; i++) {
+		if (value.s[i] == delim) {
+			break;
+		}
+	}
 
 	if (i + 1 <= value.len) {
 		i++;
@@ -262,40 +263,13 @@ void slice_print(const struct string_slice slice)
 	printf("[%.*s]\n", slice.len, slice.s);
 }
 
-#ifdef DEBUG
-void parse_config_print(void)
+#ifdef HAS_NCURSES
+void slice_print_window(WINDOW *wptr,
+						int y,
+						int x,
+						const struct string_slice slice)
 {
-	char buff[CONFIG_BUFFER_SZ];
-	struct string_slice slice, key, value;
-
-	char *str;
-	FILE *fptr = open_config_file("r");
-	
-	int counter = 0; /* For debug */
-
-	while (1) {
-		str = fgets(buff, sizeof(buff), fptr);
-		if (str == NULL) {
-			break;
-		} 
-
-		if (is_comment(str) || str[0] == '\n') {
-			continue;
-		}
-
-		slice = slice_create(str);
-		key = slice_get_trimmed(slice, KEY);
-		value = slice_get_trimmed(slice, VALUE);
-
-		/* For debug */
-		printf("%d\n", counter);
-		slice_print(key);
-		slice_print(value);
-		counter++;
-		/* For debug */
-	}
-
-	fclose(fptr);
+	mvwprintw(wptr, y, x, "[%.*s]", slice.len, slice.s);
 }
 #endif
 
