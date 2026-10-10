@@ -32,71 +32,71 @@
 
 #ifndef TB_RELATIVE_DIRS
 
-char program_dir        [PATH_MAX];
-char record_dir         [PATH_MAX];
-char record_bak_dir     [PATH_MAX];
-char tmp_file_dir       [PATH_MAX];
-char converted_file_dir [PATH_MAX];
-char budget_dir         [PATH_MAX];
-char budget_bak_dir     [PATH_MAX];
-char config_dir			[PATH_MAX];
+char dir_program         [PATH_MAX];
+char path_record         [PATH_MAX];
+char path_record_bak     [PATH_MAX];
+char path_tmp_file       [PATH_MAX];
+char path_converted_file [PATH_MAX];
+char path_budget         [PATH_MAX];
+char path_budget_bak     [PATH_MAX];
+char path_config	     [PATH_MAX];
 
 /* Sets all dir variables to zero */
 static void init_dir_variables(void)
 {
-	memset(program_dir,        0, sizeof(program_dir));
-	memset(record_dir,         0, sizeof(record_dir));
-	memset(record_bak_dir,     0, sizeof(record_bak_dir));
-	memset(tmp_file_dir,       0, sizeof(tmp_file_dir));
-	memset(converted_file_dir, 0, sizeof(converted_file_dir));
-	memset(budget_dir,         0, sizeof(budget_dir));
-	memset(budget_bak_dir,     0, sizeof(budget_bak_dir));
-	memset(config_dir,     	   0, sizeof(config_dir));
+	memset(dir_program,         0, sizeof(dir_program));
+	memset(path_record,         0, sizeof(path_record));
+	memset(path_record_bak,     0, sizeof(path_record_bak));
+	memset(path_tmp_file,       0, sizeof(path_tmp_file));
+	memset(path_converted_file, 0, sizeof(path_converted_file));
+	memset(path_budget,         0, sizeof(path_budget));
+	memset(path_budget_bak,     0, sizeof(path_budget_bak));
+	memset(path_config,     	0, sizeof(path_config));
 }
 
 /* Fills the dir variables with the full path plus the file name as is defined
  * by macros. Assertions for each path to verify it does not exceed PATH_MAX */
 static void set_directories(struct d_string *p)
 {
-	strcat(program_dir, p->string);
+	strcat(dir_program, p->string);
 
-	strcat(record_dir, program_dir);
-	assert(strlen(record_dir) + strlen(RECORD_FILE) < PATH_MAX);
-	strcat(record_dir, RECORD_FILE);
+	strcat(path_record, dir_program);
+	assert(strlen(path_record) + strlen(RECORD_FILE) < PATH_MAX);
+	strcat(path_record, RECORD_FILE);
 
-	strcat(record_bak_dir, program_dir);
-	assert(strlen(record_bak_dir) + strlen(RECORD_BAK_FILE) < PATH_MAX);
-	strcat(record_bak_dir, RECORD_BAK_FILE);
+	strcat(path_record_bak, dir_program);
+	assert(strlen(path_record_bak) + strlen(RECORD_BAK_FILE) < PATH_MAX);
+	strcat(path_record_bak, RECORD_BAK_FILE);
 
-	strcat(tmp_file_dir, program_dir);
-	assert(strlen(tmp_file_dir) + strlen(TEMP_FILE) < PATH_MAX);
-	strcat(tmp_file_dir, TEMP_FILE);
+	strcat(path_tmp_file, dir_program);
+	assert(strlen(path_tmp_file) + strlen(TEMP_FILE) < PATH_MAX);
+	strcat(path_tmp_file, TEMP_FILE);
 
-	strcat(converted_file_dir, program_dir);
-	assert(strlen(converted_file_dir) + strlen(CONVERTED_FILE) < PATH_MAX);
-	strcat(converted_file_dir, CONVERTED_FILE);
+	strcat(path_converted_file, dir_program);
+	assert(strlen(path_converted_file) + strlen(CONVERTED_FILE) < PATH_MAX);
+	strcat(path_converted_file, CONVERTED_FILE);
 
-	strcat(budget_dir, program_dir);
-	assert(strlen(budget_dir) + strlen(BUDGET_FILE) < PATH_MAX);
-	strcat(budget_dir, BUDGET_FILE);
+	strcat(path_budget, dir_program);
+	assert(strlen(path_budget) + strlen(BUDGET_FILE) < PATH_MAX);
+	strcat(path_budget, BUDGET_FILE);
 
-	strcat(budget_bak_dir, program_dir);
-	assert(strlen(budget_bak_dir) + strlen(BUDGET_BAK_FILE) < PATH_MAX);
-	strcat(budget_bak_dir, BUDGET_BAK_FILE);
+	strcat(path_budget_bak, dir_program);
+	assert(strlen(path_budget_bak) + strlen(BUDGET_BAK_FILE) < PATH_MAX);
+	strcat(path_budget_bak, BUDGET_BAK_FILE);
 }
 
 /* Prints all dir variables */
 static void debug_print_directories(void)
 {
 	printf("%s\n", "------Program files------");
-	printf("%s\n", program_dir);
-	printf("%s\n", record_dir);
-	printf("%s\n", record_bak_dir);
-	printf("%s\n", tmp_file_dir);
-	printf("%s\n", converted_file_dir);
-	printf("%s\n", budget_dir);
-	printf("%s\n", budget_bak_dir);
-	printf("%s\n", config_dir);
+	printf("%s\n", dir_program);
+	printf("%s\n", path_record);
+	printf("%s\n", path_record_bak);
+	printf("%s\n", path_tmp_file);
+	printf("%s\n", path_converted_file);
+	printf("%s\n", path_budget);
+	printf("%s\n", path_budget_bak);
+	printf("%s\n", path_config);
 }
 
 #endif
@@ -296,9 +296,9 @@ int dir_config_create(void)
 	assert(full_path->len < PATH_MAX);
 
 #ifndef TB_RELATIVE_DIRS
-	strcat(config_dir, full_path->string);
-	assert(strlen(config_dir) + strlen(CONFIG_FILE) < PATH_MAX);
-	strcat(config_dir, CONFIG_FILE); 
+	strcat(path_config, full_path->string);
+	assert(strlen(path_config) + strlen(CONFIG_FILE) < PATH_MAX);
+	strcat(path_config, CONFIG_FILE); 
 	if (debug_flag) {
 		debug_print_directories();
 	}
@@ -311,11 +311,21 @@ int dir_config_create(void)
 	return 0;
 }
 
+/* Unified function to create all of the program files. 
+ * Returns -1 on failure, 0 on success. */
+int create_program_files(void)
+{
+	int ret = 0;
+
+
+	return ret;
+}
+
 /* Opens file at "dir", checks if the fopen function fails and terminates
  * program if it does. */
-FILE *open_file(char *mode, char *dir)
+static FILE *open_file(char *mode, char *path)
 {
-	FILE *fptr = fopen(dir, mode);
+	FILE *fptr = fopen(path, mode);
 	if (fptr == NULL) {
 		perror(NULL);
 		exit(1);
@@ -330,7 +340,7 @@ FILE *open_budget_csv(char *mode)
 #ifdef TB_RELATIVE_DIRS
 	FILE *f = open_file(mode, BUDGET_DIR);
 #else
-	FILE *f = open_file(mode, budget_dir);
+	FILE *f = open_file(mode, path_budget);
 #endif
 	return f;
 }
@@ -341,7 +351,7 @@ FILE *open_record_csv(char *mode)
 #ifdef TB_RELATIVE_DIRS
 	FILE *f = open_file(mode, RECORD_DIR);
 #else
-	FILE *f = open_file(mode, record_dir);
+	FILE *f = open_file(mode, path_record);
 #endif
 	return f;
 }
@@ -351,7 +361,7 @@ FILE *open_config_file(char *mode)
 #ifdef TB_RELATIVE_DIRS
 	FILE *f = open_file(mode, CONFIG_DIR);
 #else
-	FILE *f = open_file(mode, config_dir);
+	FILE *f = open_file(mode, path_config);
 #endif
 	return f;
 }
@@ -363,7 +373,7 @@ FILE *open_temp_csv(void)
 #ifdef TB_RELATIVE_DIRS
 	FILE *tmpfptr = fopen(TEMP_DIR, "w+");
 #else
-	FILE *tmpfptr = fopen(tmp_file_dir, "w+");
+	FILE *tmpfptr = fopen(path_tmp_file, "w+");
 #endif
 	if (tmpfptr == NULL) {
 		perror(NULL);
@@ -395,7 +405,7 @@ static int move_tmp_to_main(FILE *tmp, FILE *main, char *dir, char *backdir)
 #ifdef TB_RELATIVE_DIRS
 	if (rename(TEMP_DIR, dir) == -1) {
 #else
-	if (rename(tmp_file_dir, dir) == -1) {
+	if (rename(path_tmp_file, dir) == -1) {
 #endif
 		perror("Failed to move temporary file");	
 		return -1;
@@ -410,7 +420,7 @@ int mv_tmp_to_budget_file(FILE *tmp, FILE* main)
 #ifdef TB_RELATIVE_DIRS
 	int retval = move_tmp_to_main(tmp, main, BUDGET_DIR, BUDGET_BAK_DIR);
 #else
-	int retval = move_tmp_to_main(tmp, main, budget_dir, budget_bak_dir);
+	int retval = move_tmp_to_main(tmp, main, path_budget, path_budget_bak);
 #endif
 	return retval;
 }
@@ -422,7 +432,7 @@ int mv_tmp_to_record_file(FILE *tmp, FILE* main)
 #ifdef TB_RELATIVE_DIRS
 	int retval = move_tmp_to_main(tmp, main, RECORD_DIR, RECORD_BAK_DIR);
 #else
-	int retval = move_tmp_to_main(tmp, main, record_dir, record_bak_dir);
+	int retval = move_tmp_to_main(tmp, main, path_record, path_record_bak);
 #endif
 	return retval;
 }

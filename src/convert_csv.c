@@ -37,7 +37,7 @@ static void create_csv(void)
 #ifdef TB_RELATIVE_DIRS
 	FILE *fptr = fopen(CONVERTED_FILE_DIR, "w+");
 #else
-	FILE *fptr = fopen(converted_file_dir, "w+");
+	FILE *fptr = fopen(path_converted_file, "w+");
 #endif
 	if (fptr == NULL) {
 		perror("Failed to open file");
@@ -62,7 +62,7 @@ static void insert_record(struct transaction_tokens *ld)
 #ifdef TB_RELATIVE_DIRS
 	FILE *convfptr = fopen(CONVERTED_FILE_DIR, "r");
 #else
-	FILE *convfptr = fopen(converted_file_dir, "r");
+	FILE *convfptr = fopen(path_converted_file, "r");
 #endif
 	if (convfptr == NULL) {
 		perror("Failed to open file");
@@ -103,7 +103,7 @@ static void insert_record(struct transaction_tokens *ld)
 #ifdef TB_RELATIVE_DIRS 
 	rename(TEMP_DIR, CONVERTED_FILE_DIR); 
 #else
-	rename(tmp_file_dir, converted_file_dir); 
+	rename(path_tmp_file, path_converted_file); 
 #endif
 	fclose(convfptr);
 	fclose(tmpfptr);
@@ -163,7 +163,7 @@ size_t convert_chase_csv(char *dir)
 #ifdef TB_RELATIVE_DIRS
 	printf("CONVERTED: %s\n", CONVERTED_FILE_DIR);
 #else
-	printf("CONVERTED: %s\n", converted_file_dir);
+	printf("CONVERTED: %s\n", path_converted_file);
 #endif
 	FILE *fptr = open_csv(dir);
 	create_csv();
