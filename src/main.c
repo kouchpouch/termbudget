@@ -448,7 +448,7 @@ int main(int argc, char **argv)
 	puts("USING RELATIVE DIRECTORIES");
 #else
 	dir_program_create();
-	dir_config_create();
+	set_configuration_path();
 #endif
 
 	if (verify_files_exist() == -1) {
