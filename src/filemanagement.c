@@ -30,20 +30,27 @@
 #include "filemanagement.h"
 #include "flags.h"
 
+enum err_data_dir {
+	ERR_DATA_OK,
+	ERR_DATA_NO_EXIST,
+	ERR_DATA_NO_ENV,
+	ERR_DATA_TOO_LONG
+};
+
 #ifndef TB_RELATIVE_DIRS
 
-char dir_program         [PATH_MAX + 1] = { 0 };
-char path_record         [PATH_MAX + 1] = { 0 };
-char path_record_bak     [PATH_MAX + 1] = { 0 };
-char path_tmp_file       [PATH_MAX + 1] = { 0 };
-char path_converted_file [PATH_MAX + 1] = { 0 };
-char path_budget         [PATH_MAX + 1] = { 0 };
-char path_budget_bak     [PATH_MAX + 1] = { 0 };
-char path_config	     [PATH_MAX + 1] = { 0 };
+char dir_program         [PATH_BUFFER_SZ] = { 0 };
+char path_record         [PATH_BUFFER_SZ] = { 0 };
+char path_record_bak     [PATH_BUFFER_SZ] = { 0 };
+char path_tmp_file       [PATH_BUFFER_SZ] = { 0 };
+char path_converted_file [PATH_BUFFER_SZ] = { 0 };
+char path_budget         [PATH_BUFFER_SZ] = { 0 };
+char path_budget_bak     [PATH_BUFFER_SZ] = { 0 };
+char path_config	     [PATH_BUFFER_SZ] = { 0 };
 
 /* Fills the dir variables with the full path plus the file name as is defined
  * by macros. Assertions for each path to verify it does not exceed PATH_MAX */
-static void set_directories(struct d_string *p)
+static void set_program_paths(struct d_string *p)
 {
 	strcat(dir_program, p->string);
 
@@ -72,6 +79,8 @@ static void set_directories(struct d_string *p)
 	strcat(path_budget_bak, BUDGET_BAK_FILE);
 }
 
+#endif
+
 /* Prints all dir variables */
 static void debug_print_directories(void)
 {
@@ -85,14 +94,6 @@ static void debug_print_directories(void)
 	printf("%s\n", path_budget_bak);
 	printf("%s\n", path_config);
 }
-
-#endif
-
-enum err_data_dir {
-	ERR_DATA_OK = 0,
-	ERR_DATA_NOEXIST,
-	ERR_DATA_NOENV,
-};
 
 /* Returns true if a the dir at 'path' exists, false if it does not.
  * If opendir() fails, errno is printed to stderror */
@@ -120,11 +121,11 @@ static enum err_data_dir dir_get_by_env(struct d_string *path, char *env)
 		if (debug_flag) {
 			printf("%s $%s\n", "Could not get environment variable", env);
 		}
-		return ERR_DATA_NOENV;
+		return ERR_DATA_NO_ENV;
 	}
 
 	if (!dir_exists(dir)) {
-		return ERR_DATA_NOEXIST;
+		return ERR_DATA_NO_EXIST;
 	} else {
 		if (debug_flag) {
 			printf("%s $%s\n", "Found environment variable", env);
@@ -150,32 +151,13 @@ static enum err_data_dir dir_get_user_data(struct d_string *path_buffer)
 	}
 
 	if (!dir_exists(path_buffer->string)) {
-		return ERR_DATA_NOEXIST;
+		return ERR_DATA_NO_EXIST;
 	}
 
 	return ERR_DATA_OK;
 }
 
-static enum err_data_dir dir_get_user_config(struct d_string *path_buffer)
-{
-	enum err_data_dir e;
-	char *append_dir = "/.config";
-
-	if ((e = dir_get_by_env(path_buffer, "XDG_CONFIG_HOME")) != ERR_DATA_OK) {
-		if ((e = dir_get_by_env(path_buffer, "HOME")) != ERR_DATA_OK) {
-			return e;
-		} else {
-			concatenate_d_string(&path_buffer, append_dir, strlen(append_dir));
-		}
-	}
-
-	if (!dir_exists(path_buffer->string)) {
-		return ERR_DATA_NOEXIST;
-	}
-
-	return ERR_DATA_OK;
-}
-
+/* Terminates the program if unable to create the directory */
 static int dir_create(char *full_path)
 {
 	errno = 0;
@@ -185,7 +167,7 @@ static int dir_create(char *full_path)
 			return 0;
 		} else {
 			perror("mkdir()");
-			return -1;
+			exit(1);
 		}
 	}
 
@@ -198,16 +180,21 @@ static void handle_err_data_dir(enum err_data_dir e)
 	case ERR_DATA_OK:
 		break;
 
-	case ERR_DATA_NOEXIST:
+	case ERR_DATA_NO_EXIST:
 		printf("%s\n", "Could not find program file directory, "
 		               "it does not exist");
 		break;
 
-	case ERR_DATA_NOENV:
+	case ERR_DATA_NO_ENV:
 		printf("%s\n", "Environment variable $HOME or $XDG_DATA_HOME "
-                        "are not set");
+                       "are not set");
 		printf("%s\n", "Cannot find program data directory. Exiting");
 		exit(1);
+	
+	case ERR_DATA_TOO_LONG:
+		printf("%s\n", "Path exceeds maximum length");
+		exit(1);
+
 	default:
 		break;
 	}
@@ -215,7 +202,7 @@ static void handle_err_data_dir(enum err_data_dir e)
 
 int dir_program_create(void)
 {
-	struct d_string *full_path = create_d_string(PATH_MAX);
+	struct d_string *full_path = create_d_string(PATH_MAX + 1);
 	char *subdir_name = "/termbudget";
 
 	enum err_data_dir err = 0;
@@ -241,7 +228,7 @@ int dir_program_create(void)
 	assert(full_path->len < PATH_MAX);
 
 #ifndef TB_RELATIVE_DIRS
-	set_directories(full_path);
+	set_program_paths(full_path);
 	if (debug_flag) {
 		debug_print_directories();
 	}
@@ -254,57 +241,70 @@ int dir_program_create(void)
 	return 0;
 }
 
-int dir_config_create(void)
+/* Fills 'buffer' with the configuration directory using environment variables
+ * XDG_CONFIG_HOME or HOME, whichever is set. */
+static enum err_data_dir get_configuration_directory(char *buffer,
+													 size_t buffer_sz)
 {
-	struct d_string *full_path = create_d_string(PATH_MAX);
-	char *subdir_name = "/termbudget";
+	size_t cat_check = 0;
+	char *dir = NULL;
 
+	dir = getenv("XDG_CONFIG_HOME");
+	if (dir != NULL) {
+		strlcat(buffer, dir, buffer_sz);
+		cat_check = strlcat(buffer, "/termbudget", buffer_sz);
+		if (cat_check > buffer_sz) {
+			return ERR_DATA_TOO_LONG;
+		} else {
+			return ERR_DATA_OK;
+		}
+	}
+
+	dir = getenv("HOME");
+	if (dir == NULL) {
+		return ERR_DATA_NO_ENV;
+	} else {
+		strlcat(buffer, dir, buffer_sz);
+		cat_check = strlcat(buffer, "/.config/termbudget", buffer_sz);
+		if (cat_check > buffer_sz) {
+			return ERR_DATA_TOO_LONG;
+		} else {
+			return ERR_DATA_OK;
+		}
+	}
+}
+
+/* Sets global variable path_config with the full path to the configuration
+ * file. Nominally this is set to:
+ * /home/$USER/.config/termbudget/termbudget.conf */
+int set_configuration_path(void)
+{
+	char config_path_buffer[PATH_BUFFER_SZ] = { 0 };
 	enum err_data_dir err = 0;
-	err = dir_get_user_config(full_path);
+
+	err = get_configuration_directory(config_path_buffer, PATH_BUFFER_SZ);
 	if (err != ERR_DATA_OK) {
 		handle_err_data_dir(err);
 	}
 
-	concatenate_d_string(&full_path, subdir_name, strlen(subdir_name));
-
-	if (!dir_exists(full_path->string)) {
-		dir_create(full_path->string);
-	} else {
-		if (debug_flag) {
-			printf("%s exists\n", full_path->string);
-		}
+	if (!dir_exists(config_path_buffer)) {
+		dir_create(config_path_buffer);
 	}
 
-	if (debug_flag) {
-		printf("%s\n", full_path->string);
+	if (strlcat(config_path_buffer, CONFIG_FILE, PATH_BUFFER_SZ) > PATH_BUFFER_SZ) {
+		printf("%s\n", "Path too long");
+		exit(1);
 	}
-
-	assert(full_path->len < PATH_MAX);
-
-#ifndef TB_RELATIVE_DIRS
-	strcat(path_config, full_path->string);
-	assert(strlen(path_config) + strlen(CONFIG_FILE) < PATH_MAX);
-	strcat(path_config, CONFIG_FILE); 
-	if (debug_flag) {
-		debug_print_directories();
-	}
-	free(full_path);
-	full_path = NULL;
-#else
-	puts("USING RELATIVE DIRECTORIES");
-#endif
+	strlcpy(path_config, config_path_buffer, PATH_BUFFER_SZ);
 
 	return 0;
 }
 
-/* Unified function to create all of the program files. 
- * Returns -1 on failure, 0 on success. */
-int create_program_files(void)
+/* Upon reaching a permission error, no env error, or a mkdir() error, the
+ * error is printed and the program will terminate. */
+void set_termbudget_file_paths(void)
 {
-	int ret = 0;
-
-
-	return ret;
+	set_configuration_path();
 }
 
 /* Opens file at "dir", checks if the fopen function fails and terminates

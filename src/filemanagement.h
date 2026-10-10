@@ -27,6 +27,8 @@
 #define PATH_MAX 4096
 #endif
 
+#define PATH_BUFFER_SZ (PATH_MAX + 1)
+
 #ifdef TB_RELATIVE_DIRS 
 
 #define RECORD_DIR         "./data.csv"
@@ -47,19 +49,21 @@
 #define BUDGET_BAK_FILE    "/budget.csv.bak"
 #define CONFIG_FILE		   "/termbudget.conf"
 
-extern char dir_program		    [PATH_MAX + 1];
-extern char path_record         [PATH_MAX + 1];
-extern char path_record_bak     [PATH_MAX + 1];
-extern char path_tmp_file       [PATH_MAX + 1];
-extern char path_converted_file [PATH_MAX + 1];
-extern char path_budget         [PATH_MAX + 1];
-extern char path_budget_bak     [PATH_MAX + 1];
-extern char path_config		    [PATH_MAX + 1];
+extern char dir_program		    [PATH_BUFFER_SZ];
+extern char path_record         [PATH_BUFFER_SZ];
+extern char path_record_bak     [PATH_BUFFER_SZ];
+extern char path_tmp_file       [PATH_BUFFER_SZ];
+extern char path_converted_file [PATH_BUFFER_SZ];
+extern char path_budget         [PATH_BUFFER_SZ];
+extern char path_budget_bak     [PATH_BUFFER_SZ];
+extern char path_config		    [PATH_BUFFER_SZ];
 
 #endif
 
 int dir_program_create(void);
 int dir_config_create(void);
+
+int set_configuration_path(void); /* New function */
 FILE *open_record_csv(char *mode);
 FILE *open_budget_csv(char *mode);
 FILE *open_config_file(char *mode);
