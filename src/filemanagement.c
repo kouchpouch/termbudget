@@ -107,21 +107,6 @@ enum err_data_dir {
 	ERR_DATA_NOENV,
 };
 
-/* Returns true if the $USER environment variable is not set or returns "root".
- * Returns false if $USER returns a non-null string that is not 
- * "root", case is ignored. */
-static bool is_root(void)
-{
-	char *username = getenv("USER");
-	if (strcasecmp("root", username) == 0) {
-		return true;
-	} else if (username == NULL) {
-		return true;
-	} else {
-		return false;
-	}
-}
-
 /* Returns true if a the dir at 'path' exists, false if it does not.
  * If opendir() fails, errno is printed to stderror */
 static bool dir_exists(char *path)
@@ -169,11 +154,6 @@ static enum err_data_dir dir_get_user_data(struct d_string *path_buffer)
 	enum err_data_dir e;
 	char *append_dir = "/.local/share";
 
-	if (is_root()) {
-		puts("Do not run this program as root, exiting");
-		exit(1);
-	}
-
 	if ((e = dir_get_by_env(path_buffer, "XDG_DATA_HOME")) != ERR_DATA_OK) {
 		if ((e = dir_get_by_env(path_buffer, "HOME")) != ERR_DATA_OK) {
 			return e;
@@ -193,11 +173,6 @@ static enum err_data_dir dir_get_user_config(struct d_string *path_buffer)
 {
 	enum err_data_dir e;
 	char *append_dir = "/.config";
-
-	if (is_root()) {
-		puts("Do not run this program as root, exiting");
-		exit(1);
-	}
 
 	if ((e = dir_get_by_env(path_buffer, "XDG_CONFIG_HOME")) != ERR_DATA_OK) {
 		if ((e = dir_get_by_env(path_buffer, "HOME")) != ERR_DATA_OK) {
