@@ -32,14 +32,14 @@
 
 #ifndef TB_RELATIVE_DIRS
 
-char dir_program         [PATH_MAX];
-char path_record         [PATH_MAX];
-char path_record_bak     [PATH_MAX];
-char path_tmp_file       [PATH_MAX];
-char path_converted_file [PATH_MAX];
-char path_budget         [PATH_MAX];
-char path_budget_bak     [PATH_MAX];
-char path_config	     [PATH_MAX];
+char dir_program         [PATH_MAX + 1];
+char path_record         [PATH_MAX + 1];
+char path_record_bak     [PATH_MAX + 1];
+char path_tmp_file       [PATH_MAX + 1];
+char path_converted_file [PATH_MAX + 1];
+char path_budget         [PATH_MAX + 1];
+char path_budget_bak     [PATH_MAX + 1];
+char path_config	     [PATH_MAX + 1];
 
 /* Sets all dir variables to zero */
 static void init_dir_variables(void)
