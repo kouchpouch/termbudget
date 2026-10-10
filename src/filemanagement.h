@@ -47,14 +47,14 @@
 #define BUDGET_BAK_FILE    "/budget.csv.bak"
 #define CONFIG_FILE		   "/termbudget.conf"
 
-extern char program_dir        [PATH_MAX];
-extern char record_dir         [PATH_MAX];
-extern char record_bak_dir     [PATH_MAX];
-extern char tmp_file_dir       [PATH_MAX];
-extern char converted_file_dir [PATH_MAX];
-extern char budget_dir         [PATH_MAX];
-extern char budget_bak_dir     [PATH_MAX];
-extern char config_dir		   [PATH_MAX];
+extern char dir_program		    [PATH_MAX + 1];
+extern char path_record         [PATH_MAX + 1];
+extern char path_record_bak     [PATH_MAX + 1];
+extern char path_tmp_file       [PATH_MAX + 1];
+extern char path_converted_file [PATH_MAX + 1];
+extern char path_budget         [PATH_MAX + 1];
+extern char path_budget_bak     [PATH_MAX + 1];
+extern char path_config		    [PATH_MAX + 1];
 
 #endif
 
