@@ -23,7 +23,7 @@
 #include <string.h>
 
 #include "config_parser.h"
-#include "filemanagement.h"
+#include "file_management.h"
 
 #define NC_COLOR_MULT 3.90625 /* ~ (1000 / 256) */
 

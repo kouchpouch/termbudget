@@ -19,7 +19,7 @@
 #include <ncurses.h>
 #include <stdio.h>
 
-#include "filemanagement.h"
+#include "file_management.h"
 #include "flags.h"
 #include "helper.h"
 #include "main.h"

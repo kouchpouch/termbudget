@@ -26,7 +26,7 @@
 #include "dynamic_string.h"
 #include "edit_categories.h"
 #include "file_write.h"
-#include "filemanagement.h"
+#include "file_management.h"
 #include "flags.h"
 #include "get_date.h"
 #include "helper.h"
