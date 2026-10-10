@@ -1,10 +1,14 @@
-#ifndef COLOR_PARSER_H
-#define COLOR_PARSER_H
+#ifndef CONFIG_PARSER_H
+#define CONFIG_PARSER_H
 
 #include <stdio.h>
 
 #define CONFIG_BUFFER_SZ 256
 #define COMMENT_PREFIX '#'
+
+#ifdef HAS_NCURSES
+#include <ncurses.h>
+#endif
 
 enum slice_get_which {
 	KEY,
@@ -55,6 +59,13 @@ struct key_value_pair {
 };
 
 void slice_print(const struct string_slice slice);
+
+#ifdef HAS_NCURSES
+void slice_print_window(WINDOW *wptr,
+						int y,
+						int x,
+						const struct string_slice slice);
+#endif
 
 enum keys_config parse_config_enumerate_key(const struct string_slice key);
 
