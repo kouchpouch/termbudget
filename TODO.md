@@ -124,6 +124,7 @@
         on the read page.
 - [X] Improve readability of categories in the read view.
 - [X] Implement a configuration file.
+    - [ ] Add support for inline comments
 
 #### Optimization
 - [ ] Create an interface for editing data within the liked list to avoid
