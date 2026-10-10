@@ -23,7 +23,7 @@
 
 #include "categories.h"
 #include "create.h"
-#include "fileintegrity.h"
+#include "file_integrity.h"
 #include "file_management.h"
 #include "helper.h"
 #include "main.h"

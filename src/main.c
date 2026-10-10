@@ -33,7 +33,7 @@
 #include "cli.h"
 #include "convert_csv.h"
 #include "create.h"
-#include "fileintegrity.h"
+#include "file_integrity.h"
 #include "file_management.h"
 #include "flags.h"
 #include "helper.h"
