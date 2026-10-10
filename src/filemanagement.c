@@ -32,27 +32,14 @@
 
 #ifndef TB_RELATIVE_DIRS
 
-char dir_program         [PATH_MAX + 1];
-char path_record         [PATH_MAX + 1];
-char path_record_bak     [PATH_MAX + 1];
-char path_tmp_file       [PATH_MAX + 1];
-char path_converted_file [PATH_MAX + 1];
-char path_budget         [PATH_MAX + 1];
-char path_budget_bak     [PATH_MAX + 1];
-char path_config	     [PATH_MAX + 1];
-
-/* Sets all dir variables to zero */
-static void init_dir_variables(void)
-{
-	memset(dir_program,         0, sizeof(dir_program));
-	memset(path_record,         0, sizeof(path_record));
-	memset(path_record_bak,     0, sizeof(path_record_bak));
-	memset(path_tmp_file,       0, sizeof(path_tmp_file));
-	memset(path_converted_file, 0, sizeof(path_converted_file));
-	memset(path_budget,         0, sizeof(path_budget));
-	memset(path_budget_bak,     0, sizeof(path_budget_bak));
-	memset(path_config,     	0, sizeof(path_config));
-}
+char dir_program         [PATH_MAX + 1] = { 0 };
+char path_record         [PATH_MAX + 1] = { 0 };
+char path_record_bak     [PATH_MAX + 1] = { 0 };
+char path_tmp_file       [PATH_MAX + 1] = { 0 };
+char path_converted_file [PATH_MAX + 1] = { 0 };
+char path_budget         [PATH_MAX + 1] = { 0 };
+char path_budget_bak     [PATH_MAX + 1] = { 0 };
+char path_config	     [PATH_MAX + 1] = { 0 };
 
 /* Fills the dir variables with the full path plus the file name as is defined
  * by macros. Assertions for each path to verify it does not exceed PATH_MAX */
@@ -254,7 +241,6 @@ int dir_program_create(void)
 	assert(full_path->len < PATH_MAX);
 
 #ifndef TB_RELATIVE_DIRS
-	init_dir_variables();
 	set_directories(full_path);
 	if (debug_flag) {
 		debug_print_directories();
