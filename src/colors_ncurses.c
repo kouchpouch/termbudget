@@ -164,11 +164,8 @@ int get_colors_from_config(void)
 				key_type = parse_config_enumerate_key_type(pair.key);
 				switch (key_type) {
 					case KEY_TYPE_UNKNOWN:
-						break;
 					case KEY_TYPE_BOOLEAN:
-						break;
 					case KEY_TYPE_STRING:
-						break;
 					case KEY_TYPE_INTEGER:
 						break;
 					case KEY_TYPE_COLOR:
