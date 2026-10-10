@@ -447,8 +447,7 @@ int main(int argc, char **argv)
 #ifdef TB_RELATIVE_DIRS
 	puts("USING RELATIVE DIRECTORIES");
 #else
-	dir_program_create();
-	set_configuration_path();
+	set_termbudget_file_paths();
 #endif
 
 	if (verify_files_exist() == -1) {
