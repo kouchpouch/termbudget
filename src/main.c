@@ -373,6 +373,21 @@ void do_resize(void)
 	}
 }
 
+/* Returns true if the $USER environment variable is not set or returns "root".
+ * Returns false if $USER returns a non-null string that is not 
+ * "root", case is ignored. */
+static bool is_root(void)
+{
+	char *username = getenv("USER");
+	if (strcasecmp("root", username) == 0) {
+		return true;
+	} else if (username == NULL) {
+		return true;
+	} else {
+		return false;
+	}
+}
+
 int main(int argc, char **argv)
 {
 	debug_flag = 0;
@@ -384,6 +399,11 @@ int main(int argc, char **argv)
 	int flag;
 	size_t i;
 	size_t count;
+
+	if (is_root()) {
+		printf("%s\n", "Do not run this program as root");
+		exit(1);
+	}
 
 	if (argc > 1) {
 		strncpy(opt, argv[1], LINE_BUFFER - 1);
