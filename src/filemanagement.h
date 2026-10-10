@@ -58,12 +58,10 @@ extern char path_budget         [PATH_BUFFER_SZ];
 extern char path_budget_bak     [PATH_BUFFER_SZ];
 extern char path_config		    [PATH_BUFFER_SZ];
 
+void set_termbudget_file_paths(void);
+
 #endif
 
-int dir_program_create(void);
-int dir_config_create(void);
-
-int set_configuration_path(void); /* New function */
 FILE *open_record_csv(char *mode);
 FILE *open_budget_csv(char *mode);
 FILE *open_config_file(char *mode);
