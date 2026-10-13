@@ -323,7 +323,9 @@ int verify_files_exist(void)
 					   "color6=#87af87\n"
 					   "color7=#ffaf87\n"
 					   "color8=#ffaf5f\n"
-					   "color9=#ffd878\n");
+					   "color9=#ffd878\n\n"
+		  			   "# config_dir= # Full path to directory for configuration\n"
+		  	           "# data_dir= # Full path to directory for data files\n");
 	}
 	fclose(cfptr);
 
