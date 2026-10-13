@@ -105,6 +105,8 @@ static void set_color(enum keys_config key_enum, struct key_value_pair key_val)
 		case KEY_COLOR9:
 			color_init_hex(key_enum + nc_pair, key_val.value.s);
 			break;
+		default:
+			break;
 	}
 }
 
@@ -172,6 +174,8 @@ int get_colors_from_config(void)
 						if (value_is_valid(key_type, pair)) {
 							set_color(key_enum, pair);
 						}
+						break;
+					default:
 						break;
 				}
 				break;
