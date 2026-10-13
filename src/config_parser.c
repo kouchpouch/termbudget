@@ -25,6 +25,7 @@
 #include <string.h>
 
 #include "config_parser.h"
+#include "file_management.h"
 #include "flags.h"
 #include "helper.h"
 
@@ -351,4 +352,69 @@ enum parse_error parse_config(FILE *conf,
 	}
 #endif // USING_NCURSES
 	return PARSE_OK;
+}
+
+static bool value_is_valid(enum keys_type type, struct key_value_pair pair)
+{
+	switch (type) {
+		case KEY_TYPE_UNKNOWN:
+			break;
+		case KEY_TYPE_BOOLEAN:
+			break;
+		case KEY_TYPE_STRING:
+			break;
+		case KEY_TYPE_INTEGER:
+			break;
+		case KEY_TYPE_COLOR:
+			if (pair.value.len <= 7 && pair.value.len >= 6) {
+				return true;
+			} else {
+				return false;
+			}
+	}
+
+	return false;
+}
+
+int get_colors_from_config(void)
+{
+	FILE *conf = open_config_file("r");
+	struct key_value_pair pair;
+	char buff[CONFIG_BUFFER_SZ];
+	enum parse_error e;
+	enum keys_config key_enum;
+	enum keys_type key_type;
+
+	set_default_colors();
+
+	while (1) {
+		e = parse_config(conf, &pair.key, &pair.value, buff, sizeof(buff));
+		switch (e) {
+			case PARSE_OK:
+				key_enum = parse_config_enumerate_key(pair.key);
+				key_type = parse_config_enumerate_key_type(pair.key);
+				switch (key_type) {
+					case KEY_TYPE_UNKNOWN:
+					case KEY_TYPE_BOOLEAN:
+					case KEY_TYPE_STRING:
+					case KEY_TYPE_INTEGER:
+						break;
+					case KEY_TYPE_COLOR:
+						if (value_is_valid(key_type, pair)) {
+							set_color(key_enum, pair);
+						}
+						break;
+					default:
+						break;
+				}
+				break;
+			case PARSE_BLANK:
+				break;
+			case PARSE_EOF:
+				fclose(conf);
+				return EOF;
+		}
+	}
+
+	return 0;
 }
