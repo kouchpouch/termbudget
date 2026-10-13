@@ -338,6 +338,11 @@ enum parse_error parse_config(FILE *conf,
 		refresh();
 		getch();
 	}
+#else
+	if (debug_flag) {
+		slice_print(*key);
+		slice_print(*value);
+	}
 #endif // USING_NCURSES
 	return PARSE_OK;
 }
