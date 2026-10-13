@@ -25,6 +25,11 @@
 #include <string.h>
 
 #include "config_parser.h"
+#include "flags.h"
+
+#ifdef USING_NCURSES
+#include <ncurses.h>
+#endif // USING_NCURSES
 
 struct key_type_pair key_type_pair[] = {
 	{"color0", KEY_TYPE_COLOR},
@@ -178,10 +183,35 @@ static struct string_slice slice_trim_reverse(const struct string_slice slice)
 	return trimmed;
 }
 
+/* Trims inline comments. Comments start with the COMMENT_PREFIX symbol and
+ * must be preceded by a space.
+ * EXAMPLE:
+ * key=value # This is a comment
+ * key=value# This is not a comment
+ */
+static struct string_slice slice_trim_inline_comment
+(const struct string_slice slice)
+{
+	struct string_slice trimmed = slice;
+	int i;
+
+	for (i = 0; i < slice.len; i++) {
+		if (slice.s[i] == COMMENT_PREFIX) {
+			if (isspace(slice.s[i - 1])) {
+				trimmed.len = i;
+				break;
+			}
+		}
+	}
+
+	return trimmed;
+}
+
 /* Trim whitespace from the front and back of the string slice 'slice' */
 static struct string_slice slice_trim_all(const struct string_slice slice)
 {
 	struct string_slice trimmed = slice;
+	trimmed = slice_trim_inline_comment(trimmed);
 	trimmed = slice_trim_front(trimmed);
 	trimmed = slice_trim_reverse(trimmed);
 	return trimmed;
@@ -263,7 +293,7 @@ void slice_print(const struct string_slice slice)
 	printf("[%.*s]\n", slice.len, slice.s);
 }
 
-#ifdef HAS_NCURSES
+#ifdef USING_NCURSES
 void slice_print_window(WINDOW *wptr,
 						int y,
 						int x,
@@ -271,7 +301,7 @@ void slice_print_window(WINDOW *wptr,
 {
 	mvwprintw(wptr, y, x, "[%.*s]", slice.len, slice.s);
 }
-#endif
+#endif // USING_NCURSES
 
 /* Parses one line of the config file, subsequent calls will parse the
  * following line, returns PARSE_EOF at the end of the file */
@@ -300,5 +330,14 @@ enum parse_error parse_config(FILE *conf,
 	slice = slice_create(str);
 	*key = slice_get_trimmed(slice, KEY);
 	*value = slice_get_trimmed(slice, VALUE);
+#ifdef USING_NCURSES
+	if (debug_flag) {
+		wclear(stdscr);
+		slice_print_window(stdscr, 1, 0, *key);
+		slice_print_window(stdscr, 1, key->len + 3, *value);
+		refresh();
+		getch();
+	}
+#endif // USING_NCURSES
 	return PARSE_OK;
 }

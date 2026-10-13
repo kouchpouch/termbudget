@@ -24,7 +24,8 @@
 #define CONFIG_BUFFER_SZ 256
 #define COMMENT_PREFIX '#'
 
-#ifdef HAS_NCURSES
+#define USING_NCURSES 1
+#ifdef USING_NCURSES
 #include <ncurses.h>
 #endif
 
@@ -78,12 +79,12 @@ struct key_value_pair {
 
 void slice_print(const struct string_slice slice);
 
-#ifdef HAS_NCURSES
+#ifdef USING_NCURSES
 void slice_print_window(WINDOW *wptr,
 						int y,
 						int x,
 						const struct string_slice slice);
-#endif
+#endif // USING_NCURSES
 
 enum keys_config parse_config_enumerate_key(const struct string_slice key);
 
@@ -95,4 +96,4 @@ enum parse_error parse_config(FILE *conf,
 							  char *buff,
 							  size_t buff_sz);
 
-#endif
+#endif // CONFIG_PARSER_H
