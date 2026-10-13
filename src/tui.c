@@ -548,7 +548,7 @@ void nc_print_welcome(WINDOW *wptr)
 void nc_print_debug_flag(WINDOW *wptr)
 {
 	char debug_text[] = "DEBUG";
-	wmove(wptr, getmaxy(wptr) - 1, getmaxx(wptr) - (int)strlen(debug_text) - 1);
+	wmove(wptr, getmaxy(wptr) - 1, getmaxx(wptr) - strlen_int(debug_text) - 1);
 	wattron(wptr, COLOR_PAIR(1));
 	wprintw(wptr, "%s", debug_text);
 	wattroff(wptr, COLOR_PAIR(1));

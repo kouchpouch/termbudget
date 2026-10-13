@@ -233,7 +233,7 @@ static void print_record_hr(WINDOW *wptr,
 							int y)
 {
 	char *etc = "..";
-	int lenetc = (int)strlen(etc);
+	int lenetc = strlen_int(etc);
 	int x = 0;
 	bool shorten = shorten_string(wptr);
 

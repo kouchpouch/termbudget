@@ -436,7 +436,7 @@ static void print_data_to_window(WINDOW *wptr,
 	char *space = "      ";
 	char *accept = "<Accept>";
 	assert(strlen(cancel) == strlen(accept));
-	s->opt_len = (int)strlen(cancel);
+	s->opt_len = strlen_int(cancel);
 
 	size_t opt_len = strlen(cancel) + strlen(space) + strlen(accept);
 	int center_opt = getmaxx(wptr) / 2 - opt_len / 2;
