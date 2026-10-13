@@ -79,6 +79,14 @@ struct key_value_pair {
 	struct string_slice value;
 };
 
+int get_colors_from_config(void);
+
+void set_default_colors(void);
+
+/* Set color pair from data in 'key_val'. Converts hex to an ncurses usable
+ * value */
+void set_color(enum keys_config key_enum, const struct key_value_pair key_val);
+
 void slice_print(const struct string_slice slice);
 
 #ifdef USING_NCURSES
