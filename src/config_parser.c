@@ -26,6 +26,7 @@
 
 #include "config_parser.h"
 #include "flags.h"
+#include "helper.h"
 
 #ifdef USING_NCURSES
 #include <ncurses.h>
@@ -41,7 +42,9 @@ struct key_type_pair key_type_pair[] = {
 	{"color6", KEY_TYPE_COLOR},
 	{"color7", KEY_TYPE_COLOR},
 	{"color8", KEY_TYPE_COLOR},
-	{"color9", KEY_TYPE_COLOR}
+	{"color9", KEY_TYPE_COLOR},
+	{"config_dir", KEY_TYPE_STRING},
+	{"data_dir", KEY_TYPE_STRING},
 };
 
 inline static char char_to_lower(char c)
@@ -60,11 +63,11 @@ static bool slice_eq_to_string(const struct string_slice slice,
 	char slice_char  = 0;
 	char string_char = 0;
 
-	if (slice.len != (int)strlen(string)) {
+	if (slice.len != strlen(string)) {
 		return false;
 	}
 	
-	for (int i = 0; i < slice.len; i++) {
+	for (size_t i = 0; i < slice.len; i++) {
 		slice_char  = slice.s[i];
 		string_char = string[i];
 
@@ -111,8 +114,8 @@ enum keys_type parse_config_enumerate_key_type(const struct string_slice key)
  * Whitespace preceding the string is ignored. */
 inline static bool is_comment(char *s)
 {
-	int len = (int)strlen(s);
-	int i = 0;
+	size_t i;
+	size_t len = strlen(s);
 
 	for (i = 0; i < len; i++) {
 		if (isspace(s[i])) {
@@ -139,13 +142,13 @@ inline static bool slice_is_nonzero(const struct string_slice slice)
 static struct string_slice slice_trim_front(const struct string_slice slice)
 {
 	struct string_slice trimmed = slice;
-	int trim_len = 0;
+	size_t trim_len = 0;
 
 	if (! slice_is_nonzero(slice) || ! isspace(slice.s[0])) {
 		return trimmed;
 	}
 
-	for (int i = 0; i < slice.len; i++) {
+	for (size_t i = 0; i < slice.len; i++) {
 		if (isspace(slice.s[i])) {
 			trim_len++;
 		} else {
@@ -193,9 +196,8 @@ static struct string_slice slice_trim_inline_comment
 (const struct string_slice slice)
 {
 	struct string_slice trimmed = slice;
-	int i;
 
-	for (i = 0; i < slice.len; i++) {
+	for (size_t i = 0; i < slice.len; i++) {
 		if (slice.s[i] == COMMENT_PREFIX) {
 			if (isspace(slice.s[i - 1])) {
 				trimmed.len = i;
@@ -222,7 +224,7 @@ static struct string_slice slice_get_value(const struct string_slice slice,
 										   const char delim)
 {
 	struct string_slice value = slice;
-	int i;
+	size_t i;
 
 	for (i = 0; i < value.len; i++) {
 		if (value.s[i] == delim) {
@@ -233,6 +235,8 @@ static struct string_slice slice_get_value(const struct string_slice slice,
 	if (i + 1 <= value.len) {
 		i++;
 	}
+
+	assert(i <= value.len);
 
 	value.s   += i;
 	value.len -= i;
@@ -246,7 +250,7 @@ static struct string_slice slice_get_key(const struct string_slice slice,
 {
 	struct string_slice key = slice;
 
-	for (int i = 0; i < key.len; i++) {
+	for (size_t i = 0; i < key.len; i++) {
 		if (key.s[i] == delim) {
 			key.len = i;
 			return key;
@@ -280,7 +284,7 @@ static struct string_slice slice_create(char *s)
 {
 	struct string_slice slice = {
 		.s   = s,
-		.len = (int)strlen(s),
+		.len = strlen(s),
 	};
 
 	return slice;
@@ -290,7 +294,8 @@ static struct string_slice slice_create(char *s)
  * use for debugging */
 void slice_print(const struct string_slice slice)
 {
-	printf("[%.*s]\n", slice.len, slice.s);
+	int n = size_to_int(slice.len);
+	printf("[%.*s]\n", n, slice.s);
 }
 
 #ifdef USING_NCURSES
@@ -299,7 +304,8 @@ void slice_print_window(WINDOW *wptr,
 						int x,
 						const struct string_slice slice)
 {
-	mvwprintw(wptr, y, x, "[%.*s]", slice.len, slice.s);
+	int n = size_to_int(slice.len);
+	mvwprintw(wptr, y, x, "[%.*s]", n, slice.s);
 }
 #endif // USING_NCURSES
 

@@ -51,7 +51,9 @@ enum keys_config {
 	KEY_COLOR6,
 	KEY_COLOR7,
 	KEY_COLOR8,
-	KEY_COLOR9
+	KEY_COLOR9,
+	KEY_CONFIG_DIR,
+	KEY_DATA_DIR
 };
 
 enum keys_type {
@@ -64,7 +66,7 @@ enum keys_type {
 
 struct string_slice {
 	char *s;
-	int len;
+	size_t len;
 };
 
 struct key_type_pair {
