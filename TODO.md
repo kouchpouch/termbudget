@@ -125,6 +125,7 @@
 - [X] Improve readability of categories in the read view.
 - [X] Implement a configuration file.
     - [X] Add support for inline comments
+- [ ] Rewrite the TUI sidebar scrolling to reduce screen flashing
 
 #### Optimization
 - [ ] Create an interface for editing data within the liked list to avoid

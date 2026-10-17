@@ -1194,6 +1194,7 @@ void nc_read_budget_loop(struct read_wins *wins,
 			} 
 			break;
 
+		/* TODO: FIX! This is slow, stupid, and flashses the screen. */
 		case ('['):
 			if (s_vars.sidebar_idx > 0) {
 				s_vars.sidebar_idx--;
@@ -1201,6 +1202,7 @@ void nc_read_budget_loop(struct read_wins *wins,
 			}
 			break;
 
+		/* TODO: FIX! This is slow, stupid, and flashses the screen. */
 		case (']'):
 			tmp = get_node_by_idx(head, s_vars.sidebar_idx);
 			if (tmp->next != NULL) {
