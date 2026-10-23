@@ -25,6 +25,7 @@
 #include "helper.h"
 #include "main.h"
 #include "parser.h"
+#include "read_init.h"
 #include "tui.h"
 #include "tui_sidebar.h"
 
@@ -281,7 +282,8 @@ int init_sidebar_body(WINDOW *wptr, struct catg_node *head, size_t node_idx)
 	while (print_y < getmaxy(wptr) - 4) {
 		bt = tokenize_budget_fpi(curr->catg_fp);
 		exp = get_expenditures_per_category_fast(curr);
-		print_y += print_body_categories(bt->catg, wptr, print_y, print_x, node_idx);
+		print_y += print_body_categories(bt->catg, wptr, print_y, print_x,
+								   		 node_idx);
 		print_y += print_body_graphs_and_values(wptr, bt->amount, exp, print_y,
 										  		node_idx, bt->transtype);
 		free_budget_tokens(bt);
@@ -338,14 +340,25 @@ static int print_parent_header(WINDOW *wptr, struct vec_d *psc, double leftover)
 	return y;
 }
 
-void draw_sidebar_parent_border(WINDOW *wptr)
+/* Draws a border around the window 'wptr' with "T" shaped characters to
+ * mesh seamlessly with the window border of the sidebar. */
+static void draw_parent_box_with_sidebar(WINDOW *wptr)
+{
+	wborder(wptr, 0, 0, 0, 0, 0, ACS_TTEE, 0, ACS_BTEE);
+	wrefresh(wptr);
+}
+
+void sidebar_draw_parent_border(WINDOW *wptr)
 {
 	wborder(wptr, 0, 0, 0, 0, ACS_TTEE, 0, 0, 0);
 	write_parent_title(wptr);
 }
 
-void init_sidebar_parent(WINDOW *wptr, struct vec_d *psc, double leftover)
+void sidebar_create(struct read_wins *wins,
+					struct vec_d *records,
+					struct catg_node *head)
 {
-	draw_sidebar_parent_border(wptr);
-	print_parent_header(wptr, psc, leftover);
+	sidebar_draw_parent_border(wins->sidebar_parent);
+	print_parent_header(wins->sidebar_parent, records, get_left_to_budget(head));
+	draw_parent_box_with_sidebar(wins->parent);
 }

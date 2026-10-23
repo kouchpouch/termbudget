@@ -46,8 +46,10 @@ int init_sidebar_body(WINDOW *wptr, struct catg_node *head, size_t node_idx);
 
 /* Draws a box around the sidebar parent. Pass in the WINDOW * which points to 
  * the sidebar parent. Also draws the appropriate text on the boundary */
-void draw_sidebar_parent_border(WINDOW *wptr);
+void sidebar_draw_parent_border(WINDOW *wptr);
 
-void init_sidebar_parent(WINDOW *wptr, struct vec_d *psc, double leftover);
+void sidebar_create(struct read_wins *wins,
+					struct vec_d *records,
+					struct catg_node *head);
 
 #endif
