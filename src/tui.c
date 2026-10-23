@@ -622,6 +622,11 @@ static void nc_print_footer(WINDOW *wptr, struct footer f)
 		mvwprintw(wptr, max_y - 1, cur += strlen(overview_key), "%s", overview_text);
 		wattroff(wptr, A_REVERSE);
 	}
+
+	if (debug_flag) {
+		nc_print_debug_flag(wptr);
+	}
+
 	wrefresh(wptr);
 }
 
