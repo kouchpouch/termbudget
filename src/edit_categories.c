@@ -29,7 +29,6 @@
 #include "helper.h"
 #include "main.h"
 #include "parser.h"
-#include "read_init.h"
 #include "tui.h"
 #include "tui_input.h"
 #include "tui_input_menu.h"
