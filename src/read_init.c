@@ -604,14 +604,6 @@ err_null:
 	return prsc;
 }
 
-/* Draws a border around the window 'wptr' with "T" shaped characters to
- * mesh seamlessly with the window border of the sidebar. */
-static void draw_parent_box_with_sidebar(WINDOW *wptr)
-{
-	wborder(wptr, 0, 0, 0, 0, 0, ACS_TTEE, 0, ACS_BTEE);
-	wrefresh(wptr);
-}
-
 static void print_date(WINDOW *wptr, int yr, int mo)
 {
 	int y = 0;
@@ -728,9 +720,6 @@ void nc_read_setup(struct read_state *r_state)
 	UNSET_KEEP_BIT(r_state->flag);
 
 	nc_print_main_menu_footer(stdscr);
-	if (debug_flag) {
-		nc_print_debug_flag(stdscr);
-	}
 
 	get_date_err = get_dates(&rs, &date);
 	if (get_date_err != 0) {
@@ -794,11 +783,7 @@ void nc_read_setup(struct read_state *r_state)
 	}
 
 	if (sidebar_exists) {
-		init_sidebar_parent(wins->sidebar_parent, 
-					        rec_fpis,
-					        get_left_to_budget(r_state->head));
-		init_sidebar_body(wins->sidebar_body, r_state->head, 0);
-		draw_parent_box_with_sidebar(wins->parent);
+		sidebar_create(wins, rec_fpis, r_state->head);
 	} else {
 		box(wins->parent, 0, 0);
 	}
