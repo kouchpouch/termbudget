@@ -429,7 +429,7 @@ static void draw_read_window_borders_and_text(struct read_wins *wins,
 {
 	/* Draw borders in order for correct intersecting lines */
 	if (wins->sidebar_parent != NULL && wins->sidebar_body != NULL) {
-		draw_sidebar_parent_border(wins->sidebar_parent);
+		/* draw_sidebar_parent_border(wins->sidebar_parent); */
 		draw_body_border(wins->sidebar_body);
 	} else {
 		print_balances_text(wins->parent, records);
