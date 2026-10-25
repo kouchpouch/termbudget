@@ -52,6 +52,35 @@ struct bar_graph_dimensions {
 	int tracked_print_x;
 };
 
+struct sidebar_data {
+	WINDOW *sidebar_body;
+
+	/* For terminal symbols */
+	char graph_buffer[GRAPH_LENGTH];
+	int graph_len;
+	int graph_x_begin;
+
+	/* For text */
+	int remain_print_x;
+	int planned_print_x;
+	int tracked_print_x;
+
+	/* Financials */
+	double remaining;
+	double planned;
+	double expenses;
+	enum transtypes transtype;
+	int catg_idx;
+};
+
+struct sidebar_deque {
+	struct sidebar_data *data;
+	size_t start;
+	size_t end;
+	size_t len;
+	size_t begin_node;
+};
+
 void draw_body_border(WINDOW *wptr)
 {
 	wborder(wptr, 0, 0, 0, 0, ACS_LTEE, ACS_RTEE, ACS_BTEE, 0);
@@ -265,6 +294,53 @@ static int print_body_graphs_and_values(WINDOW *wptr,
 
 	lines_printed++;
 	return lines_printed;
+}
+
+static int get_sidebar_data(struct sidebar_deque *deque,
+							struct catg_node *head,
+							int catg_idx)
+{
+	struct budget_tokens_new bt = { 0 };
+	struct catg_node *curr = get_node_by_idx(head, catg_idx);
+	double expenses;
+
+	if (tokenize_budget_fpi_new(&bt, curr->catg_fp) != BT_OK) {
+		return -1;
+	}
+	
+	expenses = get_expenditures_per_category_fast(curr);
+	deque->data->remaining = normalize_near_zero(bt.amount + expenses);
+	deque->data->expenses = expenses;
+	deque->data->planned = bt.amount;
+	deque->data->catg_idx = catg_idx;
+}
+
+struct sidebar_deque create_sidebar_deque(struct catg_node *head,
+										  size_t elements)
+{
+	struct sidebar_deque deque = { 0 };
+	size_t n_nodes = get_total_nodes(head);
+	if (n_nodes < elements) {
+		elements = n_nodes;
+	}
+
+	if (elements == 0) {
+		return deque;
+	}
+	
+	deque = (struct sidebar_deque) {
+		.data = malloc(sizeof(struct sidebar_data) * elements),
+		.start = 0,
+		.end = elements - 1,
+		.len = elements,
+		.begin_node = 0
+	};
+
+	if (deque.data == NULL) {
+		mem_alloc_fail();
+	}
+
+	return deque;
 }
 
 int init_sidebar_body(WINDOW *wptr, struct catg_node *head, size_t node_idx)
