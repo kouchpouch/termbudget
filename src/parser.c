@@ -762,6 +762,40 @@ void tokenize_budget_string(struct budget_tokens_buff *tokens, char *budget)
 	tokens->amount = atof(x_strtok(&budget, ','));
 }
 
+enum err_budget_tokens tokenize_budget_fpi_new(struct budget_tokens_new *bt,
+											   long bo)
+{
+	if (bo == 0) {
+		return BT_ZERO_SEEK;
+	}
+
+	FILE *fptr = open_budget_csv("r");
+	char linebuff[LINE_BUFFER] = { 0 };
+	char *str;
+	char *tmp;
+
+	fseek(fptr, bo, SEEK_SET);
+	str = fgets(linebuff, sizeof(linebuff), fptr);
+	if (str == NULL) {
+		fclose(fptr);
+		return BT_NULL_STRING;
+	}
+
+	bt->m = atoi(x_strtok(&str, ','));
+	bt->y = atoi(x_strtok(&str, ','));
+	tmp = x_strtok(&str, ',');
+	if (strlen(tmp) > MAX_LEN_CATG) {
+		fclose(fptr);
+		return BT_CATG_TOO_LONG;
+	}
+	memcpy(bt->catg, tmp, strlen(tmp));
+	bt->transtype = atoi(x_strtok(&str, ','));
+	bt->amount = atof(x_strtok(&str, ','));
+
+	fclose(fptr);
+	return BT_OK;
+}
+
 struct budget_tokens *tokenize_budget_fpi(long bo)
 {
 	if (bo == 0) {

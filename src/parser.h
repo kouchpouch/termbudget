@@ -23,6 +23,7 @@
 #include <stdio.h>
 
 #include "categories.h"
+#include "tui.h"
 #include "vector.h"
 
 #define CSV_FIELDS 7
@@ -43,6 +44,13 @@ enum budget_fields {
 	BF_CATG,
 	BF_TRANSTYPE,
 	BF_VALUE,
+};
+
+enum err_budget_tokens {
+	BT_OK,
+	BT_ZERO_SEEK,
+	BT_NULL_STRING,
+	BT_CATG_TOO_LONG,
 };
 
 struct budget_header {
@@ -71,6 +79,14 @@ struct budget_tokens {
 	char *catg;
 	int transtype;
 	double amount;
+};
+
+struct budget_tokens_new {
+	int m;
+	int y;
+	enum transtypes transtype;
+	double amount;
+	char catg[MAX_LEN_CATG];
 };
 
 /* Will end up replacing budget_tokens with this format */
@@ -205,6 +221,12 @@ struct vec_d *get_budget_catg_by_date_bo(int month, int year);
 
 void tokenize_budget_string(struct budget_tokens_buff *tokens, char *budget);
 
+/* This will replace "tokenize_budget_fpi()" function. Struct contains a char
+ * array, no heap allocation, no free required. Returns -1 on failure, 0 on
+ * success. */
+enum err_budget_tokens tokenize_budget_fpi_new(struct budget_tokens_new *bt,
+											   long bo);
+
 /* Returns malloc'd tokenized variables in BudgetTokens by seeking the file
  * position indicator to bo. BudgetTokens catg is separately malloc'd and must 
  * be free'd. Use free_budget_tokens(). 
@@ -260,4 +282,4 @@ int get_int_field(int line, int field);
  */
 struct vec_d *index_csv(FILE *fptr);
 
-#endif
+#endif // PARSER_H
