@@ -101,4 +101,4 @@ void debug_print_catg_node_data(struct catg_node *head);
  * in BUDGET_DIR and RECORD_DIR, returns the HEAD of the list */
 struct catg_node *create_catg_node_list(int m, int y);
 
-#endif
+#endif // CATEGORIES_H

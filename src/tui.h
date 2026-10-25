@@ -21,7 +21,7 @@
 
 #include <ncurses.h>
 
-#include "parser.h"
+struct transaction_tokens;
 
 /* Minimum length to display the full names of each field
  * on the X axis */
@@ -199,4 +199,4 @@ void nc_print_quit_footer(WINDOW *wptr);
 
 void nc_print_input_footer(WINDOW *wptr);
 
-#endif
+#endif // TUI_H
