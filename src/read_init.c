@@ -784,7 +784,7 @@ void nc_read_setup(struct read_state *r_state)
 	}
 
 	if (sidebar_exists) {
-		sidebar_create(wins, rec_fpis, r_state->head);
+		draw_parent_box_with_sidebar(wins->parent);
 	} else {
 		box(wins->parent, 0, 0);
 	}
