@@ -17,6 +17,7 @@
  */
 
 #include <ncurses.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <string.h>
@@ -38,8 +39,8 @@ struct footer {
 
 void window_creation_fail(void)
 {
-	perror("Failed to create ncurses window");
-	exit(1);
+	fprintf(stderr, "Failed to create ncurses window\n");
+	exit(EXIT_FAILURE);
 }
 
 int test_terminal_size(void)
@@ -234,10 +235,11 @@ WINDOW *create_lines_subwindow(int max_y, int max_x, int y_off, int x_off)
 static void readwins_set_null(struct read_wins *wins)
 {
 	*wins = (struct read_wins) {
-		.data = NULL,
-		.parent = NULL,
+		.data 			= NULL,
+		.parent 		= NULL,
 		.sidebar_parent = NULL,
-		.sidebar_body = NULL
+		.sidebar_body 	= NULL,
+		.sidebar_data 	= NULL
 	};
 }
 
@@ -264,9 +266,7 @@ struct read_wins *create_read_windows(void)
 	getmaxyx(wins->parent, parent_y, parent_x);
 
 	if (create_sidebar) {
-		wins->sidebar_parent = create_sidebar_parent(wins->parent, y, x);
-		wins->sidebar_body = create_sidebar_body(wins->parent,
-										   	     wins->sidebar_parent);
+		create_sidebar_windows(wins);
 	}
 
 	wins->data = newwin(parent_y - 1 - y_off * 2,
