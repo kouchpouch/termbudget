@@ -83,9 +83,10 @@ enum menukeys {
 
 struct read_wins {
 	WINDOW *parent;
+	WINDOW *data; /* Non-sidebar data window */
 	WINDOW *sidebar_parent;
 	WINDOW *sidebar_body;
-	WINDOW *data;
+	WINDOW *sidebar_data; /* Subset of sidebar_body */
 };
 
 void window_creation_fail(void);
