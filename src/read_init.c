@@ -628,6 +628,7 @@ static void free_windows(struct read_wins *wins)
 	if (wins->sidebar_parent != NULL) {
 		nc_exit_window(wins->sidebar_body);
 		nc_exit_window(wins->sidebar_parent);
+		nc_exit_window(wins->sidebar_data);
 	}
 	nc_exit_window(wins->data);
 	nc_exit_window(wins->parent);
