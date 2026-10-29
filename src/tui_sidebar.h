@@ -28,28 +28,25 @@
 #include "tui.h"
 #include "vector.h"
 
-void draw_body_border(WINDOW *wptr);
+struct sidebar_deque {
+	struct sidebar_catg_data *data;
+	WINDOW *wptr;
+	size_t start;
+	size_t end;
+	size_t len;
+	size_t begin_node;
+};
 
-/* Creates the sidebar parent window based on dimensions of stdscr provided
- * by arguments std_y and std_x. Returns a WINDOW * on success or calls
- * window_creation_fail() from tui.h */
-WINDOW *create_sidebar_parent(WINDOW *wptr_parent, int std_y, int std_x);
-
-/* Creates the sidebar body window based on dimensions of wptr_parent and
- * wptr_sidebar_parent. Returns a WINDOW * on success or calls
- * window_creation_fail() from tui.h */
-WINDOW *create_sidebar_body(WINDOW *wptr_parent, WINDOW *wptr_sidebar_parent);
+int create_sidebar_windows(struct read_wins *wins);
 
 /* Draws in all of the data for the sidebar body inside of window 'wptr' using
  * data from 'nodes', beginning at node 'i'. */
 int init_sidebar_body(WINDOW *wptr, struct catg_node *head, size_t node_idx);
 
-/* Draws a box around the sidebar parent. Pass in the WINDOW * which points to 
- * the sidebar parent. Also draws the appropriate text on the boundary */
-void sidebar_draw_parent_border(WINDOW *wptr);
+void draw_parent_box_with_sidebar(WINDOW *wptr);
 
-void sidebar_create(struct read_wins *wins,
-					struct vec_d *records,
-					struct catg_node *head);
+struct sidebar_deque sidebar_create(struct read_wins *wins,
+									struct vec_d *records,
+									struct catg_node *head);
 
 #endif
