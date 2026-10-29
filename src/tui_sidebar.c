@@ -16,8 +16,10 @@
  * Author: kouchpouch <https://github.com/kouchpouch/termbudget>
  */
 
+#include <assert.h>
 #include <limits.h>
 #include <ncurses.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -52,36 +54,15 @@ struct bar_graph_dimensions {
 	int tracked_print_x;
 };
 
-struct sidebar_data {
-	WINDOW *sidebar_body;
-
-	/* For terminal symbols */
-	char graph_buffer[GRAPH_LENGTH];
-	int graph_len;
-	int graph_x_begin;
-
-	/* For text */
-	int remain_print_x;
-	int planned_print_x;
-	int tracked_print_x;
-
-	/* Financials */
+struct sidebar_catg_data {
+	/* Financials, everything comes from budget_tokens_new */
 	double remaining;
 	double planned;
 	double expenses;
 	enum transtypes transtype;
-	int catg_idx;
 };
 
-struct sidebar_deque {
-	struct sidebar_data *data;
-	size_t start;
-	size_t end;
-	size_t len;
-	size_t begin_node;
-};
-
-void draw_body_border(WINDOW *wptr)
+static void draw_body_border(WINDOW *wptr)
 {
 	wborder(wptr, 0, 0, 0, 0, ACS_LTEE, ACS_RTEE, ACS_BTEE, 0);
 	mvwxcprintw(wptr, 0, "Categories");
@@ -105,37 +86,76 @@ static bool check_y_fit(WINDOW *wptr, int y)
 	}
 }
 
-WINDOW *create_sidebar_parent(WINDOW *wptr_parent, int std_y, int std_x)
+/* Create three sidebar windows based on the dimensions from stdscr and the
+ * read window parent. wins->parent must be a valid window
+ *  
+ * |------------------------------\-------\
+ * |                              \       \   <--- wins->sidebar_parent
+ * |                              \       \
+ * |                              \-------\
+ * |         wins->parent         \\-----\\
+ * |                              \\     \\  <---- (outer) wins->sidebar_body
+ * |                              \\     \\  <---- (inner) wins->sidebar_data
+ * |                              \\     \\
+ * |                              \\-----\\
+ * |______________________________\\_____\\
+ *
+ */
+int create_sidebar_windows(struct read_wins *wins)
 {
-	int parent_x = getmaxx(wptr_parent);
-	WINDOW *wptr = newwin(std_y - 1, std_x - parent_x + 1, 0, parent_x - 1);
-	if (wptr == NULL) {
+	if (wins->sidebar_parent != NULL &&
+		wins->sidebar_body   != NULL &&
+		wins->sidebar_data   != NULL) {
+		return -1;
+	}
+
+	if (wins->parent == NULL) {
+		return -1;
+	}
+
+	int stdscr_x, stdscr_y, parent_x, parent_header_cols;
+	getmaxyx(stdscr, stdscr_y, stdscr_x);
+	parent_x = getmaxx(wins->parent);
+	parent_header_cols = 5;
+
+	/* Create the sidebar parent window on the right side of the screen */
+	wins->sidebar_parent = newwin(stdscr_y - 1,
+							      stdscr_x - parent_x + 1,
+							      0,
+							      parent_x - 1);
+	if (wins->sidebar_parent == NULL) {
 		window_creation_fail();
 	}
 
-	return wptr;
-}
-
-WINDOW *create_sidebar_body(WINDOW *wptr_parent, WINDOW *wptr_sidebar_parent)
-{
-	// TODO: This should come from the return value of print_parent_header
-	int head_y = 5;
-	WINDOW *wptr = newwin(getmaxy(wptr_sidebar_parent) - head_y, 
-					   SIDEBAR_COLUMNS + 1, head_y, getmaxx(wptr_parent) - 1); 
-	if (wptr == NULL) {
+	/* Create the sidebar body inside of the sidebar parent, leaving room for
+	 * the header */
+	wins->sidebar_body = newwin(getmaxy(wins->sidebar_parent) - parent_header_cols,
+							    SIDEBAR_COLUMNS + 1, 
+							    parent_header_cols,
+							    parent_x - 1);
+	if (wins->sidebar_body == NULL) {
 		window_creation_fail();
 	}
 
-	return wptr;
+	/* Create the sidebar data inside of the sidebar body, leaving the sidebar
+	 * body able to draw a border */
+	wins->sidebar_data = newwin(getmaxy(wins->sidebar_body) - BOX_OFFSET,
+								getmaxx(wins->sidebar_body) - BOX_OFFSET,
+								parent_header_cols + 1,
+								parent_x);
+	if (wins->sidebar_data == NULL) {
+		window_creation_fail();
+	}
+
+	return 0;
 }
 
-static bool verify_sidebar_strlen(char *str, WINDOW *wptr)
+static inline bool verify_sidebar_strlen(char *str, WINDOW *wptr)
 {
-	if ((int)strnlen(str, INT_MAX) > getmaxx(wptr) - BOX_OFFSET) {
+	if (strlen_int(str) > getmaxx(wptr) - BOX_OFFSET) {
 		return false;
-	} else {
-		return true;
 	}
+	return true;
 }
 
 /* Prints the string 'str' and returns the number of rows printed to */
@@ -166,8 +186,7 @@ static int calculate_graph_length(int transaction_type,
 
 	if (planned == 0) {
 		length = GRAPH_LENGTH - 1;
-		/* Bug 36 fix
-		 * Handles edge case where a category has a planned value of zero and
+		/* Handles edge case where a category has a planned value of zero and
 		 * only contains income transactions */
 		if (transaction_type == TT_EXPENSE && expenses > 0) {
 			length = 0;
@@ -190,7 +209,7 @@ static int calculate_graph_length(int transaction_type,
 }
 
 /* Sets the buffer to all spaces and null terminates. */
-static void init_graph_buffer(char *graph_buff, size_t size)
+static inline void init_graph_buffer(char *graph_buff, size_t size)
 {
 	memset(graph_buff, ' ', size);
 	graph_buff[size - 1] = '\0';
@@ -296,43 +315,46 @@ static int print_body_graphs_and_values(WINDOW *wptr,
 	return lines_printed;
 }
 
-static int get_sidebar_data(struct sidebar_deque *deque,
-							struct catg_node *head,
-							int catg_idx)
-{
-	struct budget_tokens_new bt = { 0 };
-	struct catg_node *curr = get_node_by_idx(head, catg_idx);
-	double expenses;
+/* Fills the data member of 'deque' with all data required. */
+//static int get_sidebar_data(struct sidebar_deque *deque,
+//							struct catg_node *head)
+//{
+//	struct budget_tokens_new bt = { 0 };
+//	struct catg_node *curr = head;
+//	double expenses;
+//
+//	for (size_t i = 0; i < deque->len; i++) {
+//		if (curr == NULL) {
+//			return -1;
+//		}
+//		if (tokenize_budget_fpi_new(&bt, curr->catg_fp) != BT_OK) {
+//			return -1;
+//		}
+//		expenses = get_expenditures_per_category_fast(curr);
+//		deque->data[i].remaining = normalize_near_zero(bt.amount + expenses);
+//		deque->data[i].expenses  = expenses;
+//		deque->data[i].planned   = bt.amount;
+//		deque->data[i].transtype = bt.transtype;
+//
+//		curr = curr->next;
+//	}
+//
+//	return 0;
+//}
 
-	if (tokenize_budget_fpi_new(&bt, curr->catg_fp) != BT_OK) {
-		return -1;
-	}
-	
-	expenses = get_expenditures_per_category_fast(curr);
-	deque->data->remaining = normalize_near_zero(bt.amount + expenses);
-	deque->data->expenses = expenses;
-	deque->data->planned = bt.amount;
-	deque->data->catg_idx = catg_idx;
-}
-
-struct sidebar_deque create_sidebar_deque(struct catg_node *head,
-										  size_t elements)
+struct sidebar_deque create_sidebar_deque(struct catg_node *head)
 {
 	struct sidebar_deque deque = { 0 };
 	size_t n_nodes = get_total_nodes(head);
-	if (n_nodes < elements) {
-		elements = n_nodes;
-	}
-
-	if (elements == 0) {
+	if (n_nodes == 0) {
 		return deque;
 	}
 	
 	deque = (struct sidebar_deque) {
-		.data = malloc(sizeof(struct sidebar_data) * elements),
+		.data = malloc(sizeof(struct sidebar_catg_data) * n_nodes),
 		.start = 0,
-		.end = elements - 1,
-		.len = elements,
+		.end = n_nodes - 1,
+		.len = n_nodes,
 		.begin_node = 0
 	};
 
@@ -418,23 +440,26 @@ static int print_parent_header(WINDOW *wptr, struct vec_d *psc, double leftover)
 
 /* Draws a border around the window 'wptr' with "T" shaped characters to
  * mesh seamlessly with the window border of the sidebar. */
-static void draw_parent_box_with_sidebar(WINDOW *wptr)
+void draw_parent_box_with_sidebar(WINDOW *wptr)
 {
 	wborder(wptr, 0, 0, 0, 0, 0, ACS_TTEE, 0, ACS_BTEE);
 	wrefresh(wptr);
 }
 
-void sidebar_draw_parent_border(WINDOW *wptr)
+static void sidebar_draw_parent_border(WINDOW *wptr)
 {
 	wborder(wptr, 0, 0, 0, 0, ACS_TTEE, 0, 0, 0);
 	write_parent_title(wptr);
 }
 
-void sidebar_create(struct read_wins *wins,
-					struct vec_d *records,
-					struct catg_node *head)
+struct sidebar_deque sidebar_create(struct read_wins *wins,
+									struct vec_d *records,
+									struct catg_node *head)
 {
 	sidebar_draw_parent_border(wins->sidebar_parent);
 	print_parent_header(wins->sidebar_parent, records, get_left_to_budget(head));
-	draw_parent_box_with_sidebar(wins->parent);
+	draw_body_border(wins->sidebar_body);
+	struct sidebar_deque deque = create_sidebar_deque(head);
+	deque.wptr = wins->sidebar_data;
+	return deque;
 }
