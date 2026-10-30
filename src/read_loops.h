@@ -22,19 +22,24 @@
 #include "categories.h"
 #include "read_init.h"
 #include "tui.h"
+#include "tui_sidebar.h"
 #include "vector.h"
+
+struct sidebar_deque;
 
 void nc_read_loop(struct read_wins *wins, 
 				  FILE *fptr, 
-				  struct record_select *sr, 
-				  struct vec_d *psc,
-				  struct catg_node *head);
+				  struct record_select *rs, 
+				  struct vec_d *records,
+				  struct catg_node *head,
+				  struct sidebar_deque *sidebar_deque);
 
 void nc_read_budget_loop(struct read_wins *wins,
 						 FILE *rfptr,
 						 FILE *bfptr,
-						 struct record_select *sr,
+						 struct record_select *rs,
 						 struct vec_d *psc,
-						 struct catg_node *head);
+						 struct catg_node *head,
+						 struct sidebar_deque *sidebar_deque);
 
-#endif
+#endif // READ_LOOPS_H
