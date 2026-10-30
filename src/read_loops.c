@@ -954,8 +954,9 @@ void debug_columns(WINDOW *wptr, struct column_width *cw)
 {
 	int print_y = 10;
 	mvwprintw(wptr, print_y++, 10, "COLUMN WIDTHS:\n");
-	mvwprintw(wptr, print_y, 10, "DATE: %d CATG: %d, DESC: %d, TRNS: %d, AMNT: %d\n",
-	cw->date, cw->catg,	cw->desc, cw->trns, cw->amnt);
+	mvwprintw(wptr, print_y, 10,
+		      "DATE: %d CATG: %d, DESC: %d, TRNS: %d, AMNT: %d\n",
+	          cw->date, cw->catg, cw->desc, cw->trns, cw->amnt);
 	wrefresh(wptr);
 	wgetch(wptr);
 }
@@ -1041,11 +1042,11 @@ void nc_read_budget_loop(struct read_wins *wins,
 						 FILE *bfptr,
 						 struct record_select *rs,
 						 struct vec_d *psc,
-						 struct catg_node *head)
+						 struct catg_node *head,
+						 struct sidebar_deque *sidebar_deque)
 {
 	struct column_width cw_;
 	struct visible_range vr_;
-	struct sidebar_deque sidebar_deque;
 	/* Every other member implicitly set to 0 */
 	struct scroll_vars s_vars = {
 		.negative_catgs = NULL,
@@ -1054,7 +1055,7 @@ void nc_read_budget_loop(struct read_wins *wins,
 		.cw = &cw_,
 		.vr = &vr_,
 		.wins = wins,
-		.sidebar_exists = (wins->sidebar_parent) ? true : false,
+		.sidebar_exists = sidebar_deque ? true : false,
 	}; 
 	struct num_buffer numbuf = { 0 };
 	struct catg_node *tmp = NULL;
@@ -1074,9 +1075,7 @@ void nc_read_budget_loop(struct read_wins *wins,
 		debug_columns(wins->parent, s_vars.cw);
 	}
 
-	if (s_vars.sidebar_exists) {
-		sidebar_deque = sidebar_create(wins, psc, head);
-	} else {
+	if (!s_vars.sidebar_exists) {
 		draw_read_window_borders_and_text(wins, psc);
 	}
 
@@ -1089,11 +1088,7 @@ void nc_read_budget_loop(struct read_wins *wins,
 		rs->scroll_back = 0;
 	}
 
-	/* TO AVOID COMPILER ERRORS */
-	if (sidebar_deque.data) {
-		;
-	}
-	/* TO AVOID COMPILER ERRORS */
+	init_sidebar_body(sidebar_deque);
 
 	while (c != KEY_F(QUIT) && c != '\n' && c != '\r') {
 		wrefresh(wins->data);
@@ -1146,7 +1141,7 @@ void nc_read_budget_loop(struct read_wins *wins,
 
 		case ('?'):
 			subwin_y = show_help_subwindow();
-			init_sidebar_body(wins->sidebar_body, head, s_vars.sidebar_idx);
+			init_sidebar_body(sidebar_deque);
 			refresh_budget_loop(head, &s_vars, rfptr, bfptr, subwin_y);
 			break;
 
@@ -1156,7 +1151,7 @@ void nc_read_budget_loop(struct read_wins *wins,
 				fseek(rfptr, tmp->data->data[s_vars.catg_data], SEEK_SET);
 				line = fgets(linebuff, sizeof(linebuff), rfptr);
 				subwin_y = show_detail_subwindow(line);
-				init_sidebar_body(wins->sidebar_body, head, s_vars.sidebar_idx);
+				init_sidebar_body(sidebar_deque);
 				refresh_budget_loop(head, &s_vars, rfptr, bfptr, subwin_y);
 			}
 			c = 0;
@@ -1211,7 +1206,7 @@ void nc_read_budget_loop(struct read_wins *wins,
 		case ('['):
 			if (s_vars.sidebar_idx > 0) {
 				s_vars.sidebar_idx--;
-				init_sidebar_body(wins->sidebar_body, head, s_vars.sidebar_idx);
+				init_sidebar_body(sidebar_deque);
 			}
 			break;
 
@@ -1220,7 +1215,7 @@ void nc_read_budget_loop(struct read_wins *wins,
 			tmp = get_node_by_idx(head, s_vars.sidebar_idx);
 			if (tmp->next != NULL) {
 				s_vars.sidebar_idx++;
-				init_sidebar_body(wins->sidebar_body, head, s_vars.sidebar_idx);
+				init_sidebar_body(sidebar_deque);
 			}
 			break;
 
@@ -1299,9 +1294,11 @@ void nc_read_budget_loop(struct read_wins *wins,
 			if (wgetch(wins->data) == 91) {
 				c = wgetch(wins->data);
 				if (c == 49) {
-					scroll_n_prev_categories(s_vars.total_rows, head, &s_vars, rfptr, bfptr);
+					scroll_n_prev_categories(s_vars.total_rows, head, &s_vars,
+							                 rfptr, bfptr);
 				} else if (c == 52) {
-					scroll_n_next_categories(s_vars.total_rows, head, &s_vars, rfptr, bfptr);
+					scroll_n_next_categories(s_vars.total_rows, head, &s_vars,
+							                 rfptr, bfptr);
 				}
 			}
 			cbreak();
@@ -1335,7 +1332,8 @@ static void print_initial_read_loop(struct scroll_vars *sv,
 	/* For safe cast */
 	assert(sv->displayed >= 0);
 
-	for (int i = 0; i < getmaxy(sv->wins->data) && (size_t)sv->displayed < psc->size; i++) {
+	for (int i = 0; i < getmaxy(sv->wins->data) &&
+	     (size_t)sv->displayed < psc->size; i++) {
 		fseek(fptr, psc->data[i], SEEK_SET);
 		line_str = fgets(linebuff, sizeof(linebuff), fptr);
 		tokenize_record(&ld, &line_str);
@@ -1361,12 +1359,12 @@ void nc_read_loop(struct read_wins *wins,
 				  FILE *fptr, 
 				  struct record_select *rs, 
 				  struct vec_d *records,
-				  struct catg_node *head)
+				  struct catg_node *head,
+				  struct sidebar_deque *sidebar_deque)
 {
 	struct num_buffer numbuf;
 	struct column_width cw_;
 	struct visible_range vr_;
-	struct sidebar_deque sidebar_deque;
 	struct scroll_vars s_vars = {
 		.catg_data = -1,
 		.cw = &cw_,
@@ -1388,17 +1386,9 @@ void nc_read_loop(struct read_wins *wins,
 	s_vars.total_rows = records->size;
 	s_vars.vr->last = s_vars.displayed;
 
-	if (s_vars.sidebar_exists) {
-		sidebar_deque = sidebar_create(wins, records, head);
-	} else {
+	if (!s_vars.sidebar_exists) {
 		draw_read_window_borders_and_text(wins, records);
 	}
-
-	/* TO AVOID COMPILER ERRORS */
-	if (sidebar_deque.data) {
-		;
-	}
-	/* TO AVOID COMPILER ERRORS */
 
 	if (rs->scroll_back > 0) {
 		scroll_n_next_records(rs->scroll_back, &s_vars, fptr, records);
@@ -1434,7 +1424,8 @@ void nc_read_loop(struct read_wins *wins,
 			fseek(fptr, records->data[s_vars.select_idx], SEEK_SET);
 			char *line = fgets(linebuff, sizeof(linebuff), fptr);
 			show_detail_subwindow(line);
-			refresh_on_detail_close_uniform(wins->data, wins->parent, s_vars.displayed);
+			refresh_on_detail_close_uniform(wins->data, wins->parent,
+								            s_vars.displayed);
 			c = 0;
 			break;
 
@@ -1485,7 +1476,7 @@ void nc_read_loop(struct read_wins *wins,
 		case ('['):
 			if (s_vars.sidebar_idx > 0) {
 				s_vars.sidebar_idx--;
-				init_sidebar_body(wins->sidebar_body, head, s_vars.sidebar_idx);
+				init_sidebar_body(sidebar_deque);
 			}
 			break;
 
@@ -1493,7 +1484,7 @@ void nc_read_loop(struct read_wins *wins,
 			tmp = get_node_by_idx(head, s_vars.sidebar_idx);
 			if (tmp->next != NULL) {
 				s_vars.sidebar_idx++;
-				init_sidebar_body(wins->sidebar_body, head, s_vars.sidebar_idx);
+				init_sidebar_body(sidebar_deque);
 			}
 			break;
 
