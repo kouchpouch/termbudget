@@ -41,7 +41,7 @@ int create_sidebar_windows(struct read_wins *wins);
 
 /* Draws in all of the data for the sidebar body inside of window 'wptr' using
  * data from 'nodes', beginning at node 'i'. */
-int init_sidebar_body(WINDOW *wptr, struct catg_node *head, size_t node_idx);
+int init_sidebar_body(struct sidebar_deque *deque);
 
 void draw_parent_box_with_sidebar(WINDOW *wptr);
 
