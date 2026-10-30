@@ -685,11 +685,16 @@ static void cleanup_read_setup(struct vec_d *rec_fpis,
 							   struct vec_d *rec_line_nums,
 							   struct vec_d *pidx,
 							   struct read_wins *wins,
+							   struct sidebar_deque *deque,
 							   FILE *fptr)
 {
 	free(rec_fpis);
 	free(rec_line_nums);
 	free(pidx);
+	if (deque->len > 0 && deque->data != NULL) {
+		free(deque->data);
+		deque->data = NULL;
+	}
 	free_windows(wins);
 	fclose(fptr);
 
@@ -704,6 +709,8 @@ void nc_read_setup(struct read_state *r_state)
 	FILE *fptr, *bfptr;
 	struct vec_d *pidx, *rec_line_nums, *rec_fpis;
 	struct read_wins *wins;
+	struct sidebar_deque deque = { 0 };
+	struct sidebar_deque *p_deque = &deque;
 	size_t n_records;
 	int get_date_err, c;
 	bool sidebar_exists;
@@ -785,7 +792,9 @@ void nc_read_setup(struct read_state *r_state)
 
 	if (sidebar_exists) {
 		draw_parent_box_with_sidebar(wins->parent);
+		deque = sidebar_create(wins, rec_fpis, r_state->head);
 	} else {
+		p_deque = NULL;
 		box(wins->parent, 0, 0);
 	}
 
@@ -794,14 +803,14 @@ void nc_read_setup(struct read_state *r_state)
 	print_sort_text(wins->parent, r_state->sort);
 
 	if (r_state->sort == SORT_DATE) {
-		nc_read_loop(wins, fptr, &rs, rec_fpis, r_state->head);
+		nc_read_loop(wins, fptr, &rs, rec_fpis, r_state->head, p_deque);
 	} else if (r_state->sort == SORT_CATG) {
 		bfptr = open_budget_csv("r");
-		nc_read_budget_loop(wins, fptr, bfptr, &rs, rec_fpis, r_state->head); 
+		nc_read_budget_loop(wins, fptr, bfptr, &rs, rec_fpis, r_state->head, p_deque); 
 		fclose(bfptr);
 	}
 
-	cleanup_read_setup(rec_fpis, rec_line_nums, pidx, wins, fptr);
+	cleanup_read_setup(rec_fpis, rec_line_nums, pidx, wins, &deque, fptr);
 
 	r_state->month = date.month;
 	r_state->year = date.year;
