@@ -478,6 +478,7 @@ int main(int argc, char **argv)
 		}
 	}
 
+	reset_color_pairs();
 	endwin();
 	return 0;
 }
